@@ -162,7 +162,7 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 					int protocol_priority[16] = {GNUTLS_SSL3, 0 };
 					int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
 					int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
-					int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_SHA256, GNUTLS_MAC_SHA512, GNUTLS_MAC_MD5, 0 };
+					int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
 					int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
 
 					gnutls_cipher_set_priority(*control->ssl_session, cipher_priority);
