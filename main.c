@@ -36,12 +36,13 @@ int main(int argc, char *argv[]) {
 	}
 		
 	printf("Now starting SSL.\n");
-	if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
+//	if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
+	if (!lockdownd_start_SSL_session(control, "2994593482385678618538736")) {
 		printf("Error happened in GnuTLS...\n");
 	} else { 
 		printf("... we're in SSL with the phone... !?\n");
+		port = lockdownd_start_service(control, "com.apple.afc");
 	}
-	port = lockdownd_start_service(control, "com.apple.afc");
 	if (port) {
 		printf("Start Service successful -- connect on port %i\n", port);
 		AFClient *afc = afc_connect(phone, 3432, port);
@@ -69,6 +70,26 @@ int main(int argc, char *argv[]) {
 				free(my_file);
 				free(file_data);
 			} else printf("couldn't open a file\n");
+			
+			my_file = afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_WRITE);
+			if (my_file) {
+				char *outdatafile = strdup("this is a bitchin text file\n");
+				bytes = afc_write_file(afc, my_file, outdatafile, strlen(outdatafile));
+				free(outdatafile);
+				if (bytes > 0) printf("Wrote a surprise. ;)\n");
+				else printf("I wanted to write a surprise, but... :(\n");
+				afc_close_file(afc, my_file);
+				free(my_file);
+			}
+			printf("Deleting a file...\n");
+			bytes = afc_delete_file(afc, "/delme");
+			if (bytes) printf("Success.\n");
+			else printf("Failure.\n");
+			
+			printf("Renaming a file...\n");
+			bytes = afc_rename_file(afc, "/renme", "/renme2");
+			if (bytes > 0) printf("Success.\n");
+			else printf("Failure.\n");
 		}
 		afc_disconnect(afc);
 	} else {

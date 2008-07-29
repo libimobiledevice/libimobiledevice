@@ -149,15 +149,16 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 		for (i = 0; strcmp(dictionary[i], ""); i+=2) {
 			if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 				// Set up GnuTLS...
+				//gnutls_anon_client_credentials_t anoncred;
 				gnutls_certificate_credentials_t xcred;
-				
 				if (debug) printf("We started the session OK, now trying GnuTLS\n");
 				errno = 0;
 				gnutls_global_init();
+				//gnutls_anon_allocate_client_credentials(&anoncred);
 				gnutls_certificate_allocate_credentials(&xcred);
 				gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
 				gnutls_init(control->ssl_session, GNUTLS_CLIENT);
-				if ((return_me = gnutls_priority_set_direct(*control->ssl_session, "NORMAL:+VERS-SSL3.0", NULL)) < 0) {
+				if ((return_me = gnutls_priority_set_direct(*control->ssl_session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+SHA256:+SHA512:+MD5:+COMP-NULL", NULL)) < 0) {
 					printf("oops? bad options?\n");
 					gnutls_perror(return_me);
 					return 0;
@@ -214,6 +215,14 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	if (debug) printf("pre-send\nlength = %i\n", length);
 	bytes = mux_send(control->iphone, control->connection, buffer, length);
 	if (debug) printf("post-send\nsent %i bytes\n", bytes);
+	if (debug) {
+		FILE *my_ssl_packet = fopen("sslpacketwrite.out", "w+");
+		fwrite(buffer, 1, length, my_ssl_packet);
+		fflush(my_ssl_packet);
+		printf("Wrote SSL packet to drive, too.\n");
+		fclose(my_ssl_packet);
+	}
+	
 	return bytes;
 }
 
@@ -251,11 +260,16 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 		}
 	}
 	// End buffering hack!
-	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 400)); // ensuring nothing stupid happens
+	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 1000)); // ensuring nothing stupid happens
 	
 	if (debug) printf("pre-read\nclient wants %i bytes\n", length);
-	bytes = mux_recv(control->iphone, control->connection, recv_buffer, (length * 400));
+	bytes = mux_recv(control->iphone, control->connection, recv_buffer, (length * 1000));
 	if (debug) printf("post-read\nwe got %i bytes\n", bytes);
+	if (debug && bytes < 0) {
+		printf("lockdownd_securead(): uh oh\n");
+		printf("I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n", usb_strerror(), strerror(errno));
+		return bytes + 28; // an errno
+	}
 	if (bytes >= length) {
 		if (bytes > length) {
 			if (debug) printf("lockdownd_securead: Client deliberately read less data than was there; resorting to GnuTLS buffering hack.\n");

@@ -53,11 +53,14 @@ enum {
 	AFC_GET_INFO = 0x0000000a,
 	AFC_GET_DEVINFO = 0x0000000b,
 	AFC_LIST_DIR = 0x00000003,
+	AFC_DELETE = 0x00000008,
+	AFC_RENAME = 0x00000018,
 	AFC_SUCCESS_RESPONSE = 0x00000002,
 	AFC_FILE_OPEN = 0x0000000d,
 	AFC_FILE_CLOSE = 0x00000014,
 	AFC_FILE_HANDLE = 0x0000000e,
-	AFC_READ = 0x0000000f
+	AFC_READ = 0x0000000f,
+	AFC_WRITE = 0x00000010
 };
 
 AFClient *afc_connect(iPhone *phone, int s_port, int d_port);
@@ -72,3 +75,6 @@ AFCFile *afc_get_file_info(AFClient *client, char *path);
 AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode);
 void afc_close_file(AFClient *client, AFCFile *file);
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length);
+int afc_write_file(AFClient *client, AFCFile *file, char *data, int length);
+int afc_delete_file(AFClient *client, const char *path);
+int afc_rename_file(AFClient *client, const char *from, const char *to);
