@@ -37,7 +37,6 @@ int main(int argc, char *argv[]) {
 		
 	printf("Now starting SSL.\n");
 //	if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
-	if (!lockdownd_start_SSL_session(control, "2994593482385678618538736")) {
 		printf("Error happened in GnuTLS...\n");
 	} else { 
 		printf("... we're in SSL with the phone... !?\n");
