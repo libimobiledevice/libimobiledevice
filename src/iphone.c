@@ -33,7 +33,7 @@ iPhone *get_iPhone() {
 	
 	for (bus = busses; bus; bus = bus->next) {
 		for (dev = bus->devices; dev; dev = dev->next) {
-			if (dev->descriptor.idVendor == 0x05ac && (dev->descriptor.idProduct == 0x1290 || dev->descriptor.idProduct == 0x1291)) {
+			if (dev->descriptor.idVendor == 0x05ac && (dev->descriptor.idProduct == 0x1290 || dev->descriptor.idProduct == 0x1291 || dev->descriptor.idProduct == 0x1292)) {
 				phone->__device = dev;
 				phone->device = usb_open(phone->__device);
 				usb_reset(phone->device);
@@ -46,7 +46,7 @@ iPhone *get_iPhone() {
 	
 	for (bus = busses; bus; bus = bus->next) { // do it again as per libusb documentation
 		for (dev = bus->devices; dev; dev = dev->next) {
-			if (dev->descriptor.idVendor == 0x05ac && (dev->descriptor.idProduct == 0x1290 || dev->descriptor.idProduct == 0x1291)) {
+			if (dev->descriptor.idVendor == 0x05ac && (dev->descriptor.idProduct == 0x1290 || dev->descriptor.idProduct == 0x1291 || dev->descriptor.idProduct == 0x1292)) {
 				phone->__device = dev;
 				phone->device = usb_open(phone->__device);
 				usb_set_configuration(phone->device, 3);
