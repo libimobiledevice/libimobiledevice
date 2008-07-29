@@ -158,10 +158,19 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 				gnutls_certificate_allocate_credentials(&xcred);
 				gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
 				gnutls_init(control->ssl_session, GNUTLS_CLIENT);
-				if ((return_me = gnutls_priority_set_direct(*control->ssl_session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+SHA256:+SHA512:+MD5:+COMP-NULL", NULL)) < 0) {
-					printf("oops? bad options?\n");
-					gnutls_perror(return_me);
-					return 0;
+				{
+					int protocol_priority[16] = {GNUTLS_SSL3, 0 };
+					int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
+					int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
+					int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_SHA256, GNUTLS_MAC_SHA512, GNUTLS_MAC_MD5, 0 };
+					int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
+
+					gnutls_cipher_set_priority(*control->ssl_session, cipher_priority);
+					gnutls_compression_set_priority(*control->ssl_session, comp_priority);
+					gnutls_kx_set_priority(*control->ssl_session, kx_priority);
+					gnutls_protocol_set_priority( *control->ssl_session, protocol_priority);
+					gnutls_mac_set_priority(*control->ssl_session, mac_priority);
+
 				}
 				gnutls_credentials_set(*control->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred); // this part is killing me.
 				
