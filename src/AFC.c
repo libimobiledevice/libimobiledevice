@@ -121,6 +121,7 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	AFCPacket *r_packet;
 	char *buffer = (char*)malloc(sizeof(AFCPacket) * 4);
 	int bytes = 0, recv_len = 0;
+        int retval = 0;
 	
 	bytes = mux_recv(client->phone, client->connection, buffer, sizeof(AFCPacket) * 4);
 	if (bytes <= 0) {
@@ -136,9 +137,10 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	if (r_packet->entire_length == r_packet->this_length && r_packet->entire_length > sizeof(AFCPacket) && r_packet->operation != AFC_ERROR) {
 		*dump_here = (char*)malloc(sizeof(char) * (r_packet->entire_length-sizeof(AFCPacket)));
 		memcpy(*dump_here, buffer+sizeof(AFCPacket), r_packet->entire_length-sizeof(AFCPacket));
+                retval = r_packet->entire_length - sizeof(AFCPacket);
 		free(buffer);
 		free(r_packet);
-		return r_packet->entire_length - sizeof(AFCPacket);
+		return retval;
 	}
 	
 	uint32 param1 = buffer[sizeof(AFCPacket)];
