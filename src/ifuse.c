@@ -17,7 +17,7 @@
 #include "AFC.h"
 
 
-AFClient *afc;
+AFClient *afc = NULL;
 GHashTable *file_handles;
 int fh_index = 0;
 
@@ -85,7 +85,7 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 	return bytes;
 }
 
-void ifuse_init(struct fuse_conn_info *conn) {
+void *ifuse_init(struct fuse_conn_info *conn) {
 	char *response = (char*)malloc(sizeof(char) * 2048);
 	int bytes = 0, port = 0, i = 0;
 	
@@ -94,27 +94,29 @@ void ifuse_init(struct fuse_conn_info *conn) {
 	iPhone *phone = get_iPhone();
 	if (!phone){
 		fprintf(stderr, "No iPhone found, is it connected?\n");
-		   	return -1;
+		   	return NULL;
 	   	}
 	
 	lockdownd_client *control = new_lockdownd_client(phone);
 	if (!lockdownd_hello(control)) {
 		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
-		return -1;
+		return NULL;
 	}
 		
 	//if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
 		fprintf(stderr, "Something went wrong in GnuTLS.\n");
-		return -1;
+		return NULL;
 	}
 	
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
 		fprintf(stderr, "Something went wrong when starting AFC.");
+                return NULL;
 	}
 
 	afc = afc_connect(phone, 3432, port);
-	
+
+        return afc;
 }
 
 void ifuse_cleanup() {
