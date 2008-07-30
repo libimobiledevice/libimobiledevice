@@ -71,7 +71,7 @@ char **read_dict_element_strings(xmlNode *dict) {
 	
 	// one last thing...
 	old = return_me;
-	return_me = realloc(return_me, sizeof(char*) * current_length+1);
+	return_me = realloc(return_me, sizeof(char*) * (current_length+1));
 	return_me[current_pos] = strdup("");
 	
 	return return_me;
