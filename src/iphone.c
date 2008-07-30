@@ -39,6 +39,7 @@ iPhone *get_iPhone() {
 	// initialize the struct
 	phone->device = NULL;
 	phone->__device = NULL;
+        phone->buffer = NULL;
 	
 	// Initialize libusb.
 	usb_init();
