@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 typedef struct {
 	//const uint32 header1 = 0x36414643; // '6AFC' or 'CFA6' when sent ;)
@@ -38,10 +39,6 @@ typedef struct __AFCToken {
 	char *token;
 } AFCToken;
 
-enum {
-	S_IFREG = 0,
-	S_IFDIR = 1
-};
 
 enum {
 	AFC_FILE_READ = 0x00000002,
