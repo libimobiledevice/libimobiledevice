@@ -121,6 +121,7 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 }
 
 void ifuse_cleanup() {
+	free_iPhone(afc->iphone);
 	afc_disconnect(afc);
 }
 
