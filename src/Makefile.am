@@ -1,5 +1,5 @@
-AM_CFLAGS = `xml2-config --cflags` `pkg-config fuse --cflags` `pkg-config glib-2.0 --cflags` -g
-AM_LDFLAGS = `xml2-config --libs` `pkg-config fuse --libs` `pkg-config glib-2.0 --libs` -lusb -lgnutls 
+AM_CFLAGS = $(libxml2_CFLAGS) $(libusb_CFLAGS) $(libglib2_CFLAGS) $(libfuse_CFLAGS) $(libgnutls_CFLAGS) -g
+AM_LDFLAGS = $(libxml2_LIBS) $(libusb_LIBS) $(libglib2_LIBS) $(libfuse_LIBS) $(libgnutls_LIBS)
 
 bin_PROGRAMS = iphoneclient ifuse
 iphoneclient_SOURCES = usbmux.c main.c iphone.c plist.c lockdown.c AFC.c

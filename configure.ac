@@ -4,16 +4,18 @@
 AC_PREREQ(2.61)
 AC_INIT(libiphone, 0.1.0, nospam@nowhere.com)
 AM_INIT_AUTOMAKE(libiphone, 0.1.0)
-AC_CONFIG_SRCDIR([src/lockdown.c])
+AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CC
 
 # Checks for libraries.
-AC_CHECK_LIB(xml2,xmlFree,,[AC_MSG_ERROR([libxml2 library missing])])
-AC_CHECK_LIB(usb,usb_bulk_write,,[AC_MSG_ERROR([libusb library missing])])
-AC_CHECK_LIB(gnutls,gnutls_record_send,,[AC_MSG_ERROR([libgnutls library missing])])
+PKG_CHECK_MODULES(libxml2, libxml-2.0 >= 2.6.30)
+PKG_CHECK_MODULES(libusb, libusb >= 0.1.12)
+PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
+PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3)
+PKG_CHECK_MODULES(libfuse, fuse >= 2.7.0)
 
 # Checks for header files.
 AC_HEADER_STDC
