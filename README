@@ -1,0 +1,47 @@
+INSTALLATION
+================================================================================
+
+You must have:
+	libgnutls-dev
+	libusb-dev
+	libfuse-dev (and the associated kernel modules)
+	libglib2.0-dev
+	libxml2-dev
+	make
+	autoheader
+	automake
+	autoconf
+	gcc
+
+IMPORTANT: You must edit src/ifuse.c and src/main.c and replace your HostID
+from the plist file stored by iTunes. You can find these lines because they are
+currently commented out. In Windows this file is located in:
+
+C:\Documents and Settings\Your Username\Application Data\Apple Computer\Lockdown\<device serial number>.plist
+	
+IMPORTANT: You must also have a public certificate for the device located in
+the root directory of the source named hostcert.pem. This can also be extracted
+from the above file.
+
+To compile run:
+	./autogen.sh
+	./configure
+	make
+
+USAGE
+================================================================================
+
+There are currently 2 executables iphoneclient and ifuse, located in src/.
+
+iphoneclient is a basic commandline interface, it just runs a few various operations.
+
+ifuse is a Fuse filesystem which allows you to mount your iPhone to a directory
+like this:
+
+	./src/ifuse mountpoint
+
+To unmount:
+	umount mountpoint
+
+Currently the ifuse filesystem is read-only, until the development has
+progressed further.
