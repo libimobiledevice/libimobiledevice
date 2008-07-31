@@ -31,6 +31,7 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	file = afc_get_file_info(afc, path);
 	if (!file){
 		res = -ENOENT;
+		return res;
 	}
 
 	stbuf->st_mode = file->type | 0444;
