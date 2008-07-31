@@ -187,7 +187,8 @@ int mux_recv(iPhone *phone, usbmux_tcp_header *connection, char *data, uint32 da
 	} else {// all's good, they didn't do anything bonky.
 		my_datalen = ntohl(buffer[4]) - 28; 
 		connection->ocnt += my_datalen;
-		memcpy(data, buffer+28, datalen); 
+		if (bytes == (datalen+28)) memcpy(data, buffer+28, datalen); 
+		else if (bytes == datalen) memcpy(data, buffer+28, datalen-28);
 		free(buffer);
 		if (debug) printf("mux_recv: bytes received: %i\n", bytes - 28);
 		return bytes - 28;
