@@ -31,10 +31,12 @@
 #include "plist.h"
 #include "lockdown.h"
 #include "AFC.h"
+#include "userpref.h"
 
 int debug = 1;
 
 int main(int argc, char *argv[]) {
+	char* host_id = NULL;
 	iPhone *phone = get_iPhone();
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) debug = 1;
 	else debug = 0;
@@ -51,9 +53,12 @@ int main(int argc, char *argv[]) {
 	}
 		
 	printf("Now starting SSL.\n");
-//	if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
+	host_id = get_host_id();
+	if (host_id && !lockdownd_start_SSL_session(control, host_id)) {
 		printf("Error happened in GnuTLS...\n");
 	} else { 
+		free(host_id);
+		host_id = NULL;
 		printf("... we're in SSL with the phone... !?\n");
 		port = lockdownd_start_service(control, "com.apple.afc");
 	}

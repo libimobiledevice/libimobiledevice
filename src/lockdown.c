@@ -21,6 +21,7 @@
 #include "usbmux.h"
 #include "iphone.h"
 #include "lockdown.h"
+#include "userpref.h"
 #include <errno.h>
 #include <string.h>
 
@@ -318,12 +319,17 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 
 int lockdownd_start_service(lockdownd_client *control, const char *service) {
 	if (!control) return 0;
-	if (!control->in_SSL && !lockdownd_start_SSL_session(control, "29942970-207913891623273984")) return 0;
-	
+
+	char* host_id = get_host_id();
+	if (host_id && !control->in_SSL && !lockdownd_start_SSL_session(control, host_id)) return 0;
+
 	char *XML_query, **dictionary;
 	uint32 length, i = 0, port = 0;
 	uint8 result = 0;
-	
+
+	free(host_id);
+	host_id = NULL;
+
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	xmlNode *key;

@@ -35,6 +35,7 @@
 #include "plist.h"
 #include "lockdown.h"
 #include "AFC.h"
+#include "userpref.h"
 
 
 AFClient *afc = NULL;
@@ -109,6 +110,7 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 void *ifuse_init(struct fuse_conn_info *conn) {
 	char *response = (char*)malloc(sizeof(char) * 2048);
 	int bytes = 0, port = 0, i = 0;
+	char* host_id = NULL;
 	
 	file_handles = g_hash_table_new(g_int_hash, g_int_equal);
 
@@ -123,11 +125,14 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
-		
-	//if (!lockdownd_start_SSL_session(control, "29942970-207913891623273984")) {
+
+	host_id = get_host_id();
+	if (host_id && !lockdownd_start_SSL_session(control, host_id)) {
 		fprintf(stderr, "Something went wrong in GnuTLS.\n");
 		return NULL;
 	}
+	free(host_id);
+	host_id = NULL;
 	
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
