@@ -32,14 +32,14 @@ char* get_host_id()
 	gchar* config_file = NULL;
 
 	/* first get config file */
-	config_file =  g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
+	config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
 	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
 
-		/*now parse file to get the HostID*/
+		/* now parse file to get the HostID */
 		GKeyFile* key_file = g_key_file_new ();
 		if( g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL) ) {
 
-			gchar* loc_host_id =  g_key_file_get_value(key_file, "Global", "HostID", NULL);
+			gchar* loc_host_id = g_key_file_get_value(key_file, "Global", "HostID", NULL);
 			if (loc_host_id)
 				host_id = strdup(loc_host_id);
 			g_free(loc_host_id);
