@@ -44,7 +44,7 @@ char* get_host_id()
 
 			gchar* loc_host_id = g_key_file_get_value(key_file, "Global", "HostID", NULL);
 			if (loc_host_id)
-				host_id = strdup(loc_host_id);
+				host_id = strdup((char*)loc_host_id);
 			g_free(loc_host_id);
 		}
 		g_key_file_free(key_file);

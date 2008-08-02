@@ -59,7 +59,7 @@ int lockdownd_recv(lockdownd_client *control, char **dump_data) {
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!control->in_SSL) bytes = mux_recv(control->connection, (char *)&datalen, sizeof(datalen));
+	if (!control->in_SSL) bytes = mux_recv(control->iphone, control->connection, (char*)&datalen, sizeof(datalen));
 	else bytes = gnutls_record_recv(*control->ssl_session, &datalen, sizeof(datalen));
 	datalen = ntohl(datalen);
 	
@@ -107,7 +107,8 @@ int lockdownd_hello(lockdownd_client *control) {
 	char *XML_content;
 	uint32 length;
 	
-	xmlDocDumpMemory(plist, (xmlChar **)&XML_content, &length);
+	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
+	
 	bytes = lockdownd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
