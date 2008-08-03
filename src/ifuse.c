@@ -69,6 +69,10 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	AFClient *afc = fuse_get_context()->private_data;
 
 	dirs = afc_get_dir_list(afc, path);
+
+	if(!dirs)
+		return -ENOENT;
+
 	for (i = 0; strcmp(dirs[i], ""); i++) {
 		filler(buf, dirs[i], NULL, 0);
 	}
