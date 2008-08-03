@@ -148,6 +148,8 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
 	bytes = usb_bulk_write(phone->device, BULKOUT, data, datalen, 800);
 	if (debug) printf("noooo...?\n");
 	if (bytes < datalen) {
+		if(debug && bytes < 0)
+			printf("send_to_iphone(): libusb gave me the error: %s\n", usb_strerror());
 		return -1;
 	} else {
 		return bytes;
@@ -169,6 +171,11 @@ int recv_from_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
 	int bytes = 0;
 	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
+	if(bytes < 0)
+	{
+		if(debug) printf("recv_from_iphone(): libusb gave me the error: %s\n", usb_strerror());
+		return -1;
+	}
 	return bytes;
 }
 

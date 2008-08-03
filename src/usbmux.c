@@ -112,7 +112,12 @@ void mux_close_connection(iPhone *phone, usbmux_tcp_header *connection) {
 	int bytes = 0;
 	
 	bytes = usb_bulk_write(phone->device, BULKOUT, (char*)connection, sizeof(*connection), 800);
+	if(debug && bytes < 0)
+		printf("mux_close_connection(): when writing, libusb gave me the error: %s\n", usb_strerror());
+
 	bytes = usb_bulk_read(phone->device, BULKIN, (char*)connection, sizeof(*connection), 800);
+	if(debug && bytes < 0)
+		printf("get_iPhone(): when reading, libusb gave me the error: %s\n", usb_strerror());
 	
 	free(connection);
 }
