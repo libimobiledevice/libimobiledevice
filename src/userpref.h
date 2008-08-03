@@ -29,4 +29,48 @@
 */
 char* get_host_id();
 
+/**
+* \fn int is_device_known(char* public_key)
+*  determine if we already paired this device.
+* \return 1 if device is already paired. Returns 0 otherwise.
+*/
+int is_device_known(char* public_key);
+
+/**
+* \fn int store_device_public_key(char* public_key)
+* \return 1 if everything went well. Returns 0 otherwise.
+*/
+int store_device_public_key(char* public_key);
+
+/**
+* \fn char* get_root_private_key()
+* \return RootPrivateKey if exists. Returns NULL otherwise.
+*/
+char* get_root_private_key();
+
+/**
+* \fn char* get_host_private_key()
+* \return HostPrivateKey if exists. Returns NULL otherwise.
+*/
+char* get_host_private_key();
+
+/**
+* \fn char* get_root_certificate()
+* \return RootCertificate if exists. Returns NULL otherwise.
+*/
+char* get_root_certificate();
+
+/**
+* \fn char* get_host_certificate()
+* \return HostCertificate if exists. Returns NULL otherwise.
+*/
+char* get_host_certificate();
+
+/**
+* \fn int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert)
+* setup a brand new config file.
+* \return 1 if everything went well. Returns 0 otherwise.
+*/
+int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert);
 #endif
+
