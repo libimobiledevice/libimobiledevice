@@ -237,7 +237,7 @@ char* get_host_certificate()
 
 int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert)
 {
-	if (!host_id || !root_private_key || !host_private_key)
+	if (!host_id || !root_private_key || !host_private_key || !root_cert || !host_cert)
 		return 0;
 
 	gchar* config_file =  g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);

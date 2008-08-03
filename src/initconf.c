@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
 	gnutls_global_init();
 
-	char* host_id = NULL;
+	char* host_id = "29942970-207913891623273984";
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
 
@@ -42,9 +42,12 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_init(&root_cert);
 	gnutls_x509_crt_init(&host_cert);
 
+	/* generate HostID */
+	//TODO
+
 	/* generate keys */
-	int ret1 = gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
-	int ret2 = gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
+	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
+	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
 
 	/* generate certificates */
 	gnutls_x509_crt_set_key(root_cert, root_privkey);
@@ -73,7 +76,7 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &host_key_pem.size);
 
 	root_key_pem.data = gnutls_malloc(root_key_pem.size);
-	root_key_pem.data = gnutls_malloc(root_key_pem.size);
+	host_key_pem.data = gnutls_malloc(host_key_pem.size);
 
 	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &root_key_pem.size);
 	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &host_key_pem.size);
@@ -85,7 +88,7 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &host_cert_pem.size);
 
 	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
-	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
+	host_cert_pem.data = gnutls_malloc(host_cert_pem.size);
 
 	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
 	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
