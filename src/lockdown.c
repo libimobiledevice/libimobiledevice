@@ -25,8 +25,21 @@
 #include "userpref.h"
 #include <errno.h>
 #include <string.h>
+#include <glib.h>
+#include <libtasn1.h>
 
 extern int debug;
+
+const ASN1_ARRAY_TYPE pkcs1_asn1_tab[]={
+  {"PKCS1",536872976,0},
+  {0,1073741836,0},
+  {"RSAPublicKey",536870917,0},
+  {"modulus",1073741827,0},
+  {"publicExponent",3,0},
+  {0,0,0}
+};
+
+
 
 lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	if (!phone) return NULL;
@@ -137,6 +150,283 @@ int lockdownd_hello(lockdownd_client *control) {
 	
 	free_dictionary(dictionary);
 	return 0;
+}
+
+int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key)
+{
+	xmlDocPtr plist = new_plist();
+	xmlNode *dict = NULL;
+	xmlNode *key = NULL;;
+	char **dictionary = NULL;
+	int bytes = 0, i = 0;
+	char *XML_content = NULL;
+	uint32 length = 0;
+	
+	/* Setup DevicePublicKey request plist */
+	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
+	key = add_key_str_dict_element(plist, dict, "Key", "DevicePublicKey", 1);
+	key = add_key_str_dict_element(plist, dict, "Request", "GetValue", 1);
+	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
+
+	/* send to iPhone */
+	bytes = lockdownd_send(control, XML_content, length);
+	
+	xmlFree(XML_content);
+	xmlFreeDoc(plist); plist = NULL;
+
+	/* Now get iPhone's answer */
+	bytes = lockdownd_recv(control, &XML_content);
+
+	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	if (!plist) return 0;
+	dict = xmlDocGetRootElement(plist);
+	for (dict = dict->children; dict; dict = dict->next) {
+		if (!xmlStrcmp(dict->name, "dict")) break;
+	}
+	if (!dict) return 0;
+	
+	/* Parse xml to check success and to find public key */
+	dictionary = read_dict_element_strings(dict);
+	xmlFreeDoc(plist);
+	free(XML_content);	
+	
+	int success = 0;
+	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
+			success = 1;
+		}
+		if (!strcmp(dictionary[i], "Value")) {
+			*public_key = strdup(dictionary[i+1]);
+		}
+	}
+	
+	if (dictionary) {
+		free_dictionary(dictionary);
+		dictionary = NULL;
+	}
+	return success;
+}
+
+int lockdownd_init(iPhone *phone, lockdownd_client **control)
+{
+	int ret = 0;
+	char *host_id = NULL;
+
+	if (!phone)
+		return 0;
+
+	*control = new_lockdownd_client(phone);
+	if (!lockdownd_hello(*control)){
+		fprintf(stderr, "Hello failed in the lockdownd client.\n");
+	}
+
+	char *public_key = NULL;
+	if(!lockdownd_get_device_public_key(*control, &public_key)){
+		fprintf(stderr, "Device refused to send public key.\n");
+	}
+
+	host_id = get_host_id();
+	if (!is_device_known(public_key)){
+		ret = lockdownd_pair_device(*control, public_key, host_id);
+	}
+	free(public_key);
+	public_key = NULL;
+	
+	if (ret && host_id && !lockdownd_start_SSL_session(*control, host_id)) {
+		fprintf(stderr, "SSL Session opening failed.\n");
+	} else { 
+		ret = 1;
+		free(host_id);
+		host_id = NULL;
+	}
+
+	return ret;
+}
+
+int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char *host_id)
+{
+	int ret = 0;
+	xmlDocPtr plist = new_plist();
+	xmlNode *dict = NULL;
+	xmlNode *dictRecord = NULL;
+	char **dictionary = NULL;
+	int bytes = 0, i = 0;
+	char *XML_content = NULL;
+	uint32 length = 0;
+
+	char* device_cert_b64 = NULL;
+	char* host_cert_b64 = NULL;
+	char* root_cert_b64 = NULL;
+
+	lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64);
+
+	/* Setup Pair request plist */
+	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
+	add_key_str_dict_element(plist, dict, "Key", "PairRecord", 1);
+	dictRecord = add_child_to_plist(plist, "dict", "\n", NULL, 1);
+	add_key_data_dict_element(plist, dictRecord, "DeviceCertificate", device_cert_b64, 2);
+	add_key_data_dict_element(plist, dictRecord, "HostCertificate", host_cert_b64, 2);
+	add_key_str_dict_element(plist, dictRecord, "HostID", host_id, 2);
+	add_key_data_dict_element(plist, dictRecord, "RootCertificate", root_cert_b64, 2);
+	add_key_str_dict_element(plist, dict, "Request", "Pair", 1);
+
+	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
+
+	/* send to iPhone */
+	bytes = lockdownd_send(control, XML_content, length);
+	
+	xmlFree(XML_content);
+	xmlFreeDoc(plist); plist = NULL;
+
+	/* Now get iPhone's answer */
+	bytes = lockdownd_recv(control, &XML_content);
+
+	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	if (!plist) return 0;
+	dict = xmlDocGetRootElement(plist);
+	for (dict = dict->children; dict; dict = dict->next) {
+		if (!xmlStrcmp(dict->name, "dict")) break;
+	}
+	if (!dict) return 0;
+	
+	/* Parse xml to check success and to find public key */
+	dictionary = read_dict_element_strings(dict);
+	xmlFreeDoc(plist);
+	free(XML_content);	
+	
+	int success = 0;
+	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
+			success = 1;
+		}
+	}
+	
+	if (dictionary) {
+		free_dictionary(dictionary);
+		dictionary = NULL;
+	}
+
+	/* store public key in config if pairing succeeded */
+	if (success) 
+		store_device_public_key(public_key_b64);
+	return ret;
+}
+
+int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64)
+{
+	int ret = 0;
+
+	gnutls_datum_t modulus = {NULL, 0};
+	gnutls_datum_t exponent = {NULL, 0};
+
+	/* first decode base64 public_key */
+	gnutls_datum_t pem_pub_key;
+	pem_pub_key.data = g_base64_decode (public_key_b64, &pem_pub_key.size);
+
+
+	/* now decode the PEM encoded key */
+	gnutls_datum_t der_pub_key;
+	if( GNUTLS_E_SUCCESS  == gnutls_pem_base64_decode_alloc ("RSA PUBLIC KEY", &pem_pub_key, &der_pub_key) ){
+		ret = 1;
+ 
+		/* initalize asn.1 parser */
+		ASN1_TYPE pkcs1 = ASN1_TYPE_EMPTY;
+		if (ASN1_SUCCESS == asn1_array2tree(pkcs1_asn1_tab, &pkcs1, NULL)) {
+
+			ASN1_TYPE asn1_pub_key = ASN1_TYPE_EMPTY;
+			asn1_create_element(pkcs1, "PKCS1.RSAPublicKey", &asn1_pub_key);
+
+			if (ASN1_SUCCESS == asn1_der_decoding(&asn1_pub_key, der_pub_key.data, der_pub_key.size, NULL)) {
+
+				/* get size to read */
+				int ret1 = asn1_read_value (asn1_pub_key, "modulus", NULL, &modulus.size);
+				int ret2 = asn1_read_value (asn1_pub_key, "publicExponent", NULL, &exponent.size);
+
+				modulus.data = gnutls_malloc(modulus.size);
+				exponent.data = gnutls_malloc(exponent.size);
+
+				ret1 = asn1_read_value (asn1_pub_key, "modulus", modulus.data, &modulus.size);
+				ret2 = asn1_read_value (asn1_pub_key, "publicExponent", exponent.data, &exponent.size);
+				if (ASN1_SUCCESS == ret1 && ASN1_SUCCESS == ret2)
+					ret = 1;
+			}
+			if (asn1_pub_key)
+				asn1_delete_structure(&asn1_pub_key);
+		}
+		if (pkcs1)
+			asn1_delete_structure(&pkcs1);
+	}
+
+	/* now generate certifcates */
+	if (1 == ret && 0 != modulus.size && 0 != exponent.size) {
+
+		gnutls_global_init();
+		int effthis = 0;
+		gnutls_datum_t essentially_null = {strdup("abababababababab"), strlen("abababababababab")};
+	
+		gnutls_x509_privkey_t fake_privkey, root_privkey;
+		gnutls_x509_crt_t dev_cert, root_cert;
+	
+		gnutls_x509_privkey_init(&fake_privkey);
+		gnutls_x509_crt_init(&dev_cert);
+		
+		if ( GNUTLS_E_SUCCESS == gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null, &essentially_null, &essentially_null) ) {
+		
+			gnutls_x509_privkey_init(&root_privkey);
+			
+			/* get certificate stored in config */
+			*host_cert_b64 = get_host_certificate();
+			*root_cert_b64 = get_root_certificate();
+
+			gnutls_datum_t pem_root_cert = {NULL, 0};
+			pem_root_cert.data = g_base64_decode (*root_cert_b64, &pem_root_cert.size);
+
+			ret = gnutls_x509_crt_import (root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM);
+			gnutls_free(pem_root_cert.data);
+
+
+			/* get root private key */
+			char *root_priv_b64 = get_root_private_key();
+			gnutls_datum_t pem_root_priv = {NULL, 0};
+			pem_root_priv.data = g_base64_decode (root_priv_b64, &pem_root_priv.size);
+
+			ret = gnutls_x509_privkey_import (root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM);
+			gnutls_free(pem_root_priv.data);
+
+			/* generate device certificate */
+			
+			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
+			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+			gnutls_x509_crt_set_version(dev_cert, 3);
+			gnutls_x509_crt_set_ca_status(dev_cert, 0);
+			gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
+			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+			gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
+
+			//TODO handle errors
+			ret = 1;
+
+			if (ret) {
+				/* if everything went well, export in PEM format */
+	
+				gnutls_datum_t dev_pem = {NULL, 0};
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
+				dev_pem.data = gnutls_malloc(dev_pem.size);
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
+
+				/* now encode certificates for output */
+				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);
+				ret = 1;
+			}
+		}
+	}
+
+	gnutls_free(modulus.data);
+	gnutls_free(exponent.data);
+
+	gnutls_free(der_pub_key.data);
+	g_free(pem_pub_key.data);
+	return ret;
 }
 
 int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {

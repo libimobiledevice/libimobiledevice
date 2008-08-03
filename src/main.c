@@ -45,7 +45,10 @@ int main(int argc, char *argv[]) {
 	int bytes = 0, port = 0, i = 0;
 	if (phone) printf("I got a phone.\n");
 	else { printf("oops\n"); return -1; }
-	
+
+	lockdownd_client *control = NULL;
+	lockdownd_init(phone, &control);
+	/*
 	lockdownd_client *control = new_lockdownd_client(phone);
 	if (!lockdownd_hello(control)) {
 		printf("Something went wrong in the lockdownd client, go take a look.\n");
@@ -59,10 +62,10 @@ int main(int argc, char *argv[]) {
 		printf("Error happened in GnuTLS...\n");
 	} else { 
 		free(host_id);
-		host_id = NULL;
+		host_id = NULL;*/
 		printf("... we're in SSL with the phone... !?\n");
 		port = lockdownd_start_service(control, "com.apple.afc");
-	}
+	//}
 	if (port) {
 		printf("Start Service successful -- connect on port %i\n", port);
 		AFClient *afc = afc_connect(phone, 3432, port);

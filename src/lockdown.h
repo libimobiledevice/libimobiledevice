@@ -35,13 +35,19 @@ typedef struct {
 	int gtls_buffer_hack_len;
 } lockdownd_client;
 
+int lockdownd_init(iPhone *phone, lockdownd_client **control);
+
 lockdownd_client *new_lockdownd_client(iPhone *phone);
 int lockdownd_hello(lockdownd_client *control);
+int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key);
+int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64);
+int lockdownd_pair_device(lockdownd_client *control, char *public_key, char *host_id);
 int lockdownd_recv(lockdownd_client *control, char **dump_data);
 int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length);
 void lockdownd_close(lockdownd_client *control);
 
 // SSL functions
+
 int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID);
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length);
