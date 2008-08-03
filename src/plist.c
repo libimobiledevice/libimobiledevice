@@ -62,6 +62,13 @@ xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode *dict, const char *ke
 	return keyPtr;
 }
 
+xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
+	xmlNode *keyPtr;
+	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
+	add_child_to_plist(plist, "data", value, dict, depth);
+	return keyPtr;
+}
+
 char **read_dict_element_strings(xmlNode *dict) {
 	// reads a set of keys and strings into an array where each even number is a key and odd numbers are values.
 	// if the odd number is \0, that's the end of the list. 
