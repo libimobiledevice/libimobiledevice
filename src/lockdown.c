@@ -233,11 +233,12 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 	public_key = NULL;
 	
 	if (ret && host_id && !lockdownd_start_SSL_session(*control, host_id)) {
-		fprintf(stderr, "SSL Session opening failed.\n");
-	} else { 
 		ret = 1;
 		free(host_id);
 		host_id = NULL;
+	} else {
+		ret = 0;
+		fprintf(stderr, "SSL Session opening failed.\n");
 	}
 
 	return ret;
@@ -369,7 +370,8 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 	
 		gnutls_x509_privkey_init(&fake_privkey);
 		gnutls_x509_crt_init(&dev_cert);
-		
+		gnutls_x509_crt_init(&root_cert);
+
 		if ( GNUTLS_E_SUCCESS == gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null, &essentially_null, &essentially_null) ) {
 		
 			gnutls_x509_privkey_init(&root_privkey);
