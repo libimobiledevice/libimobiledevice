@@ -24,8 +24,15 @@
 #include <string.h>
 #include "userpref.h"
 
+
 #define LIBIPHONE_CONF_DIR  "libiphone"
 #define LIBIPHONE_CONF_FILE "libiphonerc"
+
+#define LIBIPHONE_ROOT_PRIVKEY  "RootPrivateKey.pem"
+#define LIBIPHONE_HOST_PRIVKEY  "HostPrivateKey.pem"
+#define LIBIPHONE_ROOT_CERTIF  "RootCertificate.pem"
+#define LIBIPHONE_HOST_CERTIF  "HostCertificate.pem"
+
 
 extern int debug;
 
@@ -145,99 +152,59 @@ int store_device_public_key(char* public_key)
 	return 1;
 }
 
-
-char* get_root_private_key()
+int read_file_in_confdir(char* file, gnutls_datum_t* data)
 {
-	char* private_key = NULL;
+	if (NULL == file || NULL == data)
+		return 0;
 
-	/* first get config file */
-	gchar* config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+	gchar* filepath = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  file, NULL);
+	if (g_file_test(filepath, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
 
-		/* now parse file to get knwon devices list */
-		GKeyFile* key_file = g_key_file_new ();
-		if( g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL) ) {
+		FILE * pFile;
+		long lSize;
+		
+		pFile = fopen ( filepath , "rb" );
+		if (pFile==NULL)
+			return 0;
 
-			gchar* loc_private_key = g_key_file_get_value(key_file, "Global", "RootPrivateKey", NULL);
-			if (loc_private_key)
-				private_key = strdup((char*)loc_private_key);
-			g_free(loc_private_key);
-		}
-		g_key_file_free(key_file);
+		fseek (pFile , 0 , SEEK_END);
+		data->size = ftell (pFile);
+		rewind (pFile);
+		
+		data->data = (char*)gnutls_malloc(data->size);
+		if (data->data == NULL)
+			return 0;
+		
+		// copy the file into the buffer:
+		fread (data->data,1,data->size,pFile);	
+		fclose (pFile);
 	}
-	return private_key;
+	return 1;
 }
 
-char* get_host_private_key()
+int get_root_private_key(gnutls_datum_t* root_privkey)
 {
-	char* private_key = NULL;
-
-	/* first get config file */
-	gchar* config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-
-		/* now parse file to get knwon devices list */
-		GKeyFile* key_file = g_key_file_new ();
-		if( g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL) ) {
-
-			gchar* loc_private_key = g_key_file_get_value(key_file, "Global", "HostPrivateKey", NULL);
-			if (loc_private_key)
-				private_key = strdup((char*)loc_private_key);
-			g_free(loc_private_key);
-		}
-		g_key_file_free(key_file);
-	}
-	return private_key;
+	return read_file_in_confdir(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
 }
 
-
-char* get_root_certificate()
+int get_host_private_key(gnutls_datum_t* host_privkey)
 {
-	char* cert = NULL;
-
-	/* first get config file */
-	gchar* config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-
-		/* now parse file to get knwon devices list */
-		GKeyFile* key_file = g_key_file_new ();
-		if( g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL) ) {
-
-			gchar* loc_cert = g_key_file_get_value(key_file, "Global", "RootCertificate", NULL);
-			if (loc_cert)
-				cert = strdup((char*)loc_cert);
-			g_free(loc_cert);
-		}
-		g_key_file_free(key_file);
-	}
-	return cert;
+	return read_file_in_confdir(LIBIPHONE_HOST_PRIVKEY, host_privkey);
 }
 
-char* get_host_certificate()
+int get_root_certificate(gnutls_datum_t* root_cert)
 {
-	char* cert = NULL;
-
-	/* first get config file */
-	gchar* config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-
-		/* now parse file to get knwon devices list */
-		GKeyFile* key_file = g_key_file_new ();
-		if( g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL) ) {
-
-			gchar* loc_cert = g_key_file_get_value(key_file, "Global", "HostCertificate", NULL);
-			if (loc_cert)
-				cert = strdup((char*)loc_cert);
-			g_free(loc_cert);
-		}
-		g_key_file_free(key_file);
-	}
-	return cert;
+	return read_file_in_confdir(LIBIPHONE_ROOT_CERTIF, root_cert);
 }
 
-int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert)
+int get_host_certificate(gnutls_datum_t* host_cert)
 {
-	if (!host_id || !root_private_key || !host_private_key || !root_cert || !host_cert)
+	return read_file_in_confdir(LIBIPHONE_HOST_CERTIF, host_cert);
+}
+
+int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* host_key, gnutls_datum_t* root_cert, gnutls_datum_t* host_cert)
+{
+	if (!host_id || !root_key || !host_key || !root_cert || !host_cert)
 		return 0;
 
 	gchar* config_file =  g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
@@ -249,10 +216,6 @@ int init_config_file(char* host_id, char* root_private_key, char* host_private_k
 
 	/* store in config file */
 	g_key_file_set_value (key_file, "Global", "HostID", host_id);
-	g_key_file_set_value (key_file, "Global", "RootPrivateKey", root_private_key);
-	g_key_file_set_value (key_file, "Global", "HostPrivateKey", host_private_key);
-	g_key_file_set_value (key_file, "Global", "RootCertificate", root_cert);
-	g_key_file_set_value (key_file, "Global", "HostCertificate", host_cert);
 
 	/* write config file on disk */
 	gsize length;
@@ -262,6 +225,29 @@ int init_config_file(char* host_id, char* root_private_key, char* host_private_k
 	g_io_channel_shutdown(file, FALSE, NULL);
 
 	g_key_file_free(key_file);
+
+	//now write keys and certifs to disk
+	FILE * pFile;
+	gchar* pem;
+	pem = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_ROOT_PRIVKEY, NULL);
+	pFile = fopen ( pem , "wb" );
+	fwrite ( root_key->data, 1 , root_key->size , pFile );
+	fclose (pFile);
+
+	pem = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_HOST_PRIVKEY, NULL);
+	pFile = fopen ( pem , "wb" );
+	fwrite ( host_key->data, 1 , host_key->size , pFile );
+	fclose (pFile);
+
+	pem = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_ROOT_CERTIF, NULL);
+	pFile = fopen ( pem , "wb" );
+	fwrite ( root_cert->data, 1 , root_cert->size , pFile );
+	fclose (pFile);
+
+	pem = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_HOST_CERTIF, NULL);
+	pFile = fopen ( pem , "wb" );
+	fwrite ( host_cert->data, 1 , host_cert->size , pFile );
+	fclose (pFile);
 
 	return 1;
 }

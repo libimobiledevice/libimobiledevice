@@ -263,8 +263,8 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 
 	/* Setup Pair request plist */
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	add_key_str_dict_element(plist, dict, "Key", "PairRecord", 1);
-	dictRecord = add_child_to_plist(plist, "dict", "\n", NULL, 1);
+	dictRecord = add_key_dict_node(plist, dict, "PairRecord", "\n", 1);
+	//dictRecord = add_child_to_plist(plist, "dict", "\n", NULL, 1);
 	add_key_data_dict_element(plist, dictRecord, "DeviceCertificate", device_cert_b64, 2);
 	add_key_data_dict_element(plist, dictRecord, "HostCertificate", host_cert_b64, 2);
 	add_key_str_dict_element(plist, dictRecord, "HostID", host_id, 2);
@@ -272,6 +272,8 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	add_key_str_dict_element(plist, dict, "Request", "Pair", 1);
 
 	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
+
+	printf("XML Pairing request : %s\n",XML_content);
 
 	/* send to iPhone */
 	bytes = lockdownd_send(control, XML_content, length);
@@ -366,34 +368,34 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 		gnutls_datum_t essentially_null = {strdup("abababababababab"), strlen("abababababababab")};
 	
 		gnutls_x509_privkey_t fake_privkey, root_privkey;
-		gnutls_x509_crt_t dev_cert, root_cert;
+		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
 	
 		gnutls_x509_privkey_init(&fake_privkey);
 		gnutls_x509_crt_init(&dev_cert);
 		gnutls_x509_crt_init(&root_cert);
+		gnutls_x509_crt_init(&host_cert);
 
 		if ( GNUTLS_E_SUCCESS == gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null, &essentially_null, &essentially_null) ) {
 		
 			gnutls_x509_privkey_init(&root_privkey);
 			
-			/* get certificate stored in config */
-			*host_cert_b64 = get_host_certificate();
-			*root_cert_b64 = get_root_certificate();
-
+			/* get root cert */
 			gnutls_datum_t pem_root_cert = {NULL, 0};
-			pem_root_cert.data = g_base64_decode (*root_cert_b64, &pem_root_cert.size);
-
+			ret = get_root_certificate(&pem_root_cert);
 			ret = gnutls_x509_crt_import (root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM);
-			gnutls_free(pem_root_cert.data);
+			
 
+			/* get host cert */
+			gnutls_datum_t pem_host_cert = {NULL, 0};
+			ret = get_host_certificate(&pem_host_cert);
+			ret = gnutls_x509_crt_import (host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM);
+			
 
 			/* get root private key */
-			char *root_priv_b64 = get_root_private_key();
 			gnutls_datum_t pem_root_priv = {NULL, 0};
-			pem_root_priv.data = g_base64_decode (root_priv_b64, &pem_root_priv.size);
-
+			ret = get_root_private_key(&pem_root_priv);
 			ret = gnutls_x509_privkey_import (root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM);
-			gnutls_free(pem_root_priv.data);
+			
 
 			/* generate device certificate */
 			
@@ -418,8 +420,13 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 
 				/* now encode certificates for output */
 				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);
+				*host_cert_b64 = g_base64_encode(pem_host_cert.data, pem_host_cert.size);
+				*root_cert_b64 = g_base64_encode(pem_root_cert.data, pem_root_cert.size);
 				ret = 1;
 			}
+			gnutls_free(pem_root_priv.data);
+			gnutls_free(pem_root_cert.data);
+			gnutls_free(pem_host_cert.data);
 		}
 	}
 

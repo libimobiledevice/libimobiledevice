@@ -22,6 +22,7 @@
 #ifndef USERPREF_H
 #define USERPREF_H
 
+#include <gnutls/gnutls.h>
 /**
 * \fn char* get_host_id() 
 *  method to get user's HostID. Caller must free returned buffer.
@@ -43,34 +44,34 @@ int is_device_known(char* public_key);
 int store_device_public_key(char* public_key);
 
 /**
-* \fn char* get_root_private_key()
-* \return RootPrivateKey if exists. Returns NULL otherwise.
+* \fn int get_root_private_key(gnutls_datum_t* root_privkey)
+* \return 1 if everything went well. Returns 0 otherwise.
 */
-char* get_root_private_key();
+int get_root_private_key(gnutls_datum_t* root_privkey);
 
 /**
-* \fn char* get_host_private_key()
-* \return HostPrivateKey if exists. Returns NULL otherwise.
+* \fn int get_host_private_key(gnutls_datum_t* host_privkey)
+* \return 1 if everything went well. Returns 0 otherwise.
 */
-char* get_host_private_key();
+int get_host_private_key(gnutls_datum_t* host_privkey);
 
 /**
-* \fn char* get_root_certificate()
-* \return RootCertificate if exists. Returns NULL otherwise.
+* \fn int get_root_certificate(gnutls_datum_t* root_cert)
+* \return 1 if everything went well. Returns 0 otherwise.
 */
-char* get_root_certificate();
+int get_root_certificate(gnutls_datum_t* root_cert);
 
 /**
-* \fn char* get_host_certificate()
-* \return HostCertificate if exists. Returns NULL otherwise.
+* \fn int get_host_certificate(gnutls_datum_t* host_cert)
+* \return 1 if everything went well. Returns 0 otherwise.
 */
-char* get_host_certificate();
+int get_host_certificate(gnutls_datum_t* host_cert);
 
 /**
-* \fn int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert)
+* \fn int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* host_key, gnutls_datum_t* root_cert, gnutls_datum_t* host_cert)
 * setup a brand new config file.
 * \return 1 if everything went well. Returns 0 otherwise.
 */
-int init_config_file(char* host_id, char* root_private_key, char* host_private_key, char* root_cert, char* host_cert);
+int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* host_key, gnutls_datum_t* root_cert, gnutls_datum_t* host_cert);
 #endif
 

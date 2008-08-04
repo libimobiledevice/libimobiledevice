@@ -93,25 +93,15 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
 	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
 
-	/* encode in base64 for storage */
-	char* root_key_b64 = g_base64_encode (root_key_pem.data,root_key_pem.size);
-	char* host_key_b64 = g_base64_encode (host_key_pem.data,host_key_pem.size);
-
-	char* root_cert_b64 = g_base64_encode (root_cert_pem.data,root_cert_pem.size);
-	char* host_cert_b64 = g_base64_encode (host_cert_pem.data,host_cert_pem.size);
 
 	/* store values in config file */
 	
-	init_config_file(host_id, root_key_b64, host_key_b64, root_cert_b64, host_cert_b64);
+	init_config_file(host_id, &root_key_pem, &host_key_pem, &root_cert_pem, &host_cert_pem);
 
 	gnutls_free(root_key_pem.data);
 	gnutls_free(host_key_pem.data);
 	gnutls_free(root_cert_pem.data);
 	gnutls_free(host_cert_pem.data);
-	g_free(root_key_b64);
-	g_free(host_key_b64);
-	g_free(root_cert_b64);
-	g_free(host_cert_b64);
 
 	return 0;
 }

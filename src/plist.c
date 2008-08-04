@@ -29,6 +29,29 @@ const char *plist_base = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
 <plist version=\"1.0\">\n\
 </plist>\0";
 
+char* format_string(char* buf, int cols, int depth)
+{
+	int colw = depth + cols + 1; //new buf cols width
+	int len = strlen(buf);
+	//int nlines = ceil((float)len / (float)cols);
+	int nlines = len / cols + 1;
+ 	char* new_buf = (char*)malloc(nlines * colw + depth + 1);
+	int i = 0;
+	int j = 0;
+	for (i = 0; i < nlines; i++){
+		new_buf[i * colw] = '\n';
+		for (j = 0; j < depth; j++)
+			new_buf[i * colw + 1 + j] = '\t';
+		memcpy(new_buf + i * colw + 1 + depth, buf + i * cols, cols);
+	}
+	new_buf[len+(1+depth)*nlines] = '\n';
+	for (j = 0; j < depth; j++)
+		new_buf[len+(1+depth)*nlines + 1 + j] = '\t';
+	new_buf[len+(1+depth)*nlines+depth+1] = '\0';
+	free(buf);
+	return new_buf;
+}
+
 xmlDocPtr new_plist() {
 	char *plist = strdup(plist_base);
 	xmlDocPtr plist_xml = xmlReadMemory(plist, strlen(plist), NULL, NULL, 0);
@@ -62,10 +85,17 @@ xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode *dict, const char *ke
 	return keyPtr;
 }
 
+xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
+	xmlNode *child;
+	add_child_to_plist(plist, "key", key, dict, depth);
+	child = add_child_to_plist(plist, "dict", value, dict, depth);
+	return child;
+}
+
 xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
 	xmlNode *keyPtr;
 	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
-	add_child_to_plist(plist, "data", value, dict, depth);
+	add_child_to_plist(plist, "data", format_string(value, 60, depth), dict, depth);
 	return keyPtr;
 }
 
