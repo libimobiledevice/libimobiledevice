@@ -21,6 +21,9 @@
 
 #include "AFC.h"
 
+// This is the maximum size an AFC data packet can be
+const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
+
 extern int debug;
 
 AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
@@ -121,7 +124,8 @@ int dispatch_AFC_packet(AFClient *client, char *data, int length) {
 int receive_AFC_data(AFClient *client, char **dump_here) {
 	AFCPacket *r_packet;
 	char *buffer = (char*)malloc(sizeof(AFCPacket) * 4);
-	int bytes = 0, recv_len = 0;
+	char *final_buffer = NULL;
+	int bytes = 0, recv_len = 0, current_count=0;
         int retval = 0;
 	
 	bytes = mux_recv(client->phone, client->connection, buffer, sizeof(AFCPacket) * 4);
@@ -164,17 +168,27 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	recv_len = r_packet->entire_length - r_packet->this_length;
 	free(r_packet);
 	if (!recv_len) return bytes;
-	buffer = (char*)malloc(sizeof(char) * recv_len);
-	bytes = mux_recv(client->phone, client->connection, buffer, recv_len);
-	if (bytes <= 0) {
-		free(buffer);
+	
+	// Keep collecting packets until we have received the entire file.
+	buffer = (char*)malloc(sizeof(char) * (recv_len < MAXIMUM_PACKET_SIZE) ? recv_len : MAXIMUM_PACKET_SIZE);
+	final_buffer = (char*)malloc(sizeof(char) * recv_len);
+	while(current_count < recv_len){
+		bytes = mux_recv(client->phone, client->connection, buffer, recv_len);
+		if (bytes < 0) break;
+		memcpy(final_buffer+current_count, buffer, bytes);
+		current_count += bytes;
+	}
+	free(buffer);
+	
+	/*if (bytes <= 0) {
+		free(final_buffer);
 		printf("Didn't get it at the second pass.\n");
 		*dump_here = NULL;
 		return 0;
-	}
+	}*/
 	
-	*dump_here = buffer; // what they do beyond this point = not my problem
-	return bytes;
+	*dump_here = final_buffer; // what they do beyond this point = not my problem
+	return current_count;
 }
 
 char **afc_get_dir_list(AFClient *client, char *dir) {
