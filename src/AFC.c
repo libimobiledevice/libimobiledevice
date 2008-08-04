@@ -152,7 +152,7 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	free(buffer);
 
 	if (r_packet->operation == 0x01 && !((client->afc_packet->operation == AFC_DELETE && param1 == 7))) {
-		if (debug) printf("Oops? Bad operation code received.\n");
+		if (debug) printf("Oops? Bad operation code received: 0x%0X\n", r_packet->operation);
 		if (param1 == 0) {
 			if (debug) printf("... false alarm, but still\n");
 			return 1;
@@ -173,8 +173,17 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	buffer = (char*)malloc(sizeof(char) * (recv_len < MAXIMUM_PACKET_SIZE) ? recv_len : MAXIMUM_PACKET_SIZE);
 	final_buffer = (char*)malloc(sizeof(char) * recv_len);
 	while(current_count < recv_len){
-		bytes = mux_recv(client->phone, client->connection, buffer, recv_len);
-		if (bytes < 0) break;
+		bytes = mux_recv(client->phone, client->connection, buffer, recv_len-current_count);
+		if (bytes < 0)
+		{
+			if(debug) printf("receive_AFC_data: mux_recv failed: %d\n", bytes);
+			break;
+		}
+		if (bytes > recv_len-current_count)
+		{
+			if(debug) printf("receive_AFC_data: mux_recv delivered too much data\n");
+			break;
+		}
 		memcpy(final_buffer+current_count, buffer, bytes);
 		current_count += bytes;
 	}
