@@ -95,7 +95,7 @@ iPhone *get_iPhone() {
 	if (bytes < 20) {
 		free_iPhone(phone);
 		if (debug) printf("get_iPhone(): Invalid version message -- header too short.\n");
-		if (debug && bytes < 0) printf("get_iPhone(): libusb error message %d: %s (%s)\n", usb_strerror(), strerror(-bytes));
+		if (debug && bytes < 0) printf("get_iPhone(): libusb error message %d: %s (%s)\n", bytes, usb_strerror(), strerror(-bytes));
 		return NULL;
 	} else { 
 		if (ntohl(version->major) == 1 && ntohl(version->minor) == 0) {
