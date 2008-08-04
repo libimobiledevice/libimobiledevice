@@ -87,14 +87,15 @@ iPhone *get_iPhone() {
 	if (bytes < 20 && debug) {
 		printf("get_iPhone(): libusb did NOT send enough!\n");
 		if (bytes < 0) {
-			printf("get_iPhone(): libusb gave me the error: %s\n", usb_strerror());
+			printf("get_iPhone(): libusb gave me the error %d: %s (%s)\n",
+					bytes, usb_strerror(), strerror(-bytes));
 		}
 	}
 	bytes = usb_bulk_read(phone->device, BULKIN, (char*)version, sizeof(*version), 800);
 	if (bytes < 20) {
 		free_iPhone(phone);
 		if (debug) printf("get_iPhone(): Invalid version message -- header too short.\n");
-		if (debug && bytes < 0) printf("get_iPhone(): libusb error message: %s\n", usb_strerror());
+		if (debug && bytes < 0) printf("get_iPhone(): libusb error message %d: %s (%s)\n", usb_strerror(), strerror(-bytes));
 		return NULL;
 	} else { 
 		if (ntohl(version->major) == 1 && ntohl(version->minor) == 0) {
@@ -149,7 +150,7 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
 	if (debug) printf("noooo...?\n");
 	if (bytes < datalen) {
 		if(debug && bytes < 0)
-			printf("send_to_iphone(): libusb gave me the error: %s\n", usb_strerror());
+			printf("send_to_iphone(): libusb gave me the error %d: %s\n", bytes, usb_strerror(), strerror(-bytes));
 		return -1;
 	} else {
 		return bytes;
@@ -173,7 +174,7 @@ int recv_from_phone(iPhone *phone, char *data, int datalen) {
 	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
 	if(bytes < 0)
 	{
-		if(debug) printf("recv_from_iphone(): libusb gave me the error: %s\n", usb_strerror());
+		if(debug) printf("recv_from_iphone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(), strerror(-bytes));
 		return -1;
 	}
 	return bytes;
