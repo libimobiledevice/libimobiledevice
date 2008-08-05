@@ -26,13 +26,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* get_iPhone()
- * 
- * Returns a structure with data on the first iPhone it finds.
- * (Or NULL, on error)
- */
 extern int debug; 
 
+/**
+ * 
+ * @return A structure with data on the first iPhone it finds.  (Or NULL, on
+ * error)
+ */
 iPhone *get_iPhone() {
 	iPhone *phone = (iPhone*)malloc(sizeof(iPhone));
 	usbmux_version_header *version = version_header();
@@ -113,14 +113,12 @@ iPhone *get_iPhone() {
 	return NULL; // if it got to this point it's gotta be bad
 }
 
-/* free_iPhone(victim)
- * This is a library-level function; deals directly with the iPhone to tear down relations, 
- * but otherwise is mostly internal.
+/** Cleans up an iPhone structure, then frees the structure itself.  
+ * This is a library-level function; deals directly with the iPhone to tear
+ *  down relations, but otherwise is mostly internal.
  * 
- * victim: a pointer to an iPhone structure
- * Cleans up an iPhone structure, then frees the structure itself. 
+ * @param victim A pointer to an iPhone structure.
  */
-
 void free_iPhone(iPhone *victim) {
 	if (victim->buffer) free(victim->buffer);	
 	if (victim->device) {
@@ -131,14 +129,13 @@ void free_iPhone(iPhone *victim) {
 	free(victim);
 }
  
-/* send_to_phone(phone, data, datalen)
+/** Sends data to the phone
  * This is a low-level (i.e. directly to phone) function.
  * 
- * 	phone: the iPhone to send data to
- * 	data: the data to send to the iPhone
- * 	datalen: the length of the data
- * 
- * Returns the number of bytes sent, or -1 on error or something.
+ * @param phone The iPhone to send data to
+ * @param data The data to send to the iPhone
+ * @param datalen The length of the data
+ * @return The number of bytes sent, or -1 on error or something.
  */
 int send_to_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
@@ -159,14 +156,14 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
 	return -1;
 }
 
-/* recv_from_phone(phone, data, datalen):
+/**
  * This function is a low-level (i.e. direct to iPhone) function.
  * 
- * 	phone: the iPhone to receive data from
- * 	data: where to put data read
- * 	datalen: how much data to read in
+ * @param phone The iPhone to receive data from
+ * @param data Where to put data read
+ * @param datalen How much data to read in
  * 
- * Returns: how many bytes were read in, or -1 on error.
+ * @returns How many bytes were read in, or -1 on error.
  */
 int recv_from_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
