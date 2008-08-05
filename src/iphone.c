@@ -171,10 +171,11 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
 int recv_from_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
 	int bytes = 0;
+	if (debug) printf("recv_from_phone(): attempting to receive %i bytes\n", datalen);
 	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
 	if(bytes < 0)
 	{
-		if(debug) printf("recv_from_iphone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(), strerror(-bytes));
+		if(debug) printf("recv_from_phone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(), strerror(-bytes));
 		return -1;
 	}
 	return bytes;

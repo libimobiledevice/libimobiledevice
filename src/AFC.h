@@ -35,8 +35,7 @@ typedef struct {
 } AFCPacket;
 
 typedef struct {
-	usbmux_tcp_header *connection;
-	iPhone *phone;
+	usbmux_connection *connection;
 	AFCPacket *afc_packet;
 	int file_handle;
 } AFClient;
@@ -79,14 +78,14 @@ AFClient *afc_connect(iPhone *phone, int s_port, int d_port);
 void afc_disconnect(AFClient *client);
 int count_nullspaces(char *string, int number);
 char **make_strings_list(char *tokens, int true_length);
-int dispatch_AFC_packet(AFClient *client, char *data, int length);
+int dispatch_AFC_packet(AFClient *client, const char *data, int length);
 int receive_AFC_data(AFClient *client, char **dump_here);
 
-char **afc_get_dir_list(AFClient *client, char *dir);
-AFCFile *afc_get_file_info(AFClient *client, char *path);
+char **afc_get_dir_list(AFClient *client, const char *dir);
+AFCFile *afc_get_file_info(AFClient *client, const char *path);
 AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode);
 void afc_close_file(AFClient *client, AFCFile *file);
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length);
-int afc_write_file(AFClient *client, AFCFile *file, char *data, int length);
+int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length);
 int afc_delete_file(AFClient *client, const char *path);
 int afc_rename_file(AFClient *client, const char *from, const char *to);

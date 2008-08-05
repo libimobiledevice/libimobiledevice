@@ -20,6 +20,8 @@
  */
 
 #include <glib.h>
+#include <stdio.h>
+#include <string.h>
 #include "userpref.h"
 
 #define LIBIPHONE_CONF_DIR  "libiphone"

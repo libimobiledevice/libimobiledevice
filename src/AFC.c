@@ -34,7 +34,6 @@ AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
 	else {
 		client->afc_packet = (AFCPacket*)malloc(sizeof(AFCPacket));
 		if (client->afc_packet) {
-			client->phone = phone;
 			client->afc_packet->packet_num = 0;
 			client->afc_packet->unknown1 = client->afc_packet->unknown2 = client->afc_packet->unknown3 = client->afc_packet->unknown4 = client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 			client->afc_packet->header1 = 0x36414643;
@@ -42,7 +41,7 @@ AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
 			client->file_handle = 0;
 			return client;
 		} else {
-			mux_close_connection(client->phone, client->connection);
+			mux_close_connection(client->connection);
 			free(client);
 			return NULL;
 		}
@@ -53,8 +52,8 @@ AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
 
 void afc_disconnect(AFClient *client) {
 	// client and its members should never be NULL is assumed here.
-	if (!client || !client->connection || !client->phone || !client->afc_packet) return;
-	mux_close_connection(client->phone, client->connection);
+	if (!client || !client->connection || !client->afc_packet) return;
+	mux_close_connection(client->connection);
 	free(client->afc_packet);
 	free(client);
 }
@@ -67,10 +66,10 @@ int count_nullspaces(char *string, int number) {
 	return nulls;
 }
 
-int dispatch_AFC_packet(AFClient *client, char *data, int length) {
+int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
 	char *buffer;
 	int bytes = 0, offset = 0;
-	if (!client || !client->connection || !client->phone || !client->afc_packet) return 0;
+	if (!client || !client->connection || !client->afc_packet) return 0;
 	if (!data || !length) length = 0;
 	
 	client->afc_packet->packet_num++;
@@ -91,7 +90,7 @@ int dispatch_AFC_packet(AFClient *client, char *data, int length) {
 		}
 		if (debug) printf("dispatch_AFC_packet: fucked-up packet method (probably a write)\n");
 		memcpy(buffer+sizeof(AFCPacket), data, offset);
-		bytes = mux_send(client->phone, client->connection, buffer, client->afc_packet->this_length);
+		bytes = mux_send(client->connection, buffer, client->afc_packet->this_length);
 		free(buffer);
 		if (bytes <= 0) { return 0; }
 		if (debug) {
@@ -102,7 +101,7 @@ int dispatch_AFC_packet(AFClient *client, char *data, int length) {
 		}
 		
 		
-		bytes = mux_send(client->phone, client->connection, data+offset, length-offset);
+		bytes = mux_send(client->connection, data+offset, length-offset);
 		if (bytes <= 0) { return 0; }
 		else { return bytes; }
 	} else {
@@ -114,7 +113,7 @@ int dispatch_AFC_packet(AFClient *client, char *data, int length) {
 		if (length > 0) { memcpy(buffer+sizeof(AFCPacket), data, length); buffer[sizeof(AFCPacket)+length] = '\0'; }
 		if (debug) fwrite(buffer, 1, client->afc_packet->this_length, stdout);
 		if (debug) printf("\n");
-		bytes = mux_send(client->phone, client->connection, buffer, client->afc_packet->this_length);
+		bytes = mux_send(client->connection, buffer, client->afc_packet->this_length);
 		if (bytes <= 0) return 0;
 		else return bytes;
 	}
@@ -126,9 +125,9 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	char *buffer = (char*)malloc(sizeof(AFCPacket) * 4);
 	char *final_buffer = NULL;
 	int bytes = 0, recv_len = 0, current_count=0;
-        int retval = 0;
+    int retval = 0;
 	
-	bytes = mux_recv(client->phone, client->connection, buffer, sizeof(AFCPacket) * 4);
+	bytes = mux_recv(client->connection, buffer, sizeof(AFCPacket) * 4);
 	if (bytes <= 0) {
 		free(buffer);
 		printf("Just didn't get enough.\n");
@@ -151,10 +150,17 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	uint32 param1 = buffer[sizeof(AFCPacket)];
 	free(buffer);
 
-	if (r_packet->operation == 0x01 && !((client->afc_packet->operation == AFC_DELETE && param1 == 7))) {
-		if (debug) printf("Oops? Bad operation code received: 0x%0X\n", r_packet->operation);
-		if (param1 == 0) {
+	if (r_packet->operation == AFC_ERROR
+			&& !(client->afc_packet->operation == AFC_DELETE && param1 == 7)
+	   )
+	{
+		if (debug) printf("Oops? Bad operation code received: 0x%X, operation=0x%X, param1=%d\n",
+				r_packet->operation, client->afc_packet->operation, param1);
+		recv_len = r_packet->entire_length - r_packet->this_length;
+		if (debug) printf("recv_len=%d\n", recv_len);
+		if(param1 == 0) {
 			if (debug) printf("... false alarm, but still\n");
+			*dump_here = NULL;
 			return 1;
 		}
 		else { if (debug) printf("Errno %i\n", param1); }
@@ -167,13 +173,17 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 
 	recv_len = r_packet->entire_length - r_packet->this_length;
 	free(r_packet);
-	if (!recv_len) return bytes;
+	if (!recv_len)
+	{
+		*dump_here = NULL;
+		return 0;
+	}
 	
 	// Keep collecting packets until we have received the entire file.
 	buffer = (char*)malloc(sizeof(char) * (recv_len < MAXIMUM_PACKET_SIZE) ? recv_len : MAXIMUM_PACKET_SIZE);
 	final_buffer = (char*)malloc(sizeof(char) * recv_len);
 	while(current_count < recv_len){
-		bytes = mux_recv(client->phone, client->connection, buffer, recv_len-current_count);
+		bytes = mux_recv(client->connection, buffer, recv_len-current_count);
 		if (bytes < 0)
 		{
 			if(debug) printf("receive_AFC_data: mux_recv failed: %d\n", bytes);
@@ -200,7 +210,7 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	return current_count;
 }
 
-char **afc_get_dir_list(AFClient *client, char *dir) {
+char **afc_get_dir_list(AFClient *client, const char *dir) {
 	client->afc_packet->operation = AFC_LIST_DIR;
 	int bytes = 0;
 	char *blah = NULL, **list = NULL;
@@ -232,7 +242,7 @@ char **make_strings_list(char *tokens, int true_length) {
 }
 
 int afc_delete_file(AFClient *client, const char *path) {
-	if (!client || !path || !client->afc_packet || !client->phone ||!client->connection) return 0;
+	if (!client || !path || !client->afc_packet || !client->connection) return 0;
 
 	char *receive = NULL;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
@@ -248,7 +258,7 @@ int afc_delete_file(AFClient *client, const char *path) {
 }
 
 int afc_rename_file(AFClient *client, const char *from, const char *to) {
-	if (!client || !from || !to || !client->afc_packet || !client->phone || !client->connection) return 0;
+	if (!client || !from || !to || !client->afc_packet || !client->connection) return 0;
 	
 	char *receive = NULL;
 	char *send = (char*)malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32)));
@@ -271,7 +281,7 @@ int afc_rename_file(AFClient *client, const char *from, const char *to) {
 
 	
 	
-AFCFile *afc_get_file_info(AFClient *client, char *path) {
+AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 	client->afc_packet->operation = AFC_GET_INFO;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	dispatch_AFC_packet(client, path, strlen(path));
@@ -312,7 +322,7 @@ AFCFile *afc_get_file_info(AFClient *client, char *path) {
 
 AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode) {
 	if (file_mode != AFC_FILE_READ && file_mode != AFC_FILE_WRITE) return NULL;
-	if (!client ||!client->connection || !client->phone ||!client->afc_packet) return NULL;
+	if (!client ||!client->connection || !client->afc_packet) return NULL;
 	char *further_data = (char*)malloc(sizeof(char) * (8 + strlen(filename) + 1));
 	AFCFile *file_infos = NULL;
 	memcpy(further_data, &file_mode, 4);
@@ -345,7 +355,7 @@ AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode)
 }
 
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
-	if (!client || !client->afc_packet || !client->phone || !client->connection || !file) return -1;
+	if (!client || !client->afc_packet || !client->connection || !file) return -1;
 	AFCFilePacket *packet = (AFCFilePacket*)malloc(sizeof(AFCFilePacket));
 	char *input = NULL;
 	packet->unknown1 = packet->unknown2 = 0;
@@ -359,11 +369,15 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 	
 	if (bytes > 0) {
 		bytes = receive_AFC_data(client, &input);
-		if (bytes <= 0) {
+		if (bytes < 0) {
 			if (input) free(input);
 			return -1;
+		} else if (bytes == 0) {
+			if (input) free(input);
+			return 0;
 		} else {
-			memcpy(data, input, (bytes > length) ? length : bytes);
+			if (input)
+				memcpy(data, input, (bytes > length) ? length : bytes);
 			free(input);
 			return (bytes > length) ? length : bytes;
 		}
@@ -373,9 +387,9 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 	return 0;
 }
 
-int afc_write_file(AFClient *client, AFCFile *file, char *data, int length) {
+int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length) {
 	char *acknowledgement = NULL;
-	if (!client ||!client->afc_packet ||!client->phone || !client->connection || !file) return -1;
+	if (!client ||!client->afc_packet || !client->connection || !file) return -1;
 	client->afc_packet->this_length = sizeof(AFCPacket) + 8;
 	client->afc_packet->entire_length = client->afc_packet->this_length + length;
 	client->afc_packet->operation = AFC_WRITE;

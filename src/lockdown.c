@@ -39,7 +39,6 @@ lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	
 	control->ssl_session = (gnutls_session_t*)malloc(sizeof(gnutls_session_t));
 	control->in_SSL = 0;
-	control->iphone = phone;
 	control->gtls_buffer_hack_len = 0;
 	return control;
 }
@@ -47,7 +46,7 @@ lockdownd_client *new_lockdownd_client(iPhone *phone) {
 void lockdown_close(lockdownd_client *control) {
 	if (!control) return;
 	if (control->connection) {
-		mux_close_connection(control->iphone, control->connection);
+		mux_close_connection(control->connection);
 	}
 	
 	if (control->ssl_session) free(control->ssl_session);
@@ -56,21 +55,23 @@ void lockdown_close(lockdownd_client *control) {
 
 	
 int lockdownd_recv(lockdownd_client *control, char **dump_data) {
+	if (!control) return 0;
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!control->in_SSL) bytes = mux_recv(control->iphone, control->connection, &datalen, sizeof(datalen));
+	if (!control->in_SSL) bytes = mux_recv(control->connection, (char *)&datalen, sizeof(datalen));
 	else bytes = gnutls_record_recv(*control->ssl_session, &datalen, sizeof(datalen));
 	datalen = ntohl(datalen);
 	
 	receive = (char*)malloc(sizeof(char) * datalen);
-	if (!control->in_SSL) bytes = mux_recv(control->iphone, control->connection, receive, datalen);
+	if (!control->in_SSL) bytes = mux_recv(control->connection, receive, datalen);
 	else bytes = gnutls_record_recv(*control->ssl_session, receive, datalen);
 	*dump_data = receive;
 	return bytes;
 }
 
 int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
+	if (!control) return 0;
 	char *real_query;
 	int bytes;
 	
@@ -78,29 +79,39 @@ int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
 	length = htonl(length);
 	memcpy(real_query, &length, sizeof(length));
 	memcpy(real_query+4, raw_data, ntohl(length));
-	if (!control->in_SSL) bytes = mux_send(control->iphone, control->connection, real_query, ntohl(length)+sizeof(length));
+	if (debug) {
+		printf("lockdownd_send(): made the query, sending it along\n");
+		FILE *packet = fopen("grpkt", "w");
+		fwrite(real_query, 1, ntohl(length)+4, packet);
+		fclose(packet);
+		packet = NULL;
+	}
+	
+	if (!control->in_SSL) bytes = mux_send(control->connection, real_query, ntohl(length)+sizeof(length));
 	else gnutls_record_send(*control->ssl_session, real_query, ntohl(length)+sizeof(length));
+	if (debug) printf("lockdownd_send(): sent it!\n");
+	free(real_query);
 	return bytes;
 }
 
 int lockdownd_hello(lockdownd_client *control) {
+	if (!control) return 0;
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict, *key;
 	char **dictionary;
 	int bytes = 0, i = 0;
 	
+	if (debug) printf("lockdownd_hello() called\n");
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	key = add_key_str_dict_element(plist, dict, "Request", "QueryType", 1);
 	char *XML_content;
 	uint32 length;
 	
-	xmlDocDumpMemory(plist, &XML_content, &length);
-	
+	xmlDocDumpMemory(plist, (xmlChar **)&XML_content, &length);
 	bytes = lockdownd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
-	
 	bytes = lockdownd_recv(control, &XML_content);
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
@@ -118,6 +129,7 @@ int lockdownd_hello(lockdownd_client *control) {
 	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 			free_dictionary(dictionary);
+			if (debug) printf("lockdownd_hello(): success\n");
 			return 1;
 		}
 	}
@@ -147,7 +159,7 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 		return 0;
 	}
 	
-	xmlDocDumpMemory(plist, &what2send, &len);
+	xmlDocDumpMemory(plist, (xmlChar **)&what2send, &len);
 	bytes = lockdownd_send(control, what2send, len);
 	
 	xmlFree(what2send);
@@ -239,7 +251,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	control = (lockdownd_client*)transport;
 	if (debug) printf("lockdownd_secuwrite() called\n");
 	if (debug) printf("pre-send\nlength = %i\n", length);
-	bytes = mux_send(control->iphone, control->connection, buffer, length);
+	bytes = mux_send(control->connection, buffer, length);
 	if (debug) printf("post-send\nsent %i bytes\n", bytes);
 	if (debug) {
 		FILE *my_ssl_packet = fopen("sslpacketwrite.out", "w+");
@@ -289,7 +301,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 1000)); // ensuring nothing stupid happens
 	
 	if (debug) printf("pre-read\nclient wants %i bytes\n", length);
-	bytes = mux_recv(control->iphone, control->connection, recv_buffer, (length * 1000));
+	bytes = mux_recv(control->connection, recv_buffer, (length * 1000));
 	if (debug) printf("post-read\nwe got %i bytes\n", bytes);
 	if (debug && bytes < 0) {
 		printf("lockdownd_securead(): uh oh\n");
@@ -339,7 +351,7 @@ int lockdownd_start_service(lockdownd_client *control, const char *service) {
 	key = add_key_str_dict_element(plist, dict, "Service", service, 1);
 	if (!key) { xmlFreeDoc(plist); return 0; }
 	
-	xmlDocDumpMemory(plist, &XML_query, &length);
+	xmlDocDumpMemory(plist, (xmlChar **)&XML_query, &length);
 	
 	lockdownd_send(control, XML_query, length);
 	free(XML_query);

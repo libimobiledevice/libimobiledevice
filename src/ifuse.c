@@ -155,9 +155,10 @@ void *ifuse_init(struct fuse_conn_info *conn) {
         return afc;
 }
 
-void ifuse_cleanup(AFClient *afc) {
+void ifuse_cleanup(void *data) {
+	AFClient *afc = (AFClient *)data;
 	if (afc) {
-		iPhone *phone = afc->phone;
+		iPhone *phone = afc->connection->phone;
 		afc_disconnect(afc);
 		free_iPhone(phone);
 	}

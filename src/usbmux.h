@@ -43,6 +43,13 @@ typedef struct {
 	uint16 window, nullnull, length16;
 } usbmux_tcp_header;
 
+typedef struct {
+	usbmux_tcp_header *header;
+	iPhone *phone;
+	char *recv_buffer;
+	int r_len;
+} usbmux_connection;
+
 usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port);
 
 typedef struct {
@@ -51,8 +58,10 @@ typedef struct {
 
 usbmux_version_header *version_header();
 
-usbmux_tcp_header *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port);
-void mux_close_connection(iPhone *phone, usbmux_tcp_header *connection);
-int mux_send(iPhone *phone, usbmux_tcp_header *connection, char *data, uint32 datalen);
-int mux_recv(iPhone *phone, usbmux_tcp_header *connection, char *data, uint32 datalen);
+usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port);
+void mux_close_connection(usbmux_connection *connection);
+int mux_send(usbmux_connection *connection, const char *data, uint32 datalen);
+int mux_recv(usbmux_connection *connection, char *data, uint32 datalen);
+
+
 #endif

@@ -28,9 +28,8 @@
 #include <string.h>
 
 typedef struct {
-	usbmux_tcp_header *connection;
+	usbmux_connection *connection;
 	gnutls_session_t *ssl_session;
-	iPhone *iphone;
 	int in_SSL;
 	char *gtls_buffer_hack;
 	int gtls_buffer_hack_len;
