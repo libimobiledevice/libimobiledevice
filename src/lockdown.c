@@ -39,7 +39,28 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[]={
   {0,0,0}
 };
 
+int get_rand(int min, int max) {
+	int retval = (rand() % (max - min)) + min;
+	return retval;
+}
 
+char *lockdownd_generate_hostid() {
+	char *hostid = (char*)malloc(sizeof(char) * 37); // HostID's are just UUID's, and UUID's are 36 characters long
+	const char *chars = "ABCDEF0123456789";
+	srand(time(NULL));
+	int i = 0;
+	
+	for (i = 0; i < 36; i++) {
+		if (i == 8 || i == 13 || i == 18 || i == 23) {
+			hostid[i] = '-';
+			continue;
+		} else {
+			hostid[i] = chars[get_rand(0,16)];
+		}
+	}
+	hostid[36] = '\0'; // make it a real string
+	return hostid;
+}
 
 lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	if (!phone) return NULL;
@@ -72,7 +93,7 @@ int lockdownd_recv(lockdownd_client *control, char **dump_data) {
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!control->in_SSL) bytes = mux_recv(control->iphone, control->connection, (char*)&datalen, sizeof(datalen));
+	if (!control->in_SSL) bytes = mux_recv(control->connection, (char *)&datalen, sizeof(datalen));
 	else bytes = gnutls_record_recv(*control->ssl_session, &datalen, sizeof(datalen));
 	datalen = ntohl(datalen);
 	
@@ -120,8 +141,7 @@ int lockdownd_hello(lockdownd_client *control) {
 	char *XML_content;
 	uint32 length;
 	
-	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
-	
+	xmlDocDumpMemory(plist, (xmlChar **)&XML_content, &length);
 	bytes = lockdownd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
@@ -135,7 +155,6 @@ int lockdownd_hello(lockdownd_client *control) {
 		if (!xmlStrcmp(dict->name, "dict")) break;
 	}
 	if (!dict) return 0;
-	
 	dictionary = read_dict_element_strings(dict);
 	xmlFreeDoc(plist);
 	free(XML_content);	
@@ -226,6 +245,8 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 	}
 
 	host_id = get_host_id();
+	if (!host_id) host_id = lockdownd_generate_hostid();
+	
 	if (!is_device_known(public_key)){
 		ret = lockdownd_pair_device(*control, public_key, host_id);
 	}
@@ -284,6 +305,12 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	/* Now get iPhone's answer */
 	bytes = lockdownd_recv(control, &XML_content);
 
+	if (debug) {
+		printf("lockdown_pair_device: iPhone's response to our pair request:\n");
+		fwrite(XML_content, 1, bytes, stdout);
+		printf("\n\n");
+	}
+	
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
 	if (!plist) return 0;
 	dict = xmlDocGetRootElement(plist);
@@ -303,15 +330,20 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 			success = 1;
 		}
 	}
-	
+
 	if (dictionary) {
 		free_dictionary(dictionary);
 		dictionary = NULL;
 	}
 
 	/* store public key in config if pairing succeeded */
-	if (success) 
+	if (success) {
+		if (debug) printf("lockdownd_pair_device: pair success\n");
 		store_device_public_key(public_key_b64);
+		ret = 1;
+	} else {
+		if (debug) printf("lockdownd_pair_device: pair failure\n");
+	}
 	return ret;
 }
 
@@ -480,6 +512,7 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 				// Set up GnuTLS...
 				//gnutls_anon_client_credentials_t anoncred;
 				gnutls_certificate_credentials_t xcred;
+
 				if (debug) printf("We started the session OK, now trying GnuTLS\n");
 				errno = 0;
 				gnutls_global_init();
@@ -703,4 +736,3 @@ int lockdownd_start_service(lockdownd_client *control, const char *service) {
 	
 	return 0;
 }
-

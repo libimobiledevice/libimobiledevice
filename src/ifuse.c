@@ -52,12 +52,11 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	file = afc_get_file_info(afc, path);
 	if (!file){
 		res = -ENOENT;
-		return res;
+	} else {
+		stbuf->st_mode = file->type | 0444;
+		stbuf->st_size = file->size;
+		//stbuf->st_nlink = 2;
 	}
-
-	stbuf->st_mode = file->type | 0444;
-	stbuf->st_size = file->size;
-	//stbuf->st_nlink = 2;
 
 	return res;
 }

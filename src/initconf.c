@@ -25,11 +25,34 @@
 
 int debug = 1;
 
+int get_rand(int min, int max) {
+	int retval = (rand() % (max - min)) + min;
+	return retval;
+}
+
+char *lockdownd_generate_hostid() {
+	char *hostid = (char*)malloc(sizeof(char) * 37); // HostID's are just UUID's, and UUID's are 36 characters long
+	const char *chars = "ABCDEF0123456789";
+	srand(time(NULL));
+	int i = 0;
+	
+	for (i = 0; i < 36; i++) {
+		if (i == 8 || i == 13 || i == 18 || i == 23) {
+			hostid[i] = '-';
+			continue;
+		} else {
+			hostid[i] = chars[get_rand(0,16)];
+		}
+	}
+	hostid[36] = '\0';
+	return hostid;
+}
+
 int main(int argc, char *argv[]) {
 
 	gnutls_global_init();
 
-	char* host_id = "29942970-207913891623273984";
+	char* host_id = NULL; //"29942970-207913891623273984"
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
 
@@ -44,7 +67,8 @@ int main(int argc, char *argv[]) {
 
 	/* generate HostID */
 	//TODO
-
+	host_id = lockdownd_generate_hostid();
+	if (debug) printf("HostID: %s\n", host_id);
 	/* generate keys */
 	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
 	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
@@ -62,7 +86,8 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
 	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
 	gnutls_x509_crt_set_version(host_cert, 3);
-	gnutls_x509_crt_set_ca_status(host_cert, 1);
+	gnutls_x509_crt_set_ca_status(host_cert, 0);
+	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
 	gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 	gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);

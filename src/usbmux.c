@@ -224,7 +224,7 @@ int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
 	connection->header->length16 = ntohs(connection->header->length16);
 	
 	// Now return the bytes.
-	if (bytes < sizeof(*connection)+datalen) {
+	if (bytes < sizeof(usbmux_tcp_header)+datalen) {
 		return -1; // blah
 	} else {
 		return bytes - 28; // actual length sent. :/

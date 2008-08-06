@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "userpref.h"
+#include <string.h>
+#include <stdio.h>
 
 
 #define LIBIPHONE_CONF_DIR  "libiphone"
@@ -87,7 +89,7 @@ int is_device_known(char* public_key)
 						g_io_channel_read_to_end (keyfile, &stored_key, NULL, NULL);
 
 						/* now compare to input */
-						if (strcmp(public_key, stored_key) == 2)
+						if (strcmp(public_key, stored_key) == 2 || !strcmp(public_key, stored_key))
 							ret = 1;
 						g_free(stored_key);
 						g_io_channel_shutdown(keyfile, FALSE, NULL);
@@ -118,6 +120,7 @@ int store_device_public_key(char* public_key)
 			gchar** devices_list = g_key_file_get_string_list (key_file, "Global", "DevicesList", NULL, NULL);
 
 			guint length = 0;
+			guint wlength = 0;
 			if (devices_list)
 				g_strv_length(devices_list);
 			g_strfreev(devices_list);
@@ -127,8 +130,9 @@ int store_device_public_key(char* public_key)
 
 			gchar* device_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  dev_file, NULL);
 			GIOChannel* file = g_io_channel_new_file (device_file, "w", NULL);
-			g_io_channel_write_chars (file, public_key, length, NULL, NULL);
-			g_io_channel_shutdown(file, FALSE, NULL);
+			wlength = strlen(public_key); // why this wasn't discovered before... ugh
+			g_io_channel_write_chars (file, public_key, wlength, NULL, NULL);
+			g_io_channel_shutdown(file, TRUE, NULL);
 				
 			/* append device to list */
 			gchar** new_devices_list = (gchar**)g_malloc(sizeof(gchar*)* (length + 1));
@@ -145,7 +149,7 @@ int store_device_public_key(char* public_key)
 		gchar* buf = g_key_file_to_data (key_file, &length,NULL);
 		GIOChannel* file = g_io_channel_new_file (config_file, "w", NULL);
 		g_io_channel_write_chars (file, buf, length, NULL, NULL);
-		g_io_channel_shutdown(file, FALSE, NULL);
+		g_io_channel_shutdown(file, TRUE, NULL);
 		g_key_file_free(key_file);
 	}
 
@@ -215,6 +219,7 @@ int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* ho
 	GKeyFile* key_file = g_key_file_new ();
 
 	/* store in config file */
+	if (debug) printf("init_config_file setting hostID to %s\n", host_id);
 	g_key_file_set_value (key_file, "Global", "HostID", host_id);
 
 	/* write config file on disk */
@@ -222,7 +227,7 @@ int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* ho
 	gchar* buf = g_key_file_to_data (key_file, &length,NULL);
 	GIOChannel* file = g_io_channel_new_file (config_file, "w", NULL);
 	g_io_channel_write_chars (file, buf, length, NULL, NULL);
-	g_io_channel_shutdown(file, FALSE, NULL);
+	g_io_channel_shutdown(file, TRUE, NULL);
 
 	g_key_file_free(key_file);
 

@@ -33,4 +33,5 @@ void free_plist(xmlDocPtr plist);
 xmlDocPtr new_plist();
 char **read_dict_element_strings(xmlNode *dict);
 void free_dictionary(char **dictionary);
+char **read_dict_element_strings(xmlNode *dict);
 #endif

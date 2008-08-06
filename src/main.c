@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
 	}
 		
 	printf("Now starting SSL.\n");
+
 	host_id = get_host_id();
 	if (host_id && !lockdownd_start_SSL_session(control, host_id)) {
 		printf("Error happened in GnuTLS...\n");
