@@ -60,12 +60,11 @@ usbmux_version_header *version_header() {
 
 // Maintenance functions.
 
-/* delete_connection(connection)
- * 	connection: the connection to delete from the tracking list.
- * Removes a connection from the list of connections made.
+/** Removes a connection from the list of connections made.
  * The list of connections is necessary for buffering.
+ * 
+ * @param connection The connection to delete from the tracking list.
  */
-
 void delete_connection(usbmux_connection *connection) {
 	usbmux_connection **newlist = (usbmux_connection**)malloc(sizeof(usbmux_connection*) * (connections - 1));
 	int i = 0, j = 0;
@@ -85,10 +84,10 @@ void delete_connection(usbmux_connection *connection) {
 	free(connection);
 }
 
-/* add_connection(connection)
- * 	connection: the connection to add to the global list of connections.
- * Adds a connection to the list of connections made.
+/** Adds a connection to the list of connections made.
  * The connection list is necessary for buffering.
+ *
+ * @param connection The connection to add to the global list of connections.
  */
 
 void add_connection(usbmux_connection *connection) {
@@ -98,14 +97,14 @@ void add_connection(usbmux_connection *connection) {
 	connections++;
 }
 
-/* mux_connect(phone, s_port, d_port)
- * This is a higher-level USBMuxTCP-type function.
- * 	phone: the iPhone to initialize a connection on.
- * 	s_port: the source port
- * 	d_port: the destination port -- 0xf27e for lockdownd. 
+/** This is a higher-level USBMuxTCP-type function.
  * Initializes a connection on phone, with source port s_port and destination port d_port
+ *
+ * @param phone The iPhone to initialize a connection on.
+ * @param s_port The source port
+ * @param d_port The destination port -- 0xf27e for lockdownd. 
+ * @return A mux TCP header for the connection which is used for tracking and data transfer.
  * 
- * Returns a mux TCP header for the connection which is used for tracking and data transfer.
  */ 
 
 usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
@@ -146,12 +145,12 @@ usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 	return NULL;
 }
 
-/* mux_close_connection(phone, connection)
+/**
  * This is a higher-level USBmuxTCP-type function.
- * 	phone: the iPhone to close a connection with.
- * 	connection: the connection to close.
  * 
- * Doesn't return anything; WILL FREE THE CONNECTION'S MEMORY!!!
+ * @param phone The iPhone to close a connection with.
+ * @param connection The connection to close.
+ * @return Doesn't return anything; WILL FREE THE CONNECTION'S MEMORY!!!
  */
 
 void mux_close_connection(usbmux_connection *connection) {
@@ -173,14 +172,14 @@ void mux_close_connection(usbmux_connection *connection) {
 	delete_connection(connection);
 }
 
-/* mux_send(phone, connection, data, datalen)
+/* 
  * This is a higher-level USBMuxTCP-like function.
- * 	phone: the iPhone to send to.
- * 	connection: the connection we're sending data on.
- * 	data: a pointer to the data to send.
- * 	datalen: how much data we're sending.
  * 
- * Returns number of bytes sent, minus the header (28), or -1 on error.
+ * @param phone The iPhone to send to.
+ * @param connection The connection we're sending data on.
+ * @param data A pointer to the data to send.
+ * @param datalen How much data we're sending.
+ * @return The number of bytes sent, minus the header (28), or -1 on error.
  */
 int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
 	if (!connection->phone || !connection || !data || datalen == 0) return -1;
@@ -233,14 +232,14 @@ int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
 	return bytes; // or something
 }
 
-/* mux_recv(phone, connection, data, datalen)
+/**
  * This is a higher-level USBMuxTCP-like function
- * 	phone: the phone to receive data from.
- * 	connection: the connection to receive data on.
- * 	data: where to put the data we receive. 
- * 	datalen: how much data to read.
- * 
- * Returns: how many bytes were read, or -1 if something bad happens.
+ *
+ * @param phone The phone to receive data from.
+ * @param connection The connection to receive data on.
+ * @param data Where to put the data we receive. 
+ * @param datalen How much data to read.
+ * @returns How many bytes were read, or -1 if something bad happens.
  */
 
 int mux_recv(usbmux_connection *connection, char *data, uint32 datalen) {
