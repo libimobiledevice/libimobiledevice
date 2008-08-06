@@ -2,7 +2,7 @@
  * plist.h
  * contains structures and the like for plists
  *
- * Copyright (c) 2008 Zack C. All Rights Reserved.
+ * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
