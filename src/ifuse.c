@@ -41,7 +41,7 @@
 GHashTable *file_handles;
 int fh_index = 0;
 
-int debug = 0;
+int debug = 1;
 
 static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;

@@ -26,6 +26,21 @@ const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
 
 extern int debug;
 
+
+/* Locking, for thread-safety (well... kind of, hehe) */
+void afc_lock(AFClient *client) {
+	while (client->lock) {
+		sleep(200);
+	}
+	client->lock = 1;
+}
+
+void afc_unlock(AFClient *client) { // just to be pretty 
+	client->lock = 0; 
+}
+
+/* main AFC functions */
+
 AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
 	if (!phone) return NULL;
 	AFClient *client = (AFClient*)malloc(sizeof(AFClient));
@@ -39,6 +54,7 @@ AFClient *afc_connect(iPhone *phone, int s_port, int d_port) {
 			client->afc_packet->header1 = 0x36414643;
 			client->afc_packet->header2 = 0x4141504C;
 			client->file_handle = 0;
+			client->lock = 0;
 			return client;
 		} else {
 			mux_close_connection(client->connection);
@@ -184,6 +200,7 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	final_buffer = (char*)malloc(sizeof(char) * recv_len);
 	while(current_count < recv_len){
 		bytes = mux_recv(client->connection, buffer, recv_len-current_count);
+		if (debug) printf("receive_AFC_data: still collecting packets\n");
 		if (bytes < 0)
 		{
 			if(debug) printf("receive_AFC_data: mux_recv failed: %d\n", bytes);
@@ -194,6 +211,12 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 			if(debug) printf("receive_AFC_data: mux_recv delivered too much data\n");
 			break;
 		}
+		if (strstr(buffer, "CFA6LPAA")) {
+			if (debug) printf("receive_AFC_data: WARNING: there is AFC data in this packet at %i\n", strstr(buffer, "CFA6LPAA") - buffer);
+			if (debug) printf("receive_AFC_data: the total packet length is %i\n", bytes);
+			//continue; // but we do need to continue because packets/headers != data
+		}
+			
 		memcpy(final_buffer+current_count, buffer, bytes);
 		current_count += bytes;
 	}
@@ -211,18 +234,20 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 }
 
 char **afc_get_dir_list(AFClient *client, const char *dir) {
+	afc_lock(client);
 	client->afc_packet->operation = AFC_LIST_DIR;
 	int bytes = 0;
 	char *blah = NULL, **list = NULL;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, dir, strlen(dir));
-	if (!bytes) return NULL;
+	if (!bytes) { afc_unlock(client); return NULL; }
 	
 	bytes = receive_AFC_data(client, &blah);
-	if (!bytes && !blah) return NULL;
+	if (!bytes && !blah) { afc_unlock(client); return NULL; }
 	
 	list = make_strings_list(blah, bytes);
 	free(blah);
+	afc_unlock(client);
 	return list;
 }
 
@@ -243,23 +268,24 @@ char **make_strings_list(char *tokens, int true_length) {
 
 int afc_delete_file(AFClient *client, const char *path) {
 	if (!client || !path || !client->afc_packet || !client->connection) return 0;
-
+	afc_lock(client);
 	char *receive = NULL;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
 	client->afc_packet->operation = AFC_DELETE;
 	int bytes;
 	bytes = dispatch_AFC_packet(client, path, strlen(path));
-	if (bytes <= 0) return 0;
+	if (bytes <= 0) { afc_unlock(client); return 0; }
 	
 	bytes = receive_AFC_data(client, &receive);
 	free(receive);
-	if (bytes <= 0) return 0;
+	afc_unlock(client);
+	if (bytes <= 0) { return 0; }
 	else return 1;
 }
 
 int afc_rename_file(AFClient *client, const char *from, const char *to) {
 	if (!client || !from || !to || !client->afc_packet || !client->connection) return 0;
-	
+	afc_lock(client);
 	char *receive = NULL;
 	char *send = (char*)malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32)));
 	int bytes = 0;
@@ -271,10 +297,11 @@ int afc_rename_file(AFClient *client, const char *from, const char *to) {
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	client->afc_packet->operation = AFC_RENAME;
 	bytes = dispatch_AFC_packet(client, send, strlen(to) + strlen(from) + 2);
-	if (bytes <= 0) return 0;
+	if (bytes <= 0) { afc_unlock(client); return 0; }
 	
 	bytes = receive_AFC_data(client, &receive);
 	free(receive);
+	afc_unlock(client);
 	if (bytes <= 0) return 0;
 	else return 1;
 }
@@ -284,6 +311,7 @@ int afc_rename_file(AFClient *client, const char *from, const char *to) {
 AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 	client->afc_packet->operation = AFC_GET_INFO;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	afc_lock(client);
 	dispatch_AFC_packet(client, path, strlen(path));
 	
 	char *received, **list;
@@ -293,6 +321,7 @@ AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 	length = receive_AFC_data(client, &received);
 	list = make_strings_list(received, length);
 	free(received);
+	afc_unlock(client); // the rest is just interpretation anyway
 	if (list) {
 		my_file = (AFCFile *)malloc(sizeof(AFCFile));
 		for (i = 0; strcmp(list[i], ""); i++) {
@@ -323,6 +352,7 @@ AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode) {
 	if (file_mode != AFC_FILE_READ && file_mode != AFC_FILE_WRITE) return NULL;
 	if (!client ||!client->connection || !client->afc_packet) return NULL;
+	afc_lock(client);
 	char *further_data = (char*)malloc(sizeof(char) * (8 + strlen(filename) + 1));
 	AFCFile *file_infos = NULL;
 	memcpy(further_data, &file_mode, 4);
@@ -338,10 +368,12 @@ AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode)
 	free(further_data);
 	if (bytes <= 0) {
 		if (debug) printf("didn't read enough\n");
+		afc_unlock(client);
 		return NULL;
 	} else {
 		length_thing = receive_AFC_data(client, &further_data);
 		if (length_thing && further_data) {
+			afc_unlock(client); // don't want to hang on the next call... and besides, it'll re-lock, do its thing, and unlock again anyway.
 			file_infos = afc_get_file_info(client, filename);
 			memcpy(&file_infos->filehandle, further_data, 4);
 			return file_infos;
@@ -357,6 +389,8 @@ AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode)
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 	if (!client || !client->afc_packet || !client->connection || !file) return -1;
 	AFCFilePacket *packet = (AFCFilePacket*)malloc(sizeof(AFCFilePacket));
+	if (debug) printf("afc_read_file called for length %i\n");
+	afc_lock(client);
 	char *input = NULL;
 	packet->unknown1 = packet->unknown2 = 0;
 	packet->filehandle = file->filehandle;
@@ -369,6 +403,7 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 	
 	if (bytes > 0) {
 		bytes = receive_AFC_data(client, &input);
+		afc_unlock(client);
 		if (bytes < 0) {
 			if (input) free(input);
 			return -1;
@@ -382,6 +417,7 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 			return (bytes > length) ? length : bytes;
 		}
 	} else {
+		afc_unlock(client);
 		return -1;
 	}
 	return 0;
@@ -390,6 +426,7 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length) {
 	char *acknowledgement = NULL;
 	if (!client ||!client->afc_packet || !client->connection || !file) return -1;
+	afc_lock(client);
 	client->afc_packet->this_length = sizeof(AFCPacket) + 8;
 	client->afc_packet->entire_length = client->afc_packet->this_length + length;
 	client->afc_packet->operation = AFC_WRITE;
@@ -407,6 +444,7 @@ int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length
 	
 	zero = bytes;
 	bytes = receive_AFC_data(client, &acknowledgement);
+	afc_unlock(client);
 	if (bytes <= 0) {
 		if (debug) printf("afc_write_file: uh oh?\n");
 	}
@@ -418,6 +456,7 @@ void afc_close_file(AFClient *client, AFCFile *file) {
 	char *buffer = malloc(sizeof(char) * 8);
 	uint32 zero = 0;
 	if (debug) printf("File handle %i\n", file->filehandle);
+	afc_lock(client);
 	memcpy(buffer, &file->filehandle, sizeof(uint32));
 	memcpy(buffer+sizeof(uint32), &zero, sizeof(zero));
 	client->afc_packet->operation = AFC_FILE_CLOSE;
@@ -430,6 +469,7 @@ void afc_close_file(AFClient *client, AFCFile *file) {
 	if (!bytes) return;
 	
 	bytes = receive_AFC_data(client, &buffer);
+	afc_unlock(client);
 	return;
 	if (buffer) free(buffer); // we're *SUPPOSED* to get an "error" here. 
 }

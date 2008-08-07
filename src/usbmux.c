@@ -301,8 +301,15 @@ int mux_recv(usbmux_connection *connection, char *data, uint32 datalen) {
 		for (i = 0; i < connections; i++) {
 			if (connlist[i]->header->sport == header->dport && connlist[i]->header->dport == header->sport) {
 				// we have a winner.
+				char *nfb = (char*)malloc(sizeof(char) * (connlist[i]->r_len + (bytes - 28)));
+				if (connlist[i]->recv_buffer && connlist[i]->r_len) {
+					memcpy(nfb, connlist[i]->recv_buffer, connlist[i]->r_len);
+					free(connlist[i]->recv_buffer);
+				}
 				connlist[i]->r_len += bytes - 28;
-				connlist[i]->recv_buffer = (char*)realloc(connlist[i]->recv_buffer, sizeof(char) * connection->r_len); // grow their buffer
+				//connlist[i]->recv_buffer = (char*)realloc(connlist[i]->recv_buffer, sizeof(char) * connection->r_len); // grow their buffer
+				connlist[i]->recv_buffer = nfb;
+				nfb = NULL; // A cookie for you if you can guess what "nfb" means. 
 				complex = connlist[i]->r_len - (bytes - 28);
 				memcpy(connlist[i]->recv_buffer+complex, buffer+28, bytes-28); // paste into their buffer
 				connlist[i]->header->ocnt += bytes-28;

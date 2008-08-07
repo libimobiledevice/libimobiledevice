@@ -38,6 +38,7 @@ typedef struct {
 	usbmux_connection *connection;
 	AFCPacket *afc_packet;
 	int file_handle;
+	int lock;
 } AFClient;
 
 typedef struct {

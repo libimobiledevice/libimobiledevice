@@ -163,7 +163,7 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
  * @param data Where to put data read
  * @param datalen How much data to read in
  * 
- * @returns How many bytes were read in, or -1 on error.
+ * @return How many bytes were read in, or -1 on error.
  */
 int recv_from_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
