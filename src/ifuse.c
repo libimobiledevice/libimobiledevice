@@ -103,6 +103,9 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 	AFCFile *file;
 	AFClient *afc = fuse_get_context()->private_data;
 
+	if (size == 0)
+		return 0;
+
 	file = g_hash_table_lookup(file_handles, &(fi->fh));
 	if (!file){
 		return -ENOENT;

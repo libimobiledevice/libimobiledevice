@@ -141,7 +141,7 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	char *buffer = (char*)malloc(sizeof(AFCPacket) * 4);
 	char *final_buffer = NULL;
 	int bytes = 0, recv_len = 0, current_count=0;
-    int retval = 0;
+	int retval = 0;
 	
 	bytes = mux_recv(client->connection, buffer, sizeof(AFCPacket) * 4);
 	if (bytes <= 0) {
@@ -386,41 +386,63 @@ AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode)
 	return NULL;
 }
 
+/** Attempts to the read the given number of bytes from the given file.
+ * 
+ * @param client The relevant AFC client
+ * @param file The AFCFile to read from
+ * @param data The pointer to the memory region to store the read data
+ * @param length The number of bytes to read
+ *
+ * @return The number of bytes read if successful. If there was an error
+ */
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 	if (!client || !client->afc_packet || !client->connection || !file) return -1;
-	AFCFilePacket *packet = (AFCFilePacket*)malloc(sizeof(AFCFilePacket));
-	if (debug) printf("afc_read_file called for length %i\n");
-	afc_lock(client);
+	if (debug) printf("afc_read_file called for length %i\n", length);
+
 	char *input = NULL;
-	packet->unknown1 = packet->unknown2 = 0;
-	packet->filehandle = file->filehandle;
-	packet->size = length;
-	int bytes = 0;
-	
-	client->afc_packet->operation = AFC_READ;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	bytes = dispatch_AFC_packet(client, (char*)packet, sizeof(AFCFilePacket));
-	
-	if (bytes > 0) {
-		bytes = receive_AFC_data(client, &input);
-		afc_unlock(client);
-		if (bytes < 0) {
-			if (input) free(input);
-			return -1;
-		} else if (bytes == 0) {
-			if (input) free(input);
-			return 0;
+	int current_count = 0, bytes = 0;
+	const int MAXIMUM_READ_SIZE = 1 << 16;
+
+	afc_lock(client);
+
+
+	// Looping here to get around the maximum amount of data that recieve_AFC_data can handle
+	while (current_count < length){
+
+		// Send the read command
+		AFCFilePacket *packet = (AFCFilePacket*)malloc(sizeof(AFCFilePacket));
+		packet->unknown1 = packet->unknown2 = 0;
+		packet->filehandle = file->filehandle;
+		packet->size = ((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE;
+		client->afc_packet->operation = AFC_READ;
+		client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+		bytes = dispatch_AFC_packet(client, (char*)packet, sizeof(AFCFilePacket));
+		
+		// If we get a positive reponse to the command gather the data
+		if (bytes > 0) {
+			bytes = receive_AFC_data(client, &input);
+			if (bytes < 0) {
+				if (input) free(input);
+				return -1;
+			} else if (bytes == 0) {
+				if (input) free(input);
+				return current_count;
+			} else {
+				if (input) {
+					printf("afc_read_file: %d\n", bytes);
+					memcpy(data+current_count, input, (bytes > length) ? length : bytes);
+					free(input);
+					input = NULL;
+					current_count += (bytes > length) ? length : bytes;
+				}
+			}
 		} else {
-			if (input)
-				memcpy(data, input, (bytes > length) ? length : bytes);
-			free(input);
-			return (bytes > length) ? length : bytes;
+			afc_unlock(client);
+			return -1;
 		}
-	} else {
-		afc_unlock(client);
-		return -1;
 	}
-	return 0;
+	afc_unlock(client);
+	return current_count;
 }
 
 int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length) {
