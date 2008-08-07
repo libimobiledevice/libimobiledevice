@@ -423,9 +423,11 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 			bytes = receive_AFC_data(client, &input);
 			if (bytes < 0) {
 				if (input) free(input);
+				afc_unlock(client);
 				return -1;
 			} else if (bytes == 0) {
 				if (input) free(input);
+				afc_unlock(client);
 				return current_count;
 			} else {
 				if (input) {
@@ -493,6 +495,4 @@ void afc_close_file(AFClient *client, AFCFile *file) {
 	bytes = receive_AFC_data(client, &buffer);
 	afc_unlock(client);
 	return;
-	if (buffer) free(buffer); // we're *SUPPOSED* to get an "error" here. 
 }
-

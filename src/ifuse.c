@@ -112,8 +112,23 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 	}
 
 	bytes = afc_read_file(afc, file, buf, size);
-
 	return bytes;
+}
+
+static int ifuse_release(const char *path, struct fuse_file_info *fi){
+	AFCFile *file;
+	AFClient *afc = fuse_get_context()->private_data;
+	
+	file = g_hash_table_lookup(file_handles, &(fi->fh));
+	if (!file){
+		return -ENOENT;
+	}
+	afc_close_file(afc, file);
+	
+	free(file);
+	g_hash_table_remove(file_handles, &(fi->fh));
+
+	return 0;
 }
 
 void *ifuse_init(struct fuse_conn_info *conn) {
@@ -171,6 +186,7 @@ static struct fuse_operations ifuse_oper = {
 	.readdir	= ifuse_readdir,
 	.open		= ifuse_open,
 	.read		= ifuse_read,
+	.release	= ifuse_release,
 	.init		= ifuse_init,
 	.destroy	= ifuse_cleanup
 };
