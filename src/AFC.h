@@ -86,10 +86,6 @@ enum {
 
 AFClient *afc_connect(iPhone *phone, int s_port, int d_port);
 void afc_disconnect(AFClient *client);
-int count_nullspaces(char *string, int number);
-char **make_strings_list(char *tokens, int true_length);
-int dispatch_AFC_packet(AFClient *client, const char *data, int length);
-int receive_AFC_data(AFClient *client, char **dump_here);
 
 char **afc_get_dir_list(AFClient *client, const char *dir);
 AFCFile *afc_get_file_info(AFClient *client, const char *path);

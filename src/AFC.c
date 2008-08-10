@@ -28,7 +28,7 @@ extern int debug;
 
 
 /* Locking, for thread-safety (well... kind of, hehe) */
-void afc_lock(AFClient *client) {
+static void afc_lock(AFClient *client) {
 	if (debug) printf("In the midst of a lock...\n");
 	while (client->lock) {
 		usleep(500); // they say it's obsolete, but whatever
@@ -36,7 +36,7 @@ void afc_lock(AFClient *client) {
 	client->lock = 1;
 }
 
-void afc_unlock(AFClient *client) { // just to be pretty 
+static void afc_unlock(AFClient *client) { // just to be pretty 
 	if (debug) printf("Unlock!\n");
 	client->lock = 0; 
 }
@@ -76,7 +76,7 @@ void afc_disconnect(AFClient *client) {
 	free(client);
 }
 
-int count_nullspaces(char *string, int number) {
+static int count_nullspaces(char *string, int number) {
 	int i = 0, nulls = 0;
 	for (i = 0; i < number; i++) {
 		if (string[i] == '\0') nulls++;
@@ -84,7 +84,7 @@ int count_nullspaces(char *string, int number) {
 	return nulls;
 }
 
-int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
+static int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
 	int bytes = 0, offset = 0;
 	if (!client || !client->connection || !client->afc_packet) return 0;
 	if (!data || !length) length = 0;
@@ -135,7 +135,7 @@ int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
 	return -1;
 }
 
-int receive_AFC_data(AFClient *client, char **dump_here) {
+static int receive_AFC_data(AFClient *client, char **dump_here) {
 	AFCPacket *r_packet;
 	char *buffer = (char*)malloc(sizeof(AFCPacket) * 4);
 	char *final_buffer = NULL;
@@ -232,6 +232,21 @@ int receive_AFC_data(AFClient *client, char **dump_here) {
 	return current_count;
 }
 
+static char **make_strings_list(char *tokens, int true_length) {
+	if (!tokens || !true_length) return NULL;
+	int nulls = 0, i = 0, j = 0;
+	char **list = NULL;
+	
+	nulls = count_nullspaces(tokens, true_length);
+	list = (char**)malloc(sizeof(char*) * (nulls + 1));
+	for (i = 0; i < nulls; i++) {
+		list[i] = strdup(tokens+j);
+		j += strlen(list[i]) + 1;
+	}
+	list[i] = strdup("");
+	return list;
+}
+
 char **afc_get_dir_list(AFClient *client, const char *dir) {
 	afc_lock(client);
 	client->afc_packet->operation = AFC_LIST_DIR;
@@ -269,21 +284,6 @@ char **afc_get_devinfo(AFClient *client) {
 }
 
 	
-char **make_strings_list(char *tokens, int true_length) {
-	if (!tokens || !true_length) return NULL;
-	int nulls = 0, i = 0, j = 0;
-	char **list = NULL;
-	
-	nulls = count_nullspaces(tokens, true_length);
-	list = (char**)malloc(sizeof(char*) * (nulls + 1));
-	for (i = 0; i < nulls; i++) {
-		list[i] = strdup(tokens+j);
-		j += strlen(list[i]) + 1;
-	}
-	list[i] = strdup("");
-	return list;
-}
-
 int afc_delete_file(AFClient *client, const char *path) {
 	if (!client || !path || !client->afc_packet || !client->connection) return 0;
 	afc_lock(client);
