@@ -162,27 +162,14 @@ int read_file_in_confdir(char* file, gnutls_datum_t* data)
 		return 0;
 
 	gchar* filepath = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  file, NULL);
-	if (g_file_test(filepath, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-
-		FILE * pFile;
-		
-		pFile = fopen ( filepath , "rb" );
-		if (pFile==NULL)
-			return 0;
-
-		fseek (pFile , 0 , SEEK_END);
-		data->size = ftell (pFile);
-		rewind (pFile);
-		
-		data->data = (char*)gnutls_malloc(data->size);
-		if (data->data == NULL)
-			return 0;
-		
-		// copy the file into the buffer:
-		fread (data->data,1,data->size,pFile);	
-		fclose (pFile);
-	}
-	return 1;
+	gboolean success;
+	gsize size;
+	char *content;		
+	success = g_file_get_contents (filepath, &content, &size, NULL);
+	g_free (filepath);
+	data->data = content;
+	data->size = size;
+	return success;
 }
 
 int get_root_private_key(gnutls_datum_t* root_privkey)
