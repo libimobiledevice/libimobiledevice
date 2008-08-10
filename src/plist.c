@@ -29,7 +29,7 @@ const char *plist_base = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
 <plist version=\"1.0\">\n\
 </plist>\0";
 
-char* format_string(char* buf, int cols, int depth)
+char* format_string(const char* buf, int cols, int depth)
 {
 	int colw = depth + cols + 1; //new buf cols width
 	int len = strlen(buf);
@@ -48,7 +48,6 @@ char* format_string(char* buf, int cols, int depth)
 	for (j = 0; j < depth; j++)
 		new_buf[len+(1+depth)*nlines + 1 + j] = '\t';
 	new_buf[len+(1+depth)*nlines+depth+1] = '\0';
-	free(buf);
 	return new_buf;
 }
 
