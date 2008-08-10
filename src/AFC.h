@@ -87,11 +87,15 @@ enum {
 AFClient *afc_connect(iPhone *phone, int s_port, int d_port);
 void afc_disconnect(AFClient *client);
 
+char **afc_get_devinfo(AFClient *client);
 char **afc_get_dir_list(AFClient *client, const char *dir);
 AFCFile *afc_get_file_info(AFClient *client, const char *path);
 AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode);
 void afc_close_file(AFClient *client, AFCFile *file);
 int afc_read_file(AFClient *client, AFCFile *file, char *data, int length);
 int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length);
+int afc_seek_file(AFClient *client, AFCFile *file, int seekpos);
+int afc_truncate_file(AFClient *client, AFCFile *file, uint32 newsize);
 int afc_delete_file(AFClient *client, const char *path);
 int afc_rename_file(AFClient *client, const char *from, const char *to);
+int afc_mkdir(AFClient *client, const char *dir);
