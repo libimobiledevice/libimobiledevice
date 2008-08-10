@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
 #include <glib.h>
 #include "userpref.h"
 
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]) {
 
 	gnutls_global_init();
 
+	size_t size;
 	char* host_id = NULL; //"29942970-207913891623273984"
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
@@ -99,26 +101,34 @@ int main(int argc, char *argv[]) {
 	gnutls_datum_t root_key_pem = {NULL, 0};
 	gnutls_datum_t host_key_pem = {NULL, 0};
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  NULL, &root_key_pem.size);
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &host_key_pem.size);
+	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  NULL, &size);
+	root_key_pem.size = size;
+	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &size);
+	host_key_pem.size = size;
 
 	root_key_pem.data = gnutls_malloc(root_key_pem.size);
 	host_key_pem.data = gnutls_malloc(host_key_pem.size);
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &root_key_pem.size);
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &host_key_pem.size);
+	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &size);
+	root_key_pem.size = size;
+	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &size);
+	host_key_pem.size = size;
 
 	gnutls_datum_t root_cert_pem = {NULL, 0};
 	gnutls_datum_t host_cert_pem = {NULL, 0};
 
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  NULL, &root_cert_pem.size);
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &host_cert_pem.size);
+	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  NULL, &size);
+	root_cert_pem.size = size;
+	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &size);
+	host_cert_pem.size = size;
 
 	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
 	host_cert_pem.data = gnutls_malloc(host_cert_pem.size);
 
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
+	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &size);
+	root_cert_pem.size = size;
+	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &size);
+	host_cert_pem.size = size;
 
 
 	/* store values in config file */

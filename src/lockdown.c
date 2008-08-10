@@ -23,10 +23,12 @@
 #include "iphone.h"
 #include "lockdown.h"
 #include "userpref.h"
+#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <glib.h>
 #include <libtasn1.h>
+#include <gnutls/x509.h>
 
 extern int debug;
 
@@ -446,9 +448,12 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 				/* if everything went well, export in PEM format */
 	
 				gnutls_datum_t dev_pem = {NULL, 0};
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
+				size_t crt_size;
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &crt_size);
+				dev_pem.size = crt_size;
 				dev_pem.data = gnutls_malloc(dev_pem.size);
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &crt_size);
+				dev_pem.size = crt_size;
 
 				/* now encode certificates for output */
 				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);
@@ -583,7 +588,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	lockdownd_client *control;
 	control = (lockdownd_client*)transport;
 	if (debug) printf("lockdownd_secuwrite() called\n");
-	if (debug) printf("pre-send\nlength = %i\n", length);
+	if (debug) printf("pre-send\nlength = %zi\n", length);
 	bytes = mux_send(control->connection, buffer, length);
 	if (debug) printf("post-send\nsent %i bytes\n", bytes);
 	if (debug) {
@@ -602,7 +607,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	char *hackhackhack = NULL; 
 	lockdownd_client *control;
 	control = (lockdownd_client*)transport;
-	if (debug) printf("lockdownd_securead() called\nlength = %i\n", length);
+	if (debug) printf("lockdownd_securead() called\nlength = %zi\n", length);
 	// Buffering hack! Throw what we've got in our "buffer" into the stream first, then get more.
 	if (control->gtls_buffer_hack_len > 0) {
 		if (length > control->gtls_buffer_hack_len) { // If it's asking for more than we got
@@ -633,7 +638,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	// End buffering hack!
 	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 1000)); // ensuring nothing stupid happens
 	
-	if (debug) printf("pre-read\nclient wants %i bytes\n", length);
+	if (debug) printf("pre-read\nclient wants %zi bytes\n", length);
 	bytes = mux_recv(control->connection, recv_buffer, (length * 1000));
 	if (debug) printf("post-read\nwe got %i bytes\n", bytes);
 	if (debug && bytes < 0) {

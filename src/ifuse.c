@@ -194,7 +194,7 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 	}
 
 	host_id = get_host_id();
-	if (host_id && !lockdownd_start_SSL_session(control, host_id) || !host_id) {
+	if ((host_id && !lockdownd_start_SSL_session(control, host_id)) || !host_id) {
 		fprintf(stderr, "Something went wrong in GnuTLS. Is your HostID configured in .config/libiphone/libiphonerc?\n");
 		return NULL;
 	}
@@ -263,7 +263,6 @@ int ifuse_truncate(const char *path, off_t size) {
 }
 
 int ifuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
-	int result = 0;
 	AFClient *afc = fuse_get_context()->private_data;
 	AFCFile *file = g_hash_table_lookup(file_handles, &fi->fh);
 	if (!file) return -ENOENT;

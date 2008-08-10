@@ -200,7 +200,7 @@ int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
 	memcpy(buffer+sizeof(usbmux_tcp_header), data, datalen);
 	
 	// We have a buffer full of data, we should now send it to the phone.
-	if (debug) printf("actually sending %i bytes of data at %x\n", sizeof(usbmux_tcp_header)+datalen, buffer);
+	if (debug) printf("actually sending %zi bytes of data at %p\n", sizeof(usbmux_tcp_header)+datalen, buffer);
 
 	
 	bytes = send_to_phone(connection->phone, buffer, sizeof(usbmux_tcp_header)+datalen);

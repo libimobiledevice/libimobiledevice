@@ -20,7 +20,7 @@
  */
 
 #include "AFC.h"
-
+#include "plist.h"
 // This is the maximum size an AFC data packet can be
 const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
 
@@ -211,7 +211,7 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 			break;
 		}
 		if (strstr(buffer, "CFA6LPAA")) {
-			if (debug) printf("receive_AFC_data: WARNING: there is AFC data in this packet at %i\n", strstr(buffer, "CFA6LPAA") - buffer);
+			if (debug) printf("receive_AFC_data: WARNING: there is AFC data in this packet at %ti\n", strstr(buffer, "CFA6LPAA") - buffer);
 			if (debug) printf("receive_AFC_data: the total packet length is %i\n", bytes);
 			//continue; // but we do need to continue because packets/headers != data
 		}

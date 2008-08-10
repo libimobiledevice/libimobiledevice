@@ -20,6 +20,7 @@
  */
 
 #include <glib.h>
+#include <glib/gprintf.h>
 #include <stdio.h>
 #include <string.h>
 #include "userpref.h"
@@ -140,7 +141,7 @@ int store_device_public_key(char* public_key)
 			g_io_channel_shutdown(file, TRUE, NULL);
 				
 			/* append device to list */
-			gchar** new_devices_list = (gchar**)g_malloc(sizeof(gchar*)* (length + 2));
+			const gchar** new_devices_list = (const gchar**)g_malloc(sizeof(gchar*)* (length + 2));
 			int i;
 			for( i = 0; i < length; i++)
 				new_devices_list[i] = devices_list[i];

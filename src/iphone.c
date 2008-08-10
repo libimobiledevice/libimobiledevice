@@ -21,6 +21,7 @@
 
 #include "usbmux.h"
 #include "iphone.h"
+#include <arpa/inet.h>
 #include <usb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -141,13 +142,13 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
 	if (!phone) return -1;
 	int bytes = 0;
 	// it may die here
-	if (debug) printf("dying here?\ndatalen = %i\ndata = %x\n", datalen, data);
+	if (debug) printf("dying here?\ndatalen = %i\ndata = %p\n", datalen, data);
 
 	bytes = usb_bulk_write(phone->device, BULKOUT, data, datalen, 800);
 	if (debug) printf("noooo...?\n");
 	if (bytes < datalen) {
 		if(debug && bytes < 0)
-			printf("send_to_iphone(): libusb gave me the error %d: %s\n", bytes, usb_strerror(), strerror(-bytes));
+			printf("send_to_iphone(): libusb gave me the error %d: %s - %s\n", bytes, usb_strerror(), strerror(-bytes));
 		return -1;
 	} else {
 		return bytes;
