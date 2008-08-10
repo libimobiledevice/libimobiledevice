@@ -356,8 +356,9 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 
 	/* first decode base64 public_key */
 	gnutls_datum_t pem_pub_key;
-	pem_pub_key.data = g_base64_decode (public_key_b64, &pem_pub_key.size);
-
+	gsize decoded_size;
+	pem_pub_key.data = g_base64_decode (public_key_b64, &decoded_size);
+	pem_pub_key.size = decoded_size;
 
 	/* now decode the PEM encoded key */
 	gnutls_datum_t der_pub_key;
@@ -396,7 +397,6 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 	if (1 == ret && 0 != modulus.size && 0 != exponent.size) {
 
 		gnutls_global_init();
-		int effthis = 0;
 		gnutls_datum_t essentially_null = {strdup("abababababababab"), strlen("abababababababab")};
 	
 		gnutls_x509_privkey_t fake_privkey, root_privkey;

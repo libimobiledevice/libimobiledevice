@@ -65,7 +65,7 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi) {
 	int i;
-	char **dirs, **filename;
+	char **dirs;
 	AFClient *afc = fuse_get_context()->private_data;
 
 	dirs = afc_get_dir_list(afc, path);
@@ -173,8 +173,7 @@ static int ifuse_release(const char *path, struct fuse_file_info *fi){
 }
 
 void *ifuse_init(struct fuse_conn_info *conn) {
-	char *response = (char*)malloc(sizeof(char) * 2048);
-	int bytes = 0, port = 0, i = 0;
+	int port = 0;
 	char* host_id = NULL;
 	AFClient *afc = NULL;
 	

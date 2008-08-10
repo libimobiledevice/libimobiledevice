@@ -165,7 +165,6 @@ int read_file_in_confdir(char* file, gnutls_datum_t* data)
 	if (g_file_test(filepath, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
 
 		FILE * pFile;
-		long lSize;
 		
 		pFile = fopen ( filepath , "rb" );
 		if (pFile==NULL)

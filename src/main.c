@@ -37,11 +37,10 @@
 int debug = 1;
 
 int main(int argc, char *argv[]) {
-	char* host_id = NULL;
+	/* char* host_id = NULL; */
 	iPhone *phone = get_iPhone();
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) debug = 1;
 	else debug = 0;
-	char *response = (char*)malloc(sizeof(char) * 2048);
 	int bytes = 0, port = 0, i = 0;
 	if (phone) printf("I got a phone.\n");
 	else { printf("oops\n"); return -1; }

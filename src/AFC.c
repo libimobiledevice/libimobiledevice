@@ -85,7 +85,6 @@ int count_nullspaces(char *string, int number) {
 }
 
 int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
-	char *buffer;
 	int bytes = 0, offset = 0;
 	if (!client || !client->connection || !client->afc_packet) return 0;
 	if (!data || !length) length = 0;
