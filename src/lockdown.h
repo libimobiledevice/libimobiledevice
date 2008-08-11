@@ -27,6 +27,10 @@
 
 #include <gnutls/gnutls.h>
 #include <string.h>
+#include <libiphone/libiphone.h>
+
+
+
 
 typedef struct {
 	usbmux_connection *connection;
@@ -36,7 +40,6 @@ typedef struct {
 	int gtls_buffer_hack_len;
 } lockdownd_client;
 
-int lockdownd_init(iPhone *phone, lockdownd_client **control);
 char *lockdownd_generate_hostid();
 
 lockdownd_client *new_lockdownd_client(iPhone *phone);

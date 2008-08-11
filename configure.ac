@@ -7,6 +7,9 @@ AM_INIT_AUTOMAKE(libiphone, 0.1.0)
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADER([config.h])
 
+AC_PROG_LIBTOOL
+
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O

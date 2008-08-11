@@ -307,7 +307,7 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_init(iPhone *phone, lockdownd_client **control)
+int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
 {
 	int ret = 0;
 	char *host_id = NULL;

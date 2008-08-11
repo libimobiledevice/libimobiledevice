@@ -34,7 +34,7 @@ extern int debug;
  * @return A structure with data on the first iPhone it finds.  (Or NULL, on
  *         error)
  */
-iPhone *get_iPhone() {
+iPhone_t get_iPhone() {
 	iPhone *phone = (iPhone*)malloc(sizeof(iPhone));
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;
@@ -129,7 +129,7 @@ iPhone *get_iPhone() {
  * 
  * @param phone A pointer to an iPhone structure.
  */
-void free_iPhone(iPhone *phone) {
+void free_iPhone(iPhone_t phone) {
 	if (phone->buffer) free(phone->buffer);	
 	if (phone->device) {
 		usb_release_interface(phone->device, 1);

@@ -1,8 +1,8 @@
 /*
- * iphone.h
- * iPhone struct
- * 
- * Copyright (c) 2008 Zach C. All Rights Reserved.
+ * libiphone.h
+ * Main include of libiphone
+ *
+ * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,27 +19,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef IPHONE_H
-#define IPHONE_H
+#ifndef LIBIPHONE_H
+#define LIBIPHONE_H
 
-#ifndef USBMUX_H 
-#include "usbmux.h"
-#warning usbmux not included?
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include <usb.h>
-#include <libiphone/libiphone.h>
 
-#define BULKIN 0x85
-#define BULKOUT 0x04
 
-typedef struct {
-	char *buffer;
-	struct usb_dev_handle *device;
-	struct usb_device *__device;
-} iPhone;
 
-// Function definitions
-int send_to_phone(iPhone *phone, char *data, int datalen);
-int recv_from_phone(iPhone *phone, char *data, int datalen);
+
+typedef struct iPhone *iPhone_t;
+typedef struct lockdownd_client *lockdownd_client_t;
+
+
+void free_iPhone(iPhone_t victim);
+iPhone_t get_iPhone();
+int lockdownd_init(iPhone_t phone, lockdownd_client_t *control);
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+
