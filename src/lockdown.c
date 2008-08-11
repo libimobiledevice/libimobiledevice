@@ -315,18 +315,18 @@ int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
 	if (!phone)
 		return 0;
 
-	*control = new_lockdownd_client(phone);
-	if (!lockdownd_hello(*control)){
+	lockdownd_client *control_loc = new_lockdownd_client( (iPhone*)phone );
+	if (!lockdownd_hello(control_loc)){
 		fprintf(stderr, "Hello failed in the lockdownd client.\n");
 	}
 
 	char *uid = NULL;
-	if(!lockdownd_get_device_uid(*control, &uid)){
+	if(!lockdownd_get_device_uid(control_loc, &uid)){
 		fprintf(stderr, "Device refused to send public key.\n");
 	}
 
 	host_id = get_host_id();
-	
+
 	if (!is_device_known(uid))
 		ret = lockdownd_pair_device(*control, uid, host_id);
 	else 
@@ -337,7 +337,8 @@ int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
 		uid = NULL;
 	}
 	
-	if (ret && host_id && lockdownd_start_SSL_session(*control, host_id)) {
+
+	if (ret && host_id && lockdownd_start_SSL_session(control_loc, host_id)) {
 		ret = 1;
 	} else {
 		ret = 0;
@@ -348,6 +349,8 @@ int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
 		free(host_id);
 		host_id = NULL;
 	}
+
+	*control = (lockdownd_client_t)control_loc;
 
 	return ret;
 }
