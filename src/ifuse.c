@@ -184,22 +184,14 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 	iPhone *phone = get_iPhone();
 	if (!phone){
 		fprintf(stderr, "No iPhone found, is it connected?\n");
-		   	return NULL;
-	   	}
-	
-	lockdownd_client *control = new_lockdownd_client(phone);
-	if (!lockdownd_hello(control)) {
-		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
 
-	host_id = get_host_id();
-	if ((host_id && !lockdownd_start_SSL_session(control, host_id)) || !host_id) {
-		fprintf(stderr, "Something went wrong in GnuTLS. Is your HostID configured in .config/libiphone/libiphonerc?\n");
+	lockdownd_client *control = NULL;
+	if (!lockdownd_init(phone, &control)) {
+		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
-	free(host_id);
-	host_id = NULL;
 	
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
