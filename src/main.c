@@ -80,6 +80,13 @@ int main(int argc, char *argv[]) {
 			}
 			
 			free_dictionary(dirs);
+			dirs = afc_get_devinfo(afc);
+			if (dirs) {
+				for (i = 0; strcmp(dirs[i], ""); i+=2) {
+					printf("%s: %s\n", dirs[i], dirs[i+1]);
+				}
+			}
+			
 			AFCFile *my_file = afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", AFC_FILE_READ);
 			if (my_file) {
 				printf("A file size: %i\n", my_file->size);
@@ -108,12 +115,25 @@ int main(int argc, char *argv[]) {
 			printf("Deleting a file...\n");
 			bytes = afc_delete_file(afc, "/delme");
 			if (bytes) printf("Success.\n");
-			else printf("Failure.\n");
+			else printf("Failure. (expected unless you have a /delme file on your phone)\n");
 			
 			printf("Renaming a file...\n");
 			bytes = afc_rename_file(afc, "/renme", "/renme2");
 			if (bytes > 0) printf("Success.\n");
-			else printf("Failure.\n");
+			else printf("Failure. (expected unless you have a /renme file on your phone)\n");
+			
+			printf("Seek & read\n");
+			my_file = afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_READ);
+			bytes = afc_seek_file(afc, my_file, 5);
+			if (!bytes) printf("WARN: SEEK DID NOT WORK\n");
+			char *threeletterword = (char*)malloc(sizeof(char) * 5);
+			bytes = afc_read_file(afc, my_file, threeletterword, 3);
+			threeletterword[3] = '\0';
+			if (bytes > 0) printf("Result: %s\n", threeletterword);
+			else printf("Couldn't read!\n");
+			free(threeletterword);
+			afc_close_file(afc, my_file);
+			
 		}
 		afc_disconnect(afc);
 	} else {

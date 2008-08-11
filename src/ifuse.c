@@ -41,7 +41,7 @@
 GHashTable *file_handles;
 int fh_index = 0;
 
-int debug = 1;
+int debug = 0;
 
 static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;
@@ -53,7 +53,8 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	if (!file){
 		res = -ENOENT;
 	} else {
-		stbuf->st_mode = file->type | 0444;
+		//stbuf->st_mode = file->type | 0444; // testing write access too now
+		stbuf->st_mode = file->type | 0644; // but we don't want anything on the iPhone executable, like, ever
 		stbuf->st_size = file->size;
 		//stbuf->st_nlink = 2;
 	}
@@ -81,14 +82,34 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
+static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+	// exactly the same as open but using a different mode
+	AFCFile *file;
+	AFClient *afc = fuse_get_context()->private_data;
+	
+	file = afc_open_file(afc, path, AFC_FILE_WRITE);
+	fh_index++;
+	fi->fh = fh_index;
+	g_hash_table_insert(file_handles, &fh_index, file);
+	return 0;
+}
+
 static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 	AFCFile *file;
 	AFClient *afc = fuse_get_context()->private_data;
-
-	if((fi->flags & 3) != O_RDONLY)
-		return -EACCES;
+	uint32 mode = 0;
+	/*if((fi->flags & 3) != O_RDONLY)
+		return -EACCES;*/ // trying to test write access here
 	
-	file = afc_open_file(afc, path, AFC_FILE_READ);
+	if ((fi->flags & 3) == O_RDWR || (fi->flags & 3) == O_WRONLY) {
+		mode = AFC_FILE_READ;
+	} else if ((fi->flags & 3) == O_RDONLY) {
+		mode = AFC_FILE_READ;
+	} else {
+		mode = AFC_FILE_READ;
+	}
+	
+	file = afc_open_file(afc, path, mode);
 	
 	fh_index++;
 	fi->fh = fh_index;
@@ -111,8 +132,28 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 		return -ENOENT;
 	}
 
+	bytes = afc_seek_file(afc, file, offset);
 	bytes = afc_read_file(afc, file, buf, size);
 	return bytes;
+}
+
+static int ifuse_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+	int bytes = 0;
+	AFCFile *file = NULL;
+	AFClient *afc = fuse_get_context()->private_data;
+	
+	if (size == 0) return 0;
+	
+	file = g_hash_table_lookup(file_handles, &(fi->fh));
+	if (!file) return -ENOENT;
+	
+	bytes = afc_seek_file(afc, file, offset);
+	bytes = afc_write_file(afc, file, buf, size);
+	return bytes;
+}
+
+static int ifuse_fsync(const char *path, int datasync, struct fuse_file_info *fi) {
+	return 0;
 }
 
 static int ifuse_release(const char *path, struct fuse_file_info *fi){
@@ -181,11 +222,89 @@ void ifuse_cleanup(void *data) {
 	}
 }
 
+int ifuse_flush(const char *path, struct fuse_file_info *fi) {
+	return 0;
+}
+
+int ifuse_statfs(const char *path, struct statvfs *stats) {
+	AFClient *afc = fuse_get_context()->private_data;
+	char **info_raw = afc_get_devinfo(afc);
+	uint32 totalspace = 0, freespace = 0, blocksize = 0, i = 0;
+	
+	if (!info_raw) return -ENOENT;
+	
+	for (i = 0; strcmp(info_raw[i], ""); i++) {
+		if (!strcmp(info_raw[i], "FSTotalBytes")) {
+			totalspace = atoi(info_raw[i+1]);
+		} else if (!strcmp(info_raw[i], "FSFreeBytes")) {
+			freespace = atoi(info_raw[i+1]);
+		} else if (!strcmp(info_raw[i], "FSBlockSize")) {
+			blocksize = atoi(info_raw[i+1]);
+		}
+	}
+	
+	// Now to fill the struct.
+	stats->f_bsize = stats->f_frsize = blocksize;
+	stats->f_blocks = totalspace / blocksize; // gets the blocks by dividing bytes by blocksize
+	stats->f_bfree = stats->f_bavail = freespace / blocksize; // all bytes are free to everyone, I guess.
+	stats->f_namemax = 255; // blah
+	stats->f_files = stats->f_ffree = 1000000000; // make up any old thing, I guess
+	return 0;
+}
+
+int ifuse_truncate(const char *path, off_t size) {
+	int result = 0;
+	AFClient *afc = fuse_get_context()->private_data;
+	AFCFile *tfile = afc_open_file(afc, path, AFC_FILE_READ);
+	if (!tfile) return -1;
+	
+	result = afc_truncate_file(afc, tfile, size);
+	afc_close_file(afc, tfile);
+	return result;
+}
+
+int ifuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
+	int result = 0;
+	AFClient *afc = fuse_get_context()->private_data;
+	AFCFile *file = g_hash_table_lookup(file_handles, &fi->fh);
+	if (!file) return -ENOENT;
+	
+	return afc_truncate_file(afc, file, size);
+}
+
+int ifuse_unlink(const char *path) {
+	AFClient *afc = fuse_get_context()->private_data;
+	if (afc_delete_file(afc, path)) return 0;
+	else return -1;
+}
+
+int ifuse_rename(const char *from, const char *to) {
+	AFClient *afc = fuse_get_context()->private_data;
+	if (afc_rename_file(afc, from, to)) return 0;
+	else return -1;
+}
+
+int ifuse_mkdir(const char *dir, mode_t ignored) {
+	AFClient *afc = fuse_get_context()->private_data;
+	if (afc_mkdir(afc, dir)) return 0;
+	else return -1;
+}
+
 static struct fuse_operations ifuse_oper = {
 	.getattr	= ifuse_getattr,
+	.statfs		= ifuse_statfs,
 	.readdir	= ifuse_readdir,
+	.mkdir		= ifuse_mkdir,
+	.rmdir		= ifuse_unlink, // AFC uses the same op for both.
+	.create		= ifuse_create,
 	.open		= ifuse_open,
 	.read		= ifuse_read,
+	.write		= ifuse_write,
+	.truncate 	= ifuse_truncate,
+	.ftruncate	= ifuse_ftruncate,
+	.unlink		= ifuse_unlink,
+	.rename		= ifuse_rename,
+	.fsync 		= ifuse_fsync,
 	.release	= ifuse_release,
 	.init		= ifuse_init,
 	.destroy	= ifuse_cleanup

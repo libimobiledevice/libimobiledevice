@@ -56,8 +56,14 @@ typedef struct __AFCToken {
 
 
 enum {
-	AFC_FILE_READ = 0x00000002,
-	AFC_FILE_WRITE = 0x00000003
+	AFC_FILE_READ = 0x00000002, // seems to be able to read and write files
+	AFC_FILE_WRITE = 0x00000003, // writes and creates a file, blanks it out, etc.
+	AFC_FILE_RW = 0x00000005, // seems to do the same as 2. Might even create the file. 
+	AFC_FILE_OP4 = 0x00000004, // no idea -- appears to be "write" -- clears file beforehand like 3
+	AFC_FILE_OP6 = 0x00000006, // no idea yet -- appears to be the same as 5.
+	AFC_FILE_OP1 = 0x00000001, // no idea juuust yet... probably read.
+	AFC_FILE_OP0 = 0x00000000,
+	AFC_FILE_OP10 = 0x0000000a
 };
 
 enum {
@@ -65,11 +71,14 @@ enum {
 	AFC_GET_INFO = 0x0000000a,
 	AFC_GET_DEVINFO = 0x0000000b,
 	AFC_LIST_DIR = 0x00000003,
+	AFC_MAKE_DIR = 0x00000009,
 	AFC_DELETE = 0x00000008,
 	AFC_RENAME = 0x00000018,
 	AFC_SUCCESS_RESPONSE = 0x00000002,
 	AFC_FILE_OPEN = 0x0000000d,
 	AFC_FILE_CLOSE = 0x00000014,
+	AFC_FILE_SEEK = 0x00000011,
+	AFC_FILE_TRUNCATE = 0x00000015,
 	AFC_FILE_HANDLE = 0x0000000e,
 	AFC_READ = 0x0000000f,
 	AFC_WRITE = 0x00000010
