@@ -127,7 +127,7 @@ int store_device_public_key(char* public_key)
 			guint length = 0;
 			guint wlength = 0;
 			if (devices_list)
-				g_strv_length(devices_list);
+				length = g_strv_length(devices_list);
 			g_strfreev(devices_list);
 
 			gchar dev_file[20];
