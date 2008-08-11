@@ -33,7 +33,7 @@
 #define BULKIN 0x85
 #define BULKOUT 0x04
 
-typedef struct {
+typedef struct iPhone_s {
 	char *buffer;
 	struct usb_dev_handle *device;
 	struct usb_device *__device;

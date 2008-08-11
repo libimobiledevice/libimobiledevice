@@ -30,8 +30,8 @@ extern "C" {
 
 
 
-typedef struct iPhone *iPhone_t;
-typedef struct lockdownd_client *lockdownd_client_t;
+typedef struct iPhone_s *iPhone_t;
+typedef struct lockdownd_client_s *lockdownd_client_t;
 
 
 void free_iPhone(iPhone_t victim);

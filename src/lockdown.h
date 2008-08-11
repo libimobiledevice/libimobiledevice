@@ -32,7 +32,7 @@
 
 
 
-typedef struct {
+typedef struct lockdownd_client_s {
 	usbmux_connection *connection;
 	gnutls_session_t *ssl_session;
 	int in_SSL;
