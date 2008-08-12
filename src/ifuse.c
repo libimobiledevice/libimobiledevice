@@ -63,6 +63,8 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 		stbuf->st_blocks = file->blocks;
 		stbuf->st_uid = getuid();
 		stbuf->st_gid = getgid();
+
+		afc_close_file(afc,file);
 	}
 
 	return res;
@@ -205,7 +207,7 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
 		lockdownd_close(control);
-		free_iphone(phone);
+		free_iPhone(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
                 return NULL;
 	}

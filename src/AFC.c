@@ -179,6 +179,7 @@ static int dispatch_AFC_packet(AFClient *client, const char *data, int length) {
 		if (debug) fwrite(buffer, 1, client->afc_packet->this_length, stdout);
 		if (debug) fprintf(stderr, "\n");
 		bytes = mux_send(client->connection, buffer, client->afc_packet->this_length);
+		if (buffer) free(buffer);
 		return bytes;
 	}
 	return -1;
