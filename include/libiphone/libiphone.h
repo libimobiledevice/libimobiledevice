@@ -36,7 +36,9 @@ typedef struct lockdownd_client_s *lockdownd_client_t;
 
 void free_iPhone(iPhone_t victim);
 iPhone_t get_iPhone();
+
 int lockdownd_init(iPhone_t phone, lockdownd_client_t *control);
+int lockdownd_start_service(lockdownd_client_t control, const char *service);
 
 #ifdef __cplusplus
 }

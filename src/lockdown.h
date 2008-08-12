@@ -58,6 +58,5 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID);
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 
-// Higher-level lockdownd stuff
-int lockdownd_start_service(lockdownd_client *control, const char *service);
+
 #endif
