@@ -234,6 +234,7 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 		if (debug) fprintf(stderr, "Oops? Bad operation code received: 0x%X, operation=0x%X, param1=%d\n",
 				r_packet->operation, client->afc_packet->operation, param1);
 		recv_len = r_packet->entire_length - r_packet->this_length;
+		free(r_packet);
 		if (debug) fprintf(stderr, "recv_len=%d\n", recv_len);
 		if(param1 == 0) {
 			if (debug) fprintf(stderr, "... false alarm, but still\n");
@@ -241,7 +242,6 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 			return 0;
 		}
 		else { if (debug) fprintf(stderr, "Errno %i\n", param1); }
-		free(r_packet);
 		*dump_here = NULL;
 		return -1;
 	} else {
