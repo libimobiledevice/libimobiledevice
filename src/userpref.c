@@ -105,6 +105,7 @@ int is_device_known(char* public_key) {
 							ret = 1;
 						g_free(stored_key);
 						g_io_channel_shutdown(keyfile, FALSE, NULL);
+						g_io_channel_unref(keyfile);
 						pcur++;
 					}
 					g_free(keyfilepath);
@@ -163,6 +164,7 @@ int store_device_public_key(char* public_key) {
 			wlength = strlen(public_key); // why this wasn't discovered before... ugh
 			g_io_channel_write_chars(file, public_key, wlength, NULL, NULL);
 			g_io_channel_shutdown(file, TRUE, NULL);
+			g_io_channel_unref(file);
 				
 			/* Append device to list */
 			new_devices_list = (const gchar**)g_malloc(sizeof(gchar*)* (len + 2));
@@ -180,6 +182,7 @@ int store_device_public_key(char* public_key) {
 		file = g_io_channel_new_file(config_file, "w", NULL);
 		g_io_channel_write_chars(file, buf, length, NULL, NULL);
 		g_io_channel_shutdown(file, TRUE, NULL);
+		g_io_channel_unref(file);
 		g_key_file_free(key_file);
 	}
 
@@ -304,6 +307,7 @@ int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* ho
 	g_free(config_file);
 	g_io_channel_write_chars(file, buf, length, NULL, NULL);
 	g_io_channel_shutdown(file, TRUE, NULL);
+	g_io_channel_unref(file);
 
 	g_key_file_free(key_file);
 
