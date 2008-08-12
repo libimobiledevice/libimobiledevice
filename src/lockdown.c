@@ -299,23 +299,27 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 	}
 
 	host_id = get_host_id();
-	if (!host_id) host_id = lockdownd_generate_hostid();
 	
-	if (!is_device_known(public_key)){
+	if (!is_device_known(public_key))
 		ret = lockdownd_pair_device(*control, public_key, host_id);
-	}else{
+	else 
 		ret = 1;
+
+	if (public_key) {
+		free(public_key);
+		public_key = NULL;
 	}
-	free(public_key);
-	public_key = NULL;
 	
 	if (ret && host_id && lockdownd_start_SSL_session(*control, host_id)) {
 		ret = 1;
-		free(host_id);
-		host_id = NULL;
 	} else {
 		ret = 0;
 		fprintf(stderr, "lockdownd_init: SSL Session opening failed, has libiphone-initconf been run?\n");
+	}
+
+	if (host_id) {
+		free(host_id);
+		host_id = NULL;
 	}
 
 	return ret;
