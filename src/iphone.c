@@ -36,7 +36,6 @@ extern int debug;
  */
 iPhone *get_iPhone() {
 	iPhone *phone = (iPhone*)malloc(sizeof(iPhone));
-	usbmux_version_header *version = version_header();
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;
 	
@@ -79,6 +78,7 @@ iPhone *get_iPhone() {
 
 	// Send the version command to the phone
 	int bytes = 0;
+	usbmux_version_header *version = version_header();
 	bytes = usb_bulk_write(phone->device, BULKOUT, (char*)version, sizeof(*version), 800);
 	if (bytes < 20 && debug) {
 		fprintf(stderr, "get_iPhone(): libusb did NOT send enough!\n");
@@ -93,6 +93,7 @@ iPhone *get_iPhone() {
 	
 	// Check for bad response
 	if (bytes < 20) {
+		free(version);
 		free_iPhone(phone);
 		free(version);
 		if (debug) fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
@@ -114,7 +115,6 @@ iPhone *get_iPhone() {
 		if (debug) fprintf(stderr, "get_iPhone(): Received a bad header/invalid version number.");
 		return NULL;
 	}
-	
 
 	// If it got to this point it's gotta be bad
 	if (debug) fprintf(stderr, "get_iPhone(): Unknown error.\n");
