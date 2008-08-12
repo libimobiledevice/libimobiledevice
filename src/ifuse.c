@@ -65,6 +65,7 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 		stbuf->st_gid = getgid();
 
 		afc_close_file(afc,file);
+		free(file);
 	}
 
 	return res;
