@@ -42,6 +42,9 @@
 GHashTable *file_handles;
 int fh_index = 0;
 
+iPhone *phone = NULL;
+lockdownd_client *control = NULL;
+
 int debug = 0;
 
 static int ifuse_getattr(const char *path, struct stat *stbuf) {
@@ -175,14 +178,13 @@ static int ifuse_release(const char *path, struct fuse_file_info *fi){
 
 void *ifuse_init(struct fuse_conn_info *conn) {
 	int port = 0;
-	char* host_id = NULL;
 	AFClient *afc = NULL;
 	
 	conn->async_read = 0;
 
 	file_handles = g_hash_table_new(g_int_hash, g_int_equal);
 
-	iPhone *phone = get_iPhone();
+	phone = get_iPhone();
 	if (!phone){
 		fprintf(stderr, "No iPhone found, is it connected?\n");
 		   	return NULL;
@@ -194,13 +196,10 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 		return NULL;
 	}
 
-	host_id = get_host_id();
-	if ((host_id && !lockdownd_start_SSL_session(control, host_id)) || !host_id) {
-		fprintf(stderr, "Something went wrong in GnuTLS. Is your HostID configured in .config/libiphone/libiphonerc?\n");
+	if (!lockdownd_init(phone, &control)) {
+		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
-	free(host_id);
-	host_id = NULL;
 	
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
@@ -215,11 +214,10 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 
 void ifuse_cleanup(void *data) {
 	AFClient *afc = (AFClient *)data;
-	if (afc) {
-		iPhone *phone = afc->connection->phone;
-		afc_disconnect(afc);
-		free_iPhone(phone);
-	}
+
+	afc_disconnect(afc);
+	lockdownd_close(control);
+	free_iPhone(phone);
 }
 
 int ifuse_flush(const char *path, struct fuse_file_info *fi) {

@@ -131,6 +131,9 @@ int main(int argc, char *argv[]) {
 		printf("Start service failure.\n");
 	}
 	
+	printf("All done.\n");
+
+	lockdownd_close(control);
 	free_iPhone(phone);
 	
 	return 0;

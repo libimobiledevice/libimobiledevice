@@ -89,11 +89,12 @@ lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	return control;
 }
 
+
 /** Closes the lockdownd client and does the necessary housekeeping.
  *
  * @param control The lockdown client
  */
-void lockdown_close(lockdownd_client *control) {
+void lockdownd_close(lockdownd_client *control) {
 	if (!control) return;
 	if (control->connection) {
 		mux_close_connection(control->connection);
