@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 			printf("Seek & read\n");
 			my_file = afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_READ);
 			bytes = afc_seek_file(afc, my_file, 5);
-			if (!bytes) printf("WARN: SEEK DID NOT WORK\n");
+			if (bytes) printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char*)malloc(sizeof(char) * 5);
 			bytes = afc_read_file(afc, my_file, threeletterword, 3);
 			threeletterword[3] = '\0';

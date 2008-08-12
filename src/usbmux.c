@@ -129,7 +129,6 @@ usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 				new_connection->header->tcp_flags = 0x10;
 				new_connection->header->scnt = 1;
 				new_connection->header->ocnt = 1;
-				add_connection(new_connection);
 				new_connection->phone = phone;
 				new_connection->recv_buffer = NULL;
 				new_connection->r_len = 0;
