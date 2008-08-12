@@ -122,8 +122,6 @@ usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 	// Initialize connection stuff
 	usbmux_connection *new_connection = (usbmux_connection*)malloc(sizeof(usbmux_connection));
 	new_connection->header = new_mux_packet(s_port, d_port);
-	usbmux_tcp_header *response;
-	response = (usbmux_tcp_header*)malloc(sizeof(usbmux_tcp_header));
 	// blargg
 	if (new_connection && new_connection->header) {
 		new_connection->header->tcp_flags = 0x02;
@@ -131,9 +129,14 @@ usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 		new_connection->header->length16 = htons(new_connection->header->length16);
 		
 		if (send_to_phone(phone, (char*)new_connection->header, sizeof(usbmux_tcp_header)) >= 0) {
+			usbmux_tcp_header *response;
+			response = (usbmux_tcp_header*)malloc(sizeof(usbmux_tcp_header));
 			bytes = recv_from_phone(phone, (char*)response, sizeof(*response));
-			if (response->tcp_flags != 0x12) return NULL;
-			else {
+			if (response->tcp_flags != 0x12) {
+				free(response);
+				return NULL;
+			} else {
+				free(response);
 				if (debug) printf("mux_connect: connection success\n");
 				new_connection->header->tcp_flags = 0x10;
 				new_connection->header->scnt = 1;
