@@ -197,12 +197,15 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 	}
 
 	if (!lockdownd_init(phone, &control)) {
+		free_iPhone(phone);
 		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
 	
 	port = lockdownd_start_service(control, "com.apple.afc");
 	if (!port) {
+		lockdownd_close(control);
+		free_iphone(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
                 return NULL;
 	}
