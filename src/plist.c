@@ -49,8 +49,8 @@ char* format_string(const char* buf, int cols, int depth)
 	int i = 0;
 	int j = 0;
 
-	assert(cols > 0);
-	assert(depth > 0);
+	assert(cols >= 0);
+	assert(depth >= 0);
 
 	// Inserts new lines and tabs at appropriate locations
 	for (i = 0; i < nlines; i++){
@@ -114,7 +114,7 @@ xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *conte
 	xmlNode *child;
 
 	if (!plist) return NULL;
-	assert(depth > 0);
+	assert(depth >= 0);
 	if (!to_node) to_node = xmlDocGetRootElement(plist);
 	
 	for (i = 0; i < depth; i++) {
