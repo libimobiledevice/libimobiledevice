@@ -446,7 +446,7 @@ int afc_rename_file(AFClient *client, const char *from, const char *to) {
 	
 	// Send command
 	memcpy(send, from, strlen(from)+1);
-	memcpy(send+strlen(from)+1, to, strlen(to));
+	memcpy(send+strlen(from)+1, to, strlen(to)+1);
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	client->afc_packet->operation = AFC_RENAME;
 	bytes = dispatch_AFC_packet(client, send, strlen(to) + strlen(from) + 2);
