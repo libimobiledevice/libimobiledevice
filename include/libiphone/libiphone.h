@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 struct iph_device_int;
 typedef iph_device_int *iph_device_t;
@@ -71,6 +72,8 @@ void iph_afc_free_client ( iph_afc_client_t client );
 
 char **iph_afc_get_devinfo ( iph_afc_client_t client );
 char **iph_afc_get_dir_list ( iph_afc_client_t client, const char *dir);
+
+int iph_afc_get_file_attr ( iph_afc_client_t client, const char *filename, struct stat *stbuf );
 int iph_afc_open_file ( iph_afc_client_t client, const char *filename, uint32 file_mode, iph_afc_file_t *file );
 void iph_afc_close_file ( iph_afc_client_t client, iph_afc_file_t file);
 int iph_afc_read_file ( iph_afc_client_t client, iph_afc_file_t file, char *data, int length);
