@@ -28,12 +28,20 @@ extern "C" {
 
 #include <sys/types.h>
 
+struct iph_device_int;
+typedef iph_device_int *iph_device_t;
 
-typedef void* iph_device_t;
-typedef void* iph_lckd_client_t;
-typedef void* iph_umux_client_t;
-typedef void* iph_afc_client_t;
-typedef void* iph_afc_file_t;
+struct iph_lckd_client_int;
+typedef iph_lckd_client_int *iph_lckd_client_t;
+
+struct iph_umux_client_int;
+typedef iph_umux_client_int *iph_umux_client_t;
+
+struct iph_afc_client_int;
+typedef iph_afc_client_int *iph_afc_client_t;
+
+struct iph_afc_file_int;
+typedef iph_afc_file_int *iph_afc_file_t;
 
 //device related functions
 int  iph_get_device ( iph_device_t *device );
