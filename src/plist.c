@@ -104,7 +104,7 @@ void free_plist(xmlDocPtr plist) {
  * @param name The name of the new node.
  * @param content The string containing the text node of the new node.
  * @param to_node The node to attach the child node to. If none is given, the
- * 		   root node of the given document is used.
+ * 		  root node of the given document is used.
  * @param depth The number of tabs to indent the new node.
  *
  * @return The newly created node.
@@ -186,9 +186,9 @@ xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *k
 /** Reads a set of keys and strings into an array from a plist XML document.
  *
  * @param dict The root XMLNode of a plist XML document to be read.
- *
+ * 
  * @return  An array where each even number is a key and the odd numbers are
- * values.  If the odd number is \0, that's the end of the list.
+ *          values.  If the odd number is \0, that's the end of the list.
  */
 char **read_dict_element_strings(xmlNode *dict) {
 	char **return_me = NULL, **old = NULL;
