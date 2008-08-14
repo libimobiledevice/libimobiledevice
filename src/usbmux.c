@@ -32,6 +32,13 @@ extern int debug;
 static usbmux_connection **connlist = NULL;
 static int connections = 0;
 
+/** Creates a USBMux packet for the given set of ports.
+ * 
+ * @param s_port The source port for the connection.
+ * @param d_port The destination port for the connection.
+ *
+ * @return A USBMux packet
+ */
 usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port) {
 	usbmux_tcp_header *conn = (usbmux_tcp_header*)malloc(sizeof(usbmux_tcp_header));
 	conn->type = htonl(6);
@@ -47,6 +54,10 @@ usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port) {
 	return conn;
 }
 
+/** Creates a USBMux header containing version information
+ * 
+ * @return A USBMux header
+ */
 usbmux_version_header *version_header() {
 	usbmux_version_header *version = (usbmux_version_header*)malloc(sizeof(usbmux_version_header));
 	version->type = 0;
@@ -97,16 +108,14 @@ void add_connection(usbmux_connection *connection) {
 	connections++;
 }
 
-/** This is a higher-level USBMuxTCP-type function.
- * Initializes a connection on phone, with source port s_port and destination port d_port
+/** Initializes a connection on phone, with source port s_port and destination port d_port
  *
  * @param phone The iPhone to initialize a connection on.
  * @param s_port The source port
  * @param d_port The destination port -- 0xf27e for lockdownd. 
+ *
  * @return A mux TCP header for the connection which is used for tracking and data transfer.
- * 
  */ 
-
 usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 	if (!phone || !s_port || !d_port) return NULL;
 	int bytes = 0;
@@ -144,14 +153,11 @@ usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
 	return NULL;
 }
 
-/**
- * This is a higher-level USBmuxTCP-type function.
+/** Cleans up the given USBMux connection.
+ * @note Once a connection is closed it may not be used again.
  * 
- * @param phone The iPhone to close a connection with.
  * @param connection The connection to close.
- * @return Doesn't return anything; WILL FREE THE CONNECTION'S MEMORY!!!
  */
-
 void mux_close_connection(usbmux_connection *connection) {
 	if (!connection || !connection->phone) return;
 	
@@ -171,13 +177,12 @@ void mux_close_connection(usbmux_connection *connection) {
 	delete_connection(connection);
 }
 
-/* 
- * This is a higher-level USBMuxTCP-like function.
+/** Sends the given data over the selected connection.
  * 
- * @param phone The iPhone to send to.
  * @param connection The connection we're sending data on.
  * @param data A pointer to the data to send.
  * @param datalen How much data we're sending.
+ *
  * @return The number of bytes sent, minus the header (28), or -1 on error.
  */
 int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
@@ -231,16 +236,14 @@ int mux_send(usbmux_connection *connection, const char *data, uint32 datalen) {
 	return bytes; // or something
 }
 
-/**
- * This is a higher-level USBMuxTCP-like function
+/** This is a higher-level USBMuxTCP-like function
  *
- * @param phone The phone to receive data from.
  * @param connection The connection to receive data on.
  * @param data Where to put the data we receive. 
  * @param datalen How much data to read.
- * @returns How many bytes were read, or -1 if something bad happens.
+ *
+ * @return How many bytes were read, or -1 if something bad happens.
  */
-
 int mux_recv(usbmux_connection *connection, char *data, uint32 datalen) {
 	/*
 	 * Order of operation:
