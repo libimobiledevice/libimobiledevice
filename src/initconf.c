@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	gnutls_global_init();
 
 	size_t size;
-	char* host_id = NULL; //"29942970-207913891623273984"
+	char* host_id = NULL;
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
 
@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
 	//TODO
 	host_id = lockdownd_generate_hostid();
 	if (debug) printf("HostID: %s\n", host_id);
+
 	/* generate keys */
 	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
 	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
@@ -132,7 +133,6 @@ int main(int argc, char *argv[]) {
 
 
 	/* store values in config file */
-	
 	init_config_file(host_id, &root_key_pem, &host_key_pem, &root_cert_pem, &host_cert_pem);
 
 	gnutls_free(root_key_pem.data);

@@ -53,10 +53,8 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	if (!file){
 		res = -ENOENT;
 	} else {
-		//stbuf->st_mode = file->type | 0444; // testing write access too now
 		stbuf->st_mode = file->type | 0644; // but we don't want anything on the iPhone executable, like, ever
 		stbuf->st_size = file->size;
-		//stbuf->st_nlink = 2;
 	}
 
 	return res;
@@ -98,8 +96,6 @@ static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 	AFCFile *file;
 	AFClient *afc = fuse_get_context()->private_data;
 	uint32 mode = 0;
-	/*if((fi->flags & 3) != O_RDONLY)
-		return -EACCES;*/ // trying to test write access here
 	
 	if ((fi->flags & 3) == O_RDWR || (fi->flags & 3) == O_WRONLY) {
 		mode = AFC_FILE_READ;

@@ -28,9 +28,7 @@
 #include <sys/stat.h>
 
 typedef struct {
-	//const uint32 header1 = 0x36414643; // '6AFC' or 'CFA6' when sent ;)
 	uint32 header1, header2;
-	//const uint32 header2 = 0x4141504C; // 'AAPL' or 'LPAA' when sent ;)
 	uint32 entire_length, unknown1, this_length, unknown2, packet_num, unknown3, operation, unknown4;
 } AFCPacket;
 
