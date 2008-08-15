@@ -52,10 +52,13 @@ char *lockdownd_generate_hostid() {
 }
 
 int main(int argc, char *argv[]) {
+	
+	printf("This program generates keys required to connect with the iPhone\n");
+	printf("It only needs to be run ONCE.\n\n");
+	printf("Additionally it may take several minutes to run, please be patient.\n\n");
 
 	gnutls_global_init();
 
-	size_t size;
 	char* host_id = NULL;
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
@@ -72,11 +75,17 @@ int main(int argc, char *argv[]) {
 	/* generate HostID */
 	//TODO
 	host_id = lockdownd_generate_hostid();
-	if (debug) printf("HostID: %s\n", host_id);
 
 	/* generate keys */
+	printf("Generating root key...");
+	fflush(stdout);
 	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
+	printf("done\n");
+	
+	printf("Generating private key...");
+	fflush(stdout);
 	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
+	printf("done\n");
 
 	/* generate certificates */
 	gnutls_x509_crt_set_key(root_cert, root_privkey);
@@ -102,34 +111,31 @@ int main(int argc, char *argv[]) {
 	gnutls_datum_t root_key_pem = {NULL, 0};
 	gnutls_datum_t host_key_pem = {NULL, 0};
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  NULL, &size);
-	root_key_pem.size = size;
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &size);
-	host_key_pem.size = size;
+	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  NULL, &root_key_pem.size);
+	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &host_key_pem.size);
 
 	root_key_pem.data = gnutls_malloc(root_key_pem.size);
 	host_key_pem.data = gnutls_malloc(host_key_pem.size);
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &size);
-	root_key_pem.size = size;
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &size);
-	host_key_pem.size = size;
+	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &root_key_pem.size);
+	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &host_key_pem.size);
 
 	gnutls_datum_t root_cert_pem = {NULL, 0};
 	gnutls_datum_t host_cert_pem = {NULL, 0};
 
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  NULL, &size);
-	root_cert_pem.size = size;
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &size);
-	host_cert_pem.size = size;
+	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  NULL, &root_cert_pem.size);
+	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &host_cert_pem.size);
 
 	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
 	host_cert_pem.data = gnutls_malloc(host_cert_pem.size);
 
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &size);
-	root_cert_pem.size = size;
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &size);
-	host_cert_pem.size = size;
+	printf("Generating root certificate...");
+	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
+	printf("done\n");
+
+	printf("Generating root certificate...");
+	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
+	printf("done\n");
 
 
 	/* store values in config file */

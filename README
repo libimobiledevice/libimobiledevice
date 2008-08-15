@@ -13,23 +13,19 @@ You must have:
 	autoconf
 	gcc
 
-IMPORTANT: You must edit src/ifuse.c and src/main.c and replace your HostID
-from the plist file stored by iTunes. You can find these lines because they are
-currently commented out. In Windows this file is located in:
-
-C:\Documents and Settings\Your Username\Application Data\Apple Computer\Lockdown\<device serial number>.plist
-	
-IMPORTANT: You must also have a public certificate for the device located in
-the root directory of the source named hostcert.pem. This can also be extracted
-from the above file.
-
 To compile run:
 	./autogen.sh
 	./configure
 	make
+	sudo make install (if you want to install it into your system directories)
+	libiphone-initconf (as the user you intend to user the library)
 
 USAGE
 ================================================================================
+
+IMPORTANT: Before using the library you must run "libiphone-initconf". It will
+generate keys and a host id for your system. It only needs to be run once but
+it MUST be run.
 
 There are currently 2 executables iphoneclient and ifuse, located in src/.
 
@@ -43,5 +39,3 @@ like this:
 To unmount:
 	umount mountpoint
 
-Currently the ifuse filesystem is read-only, until the development has
-progressed further.
