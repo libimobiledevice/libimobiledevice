@@ -66,17 +66,18 @@ int main(int argc, char *argv[]) {
 			dirs = afc_get_dir_list(afc, "/eafaedf");
 			if (!dirs) dirs = afc_get_dir_list(afc, "/");
 			printf("Directory time.\n");
-			for (i = 0; strcmp(dirs[i], ""); i++) {
+			for (i = 0; dirs[i]; i++) {
 				printf("/%s\n", dirs[i]);
 			}
 			
-			free_dictionary(dirs);
+			g_strfreev(dirs);
 			dirs = afc_get_devinfo(afc);
 			if (dirs) {
-				for (i = 0; strcmp(dirs[i], ""); i+=2) {
+				for (i = 0; dirs[i]; i+=2) {
 					printf("%s: %s\n", dirs[i], dirs[i+1]);
 				}
 			}
+			g_strfreev(dirs);
 			
 			AFCFile *my_file = afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", AFC_FILE_READ);
 			if (my_file) {
@@ -124,6 +125,7 @@ int main(int argc, char *argv[]) {
 			else printf("Couldn't read!\n");
 			free(threeletterword);
 			afc_close_file(afc, my_file);
+			free(my_file);
 			
 		}
 		afc_disconnect(afc);

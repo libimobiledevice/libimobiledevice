@@ -239,6 +239,7 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 		if(param1 == 0) {
 			if (debug) fprintf(stderr, "... false alarm, but still\n");
 			*dump_here = NULL;
+			free(r_packet);
 			return 0;
 		}
 		else { if (debug) fprintf(stderr, "Errno %i\n", param1); }
@@ -253,6 +254,7 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 	if (!recv_len && r_packet->operation == AFC_SUCCESS_RESPONSE)
 	{
 		*dump_here = NULL;
+		free(r_packet);
 		return 0;
 	}
 	
@@ -272,7 +274,7 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 			if(debug) fprintf(stderr, "receive_AFC_data: mux_recv delivered too much data\n");
 			break;
 		}
-		if (strstr(buffer, "CFA6LPAA")) {
+		if (bytes > 7 && strstr(buffer, "CFA6LPAA")) {
 			if (debug) fprintf(stderr, "receive_AFC_data: WARNING: there is AFC data in this packet at %ti\n", strstr(buffer, "CFA6LPAA") - buffer);
 			if (debug) fprintf(stderr, "receive_AFC_data: the total packet length is %i\n", bytes);
 		}
@@ -308,7 +310,7 @@ static char **make_strings_list(char *tokens, int true_length) {
 		list[i] = strdup(tokens+j);
 		j += strlen(list[i]) + 1;
 	}
-	list[i] = strdup("");
+	list[i] = NULL;
 	
 	return list;
 }
@@ -455,6 +457,7 @@ int afc_rename_file(AFClient *client, const char *from, const char *to) {
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	client->afc_packet->operation = AFC_RENAME;
 	bytes = dispatch_AFC_packet(client, send, strlen(to) + strlen(from) + 2);
+	free(send);
 	if (bytes <= 0) {
 		afc_unlock(client);
 		return 0;
@@ -547,7 +550,7 @@ AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 	// Parse the data
 	if (list) {
 		my_file = (AFCFile *)malloc(sizeof(AFCFile));
-		for (i = 0; strcmp(list[i], ""); i++) {
+		for (i = 0; list[i]; i++) {
 			if (!strcmp(list[i], "st_size")) {
 				my_file->size = atoi(list[i+1]);
 			}
@@ -564,7 +567,7 @@ AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 				}
 			}
 		}
-		free_dictionary(list);
+		g_strfreev(list);
 		return my_file;
 	} else {
 		return NULL;
@@ -618,6 +621,7 @@ AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode)
 		// Get the file info and return it
 		file_infos = afc_get_file_info(client, filename);
 		memcpy(&file_infos->filehandle, data, 4);
+		free(data);
 		return file_infos;
 	} else {
 		if (debug) fprintf(stderr, "afc_open_file: Didn't get any further data\n");
@@ -661,6 +665,7 @@ int afc_read_file(AFClient *client, AFCFile *file, char *data, int length) {
 		client->afc_packet->operation = AFC_READ;
 		client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 		bytes = dispatch_AFC_packet(client, (char*)packet, sizeof(AFCFilePacket));
+		free(packet);
 		
 		if (bytes <= 0) {
 			afc_unlock(client);
