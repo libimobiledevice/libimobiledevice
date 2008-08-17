@@ -29,60 +29,60 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 
-struct iph_device_int;
-typedef iph_device_int *iph_device_t;
+struct iphone_device_int;
+typedef iphone_device_int *iphone_device_t;
 
-struct iph_lckd_client_int;
-typedef iph_lckd_client_int *iph_lckd_client_t;
+struct iphone_lckd_client_int;
+typedef iphone_lckd_client_int *iphone_lckd_client_t;
 
-struct iph_umux_client_int;
-typedef iph_umux_client_int *iph_umux_client_t;
+struct iphone_umux_client_int;
+typedef iphone_umux_client_int *iphone_umux_client_t;
 
-struct iph_afc_client_int;
-typedef iph_afc_client_int *iph_afc_client_t;
+struct iphone_afc_client_int;
+typedef iphone_afc_client_int *iphone_afc_client_t;
 
-struct iph_afc_file_int;
-typedef iph_afc_file_int *iph_afc_file_t;
+struct iphone_afc_file_int;
+typedef iphone_afc_file_int *iphone_afc_file_t;
 
 //device related functions
-int  iph_get_device ( iph_device_t *device );
-void iph_free_device ( iph_device_t device );
+int  iphone_get_device ( iphone_device_t *device );
+void iphone_free_device ( iphone_device_t device );
 
 
 //lockdownd related functions
-int iph_lckd_new_client ( iph_device_t device, iph_lckd_client_t *client );
-void iph_lckd_free_client( iph_lckd_client_t client );
+int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client );
+void iphone_lckd_free_client( iphone_lckd_client_t client );
 
-int iph_lckd_start_service ( iph_lckd_client_t client, const char *service );
-int iph_lckd_recv ( iph_lckd_client_t client, char **dump_data );
-int iph_lckd_send ( iph_lckd_client_t client, char *raw_data, uint32_t length );
+int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service );
+int iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data );
+int iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t length );
 
 
 //usbmux related functions
-int iph_mux_new_client ( iph_device_t device, uint16_t src_port, uint16_t dst_port, iph_umux_client_t *client );
-void iph_mux_free_client ( iph_umux_client_t client );
+int iphone_mux_new_client ( iphone_device_t device, uint16_t src_port, uint16_t dst_port, iphone_umux_client_t *client );
+void iphone_mux_free_client ( iphone_umux_client_t client );
 
-int iph_mux_send ( iph_umux_client_t client, const char *data, uint32_t datalen );
-int iph_mux_recv ( iph_umux_client_t client, char *data, uint32_t datalen );
+int iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t datalen );
+int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen );
 
 
 //afc related functions
-int iph_afc_new_client ( iph_device_t device, int src_port, int dst_port, iph_afc_client_t *client );
-void iph_afc_free_client ( iph_afc_client_t client );
+int iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t *client );
+void iphone_afc_free_client ( iphone_afc_client_t client );
 
-char **iph_afc_get_devinfo ( iph_afc_client_t client );
-char **iph_afc_get_dir_list ( iph_afc_client_t client, const char *dir);
+char **iphone_afc_get_devinfo ( iphone_afc_client_t client );
+char **iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir);
 
-int iph_afc_get_file_attr ( iph_afc_client_t client, const char *filename, struct stat *stbuf );
-int iph_afc_open_file ( iph_afc_client_t client, const char *filename, uint32 file_mode, iph_afc_file_t *file );
-void iph_afc_close_file ( iph_afc_client_t client, iph_afc_file_t file);
-int iph_afc_read_file ( iph_afc_client_t client, iph_afc_file_t file, char *data, int length);
-int iph_afc_write_file ( iph_afc_client_t client, iph_afc_file_t file, const char *data, int length);
-int iph_afc_seek_file ( iph_afc_client_t client, iph_afc_file_t file, int seekpos);
-int iph_afc_truncate_file ( iph_afc_client_t client, iph_afc_file_t file, uint32 newsize);
-int iph_afc_delete_file ( iph_afc_client_t client, const char *path);
-int iph_afc_rename_file ( iph_afc_client_t client, const char *from, const char *to);
-int iph_afc_mkdir ( iph_afc_client_t client, const char *dir);
+int iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf );
+int iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32 file_mode, iphone_afc_file_t *file );
+void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file);
+int iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length);
+int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length);
+int iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, int seekpos);
+int iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc_file_t file, uint32 newsize);
+int iphone_afc_delete_file ( iphone_afc_client_t client, const char *path);
+int iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
+int iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
 
 
 #ifdef __cplusplus
