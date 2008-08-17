@@ -50,7 +50,7 @@ void iph_free_device ( iph_device_t device );
 
 
 //lockdownd related functions
-int iph_lckd_get_client ( iph_device_t device, iph_lckd_client_t *client );
+int iph_lckd_new_client ( iph_device_t device, iph_lckd_client_t *client );
 void iph_lckd_free_client( iph_lckd_client_t client );
 
 int iph_lckd_start_service ( iph_lckd_client_t client, const char *service );
@@ -59,7 +59,7 @@ int iph_lckd_send ( iph_lckd_client_t client, char *raw_data, uint32_t length );
 
 
 //usbmux related functions
-int iph_mux_get_client ( iph_device_t device, uint16_t src_port, uint16_t dst_port, iph_umux_client_t *client );
+int iph_mux_new_client ( iph_device_t device, uint16_t src_port, uint16_t dst_port, iph_umux_client_t *client );
 void iph_mux_free_client ( iph_umux_client_t client );
 
 int iph_mux_send ( iph_umux_client_t client, const char *data, uint32_t datalen );
@@ -67,7 +67,7 @@ int iph_mux_recv ( iph_umux_client_t client, char *data, uint32_t datalen );
 
 
 //afc related functions
-int iph_afc_get_client ( iph_device_t device, int src_port, int dst_port, iph_afc_client_t *client );
+int iph_afc_new_client ( iph_device_t device, int src_port, int dst_port, iph_afc_client_t *client );
 void iph_afc_free_client ( iph_afc_client_t client );
 
 char **iph_afc_get_devinfo ( iph_afc_client_t client );
