@@ -29,6 +29,20 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 
+//general errors
+#define IPHONE_E_SUCCESS          0
+#define IPHONE_E_NO_DEVICE       -1
+#define IPHONE_E_TIMEOUT         -2
+#define IPHONE_E_NOT_ENOUGH_DATA -3
+
+//lockdownd specific error
+#define IPHONE_E_INVALID_CONF    -4
+#define IPHONE_E_PAIRING_FAILED  -5
+#define IPHONE_E_SSL_ERROR       -6
+
+//afc specific error
+#define IPHONE_E_NO_SUCH_FILE    -7
+
 struct iphone_device_int;
 typedef iphone_device_int *iphone_device_t;
 
