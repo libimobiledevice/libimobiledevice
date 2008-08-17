@@ -202,7 +202,7 @@ int lockdownd_hello(lockdownd_client *control) {
 	xmlFreeDoc(plist);
 	free(XML_content);	
 	
-	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+	for (i = 0; dictionary[i]; i+=2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 			free_dictionary(dictionary);
 			if (debug) printf("lockdownd_hello(): success\n");
@@ -258,7 +258,7 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 	free(XML_content);	
 	
 	int success = 0;
-	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+	for (i = 0; dictionary[i]; i+=2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 			success = 1;
 		}
@@ -395,7 +395,7 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	free(XML_content);	
 	
 	int success = 0;
-	for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+	for (i = 0; dictionary[i]; i+=2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 			success = 1;
 		}
@@ -592,7 +592,7 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 		dictionary = read_dict_element_strings(dict);
 		xmlFreeDoc(plist);
 		free(what2send);
-		for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+		for (i = 0; dictionary[i]; i+=2) {
 			if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
 				// Set up GnuTLS...
 				//gnutls_anon_client_credentials_t anoncred;
@@ -650,7 +650,7 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 		if (debug) {
 			printf("Apparently failed negotiating with lockdownd.\n");
 			printf("Responding dictionary: \n");
-			for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+			for (i = 0; dictionary[i]; i+=2) {
 				printf("\t%s: %s\n", dictionary[i], dictionary[i+1]);
 			}
 		}
@@ -814,7 +814,7 @@ int lockdownd_start_service(lockdownd_client *control, const char *service) {
 		if (!dict) return 0;
 		dictionary = read_dict_element_strings(dict);
 		
-		for (i = 0; strcmp(dictionary[i], ""); i+=2) {
+		for (i = 0; dictionary[i]; i+=2) {
 			if (debug) printf("lockdownd_start_service() dictionary %s: %s\n", dictionary[i], dictionary[i+1]);
 			
 			if (!xmlStrcmp(dictionary[i], "Port")) {

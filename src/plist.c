@@ -212,7 +212,7 @@ char **read_dict_element_strings(xmlNode *dict) {
 	
 	old = return_me;
 	return_me = realloc(return_me, sizeof(char*) * (current_length+1));
-	return_me[current_pos] = strdup("");
+	return_me[current_pos] = NULL;
 	
 	return return_me;
 }
@@ -224,11 +224,10 @@ void free_dictionary(char **dictionary) {
 	
 	if (!dictionary) return;
 	
-	for (i = 0; strcmp(dictionary[i], ""); i++) {
+	for (i = 0; dictionary[i]; i++) {
 		free(dictionary[i]);
 	}
-	
-	free(dictionary[i]);
+
 	free(dictionary);
 }
 
