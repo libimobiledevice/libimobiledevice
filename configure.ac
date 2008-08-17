@@ -9,6 +9,7 @@ AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libxml2, libxml-2.0 >= 2.6.30)
