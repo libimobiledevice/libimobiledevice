@@ -49,6 +49,7 @@ iPhone *get_iPhone() {
 	usb_find_busses();
 	usb_find_devices();
 	busses = usb_get_busses();
+
 	
 	// Set the device configuration
 	for (bus = busses; bus; bus = bus->next) { 
