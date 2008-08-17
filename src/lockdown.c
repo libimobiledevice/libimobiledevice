@@ -101,6 +101,7 @@ void lockdownd_close(lockdownd_client *control) {
 	}
 	
 	if (control->ssl_session) gnutls_deinit(*control->ssl_session);
+	free(control->ssl_session);
 	free(control);
 }
 
