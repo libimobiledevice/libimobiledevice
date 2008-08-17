@@ -260,10 +260,11 @@ int get_host_certificate(gnutls_datum_t* host_cert) {
 /** Creates a freedesktop compatible configuration directory for libiphone.
  */
 inline void create_config_dir() {
-	gchar* config_dir;
-       
-	config_dir = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
-	g_mkdir_with_parents(config_dir, 0755);
+	gchar* config_dir = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
+
+	if (!g_file_test(config_dir, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR) ))
+		g_mkdir_with_parents(config_dir, 0755);
+
 	g_free(config_dir);
 }
 
