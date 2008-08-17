@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #include <glib.h>
@@ -51,20 +52,45 @@ char *lockdownd_generate_hostid() {
 	return hostid;
 }
 
+void generate_key(gpointer key){
+	gnutls_x509_privkey_generate(*((gnutls_x509_privkey_t*)key), GNUTLS_PK_RSA, 2048, 0);
+	g_thread_exit(0);
+}
+
+void progress_bar(gpointer mutex){
+	const char *spinner = "|/-\\|/-\\";
+	int i = 0;
+
+	while (!g_static_mutex_trylock((GStaticMutex*)mutex)){
+		usleep(500000);
+		printf("Generating root key... %c\r", spinner[i++]);
+		fflush(stdout);
+		if (i > 8) i = 0;
+	}
+	printf("Generating key... done\n");
+	g_thread_exit(0);
+}
+
 int main(int argc, char *argv[]) {
-	
+	GThread *progress_thread, *key_thread;
+	GError *err;
+	static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+	char* host_id = NULL;
+	gnutls_x509_privkey_t root_privkey;
+	gnutls_x509_privkey_t host_privkey;
+	gnutls_x509_crt_t root_cert;
+	gnutls_x509_crt_t host_cert;
+
+	// Create the thread
+	if (!g_thread_supported()){
+		g_thread_init(NULL);
+	}
+	gnutls_global_init();
+
 	printf("This program generates keys required to connect with the iPhone\n");
 	printf("It only needs to be run ONCE.\n\n");
 	printf("Additionally it may take several minutes to run, please be patient.\n\n");
 
-	gnutls_global_init();
-
-	char* host_id = NULL;
-	gnutls_x509_privkey_t root_privkey;
-	gnutls_x509_privkey_t host_privkey;
-
-	gnutls_x509_crt_t root_cert;
-	gnutls_x509_crt_t host_cert;
 
 	gnutls_x509_privkey_init(&root_privkey);
 	gnutls_x509_privkey_init(&host_privkey);
@@ -73,19 +99,36 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_init(&host_cert);
 
 	/* generate HostID */
-	//TODO
 	host_id = lockdownd_generate_hostid();
 
-	/* generate keys */
-	printf("Generating root key...");
-	fflush(stdout);
-	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
-	printf("done\n");
+	/* generate root key */
+	g_static_mutex_lock(&mutex);
+	if((key_thread = g_thread_create((GThreadFunc)generate_key, &root_privkey, TRUE, &err)) == NULL) {
+	   printf("Thread create failed: %s!!\n", err->message );
+	   g_error_free(err) ;
+	}
+	if((progress_thread = g_thread_create((GThreadFunc)progress_bar, &mutex, TRUE, &err)) == NULL) {
+	   printf("Thread create failed: %s!!\n", err->message );
+	   g_error_free(err) ;
+	}
+	g_thread_join(key_thread);
+	g_static_mutex_unlock(&mutex);
+	g_thread_join(progress_thread);
 	
-	printf("Generating private key...");
-	fflush(stdout);
-	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
-	printf("done\n");
+	/* generate host key */
+	g_static_mutex_init(&mutex);
+	g_static_mutex_lock(&mutex);
+	if((key_thread = g_thread_create((GThreadFunc)generate_key, &host_privkey, TRUE, &err)) == NULL) {
+	   printf("Thread create failed: %s!!\n", err->message );
+	   g_error_free(err) ;
+	}
+	if((progress_thread = g_thread_create((GThreadFunc)progress_bar, &mutex, TRUE, &err)) == NULL) {
+	   printf("Thread create failed: %s!!\n", err->message );
+	   g_error_free(err) ;
+	}
+	g_thread_join(key_thread);
+	g_static_mutex_unlock(&mutex);
+	g_thread_join(progress_thread);
 
 	/* generate certificates */
 	gnutls_x509_crt_set_key(root_cert, root_privkey);
@@ -133,7 +176,7 @@ int main(int argc, char *argv[]) {
 	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
 	printf("done\n");
 
-	printf("Generating root certificate...");
+	printf("Generating host certificate...");
 	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
 	printf("done\n");
 
