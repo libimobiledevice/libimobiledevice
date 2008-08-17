@@ -49,7 +49,7 @@ char* format_string(const char* buf, int cols, int depth)
 	int i = 0;
 	int j = 0;
 
-	assert(cols > 0);
+	assert(cols >= 0);
 	assert(depth >= 0);
 
 	// Inserts new lines and tabs at appropriate locations

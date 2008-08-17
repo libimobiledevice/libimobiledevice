@@ -715,9 +715,9 @@ int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length
 	if (!client ||!client->afc_packet || !client->connection || !file) return -1;
 	
 	afc_lock(client);
-	
+
 	if (debug) fprintf(stderr, "afc_write_file: Write length: %i\n", length);
-	
+
 	// Divide the file into segments.
 	for (i = 0; i < segments; i++) {
 		// Send the segment
