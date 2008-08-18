@@ -63,7 +63,7 @@ void progress_bar(gpointer mutex){
 
 	while (!g_static_mutex_trylock((GStaticMutex*)mutex)){
 		usleep(500000);
-		printf("Generating root key... %c\r", spinner[i++]);
+		printf("Generating key... %c\r", spinner[i++]);
 		fflush(stdout);
 		if (i > 8) i = 0;
 	}
