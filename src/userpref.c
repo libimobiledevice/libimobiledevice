@@ -260,7 +260,7 @@ inline void create_config_dir() {
 	gchar* config_dir;
        
 	config_dir = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
-	g_mkdir_with_parents(config_dir, 755);
+	g_mkdir_with_parents(config_dir, 0755);
 	g_free(config_dir);
 }
 
