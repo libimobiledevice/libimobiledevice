@@ -55,6 +55,8 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	} else {
 		stbuf->st_mode = file->type | 0644; // but we don't want anything on the iPhone executable, like, ever
 		stbuf->st_size = file->size;
+		stbuf->st_blksize = 2048; // FIXME: Is this the actual block size used on the iPhone?
+		stbuf->st_blocks = file->blocks;
 	}
 
 	return res;

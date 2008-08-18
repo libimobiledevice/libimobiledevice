@@ -547,7 +547,6 @@ AFCFile *afc_get_file_info(AFClient *client, const char *path) {
 				my_file->size = atoi(list[i+1]);
 			}
 			
-			
 			if (!strcmp(list[i], "st_blocks")) {
 				my_file->blocks = atoi(list[i+1]);
 			}
