@@ -51,24 +51,6 @@ iPhone *get_iPhone() {
 	usb_find_devices();
 	busses = usb_get_busses();
 	
-	for (bus = busses; bus; bus = bus->next) {
-		for (dev = bus->devices; dev; dev = dev->next) {
-			if (dev->descriptor.idVendor == 0x05ac && 
-				(dev->descriptor.idProduct == 0x1290 ||
-				 dev->descriptor.idProduct == 0x1291 ||
-				 dev->descriptor.idProduct == 0x1292
-				)
-			    ) {
-				phone->__device = dev;
-				phone->device = usb_open(phone->__device);
-				usb_reset(phone->device);
-			}
-		}
-	}
-	
-	phone->device = NULL;
-	phone->__device = NULL;
-	
 	// Set the device configuration
 	for (bus = busses; bus; bus = bus->next) { 
 		for (dev = bus->devices; dev; dev = dev->next) {
