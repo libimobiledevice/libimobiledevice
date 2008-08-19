@@ -31,32 +31,33 @@ extern "C" {
 
 //general errors
 #define IPHONE_E_SUCCESS          0
-#define IPHONE_E_NO_DEVICE       -1
-#define IPHONE_E_TIMEOUT         -2
-#define IPHONE_E_NOT_ENOUGH_DATA -3
+#define IPHONE_E_INVALID_ARG     -1
+#define IPHONE_E_NO_DEVICE       -2
+#define IPHONE_E_TIMEOUT         -3
+#define IPHONE_E_NOT_ENOUGH_DATA -4
 
 //lockdownd specific error
-#define IPHONE_E_INVALID_CONF    -4
-#define IPHONE_E_PAIRING_FAILED  -5
-#define IPHONE_E_SSL_ERROR       -6
+#define IPHONE_E_INVALID_CONF    -5
+#define IPHONE_E_PAIRING_FAILED  -6
+#define IPHONE_E_SSL_ERROR       -7
 
 //afc specific error
-#define IPHONE_E_NO_SUCH_FILE    -7
+#define IPHONE_E_NO_SUCH_FILE    -8
 
 struct iphone_device_int;
-typedef iphone_device_int *iphone_device_t;
+typedef struct iphone_device_int *iphone_device_t;
 
 struct iphone_lckd_client_int;
-typedef iphone_lckd_client_int *iphone_lckd_client_t;
+typedef struct iphone_lckd_client_int *iphone_lckd_client_t;
 
 struct iphone_umux_client_int;
-typedef iphone_umux_client_int *iphone_umux_client_t;
+typedef struct iphone_umux_client_int *iphone_umux_client_t;
 
 struct iphone_afc_client_int;
-typedef iphone_afc_client_int *iphone_afc_client_t;
+typedef struct iphone_afc_client_int *iphone_afc_client_t;
 
 struct iphone_afc_file_int;
-typedef iphone_afc_file_int *iphone_afc_file_t;
+typedef struct iphone_afc_file_int *iphone_afc_file_t;
 
 //device related functions
 int  iphone_get_device ( iphone_device_t *device );
@@ -88,12 +89,12 @@ char **iphone_afc_get_devinfo ( iphone_afc_client_t client );
 char **iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir);
 
 int iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf );
-int iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32 file_mode, iphone_afc_file_t *file );
+int iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32_t file_mode, iphone_afc_file_t *file );
 void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file);
 int iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length);
 int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length);
 int iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, int seekpos);
-int iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc_file_t file, uint32 newsize);
+int iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc_file_t file, uint32_t newsize);
 int iphone_afc_delete_file ( iphone_afc_client_t client, const char *path);
 int iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
 int iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
