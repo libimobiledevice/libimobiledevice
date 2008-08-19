@@ -74,9 +74,9 @@ char *lockdownd_generate_hostid() {
  *
  * @return The lockdownd client.
  */
-lockdownd_client *new_lockdownd_client(iPhone *phone) {
+iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone) {
 	if (!phone) return NULL;
-	lockdownd_client *control = (lockdownd_client*)malloc(sizeof(lockdownd_client));
+	iphone_lckd_client_t control = (iphone_lckd_client_t)malloc(sizeof(struct iphone_lckd_client_int));
 	control->connection = mux_connect(phone, 0x0a00, 0xf27e);
 	if (!control->connection) {
 		free(control);
@@ -94,15 +94,15 @@ lockdownd_client *new_lockdownd_client(iPhone *phone) {
  *
  * @param control The lockdown client
  */
-void lockdownd_close(lockdownd_client *control) {
-	if (!control) return;
-	if (control->connection) {
-		mux_close_connection(control->connection);
+void iphone_lckd_free_client( iphone_lckd_client_t client ) {
+	if (!client) return;
+	if (client->connection) {
+		mux_close_connection(client->connection);
 	}
-	
-	if (control->ssl_session) gnutls_deinit(*control->ssl_session);
-	free(control->ssl_session);
-	free(control);
+
+	if (client->ssl_session) gnutls_deinit(*control->ssl_session);
+	free(client->ssl_session);
+	free(client);
 }
 
 /** Polls the iPhone for lockdownd data.
@@ -113,18 +113,18 @@ void lockdownd_close(lockdownd_client *control) {
  *
  * @return The number of bytes received
  */
-int lockdownd_recv(lockdownd_client *control, char **dump_data) {
-	if (!control) return 0;
+int iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data ) {
+	if (!client) return 0;
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!control->in_SSL) bytes = mux_recv(control->connection, (char *)&datalen, sizeof(datalen));
-	else bytes = gnutls_record_recv(*control->ssl_session, &datalen, sizeof(datalen));
+	if (!client->in_SSL) bytes = mux_recv(client->connection, (char *)&datalen, sizeof(datalen));
+	else bytes = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
 	datalen = ntohl(datalen);
 	
 	receive = (char*)malloc(sizeof(char) * datalen);
-	if (!control->in_SSL) bytes = mux_recv(control->connection, receive, datalen);
-	else bytes = gnutls_record_recv(*control->ssl_session, receive, datalen);
+	if (!client->in_SSL) bytes = mux_recv(client->connection, receive, datalen);
+	else bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
 	*dump_data = receive;
 	return bytes;
 }
@@ -140,8 +140,8 @@ int lockdownd_recv(lockdownd_client *control, char **dump_data) {
  *
  * @return The number of bytes sent
  */
-int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
-	if (!control) return 0;
+int iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t length ) {
+	if (!client) return 0;
 	char *real_query;
 	int bytes;
 	
@@ -157,8 +157,8 @@ int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
 		packet = NULL;
 	}
 	
-	if (!control->in_SSL) bytes = mux_send(control->connection, real_query, ntohl(length)+sizeof(length));
-	else gnutls_record_send(*control->ssl_session, real_query, ntohl(length)+sizeof(length));
+	if (!client->in_SSL) bytes = mux_send(client->connection, real_query, ntohl(length)+sizeof(length));
+	else gnutls_record_send(*client->ssl_session, real_query, ntohl(length)+sizeof(length));
 	if (debug) printf("lockdownd_send(): sent it!\n");
 	free(real_query);
 	return bytes;
@@ -172,7 +172,7 @@ int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_hello(lockdownd_client *control) {
+int lockdownd_hello(iphone_lckd_client_t control) {
 	if (!control) return 0;
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict, *key;
@@ -223,7 +223,7 @@ int lockdownd_hello(lockdownd_client *control) {
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_generic_get_value(lockdownd_client *control, char *req_key, char **value)
+int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char **value)
 {
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = NULL;
@@ -284,7 +284,7 @@ int lockdownd_generic_get_value(lockdownd_client *control, char *req_key, char *
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_uid(lockdownd_client *control, char **uid)
+int lockdownd_get_device_uid(lockdownd_client_t control, char **uid)
 {
 	return lockdownd_generic_get_value(control, "UniqueDeviceID", uid);
 }
@@ -295,7 +295,7 @@ int lockdownd_get_device_uid(lockdownd_client *control, char **uid)
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key)
+int lockdownd_get_device_public_key(lockdownd_client_t control, char **public_key)
 {
 	return lockdownd_generic_get_value(control, "DevicePublicKey", public_key);
 }
@@ -307,42 +307,45 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
+int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client )
 {
-	int ret = 0;
+	if (!device || !client || (client && *client) )
+		return IPHONE_E_INVALID_ARG;
+	int ret = IPHONE_E_SUCCESS;
 	char *host_id = NULL;
 
-	if (!phone)
-		return 0;
-
-	lockdownd_client *control_loc = new_lockdownd_client( (iPhone*)phone );
-	if (!lockdownd_hello(control_loc)){
+	iphone_lckd_client_t client_loc = new_lockdownd_client( device );
+	if (!lockdownd_hello(client_loc)){
 		fprintf(stderr, "Hello failed in the lockdownd client.\n");
+		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
+
 	char *uid = NULL;
-	if(!lockdownd_get_device_uid(control_loc, &uid)){
-		fprintf(stderr, "Device refused to send public key.\n");
+	if(IPHONE_E_SUCCESS == ret && !lockdownd_get_device_uid(control_loc, &uid)){
+		fprintf(stderr, "Device refused to send uid.\n");
+		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
 	host_id = get_host_id();
+	if (IPHONE_E_SUCCESS == ret && !host_id){
+		fprintf(stderr, "No HostID found, run libiphone-initconf.\n");
+		ret = IPHONE_E_INVALID_CONF;
+	}
 
-	if (!is_device_known(uid))
+	if (IPHONE_E_SUCCESS == ret && !is_device_known(uid))
 		ret = lockdownd_pair_device(*control, uid, host_id);
-	else 
-		ret = 1;
 
 	if (uid) {
 		free(uid);
 		uid = NULL;
 	}
-	
 
-	if (ret && host_id && lockdownd_start_SSL_session(control_loc, host_id)) {
-		ret = 1;
+	if (IPHONE_E_SUCCESS == ret && !lockdownd_start_SSL_session(client_loc, host_id)) {
+		ret = IPHONE_E_SUCCESS;
 	} else {
-		ret = 0;
-		fprintf(stderr, "lockdownd_init: SSL Session opening failed, has libiphone-initconf been run?\n");
+		ret = IPHONE_E_SSL_ERROR;
+		fprintf(stderr, "SSL Session opening failed.\n");
 	}
 
 	if (host_id) {
@@ -350,8 +353,8 @@ int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
 		host_id = NULL;
 	}
 
-	*control = (lockdownd_client_t)control_loc;
-
+	if (IPHONE_E_SUCCESS == ret)
+		*client = client_loc;
 	return ret;
 }
 
@@ -362,7 +365,7 @@ int lockdownd_init(iPhone_t phone, lockdownd_client_t *control)
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_pair_device(lockdownd_client *control, char *uid, char *host_id)
+int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id)
 {
 	int ret = 0;
 	xmlDocPtr plist = new_plist();
@@ -596,7 +599,7 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
+int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID) {
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	xmlNode *key;
@@ -714,8 +717,8 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
  */
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length) {
 	int bytes = 0;
-	lockdownd_client *control;
-	control = (lockdownd_client*)transport;
+	iphone_lckd_client_t control;
+	control = (iphone_lckd_client_t)transport;
 	if (debug) printf("lockdownd_secuwrite() called\n");
 	if (debug) printf("pre-send\nlength = %zi\n", length);
 	bytes = mux_send(control->connection, buffer, length);
@@ -742,8 +745,8 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length) {
 	int bytes = 0, pos_start_fill = 0;
 	char *hackhackhack = NULL; 
-	lockdownd_client *control;
-	control = (lockdownd_client*)transport;
+	iphone_lckd_client_t control;
+	control = (iphone_lckd_client_t)transport;
 	if (debug) printf("lockdownd_securead() called\nlength = %zi\n", length);
 	// Buffering hack! Throw what we've got in our "buffer" into the stream first, then get more.
 	if (control->gtls_buffer_hack_len > 0) {
@@ -812,11 +815,11 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
  *
  * @return The port number the service was started on or 0 on failure.
  */
-int lockdownd_start_service(lockdownd_client *control, const char *service) {
-	if (!control) return 0;
+int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service ) {
+	if (!client) return 0;
 
 	char* host_id = get_host_id();
-	if (host_id && !control->in_SSL && !lockdownd_start_SSL_session(control, host_id)) return 0;
+	if (host_id && !client->in_SSL && !lockdownd_start_SSL_session(client, host_id)) return 0;
 
 	char *XML_query, **dictionary;
 	uint32 length, i = 0, port = 0;
@@ -835,10 +838,10 @@ int lockdownd_start_service(lockdownd_client *control, const char *service) {
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_query, &length);
 	
-	lockdownd_send(control, XML_query, length);
+	lockdownd_send(client, XML_query, length);
 	free(XML_query);
 	
-	length = lockdownd_recv(control, &XML_query);
+	length = lockdownd_recv(client, &XML_query);
 	
 	xmlFreeDoc(plist);
 	
