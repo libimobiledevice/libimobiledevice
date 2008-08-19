@@ -37,37 +37,29 @@
 int debug = 1;
 
 int main(int argc, char *argv[]) {
-	/* char* host_id = NULL; */
-	iPhone *phone = get_iPhone();
-	if (argc > 1 && !strcasecmp(argv[1], "--debug")) debug = 1;
-	else debug = 0;
 	int bytes = 0, port = 0, i = 0;
-	if (phone) printf("I got a phone.\n");
-	else { printf("oops\n"); return -1; }
-
 	lockdownd_client *control = NULL;
-	lockdownd_init(phone, &control);
-	/*
-	lockdownd_client *control = new_lockdownd_client(phone);
-	if (!lockdownd_hello(control)) {
-		printf("Something went wrong in the lockdownd client, go take a look.\n");
+	iPhone *phone = get_iPhone();
+	
+	if (argc > 1 && !strcasecmp(argv[1], "--debug")){
+		debug = 1;
 	} else {
-		printf("We said hello. :)\n");
+		debug = 0;
 	}
-		
-	printf("Now starting SSL.\n");
+	
+	if (!phone) {
+		printf("No iPhone found, is it plugged in?\n");
+		return -1;
+       	}
 
-	host_id = get_host_id();
-	if (host_id && !lockdownd_start_SSL_session(control, host_id)) {
-		printf("Error happened in GnuTLS...\n");
-	} else { 
-		free(host_id);
-		host_id = NULL;*/
-		printf("... we're in SSL with the phone... !?\n");
-		port = lockdownd_start_service(control, "com.apple.afc");
-	//}
+	if (!lockdownd_init(phone, &control)){
+		free_iPhone(phone);
+		return -1;
+	}
+
+	port = lockdownd_start_service(control, "com.apple.afc");
+	
 	if (port) {
-		printf("Start Service successful -- connect on port %i\n", port);
 		AFClient *afc = afc_connect(phone, 3432, port);
 		if (afc) {
 			char **dirs;
@@ -138,8 +130,6 @@ int main(int argc, char *argv[]) {
 	} else {
 		printf("Start service failure.\n");
 	}
-	
-	printf("All done.\n");
 	
 	free_iPhone(phone);
 	

@@ -228,6 +228,9 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 	return success;
 }
 
+/**
+ * @return 1 on success and 0 on failure
+ */
 int lockdownd_init(iPhone *phone, lockdownd_client **control)
 {
 	int ret = 0;
@@ -251,22 +254,27 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 	
 	if (!is_device_known(public_key)){
 		ret = lockdownd_pair_device(*control, public_key, host_id);
+	}else{
+		ret = 1;
 	}
 	free(public_key);
 	public_key = NULL;
 	
-	if (ret && host_id && !lockdownd_start_SSL_session(*control, host_id)) {
+	if (ret && host_id && lockdownd_start_SSL_session(*control, host_id)) {
 		ret = 1;
 		free(host_id);
 		host_id = NULL;
 	} else {
 		ret = 0;
-		fprintf(stderr, "SSL Session opening failed.\n");
+		fprintf(stderr, "lockdownd_init: SSL Session opening failed, has libiphone-initconf been run?\n");
 	}
 
 	return ret;
 }
 
+/**
+ * @return 1 on success and 0 on failure
+ */
 int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char *host_id)
 {
 	int ret = 0;
@@ -282,7 +290,9 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	char* host_cert_b64 = NULL;
 	char* root_cert_b64 = NULL;
 
-	lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64);
+	if(!lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64)){
+		return 0;
+	}
 
 	/* Setup Pair request plist */
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
@@ -349,9 +359,12 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	return ret;
 }
 
+/**
+ * @return 1 on success and 0 on failure.
+ */
 int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64)
 {
-	int ret = 0;
+	int ret = 0, error = 0;
 
 	gnutls_datum_t modulus = {NULL, 0};
 	gnutls_datum_t exponent = {NULL, 0};
@@ -415,24 +428,23 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 			
 			/* get root cert */
 			gnutls_datum_t pem_root_cert = {NULL, 0};
-			ret = get_root_certificate(&pem_root_cert);
-			ret = gnutls_x509_crt_import (root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM);
-			
+			get_root_certificate(&pem_root_cert);
+			ret = gnutls_x509_crt_import(root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM);
+			if (ret != GNUTLS_E_SUCCESS) error = 1;
 
 			/* get host cert */
 			gnutls_datum_t pem_host_cert = {NULL, 0};
-			ret = get_host_certificate(&pem_host_cert);
-			ret = gnutls_x509_crt_import (host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM);
-			
+			get_host_certificate(&pem_host_cert);
+			ret = gnutls_x509_crt_import(host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM);
+			if (ret != GNUTLS_E_SUCCESS) error = 1;
 
 			/* get root private key */
 			gnutls_datum_t pem_root_priv = {NULL, 0};
-			ret = get_root_private_key(&pem_root_priv);
-			ret = gnutls_x509_privkey_import (root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM);
-			
+			get_root_private_key(&pem_root_priv);
+			ret = gnutls_x509_privkey_import(root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM);
+			if (ret != GNUTLS_E_SUCCESS) error = 1;
 
 			/* generate device certificate */
-			
 			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
 			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
 			gnutls_x509_crt_set_version(dev_cert, 3);
@@ -441,12 +453,8 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 			gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
-			//TODO handle errors
-			ret = 1;
-
-			if (ret) {
+			if (!error) {
 				/* if everything went well, export in PEM format */
-	
 				gnutls_datum_t dev_pem = {NULL, 0};
 				size_t crt_size;
 				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &crt_size);
@@ -472,7 +480,12 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 
 	gnutls_free(der_pub_key.data);
 	g_free(pem_pub_key.data);
-	return ret;
+	
+	if (error) {
+		return 0;
+	} else {
+		return ret;
+	}
 }
 
 int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
