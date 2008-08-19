@@ -116,7 +116,7 @@ void add_connection(usbmux_connection *connection) {
  *
  * @return A mux TCP header for the connection which is used for tracking and data transfer.
  */ 
-usbmux_connection *mux_connect(iPhone *phone, uint16 s_port, uint16 d_port) {
+usbmux_connection *mux_connect(iphone_device_t phone, uint16 s_port, uint16 d_port) {
 	if (!phone || !s_port || !d_port) return NULL;
 	int bytes = 0;
 	// Initialize connection stuff

@@ -33,13 +33,13 @@
 #define BULKIN 0x85
 #define BULKOUT 0x04
 
-typedef struct iPhone_s {
+struct iphone_device_int {
 	char *buffer;
 	struct usb_dev_handle *device;
 	struct usb_device *__device;
-} iPhone;
+};
 
 // Function definitions
-int send_to_phone(iPhone *phone, char *data, int datalen);
-int recv_from_phone(iPhone *phone, char *data, int datalen);
+int send_to_phone(iphone_device_t phone, char *data, int datalen);
+int recv_from_phone(iphone_device_t phone, char *data, int datalen);
 #endif

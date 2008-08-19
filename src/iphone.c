@@ -34,10 +34,15 @@ extern int debug;
  * @return A structure with data on the first iPhone it finds.  (Or NULL, on
  *         error)
  */
-iPhone_t get_iPhone() {
-	iPhone *phone = (iPhone*)malloc(sizeof(iPhone));
+int  iphone_get_device ( iphone_device_t *device  ){
+	//check we can actually write in device
+	if (!device || (device && *device))
+		return IPHONE_E_INVALID_ARG;
+
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;
+	iphone_device_t phone = (iphone_device_t)malloc(sizeof(struct iphone_device_int));
+	usbmux_version_header *version = version_header();
 	
 	// Initialize the struct
 	phone->device = NULL;
@@ -74,7 +79,7 @@ iPhone_t get_iPhone() {
 	if (!phone->device || !phone->__device) {
 		free_iPhone(phone);
 		if (debug) fprintf(stderr, "get_iPhone(): iPhone not found\n");
-		return NULL;
+		return IPHONE_E_NO_DEVICE;
 	}
 
 	// Send the version command to the phone
@@ -99,7 +104,7 @@ iPhone_t get_iPhone() {
 		if (debug) fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
 		if (debug && bytes < 0) fprintf(stderr, "get_iPhone(): libusb error message %d: %s (%s)\n",
 			       			bytes, usb_strerror(), strerror(-bytes));
-		return NULL;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
 	// Check for correct version
@@ -107,20 +112,21 @@ iPhone_t get_iPhone() {
 		// We're all ready to roll.
 		fprintf(stderr, "get_iPhone() success\n");
 		free(version);
-		return phone;
+		*device = phone;
+		return IPHONE_E_SUCCESS;
 	} else {
 		// Bad header
 		free_iPhone(phone);
 		free(version);
 		if (debug) fprintf(stderr, "get_iPhone(): Received a bad header/invalid version number.");
-		return NULL;
+		return IPHONE_E_BAD_HEADER;
 	}
 
 	// If it got to this point it's gotta be bad
 	if (debug) fprintf(stderr, "get_iPhone(): Unknown error.\n");
 	free_iPhone(phone);
 	free(version);
-	return NULL; 
+	return IPHONE_E_NO_DEVICE; // if it got to this point it's gotta be bad
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  
@@ -129,14 +135,14 @@ iPhone_t get_iPhone() {
  * 
  * @param phone A pointer to an iPhone structure.
  */
-void free_iPhone(iPhone_t phone) {
-	if (phone->buffer) free(phone->buffer);	
-	if (phone->device) {
-		usb_release_interface(phone->device, 1);
-		usb_reset(phone->device);
-		usb_close(phone->device);
+void iphone_free_device ( iphone_device_t device ) {
+	if (device->buffer) free(device->buffer);	
+	if (device->device) {
+		usb_release_interface(device->device, 1);
+		usb_reset(device->device);
+		usb_close(device->device);
 	}
-	free(phone);
+	free(device);
 }
  
 /** Sends data to the phone
@@ -147,7 +153,8 @@ void free_iPhone(iPhone_t phone) {
  * @param datalen The length of the data
  * @return The number of bytes sent, or -1 on error or something.
  */
-int send_to_phone(iPhone *phone, char *data, int datalen) {
+int send_to_phone(iphone_device_t phone, char *data, int datalen) {
+	if (!phone) return -1;
 	int bytes = 0;
 	
 	if (!phone) return -1;
@@ -173,7 +180,8 @@ int send_to_phone(iPhone *phone, char *data, int datalen) {
  * 
  * @return How many bytes were read in, or -1 on error.
  */
-int recv_from_phone(iPhone *phone, char *data, int datalen) {
+int recv_from_phone(iphone_device_t phone, char *data, int datalen) {
+	if (!phone) return -1;
 	int bytes = 0;
 	
 	if (!phone) return -1;
