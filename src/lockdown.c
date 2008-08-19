@@ -77,8 +77,8 @@ char *lockdownd_generate_hostid() {
 iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone) {
 	if (!phone) return NULL;
 	iphone_lckd_client_t control = (iphone_lckd_client_t)malloc(sizeof(struct iphone_lckd_client_int));
-	control->connection = mux_connect(phone, 0x0a00, 0xf27e);
-	if (!control->connection) {
+
+	if (IPHONE_E_SUCCESS != iphone_mux_new_client ( phone, 0x0a00, 0xf27e, &control->connection)) {
 		free(control);
 		return NULL;
 	}
@@ -100,7 +100,7 @@ void iphone_lckd_free_client( iphone_lckd_client_t client ) {
 		mux_close_connection(client->connection);
 	}
 
-	if (client->ssl_session) gnutls_deinit(*control->ssl_session);
+	if (client->ssl_session) gnutls_deinit(*client->ssl_session);
 	free(client->ssl_session);
 	free(client);
 }

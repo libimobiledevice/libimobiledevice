@@ -33,7 +33,7 @@
 
 
 struct iphone_lckd_client_int {
-	usbmux_connection *connection;
+	iphone_umux_client_t connection;
 	gnutls_session_t *ssl_session;
 	int in_SSL;
 	char *gtls_buffer_hack;

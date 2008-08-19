@@ -42,7 +42,6 @@ int  iphone_get_device ( iphone_device_t *device  ){
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;
 	iphone_device_t phone = (iphone_device_t)malloc(sizeof(struct iphone_device_int));
-	usbmux_version_header *version = version_header();
 	
 	// Initialize the struct
 	phone->device = NULL;
@@ -126,7 +125,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 	if (debug) fprintf(stderr, "get_iPhone(): Unknown error.\n");
 	free_iPhone(phone);
 	free(version);
-	return IPHONE_E_NO_DEVICE; // if it got to this point it's gotta be bad
+	return IPHONE_E_UNKNOWN_ERROR; // if it got to this point it's gotta be bad
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  

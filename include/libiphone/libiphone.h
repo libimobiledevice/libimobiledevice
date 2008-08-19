@@ -32,18 +32,19 @@ extern "C" {
 //general errors
 #define IPHONE_E_SUCCESS          0
 #define IPHONE_E_INVALID_ARG     -1
-#define IPHONE_E_NO_DEVICE       -2
-#define IPHONE_E_TIMEOUT         -3
-#define IPHONE_E_NOT_ENOUGH_DATA -4
-#define IPHONE_E_BAD_HEADER      -5
+#define IPHONE_E_UNKNOWN_ERROR   -2
+#define IPHONE_E_NO_DEVICE       -3
+#define IPHONE_E_TIMEOUT         -4
+#define IPHONE_E_NOT_ENOUGH_DATA -5
+#define IPHONE_E_BAD_HEADER      -6
 
 //lockdownd specific error
-#define IPHONE_E_INVALID_CONF    -6
-#define IPHONE_E_PAIRING_FAILED  -7
-#define IPHONE_E_SSL_ERROR       -8
+#define IPHONE_E_INVALID_CONF    -7
+#define IPHONE_E_PAIRING_FAILED  -8
+#define IPHONE_E_SSL_ERROR       -9
 
 //afc specific error
-#define IPHONE_E_NO_SUCH_FILE    -9
+#define IPHONE_E_NO_SUCH_FILE    -10
 
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
