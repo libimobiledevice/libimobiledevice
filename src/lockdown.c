@@ -46,6 +46,10 @@ int get_rand(int min, int max) {
 	return retval;
 }
 
+/** Generates a valid HostID (which is actually a UUID).
+ *
+ * @param A null terminated string containing a valid HostID.
+ */
 char *lockdownd_generate_hostid() {
 	char *hostid = (char*)malloc(sizeof(char) * 37); // HostID's are just UUID's, and UUID's are 36 characters long
 	const char *chars = "ABCDEF0123456789";
@@ -64,6 +68,12 @@ char *lockdownd_generate_hostid() {
 	return hostid;
 }
 
+/** Creates a lockdownd client for the give iPhone.
+ *
+ * @param phone The iPhone to create a lockdownd client for
+ *
+ * @return The lockdownd client.
+ */
 lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	if (!phone) return NULL;
 	lockdownd_client *control = (lockdownd_client*)malloc(sizeof(lockdownd_client));
@@ -79,6 +89,10 @@ lockdownd_client *new_lockdownd_client(iPhone *phone) {
 	return control;
 }
 
+/** Closes the lockdownd client and does the necessary housekeeping.
+ *
+ * @param control The lockdown client
+ */
 void lockdown_close(lockdownd_client *control) {
 	if (!control) return;
 	if (control->connection) {
@@ -89,7 +103,14 @@ void lockdown_close(lockdownd_client *control) {
 	free(control);
 }
 
-	
+/** Polls the iPhone for lockdownd data.
+ *
+ * @param control The lockdownd client
+ * @param dump_data The pointer to the location of the buffer in which to store
+ *                  the received data
+ *
+ * @return The number of bytes received
+ */
 int lockdownd_recv(lockdownd_client *control, char **dump_data) {
 	if (!control) return 0;
 	char *receive;
@@ -106,6 +127,17 @@ int lockdownd_recv(lockdownd_client *control, char **dump_data) {
 	return bytes;
 }
 
+/** Sends lockdownd data to the iPhone
+ * 
+ * @note This function is low-level and should only be used if you need to send
+ *        a new type of message.
+ *
+ * @param control The lockdownd client
+ * @param raw_data The null terminated string buffer to send
+ * @param length The length of data to send
+ *
+ * @return The number of bytes sent
+ */
 int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
 	if (!control) return 0;
 	char *real_query;
@@ -130,6 +162,14 @@ int lockdownd_send(lockdownd_client *control, char *raw_data, uint32 length) {
 	return bytes;
 }
 
+/** Initiates the handshake for the lockdown session. Part of the lockdownd handshake.
+ * 
+ * @note You most likely want lockdownd_init unless you are doing something special.
+ *
+ * @param control The lockdownd client
+ *
+ * @return 1 on success and 0 on failure.
+ */
 int lockdownd_hello(lockdownd_client *control) {
 	if (!control) return 0;
 	xmlDocPtr plist = new_plist();
@@ -172,7 +212,12 @@ int lockdownd_hello(lockdownd_client *control) {
 	free_dictionary(dictionary);
 	return 0;
 }
-
+/** Askes for the device's public key. Part of the lockdownd handshake.
+ *
+ * @note You most likely want lockdownd_init unless you are doing something special.
+ *
+ * @return 1 on success and 0 on failure.
+ */
 int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key)
 {
 	xmlDocPtr plist = new_plist();
@@ -228,7 +273,11 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 	return success;
 }
 
-/**
+/** Completes the entire lockdownd handshake.
+ *
+ * @param phone The iPhone
+ * @param lockdownd_client The pointer to the location of the lockdownd_client
+ *
  * @return 1 on success and 0 on failure
  */
 int lockdownd_init(iPhone *phone, lockdownd_client **control)
@@ -272,7 +321,11 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 	return ret;
 }
 
-/**
+/** Generates the appropriate keys and pairs the device. It's part of the
+ *  lockdownd handshake.
+ *
+ * @note You most likely want lockdownd_init unless you are doing something special.
+ *
  * @return 1 on success and 0 on failure
  */
 int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char *host_id)
@@ -359,7 +412,9 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	return ret;
 }
 
-/**
+/** Generates the device certificate from the public key as well as the host
+ *  and root certificates.
+ * 
  * @return 1 on success and 0 on failure.
  */
 int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64)
@@ -488,6 +543,13 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 	}
 }
 
+/** Starts SSL communication with lockdownd after the iPhone has been paired.
+ *
+ * @param control The lockdownd client
+ * @param HostID The HostID used with this phone
+ *
+ * @return 1 on success and 0 on failure
+ */
 int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
@@ -596,6 +658,14 @@ int lockdownd_start_SSL_session(lockdownd_client *control, const char *HostID) {
 	}
 }
 
+/** gnutls callback for writing data to the iPhone.
+ *
+ * @param transport It's really the lockdownd client, but the method signature has to match
+ * @param buffer The data to send
+ * @param length The length of data to send in bytes
+ *
+ * @return The number of bytes sent
+ */
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length) {
 	int bytes = 0;
 	lockdownd_client *control;
@@ -615,6 +685,14 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	return bytes;
 }
 
+/** gnutls callback for reading data from the iPhone
+ *
+ * @param transport It's really the lockdownd client, but the method signature has to match
+ * @param buffer The buffer to store data in
+ * @param length The length of data to read in bytes
+ *
+ * @return The number of bytes read
+ */
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length) {
 	int bytes = 0, pos_start_fill = 0;
 	char *hackhackhack = NULL; 
@@ -681,6 +759,13 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	return bytes;
 }
 
+/** Command to start the desired service
+ *
+ * @param control The lockdownd client
+ * @param service The name of the service to start
+ *
+ * @return The port number the service was started on or 0 on failure.
+ */
 int lockdownd_start_service(lockdownd_client *control, const char *service) {
 	if (!control) return 0;
 
