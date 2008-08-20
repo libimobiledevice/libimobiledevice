@@ -30,6 +30,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <glib.h>
+#include <unistd.h>
 
 #include "usbmux.h"
 #include "iphone.h"
@@ -57,6 +58,8 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 		stbuf->st_size = file->size;
 		stbuf->st_blksize = 2048; // FIXME: Is this the actual block size used on the iPhone?
 		stbuf->st_blocks = file->blocks;
+		stbuf->st_uid = getuid();
+		stbuf->st_gid = getgid();
 	}
 
 	return res;
