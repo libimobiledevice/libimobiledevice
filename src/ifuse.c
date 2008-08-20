@@ -82,7 +82,7 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	if(!dirs)
 		return -ENOENT;
 
-	for (i = 0; strcmp(dirs[i], ""); i++) {
+	for (i = 0; dirs[i]; i++) {
 		filler(buf, dirs[i], NULL, 0);
 	}
 	
@@ -237,7 +237,7 @@ int ifuse_statfs(const char *path, struct statvfs *stats) {
 	
 	if (!info_raw) return -ENOENT;
 	
-	for (i = 0; strcmp(info_raw[i], ""); i++) {
+	for (i = 0; info_raw[i]; i++) {
 		if (!strcmp(info_raw[i], "FSTotalBytes")) {
 			totalspace = atoi(info_raw[i+1]);
 		} else if (!strcmp(info_raw[i], "FSFreeBytes")) {
@@ -246,6 +246,7 @@ int ifuse_statfs(const char *path, struct statvfs *stats) {
 			blocksize = atoi(info_raw[i+1]);
 		}
 	}
+	free_dictionary(info_raw);
 	
 	// Now to fill the struct.
 	stats->f_bsize = stats->f_frsize = blocksize;
