@@ -25,38 +25,23 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #include <glib.h>
+
 #include "userpref.h"
+#include "lockdown.h"
 
 int debug = 1;
 
-int get_rand(int min, int max) {
-	int retval = (rand() % (max - min)) + min;
-	return retval;
-}
-
-char *lockdownd_generate_hostid() {
-	char *hostid = (char*)malloc(sizeof(char) * 37); // HostID's are just UUID's, and UUID's are 36 characters long
-	const char *chars = "ABCDEF0123456789";
-	srand(time(NULL));
-	int i = 0;
-	
-	for (i = 0; i < 36; i++) {
-		if (i == 8 || i == 13 || i == 18 || i == 23) {
-			hostid[i] = '-';
-			continue;
-		} else {
-			hostid[i] = chars[get_rand(0,16)];
-		}
-	}
-	hostid[36] = '\0';
-	return hostid;
-}
-
+/** Generates a 2048 byte key, split into a function so that it can be run in a
+ *  thread.
+ *
+ * @param key The pointer to the desired location of the new key.
+ */
 void generate_key(gpointer key){
 	gnutls_x509_privkey_generate(*((gnutls_x509_privkey_t*)key), GNUTLS_PK_RSA, 2048, 0);
 	g_thread_exit(0);
 }
-
+/** Simple function that generates a spinner until the mutex is released.
+ */
 void progress_bar(gpointer mutex){
 	const char *spinner = "|/-\\|/-\\";
 	int i = 0;

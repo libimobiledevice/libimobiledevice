@@ -22,6 +22,7 @@
 #ifndef LOCKDOWND_H
 #define LOCKDOWND_H
 
+#include "usbmux.h"
 #include "plist.h"
 
 #include <gnutls/gnutls.h>
@@ -36,6 +37,7 @@ typedef struct {
 } lockdownd_client;
 
 int lockdownd_init(iPhone *phone, lockdownd_client **control);
+char *lockdownd_generate_hostid();
 
 lockdownd_client *new_lockdownd_client(iPhone *phone);
 int lockdownd_hello(lockdownd_client *control);
