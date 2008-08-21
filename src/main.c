@@ -57,6 +57,12 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	char *uid = NULL;
+	if (lockdownd_get_device_uid(control, &uid)) {
+		printf("DeviceUniqueID : %s\n", uid);
+		free(uid);
+	}
+
 	port = lockdownd_start_service(control, "com.apple.afc");
 	
 	if (port) {

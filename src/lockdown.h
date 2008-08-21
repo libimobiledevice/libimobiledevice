@@ -41,6 +41,7 @@ char *lockdownd_generate_hostid();
 
 lockdownd_client *new_lockdownd_client(iPhone *phone);
 int lockdownd_hello(lockdownd_client *control);
+int lockdownd_get_device_uid(lockdownd_client *control, char **uid);
 int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key);
 int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64);
 int lockdownd_pair_device(lockdownd_client *control, char *public_key, char *host_id);

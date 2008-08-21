@@ -214,13 +214,16 @@ int lockdownd_hello(lockdownd_client *control) {
 	free_dictionary(dictionary);
 	return 0;
 }
-/** Askes for the device's public key. Part of the lockdownd handshake.
+
+/** Generic function to handle simple (key, value) requests.
  *
- * @note You most likely want lockdownd_init unless you are doing something special.
+ * @param control an initialized lockdownd client.
+ * @param key the key to request
+ * @param value a pointer to the requested value
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key)
+int lockdownd_generic_get_value(lockdownd_client *control, char *req_key, char **value)
 {
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = NULL;
@@ -232,7 +235,7 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 	
 	/* Setup DevicePublicKey request plist */
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Key", "DevicePublicKey", 1);
+	key = add_key_str_dict_element(plist, dict, "Key", req_key, 1);
 	key = add_key_str_dict_element(plist, dict, "Request", "GetValue", 1);
 	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
 
@@ -264,7 +267,7 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 			success = 1;
 		}
 		if (!strcmp(dictionary[i], "Value")) {
-			*public_key = strdup(dictionary[i+1]);
+			*value = strdup(dictionary[i+1]);
 		}
 	}
 	
@@ -273,6 +276,28 @@ int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key
 		dictionary = NULL;
 	}
 	return success;
+}
+
+/** Askes for the device's unique id. Part of the lockdownd handshake.
+ *
+ * @note You most likely want lockdownd_init unless you are doing something special.
+ *
+ * @return 1 on success and 0 on failure.
+ */
+int lockdownd_get_device_uid(lockdownd_client *control, char **uid)
+{
+	return lockdownd_generic_get_value(control, "UniqueDeviceID", uid);
+}
+
+/** Askes for the device's public key. Part of the lockdownd handshake.
+ *
+ * @note You most likely want lockdownd_init unless you are doing something special.
+ *
+ * @return 1 on success and 0 on failure.
+ */
+int lockdownd_get_device_public_key(lockdownd_client *control, char **public_key)
+{
+	return lockdownd_generic_get_value(control, "DevicePublicKey", public_key);
 }
 
 /** Completes the entire lockdownd handshake.
