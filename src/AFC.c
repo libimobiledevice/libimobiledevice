@@ -253,7 +253,6 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 	if (!recv_len && r_packet->operation == AFC_SUCCESS_RESPONSE)
 	{
 		*dump_here = NULL;
-		free(r_packet);
 		return 0;
 	}
 	
