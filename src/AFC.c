@@ -239,7 +239,6 @@ static int receive_AFC_data(AFClient *client, char **dump_here) {
 		if(param1 == 0) {
 			if (debug) fprintf(stderr, "... false alarm, but still\n");
 			*dump_here = NULL;
-			free(r_packet);
 			return 0;
 		}
 		else { if (debug) fprintf(stderr, "Errno %i\n", param1); }
