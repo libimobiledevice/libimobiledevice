@@ -25,7 +25,7 @@
 #include <string.h>
 #include "userpref.h"
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 #define LIBIPHONE_CONF_DIR  "libiphone"
 #define LIBIPHONE_CONF_FILE "libiphonerc"
@@ -36,6 +36,18 @@
 #define LIBIPHONE_HOST_CERTIF "HostCertificate.pem"
 
 extern int debug;
+
+/** Creates a freedesktop compatible configuration directory for libiphone.
+ */
+inline void create_config_dir() {
+	gchar* config_dir = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
+
+	if (!g_file_test(config_dir, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR) ))
+		g_mkdir_with_parents(config_dir, 0755);
+
+	g_free(config_dir);
+}
+
 
 /** Reads the HostID from a previously generated configuration file. 
  * 
@@ -68,12 +80,12 @@ char* get_host_id() {
 
 /** Determines whether this iPhone has been connected to this system before.
  *
- * @param public_key The public key as given by the iPhone.
+ * @param uid The device uid as given by the iPhone.
  *
  * @return 1 if the iPhone has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int is_device_known(char* public_key) {
+int is_device_known(char* uid) {
 	int ret = 0;
 	gchar *config_file;
 	GKeyFile *key_file;
@@ -81,41 +93,12 @@ int is_device_known(char* public_key) {
 	GIOChannel *keyfile;
 	
 	/* first get config file */
-	config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-
-		/* now parse file to get knwon devices list */
-		key_file = g_key_file_new ();
-		if(g_key_file_load_from_file(key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL)) {
-
-			devices_list = g_key_file_get_string_list (key_file, "Global", "DevicesList", NULL, NULL);
-			if (devices_list) {
-				pcur = devices_list;
-				while(*pcur && !ret) {
-					/* open associated base64 encoded key */
-					keyfilepath = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, *pcur, NULL);
-					if (g_file_test(keyfilepath, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-						keyfile = g_io_channel_new_file (keyfilepath, "r", NULL);
-						
-						stored_key = NULL;
-						g_io_channel_read_to_end (keyfile, &stored_key, NULL, NULL);
-
-						/* now compare to input */
-						if (strcmp(public_key, stored_key) == 2 || !strcmp(public_key, stored_key))
-							ret = 1;
-						g_free(stored_key);
-						g_io_channel_shutdown(keyfile, FALSE, NULL);
-						g_io_channel_unref(keyfile);
-						pcur++;
-					}
-					g_free(keyfilepath);
-				}
-			}
-			g_strfreev(devices_list);
-		}
-		g_key_file_free(key_file);
-		g_free(config_file);
-	}
+	gchar* device_file = g_strconcat(uid, ".pem", NULL);
+	config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
+	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)))
+		ret = 1;
+	g_free(config_file);
+	g_free(device_file);
 	return ret;
 }
 
@@ -127,65 +110,28 @@ int is_device_known(char* public_key) {
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-int store_device_public_key(char* public_key) {
-	gchar *config_file;
-	GKeyFile *key_file;
-	gchar **devices_list;
-	guint len = 0;
-	guint wlength = 0;
-	gchar dev_file[20];
-	int i;
-	const gchar** new_devices_list;
-	gsize length;
-	gchar *buf;
-	GIOChannel *file;
-	gchar* device_file;
+int store_device_public_key(char* uid, char* public_key) {
 
-	if (NULL == public_key || is_device_known(public_key))
+	if (NULL == public_key || is_device_known(uid))
 		return 0;
 
-	/* first get config file */
-	config_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  LIBIPHONE_CONF_FILE, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-		key_file = g_key_file_new();
-		if(g_key_file_load_from_file (key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL)) {
+	/* ensure config directory exists */
+	create_config_dir();
 
-			/* Determine device name */
-	 		devices_list = g_key_file_get_string_list (key_file, "Global", "DevicesList", NULL, NULL);
-			if (devices_list)
-				len = g_strv_length(devices_list);
-			g_strfreev(devices_list);
-			g_sprintf(dev_file, "Device%i", len);
+	/* build file path */
+	gchar* device_file = g_strconcat(uid, ".pem", NULL);
+	gchar* pem = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
 
-			/* Write device file to disk */
-			device_file = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR,  dev_file, NULL);
-			file = g_io_channel_new_file (device_file, "w", NULL);
-			g_free(device_file);
-			wlength = strlen(public_key); // why this wasn't discovered before... ugh
-			g_io_channel_write_chars(file, public_key, wlength, NULL, NULL);
-			g_io_channel_shutdown(file, TRUE, NULL);
-			g_io_channel_unref(file);
-				
-			/* Append device to list */
-			new_devices_list = (const gchar**)g_malloc(sizeof(gchar*)* (len + 2));
-			for( i = 0; i < len; i++)
-				new_devices_list[i] = devices_list[i];
-			new_devices_list[len] = dev_file;
-			new_devices_list[len+1] = NULL;
-			g_key_file_set_string_list(key_file,"Global", "DevicesList", new_devices_list, len+1);
-			g_free(new_devices_list);
-
-		}
-		
-		/* Write config file to disk */
-		buf = g_key_file_to_data(key_file, &length, NULL);
-		file = g_io_channel_new_file(config_file, "w", NULL);
-		g_io_channel_write_chars(file, buf, length, NULL, NULL);
-		g_io_channel_shutdown(file, TRUE, NULL);
-		g_io_channel_unref(file);
-		g_key_file_free(key_file);
-	}
-
+	/* decode public key for storing */
+	gsize decoded_size;
+	gchar* data = g_base64_decode (public_key, &decoded_size);
+	/* store file */
+	FILE* pFile = fopen(pem , "wb");
+	fwrite(data, 1, decoded_size, pFile);
+	fclose(pFile);
+	g_free(pem);
+	g_free(data);
+	g_free(device_file);
 	return 1;
 }
 
@@ -255,17 +201,6 @@ int get_root_certificate(gnutls_datum_t* root_cert) {
  */
 int get_host_certificate(gnutls_datum_t* host_cert) {
 	return read_file_in_confdir(LIBIPHONE_HOST_CERTIF, host_cert);
-}
-
-/** Creates a freedesktop compatible configuration directory for libiphone.
- */
-inline void create_config_dir() {
-	gchar* config_dir = g_build_path(G_DIR_SEPARATOR_S,  g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
-
-	if (!g_file_test(config_dir, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR) ))
-		g_mkdir_with_parents(config_dir, 0755);
-
-	g_free(config_dir);
 }
 
 /** Create and save a configuration file containing the given data.

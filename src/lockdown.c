@@ -320,21 +320,21 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
 		fprintf(stderr, "Hello failed in the lockdownd client.\n");
 	}
 
-	char *public_key = NULL;
-	if(!lockdownd_get_device_public_key(*control, &public_key)){
+	char *uid = NULL;
+	if(!lockdownd_get_device_uid(*control, &uid)){
 		fprintf(stderr, "Device refused to send public key.\n");
 	}
 
 	host_id = get_host_id();
 	
-	if (!is_device_known(public_key))
-		ret = lockdownd_pair_device(*control, public_key, host_id);
+	if (!is_device_known(uid))
+		ret = lockdownd_pair_device(*control, uid, host_id);
 	else 
 		ret = 1;
 
-	if (public_key) {
-		free(public_key);
-		public_key = NULL;
+	if (uid) {
+		free(uid);
+		uid = NULL;
 	}
 	
 	if (ret && host_id && lockdownd_start_SSL_session(*control, host_id)) {
@@ -359,7 +359,7 @@ int lockdownd_init(iPhone *phone, lockdownd_client **control)
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char *host_id)
+int lockdownd_pair_device(lockdownd_client *control, char *uid, char *host_id)
 {
 	int ret = 0;
 	xmlDocPtr plist = new_plist();
@@ -373,8 +373,16 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	char* device_cert_b64 = NULL;
 	char* host_cert_b64 = NULL;
 	char* root_cert_b64 = NULL;
+	char *public_key_b64 = NULL;
+
+	if(!lockdownd_get_device_public_key(control, &public_key_b64)){
+		fprintf(stderr, "Device refused to send public key.\n");
+		return 0;
+	}
+
 
 	if(!lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64)){
+		free(public_key_b64);
 		return 0;
 	}
 
@@ -408,12 +416,18 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	}
 	
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
-	if (!plist) return 0;
+	if (!plist) {
+		free(public_key_b64);
+		return 0;
+		}
 	dict = xmlDocGetRootElement(plist);
 	for (dict = dict->children; dict; dict = dict->next) {
 		if (!xmlStrcmp(dict->name, "dict")) break;
 	}
-	if (!dict) return 0;
+	if (!dict) {
+		free(public_key_b64);
+		return 0;
+	}
 	
 	/* Parse xml to check success and to find public key */
 	dictionary = read_dict_element_strings(dict);
@@ -435,11 +449,12 @@ int lockdownd_pair_device(lockdownd_client *control, char *public_key_b64, char 
 	/* store public key in config if pairing succeeded */
 	if (success) {
 		if (debug) printf("lockdownd_pair_device: pair success\n");
-		store_device_public_key(public_key_b64);
+		store_device_public_key(uid, public_key_b64);
 		ret = 1;
 	} else {
 		if (debug) printf("lockdownd_pair_device: pair failure\n");
 	}
+	free(public_key_b64);
 	return ret;
 }
 
@@ -542,12 +557,9 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 			if (!error) {
 				/* if everything went well, export in PEM format */
 				gnutls_datum_t dev_pem = {NULL, 0};
-				size_t crt_size;
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &crt_size);
-				dev_pem.size = crt_size;
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
 				dev_pem.data = gnutls_malloc(dev_pem.size);
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &crt_size);
-				dev_pem.size = crt_size;
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
 
 				/* now encode certificates for output */
 				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);

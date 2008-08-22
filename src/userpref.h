@@ -35,12 +35,12 @@ char* get_host_id();
  * 
  * @return 1 if device is already paired. Returns 0 otherwise.
  */
-int is_device_known(char* public_key);
+int is_device_known(char* uid);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int store_device_public_key(char* public_key);
+int store_device_public_key(char* uid, char* public_key);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
