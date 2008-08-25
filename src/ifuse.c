@@ -46,7 +46,7 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;
 
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	res = iphone_afc_get_file_attr(afc, path, stbuf);
+	iphone_afc_get_file_attr(afc, path, stbuf);
 
 	return res;
 }
