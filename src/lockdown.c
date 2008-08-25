@@ -284,7 +284,7 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_uid(lockdownd_client_t control, char **uid)
+int lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
 {
 	return lockdownd_generic_get_value(control, "UniqueDeviceID", uid);
 }
@@ -295,7 +295,7 @@ int lockdownd_get_device_uid(lockdownd_client_t control, char **uid)
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_public_key(lockdownd_client_t control, char **public_key)
+int lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key)
 {
 	return lockdownd_generic_get_value(control, "DevicePublicKey", public_key);
 }
@@ -322,7 +322,7 @@ int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *clien
 
 
 	char *uid = NULL;
-	if(IPHONE_E_SUCCESS == ret && !lockdownd_get_device_uid(control_loc, &uid)){
+	if(IPHONE_E_SUCCESS == ret && !lockdownd_get_device_uid(client_loc, &uid)){
 		fprintf(stderr, "Device refused to send uid.\n");
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
@@ -334,7 +334,7 @@ int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *clien
 	}
 
 	if (IPHONE_E_SUCCESS == ret && !is_device_known(uid))
-		ret = lockdownd_pair_device(*control, uid, host_id);
+		ret = lockdownd_pair_device(client_loc, uid, host_id);
 
 	if (uid) {
 		free(uid);
