@@ -33,25 +33,24 @@ typedef struct {
 } AFCPacket;
 
 typedef struct {
-	usbmux_connection *connection;
-	AFCPacket *afc_packet;
-	int file_handle;
-	int lock;
-} AFClient;
-
-typedef struct {
 	uint32 filehandle, unknown1, size, unknown2;
 } AFCFilePacket;
-
-typedef struct {
-	uint32 filehandle, blocks, size, type;
-} AFCFile;
 
 typedef struct __AFCToken {
 	struct __AFCToken *last, *next;
 	char *token;
 } AFCToken;
 
+struct iphone_afc_client_int {
+	iphone_umux_client_t connection;
+	AFCPacket *afc_packet;
+	int file_handle;
+	int lock;
+};
+
+struct iphone_afc_file_int {
+	uint32 filehandle, blocks, size, type;
+};
 
 enum {
 	AFC_FILE_READ = 0x00000002, // seems to be able to read and write files
@@ -82,18 +81,3 @@ enum {
 	AFC_WRITE = 0x00000010
 };
 
-AFClient *afc_connect(iPhone *phone, int s_port, int d_port);
-void afc_disconnect(AFClient *client);
-
-char **afc_get_devinfo(AFClient *client);
-char **afc_get_dir_list(AFClient *client, const char *dir);
-AFCFile *afc_get_file_info(AFClient *client, const char *path);
-AFCFile *afc_open_file(AFClient *client, const char *filename, uint32 file_mode);
-void afc_close_file(AFClient *client, AFCFile *file);
-int afc_read_file(AFClient *client, AFCFile *file, char *data, int length);
-int afc_write_file(AFClient *client, AFCFile *file, const char *data, int length);
-int afc_seek_file(AFClient *client, AFCFile *file, int seekpos);
-int afc_truncate_file(AFClient *client, AFCFile *file, uint32 newsize);
-int afc_delete_file(AFClient *client, const char *path);
-int afc_rename_file(AFClient *client, const char *from, const char *to);
-int afc_mkdir(AFClient *client, const char *dir);
