@@ -341,7 +341,7 @@ int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *clien
 		uid = NULL;
 	}
 
-	if (IPHONE_E_SUCCESS == ret && !lockdownd_start_SSL_session(client_loc, host_id)) {
+	if (IPHONE_E_SUCCESS == ret && lockdownd_start_SSL_session(client_loc, host_id)) {
 		ret = IPHONE_E_SUCCESS;
 	} else {
 		ret = IPHONE_E_SSL_ERROR;
