@@ -97,7 +97,7 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone) {
 void iphone_lckd_free_client( iphone_lckd_client_t client ) {
 	if (!client) return;
 	if (client->connection) {
-		mux_close_connection(client->connection);
+		iphone_mux_free_client(client->connection);
 	}
 
 	if (client->ssl_session) gnutls_deinit(*client->ssl_session);
@@ -118,12 +118,12 @@ int iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data ) {
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!client->in_SSL) bytes = mux_recv(client->connection, (char *)&datalen, sizeof(datalen));
+	if (!client->in_SSL) bytes = iphone_mux_recv(client->connection, (char *)&datalen, sizeof(datalen));
 	else bytes = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
 	datalen = ntohl(datalen);
 	
 	receive = (char*)malloc(sizeof(char) * datalen);
-	if (!client->in_SSL) bytes = mux_recv(client->connection, receive, datalen);
+	if (!client->in_SSL) bytes = iphone_mux_recv(client->connection, receive, datalen);
 	else bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
 	*dump_data = receive;
 	return bytes;
@@ -157,7 +157,7 @@ int iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t len
 		packet = NULL;
 	}
 	
-	if (!client->in_SSL) bytes = mux_send(client->connection, real_query, ntohl(length)+sizeof(length));
+	if (!client->in_SSL) bytes = iphone_mux_send(client->connection, real_query, ntohl(length)+sizeof(length));
 	else gnutls_record_send(*client->ssl_session, real_query, ntohl(length)+sizeof(length));
 	if (debug) printf("lockdownd_send(): sent it!\n");
 	free(real_query);
@@ -186,11 +186,11 @@ int lockdownd_hello(iphone_lckd_client_t control) {
 	uint32 length;
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_content, &length);
-	bytes = lockdownd_send(control, XML_content, length);
+	bytes = iphone_lckd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
-	bytes = lockdownd_recv(control, &XML_content);
+	bytes = iphone_lckd_recv(control, &XML_content);
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
 	if (!plist) return 0;
@@ -240,13 +240,13 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
 	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
 
 	/* send to iPhone */
-	bytes = lockdownd_send(control, XML_content, length);
+	bytes = iphone_lckd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
 
 	/* Now get iPhone's answer */
-	bytes = lockdownd_recv(control, &XML_content);
+	bytes = iphone_lckd_recv(control, &XML_content);
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
 	if (!plist) return 0;
@@ -407,13 +407,13 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	printf("XML Pairing request : %s\n",XML_content);
 
 	/* send to iPhone */
-	bytes = lockdownd_send(control, XML_content, length);
+	bytes = iphone_lckd_send(control, XML_content, length);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
 
 	/* Now get iPhone's answer */
-	bytes = lockdownd_recv(control, &XML_content);
+	bytes = iphone_lckd_recv(control, &XML_content);
 
 	if (debug) {
 		printf("lockdown_pair_device: iPhone's response to our pair request:\n");
@@ -621,13 +621,13 @@ int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID
 	}
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&what2send, &len);
-	bytes = lockdownd_send(control, what2send, len);
+	bytes = iphone_lckd_send(control, what2send, len);
 	
 	xmlFree(what2send);
 	xmlFreeDoc(plist);
 	
 	if (bytes > 0) {
-		len = lockdownd_recv(control, &what2send);
+		len = iphone_lckd_recv(control, &what2send);
 		plist = xmlReadMemory(what2send, len, NULL, NULL, 0);
 		dict = xmlDocGetRootElement(plist);
 		for (dict = dict->children; dict; dict = dict->next) {
@@ -721,7 +721,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	control = (iphone_lckd_client_t)transport;
 	if (debug) printf("lockdownd_secuwrite() called\n");
 	if (debug) printf("pre-send\nlength = %zi\n", length);
-	bytes = mux_send(control->connection, buffer, length);
+	bytes = iphone_mux_send(control->connection, buffer, length);
 	if (debug) printf("post-send\nsent %i bytes\n", bytes);
 	if (debug) {
 		FILE *my_ssl_packet = fopen("sslpacketwrite.out", "w+");
@@ -779,7 +779,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 1000)); // ensuring nothing stupid happens
 	
 	if (debug) printf("pre-read\nclient wants %zi bytes\n", length);
-	bytes = mux_recv(control->connection, recv_buffer, (length * 1000));
+	bytes = iphone_mux_recv(control->connection, recv_buffer, (length * 1000));
 	if (debug) printf("post-read\nwe got %i bytes\n", bytes);
 	if (debug && bytes < 0) {
 		printf("lockdownd_securead(): uh oh\n");
@@ -838,10 +838,10 @@ int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_query, &length);
 	
-	lockdownd_send(client, XML_query, length);
+	iphone_lckd_send(client, XML_query, length);
 	free(XML_query);
 	
-	length = lockdownd_recv(client, &XML_query);
+	length = iphone_lckd_recv(client, &XML_query);
 	
 	xmlFreeDoc(plist);
 	

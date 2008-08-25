@@ -49,8 +49,9 @@ int debug = 0;
 
 static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;
-	AFCFile *file;
-	AFClient *afc = fuse_get_context()->private_data;
+
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	res = iphone_afc_get_file_attr(afc, path, stbuf);
 
 	return res;
 }
@@ -59,9 +60,9 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi) {
 	int i;
 	char **dirs;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 
-	dirs = afc_get_dir_list(afc, path);
+	dirs = iphone_afc_get_dir_list(afc, path);
 
 	if(!dirs)
 		return -ENOENT;
@@ -77,10 +78,10 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
 	// exactly the same as open but using a different mode
-	AFCFile *file;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	
-	file = afc_open_file(afc, path, AFC_FILE_WRITE);
+	iphone_afc_open_file(afc, path, AFC_FILE_WRITE, &file);
 	fh_index++;
 	fi->fh = fh_index;
 	g_hash_table_insert(file_handles, &fh_index, file);
@@ -88,8 +89,8 @@ static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi
 }
 
 static int ifuse_open(const char *path, struct fuse_file_info *fi) {
-	AFCFile *file;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	uint32 mode = 0;
 	
 	if ((fi->flags & 3) == O_RDWR || (fi->flags & 3) == O_WRONLY) {
@@ -100,7 +101,7 @@ static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 		mode = AFC_FILE_READ;
 	}
 	
-	file = afc_open_file(afc, path, mode);
+	iphone_afc_open_file(afc, path, mode, &file);
 	
 	fh_index++;
 	fi->fh = fh_index;
@@ -112,8 +113,8 @@ static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 			struct fuse_file_info *fi) {
 	int bytes;
-	AFCFile *file;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 
 	if (size == 0)
 		return 0;
@@ -123,23 +124,23 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 		return -ENOENT;
 	}
 
-	bytes = afc_seek_file(afc, file, offset);
-	bytes = afc_read_file(afc, file, buf, size);
+	bytes = iphone_afc_seek_file(afc, file, offset);
+	bytes = iphone_afc_read_file(afc, file, buf, size);
 	return bytes;
 }
 
 static int ifuse_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
 	int bytes = 0;
-	AFCFile *file = NULL;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file = NULL;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	
 	if (size == 0) return 0;
 	
 	file = g_hash_table_lookup(file_handles, &(fi->fh));
 	if (!file) return -ENOENT;
 	
-	bytes = afc_seek_file(afc, file, offset);
-	bytes = afc_write_file(afc, file, buf, size);
+	bytes = iphone_afc_seek_file(afc, file, offset);
+	bytes = iphone_afc_write_file(afc, file, buf, size);
 	return bytes;
 }
 
@@ -148,16 +149,15 @@ static int ifuse_fsync(const char *path, int datasync, struct fuse_file_info *fi
 }
 
 static int ifuse_release(const char *path, struct fuse_file_info *fi){
-	AFCFile *file;
-	AFClient *afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	
 	file = g_hash_table_lookup(file_handles, &(fi->fh));
 	if (!file){
 		return -ENOENT;
 	}
-	afc_close_file(afc, file);
+	iphone_afc_close_file(afc, file);
 	
-	free(file);
 	g_hash_table_remove(file_handles, &(fi->fh));
 
 	return 0;
@@ -165,49 +165,44 @@ static int ifuse_release(const char *path, struct fuse_file_info *fi){
 
 void *ifuse_init(struct fuse_conn_info *conn) {
 	int port = 0;
-	AFClient *afc = NULL;
+	iphone_afc_client_t afc = NULL;
 	
 	conn->async_read = 0;
 
 	file_handles = g_hash_table_new(g_int_hash, g_int_equal);
 
-	phone = get_iPhone();
+	iphone_get_device(&phone);
 	if (!phone){
 		fprintf(stderr, "No iPhone found, is it connected?\n");
-		   	return NULL;
-	   	}
-	
-	lockdownd_client *control = new_lockdownd_client(phone);
-	if (!lockdownd_hello(control)) {
-		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
+	
 
-	if (!lockdownd_init(phone, &control)) {
-		free_iPhone(phone);
+	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong in the lockdownd client.\n");
 		return NULL;
 	}
 	
-	port = lockdownd_start_service(control, "com.apple.afc");
+	port = iphone_lckd_start_service(control, "com.apple.afc");
 	if (!port) {
-		lockdownd_close(control);
-		free_iPhone(phone);
+		iphone_lckd_free_client(control);
+		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
                 return NULL;
 	}
 
-	afc = afc_connect(phone, 3432, port);
+	iphone_afc_new_client(phone, 3432, port, &afc);
 
         return afc;
 }
 
 void ifuse_cleanup(void *data) {
-	AFClient *afc = (AFClient *)data;
+	iphone_afc_client_t afc = (iphone_afc_client_t )data;
 
-	afc_disconnect(afc);
-	lockdownd_close(control);
-	free_iPhone(phone);
+	iphone_afc_free_client(afc);
+	iphone_lckd_free_client(control);
+	iphone_free_device(phone);
 }
 
 int ifuse_flush(const char *path, struct fuse_file_info *fi) {
@@ -215,8 +210,8 @@ int ifuse_flush(const char *path, struct fuse_file_info *fi) {
 }
 
 int ifuse_statfs(const char *path, struct statvfs *stats) {
-	AFClient *afc = fuse_get_context()->private_data;
-	char **info_raw = afc_get_devinfo(afc);
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	char **info_raw = iphone_afc_get_devinfo(afc);
 	uint32 totalspace = 0, freespace = 0, blocksize = 0, i = 0;
 	
 	if (!info_raw) return -ENOENT;
@@ -243,38 +238,39 @@ int ifuse_statfs(const char *path, struct statvfs *stats) {
 
 int ifuse_truncate(const char *path, off_t size) {
 	int result = 0;
-	AFClient *afc = fuse_get_context()->private_data;
-	AFCFile *tfile = afc_open_file(afc, path, AFC_FILE_READ);
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	iphone_afc_file_t tfile = NULL;
+	iphone_afc_open_file(afc, path, AFC_FILE_READ, &tfile);
 	if (!tfile) return -1;
 	
-	result = afc_truncate_file(afc, tfile, size);
-	afc_close_file(afc, tfile);
+	result = iphone_afc_truncate_file(afc, tfile, size);
+	iphone_afc_close_file(afc, tfile);
 	return result;
 }
 
 int ifuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
-	AFClient *afc = fuse_get_context()->private_data;
-	AFCFile *file = g_hash_table_lookup(file_handles, &fi->fh);
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	iphone_afc_file_t file = g_hash_table_lookup(file_handles, &fi->fh);
 	if (!file) return -ENOENT;
 	
-	return afc_truncate_file(afc, file, size);
+	return iphone_afc_truncate_file(afc, file, size);
 }
 
 int ifuse_unlink(const char *path) {
-	AFClient *afc = fuse_get_context()->private_data;
-	if (afc_delete_file(afc, path)) return 0;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	if (iphone_afc_delete_file(afc, path)) return 0;
 	else return -1;
 }
 
 int ifuse_rename(const char *from, const char *to) {
-	AFClient *afc = fuse_get_context()->private_data;
-	if (afc_rename_file(afc, from, to)) return 0;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	if (iphone_afc_rename_file(afc, from, to)) return 0;
 	else return -1;
 }
 
 int ifuse_mkdir(const char *dir, mode_t ignored) {
-	AFClient *afc = fuse_get_context()->private_data;
-	if (afc_mkdir(afc, dir)) return 0;
+	iphone_afc_client_t afc = fuse_get_context()->private_data;
+	if (iphone_afc_mkdir(afc, dir)) return 0;
 	else return -1;
 }
 

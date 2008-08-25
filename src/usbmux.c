@@ -176,7 +176,7 @@ void iphone_mux_free_client ( iphone_umux_client_t client ) {
 	
 	bytes = usb_bulk_write(client->phone->device, BULKOUT, (char*)client->header, sizeof(usbmux_tcp_header), 800);
 	if(debug && bytes < 0)
-		printf("mux_close_connection(): when writing, libusb gave me the error: %s\n", usb_strerror());
+		printf("iphone_muxèfree_client(): when writing, libusb gave me the error: %s\n", usb_strerror());
 
 	bytes = usb_bulk_read(client->phone->device, BULKIN, (char*)client->header, sizeof(usbmux_tcp_header), 800);
 	if(debug && bytes < 0)
@@ -332,7 +332,7 @@ int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen 
 		// Free our buffer and continue.
 		free(buffer);
 		buffer = NULL;
-		return mux_recv(client, data, datalen); // recurse back in to try again
+		return iphone_mux_recv(client, data, datalen); // recurse back in to try again
 	}
 
 	// The packet was absolutely meant for us if it hits this point.

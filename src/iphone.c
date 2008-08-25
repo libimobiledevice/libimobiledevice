@@ -76,7 +76,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 	
 	// Check to see if we are connected
 	if (!phone->device || !phone->__device) {
-		free_iPhone(phone);
+		iphone_free_device(phone);
 		if (debug) fprintf(stderr, "get_iPhone(): iPhone not found\n");
 		return IPHONE_E_NO_DEVICE;
 	}
@@ -99,7 +99,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 	// Check for bad response
 	if (bytes < 20) {
 		free(version);
-		free_iPhone(phone);
+		iphone_free_device(phone);
 		if (debug) fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
 		if (debug && bytes < 0) fprintf(stderr, "get_iPhone(): libusb error message %d: %s (%s)\n",
 			       			bytes, usb_strerror(), strerror(-bytes));
@@ -115,7 +115,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 		return IPHONE_E_SUCCESS;
 	} else {
 		// Bad header
-		free_iPhone(phone);
+		iphone_free_device(phone);
 		free(version);
 		if (debug) fprintf(stderr, "get_iPhone(): Received a bad header/invalid version number.");
 		return IPHONE_E_BAD_HEADER;
@@ -123,7 +123,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 
 	// If it got to this point it's gotta be bad
 	if (debug) fprintf(stderr, "get_iPhone(): Unknown error.\n");
-	free_iPhone(phone);
+	iphone_free_device(phone);
 	free(version);
 	return IPHONE_E_UNKNOWN_ERROR; // if it got to this point it's gotta be bad
 }
