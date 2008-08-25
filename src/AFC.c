@@ -596,7 +596,7 @@ int iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename,
 	if (!file){
 		ret = IPHONE_E_NO_SUCH_FILE;
 	} else {
-		stbuf->st_mode = file->type | 0644; // but we don't want anything on the iPhone executable, like, ever
+		stbuf->st_mode = file->type | (S_ISDIR(file->type) ? 0755 : 0644);
 		stbuf->st_size = file->size;
 		stbuf->st_blksize = 2048; // FIXME: Is this the actual block size used on the iPhone?
 		stbuf->st_blocks = file->blocks;

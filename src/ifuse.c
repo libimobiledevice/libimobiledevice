@@ -42,8 +42,8 @@
 GHashTable *file_handles;
 int fh_index = 0;
 
-iPhone *phone = NULL;
-lockdownd_client *control = NULL;
+iphone_device_t phone = NULL;
+iphone_lckd_client_t control = NULL;
 
 int debug = 0;
 
@@ -51,22 +51,6 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;
 	AFCFile *file;
 	AFClient *afc = fuse_get_context()->private_data;
-
-	memset(stbuf, 0, sizeof(struct stat));
-	file = afc_get_file_info(afc, path);
-	if (!file){
-		res = -ENOENT;
-	} else {
-	  	stbuf->st_mode = file->type | (S_ISDIR(file->type) ? 0755 : 0644);
-		stbuf->st_size = file->size;
-		stbuf->st_blksize = 2048; // FIXME: Is this the actual block size used on the iPhone?
-		stbuf->st_blocks = file->blocks;
-		stbuf->st_uid = getuid();
-		stbuf->st_gid = getgid();
-
-		afc_close_file(afc,file);
-		free(file);
-	}
 
 	return res;
 }
