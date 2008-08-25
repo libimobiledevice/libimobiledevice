@@ -32,12 +32,7 @@
 #include <glib.h>
 #include <unistd.h>
 
-#include "usbmux.h"
-#include "iphone.h"
-#include "plist.h"
-#include "lockdown.h"
-#include "AFC.h"
-#include "userpref.h"
+#include <libiphone/libiphone.h>
 
 GHashTable *file_handles;
 int fh_index = 0;
@@ -91,7 +86,7 @@ static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi
 static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 	iphone_afc_file_t file;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	uint32 mode = 0;
+	uint32_t mode = 0;
 	
 	if ((fi->flags & 3) == O_RDWR || (fi->flags & 3) == O_WRONLY) {
 		mode = AFC_FILE_READ;
@@ -212,7 +207,7 @@ int ifuse_flush(const char *path, struct fuse_file_info *fi) {
 int ifuse_statfs(const char *path, struct statvfs *stats) {
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	char **info_raw = iphone_afc_get_devinfo(afc);
-	uint32 totalspace = 0, freespace = 0, blocksize = 0, i = 0;
+	uint32_t totalspace = 0, freespace = 0, blocksize = 0, i = 0;
 	
 	if (!info_raw) return -ENOENT;
 	
