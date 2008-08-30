@@ -18,6 +18,7 @@ PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgthread2, gthread-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3)
 PKG_CHECK_MODULES(libfuse, fuse >= 2.7.0)
+PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 
 # Checks for header files.
 AC_HEADER_STDC
