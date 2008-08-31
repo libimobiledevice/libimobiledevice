@@ -45,9 +45,16 @@ void print_nodes(bplist_node *root_node) {
 			break;
 		
 		case BPLIST_STRING:
-		case BPLIST_DATA:
-			printf("String/data: ");
+			printf("String: ");
 			fwrite(root_node->strval, sizeof(char), root_node->length, stdout);
+			fflush(stdout);
+			printf("\n");
+			break;
+
+		case BPLIST_DATA:
+			printf("Data: ");
+			char* data = g_base64_encode(root_node->strval,root_node->length);
+			fwrite(format_string(data, 60, 0), sizeof(char), strlen(data), stdout);
 			fflush(stdout);
 			printf("\n");
 			break;
