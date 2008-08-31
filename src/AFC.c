@@ -58,7 +58,7 @@ static void afc_unlock(iphone_afc_client_t client) { // just to be pretty
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-int iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t *client ) {
+iphone_error_t iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t *client ) {
 	int ret = IPHONE_E_SUCCESS;
 	iphone_afc_client_t client_loc = (iphone_afc_client_t)malloc(sizeof(struct iphone_afc_client_int));
 	
@@ -100,12 +100,14 @@ int iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, 
  * 
  * @param client The client to disconnect.
  */
-void iphone_afc_free_client ( iphone_afc_client_t client ) {
-	if (!client || !client->connection || !client->afc_packet) return;
+iphone_error_t iphone_afc_free_client ( iphone_afc_client_t client ) {
+	if (!client || !client->connection || !client->afc_packet)
+		return IPHONE_E_INVALID_ARG;
 	
 	iphone_mux_free_client(client->connection);
 	free(client->afc_packet);
 	free(client);
+	return IPHONE_E_SUCCESS;
 }
 
 
@@ -324,11 +326,12 @@ static char **make_strings_list(char *tokens, int true_length) {
  * @return A char ** list of files in that directory, terminated by an empty
  *         string for now or NULL if there was an error.
  */
-char **iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir) {
+iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir, char ***list) {
 	int bytes = 0;
-	char *data = NULL, **list = NULL;
+	char *data = NULL, **list_loc = NULL;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	
-	if (!client || !dir) return NULL;
+	if (!client || !dir || !list) return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
 	
@@ -339,23 +342,25 @@ char **iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir) {
 	bytes = dispatch_AFC_packet(client, dir, strlen(dir));
 	if (bytes <= 0) {
 		afc_unlock(client);
-		return NULL;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 	
 	// Receive the data
 	bytes = receive_AFC_data(client, &data);
 	if (bytes < 0 && !data) {
 		afc_unlock(client);
-		return NULL;
+		return IPHONE_E_NOT_ENOUGH_DATA;
        	}
 	
 	// Parse the data
-	list = make_strings_list(data, bytes);
+	list_loc = make_strings_list(data, bytes);
+	if (list_loc) ret = IPHONE_E_SUCCESS;
 	if (data) free(data);
 
 	afc_unlock(client);
+	*list = list_loc;
 	
-	return list;
+	return ret;
 }
 
 /** Get device info for a client connection to phone. (free space on disk, etc.)
@@ -365,11 +370,11 @@ char **iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir) {
  * @return A char ** list of parameters as given by AFC or NULL if there was an
  *         error.
  */
-char **iphone_afc_get_devinfo ( iphone_afc_client_t client ) {
+iphone_error_t iphone_afc_get_devinfo ( iphone_afc_client_t client, char ***infos) {
 	int bytes = 0;
 	char *data = NULL, **list = NULL;
 	
-	if (!client) return NULL;
+	if (!client || !infos) return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
 	
@@ -379,14 +384,14 @@ char **iphone_afc_get_devinfo ( iphone_afc_client_t client ) {
 	bytes = dispatch_AFC_packet(client, NULL, 0);
 	if (bytes < 0) {
 		afc_unlock(client);
-		return NULL;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 	
 	// Receive the data
 	bytes = receive_AFC_data(client, &data);
 	if (bytes < 0 && !data) {
 		afc_unlock(client);
-		return NULL;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	} 
 	
 	// Parse the data
@@ -394,8 +399,8 @@ char **iphone_afc_get_devinfo ( iphone_afc_client_t client ) {
 	if (data) free(data);
 	
 	afc_unlock(client);
-
-	return list;
+	*infos = list;
+	return IPHONE_E_SUCCESS;
 }
 
 /** Deletes a file.
@@ -406,7 +411,7 @@ char **iphone_afc_get_devinfo ( iphone_afc_client_t client ) {
  * @return IPHONE_E_SUCCESS if everythong went well, IPHONE_E_INVALID_ARG
  *         if arguments are NULL or invalid, IPHONE_E_NOT_ENOUGH_DATA otherwise.
  */
-int iphone_afc_delete_file ( iphone_afc_client_t client, const char *path) {
+iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *path) {
 	char *response = NULL;
 	int bytes;
 	
@@ -445,7 +450,7 @@ int iphone_afc_delete_file ( iphone_afc_client_t client, const char *path) {
  * @return IPHONE_E_SUCCESS if everythong went well, IPHONE_E_INVALID_ARG
  *         if arguments are NULL or invalid, IPHONE_E_NOT_ENOUGH_DATA otherwise.
  */
-int iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to) {
+iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to) {
 	char *response = NULL;
 	char *send = (char*)malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32)));
 	int bytes = 0;
@@ -488,7 +493,7 @@ int iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const
  * @return IPHONE_E_SUCCESS if everythong went well, IPHONE_E_INVALID_ARG
  *         if arguments are NULL or invalid, IPHONE_E_NOT_ENOUGH_DATA otherwise.
  */
-int iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir) {
+iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir) {
 	int bytes = 0;
 	char *response = NULL;
 	
@@ -586,7 +591,7 @@ iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path
  * @return A pointer to an AFCFile struct containing the information received,
  *         or NULL on failure.
  */
-int iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf ) {
+iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf ) {
 
 	int ret = IPHONE_E_SUCCESS;
 	if (!client ||!client->connection || !client->afc_packet || !stbuf) return IPHONE_E_INVALID_ARG;
@@ -620,7 +625,7 @@ int iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename,
  *         received by afc_get_file_info) as well as the handle to the file or
  *         NULL in the case of failure.
  */
-int iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32_t file_mode, iphone_afc_file_t *file ) {
+iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32_t file_mode, iphone_afc_file_t *file ) {
 	iphone_afc_file_t file_loc = NULL;
 	uint32 ag = 0;
 	int bytes = 0, length = 0;
@@ -677,12 +682,12 @@ int iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uin
  *
  * @return The number of bytes read if successful. If there was an error -1.
  */
-int iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length) {
+iphone_error_t iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length, uint32_t *bytes) {
 	char *input = NULL;
-	int current_count = 0, bytes = 0;
+	int current_count = 0, bytes_loc = 0;
 	const int MAXIMUM_READ_SIZE = 1 << 16;
 
-	if (!client || !client->afc_packet || !client->connection || !file) return -1;
+	if (!client || !client->afc_packet || !client->connection || !file) return IPHONE_E_INVALID_ARG;
 	if (debug) fprintf(stderr, "afc_read_file called for length %i\n", length);
 
 	afc_lock(client);
@@ -698,40 +703,41 @@ int iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, c
 		packet->size = ((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE;
 		client->afc_packet->operation = AFC_READ;
 		client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-		bytes = dispatch_AFC_packet(client, (char*)packet, sizeof(AFCFilePacket));
+		bytes_loc = dispatch_AFC_packet(client, (char*)packet, sizeof(AFCFilePacket));
 		free(packet);
 		
-		if (bytes <= 0) {
+		if (bytes_loc <= 0) {
 			afc_unlock(client);
-			return -1;
+			return IPHONE_E_NOT_ENOUGH_DATA;
 		}
 
 		// Receive the data
-		bytes = receive_AFC_data(client, &input);
-		if (debug) fprintf(stderr, "afc_read_file: bytes returned: %i\n", bytes);
+		bytes_loc = receive_AFC_data(client, &input);
+		if (debug) fprintf(stderr, "afc_read_file: bytes returned: %i\n", bytes_loc);
 		if (bytes < 0) {
 			if (input) free(input);
 			afc_unlock(client);
-			return -1;
+			return IPHONE_E_NOT_ENOUGH_DATA;
 		} else if (bytes == 0) {
 			if (input) free(input);
 			afc_unlock(client);
-			return current_count;
+			*bytes = current_count;
+			return IPHONE_E_SUCCESS; //FIXME check that's actually a success
 		} else {
 			if (input) {
-				if (debug) fprintf(stderr, "afc_read_file: %d\n", bytes);
-				memcpy(data+current_count, input, (bytes > length) ? length : bytes);
+				if (debug) fprintf(stderr, "afc_read_file: %d\n", bytes_loc);
+				memcpy(data+current_count, input, (bytes_loc > length) ? length : bytes_loc);
 				free(input);
 				input = NULL;
-				current_count += (bytes > length) ? length : bytes;
+				current_count += (bytes_loc > length) ? length : bytes_loc;
 			}
 		}
 	}
 	if (debug) fprintf(stderr, "afc_read_file: returning current_count as %i\n", current_count);
 	
 	afc_unlock(client);
-	
-	return current_count;
+	*bytes = current_count;
+	return IPHONE_E_SUCCESS;
 }
 
 /** Writes a given number of bytes to a file.
@@ -744,13 +750,13 @@ int iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, c
  * @return The number of bytes written to the file, or a value less than 0 if
  *         none were written...
  */
-int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length) {
+iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length, uint32_t *bytes) {
 	char *acknowledgement = NULL;
 	const int MAXIMUM_WRITE_SIZE = 1 << 16;
-	uint32 zero = 0, bytes = 0, segments = (length / MAXIMUM_WRITE_SIZE), current_count = 0, i = 0;
+	uint32 zero = 0, bytes_loc = 0, segments = (length / MAXIMUM_WRITE_SIZE), current_count = 0, i = 0;
 	char *out_buffer = NULL;
 
-	if (!client ||!client->afc_packet || !client->connection || !file) return -1;
+	if (!client ||!client->afc_packet || !client->connection || !file || !bytes_loc) return IPHONE_E_INVALID_ARG;
 	
 	afc_lock(client);
 
@@ -766,19 +772,19 @@ int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, 
 		memcpy(out_buffer, (char*)&file->filehandle, sizeof(uint32));
 		memcpy(out_buffer+4, (char*)&zero, sizeof(uint32));
 		memcpy(out_buffer+8, data+current_count, MAXIMUM_WRITE_SIZE);
-		bytes = dispatch_AFC_packet(client, out_buffer, MAXIMUM_WRITE_SIZE + 8);
-		if (bytes < 0) {
+		bytes_loc = dispatch_AFC_packet(client, out_buffer, MAXIMUM_WRITE_SIZE + 8);
+		if (bytes_loc < 0) {
 			afc_unlock(client);
-			return bytes;
+			return IPHONE_E_NOT_ENOUGH_DATA;
 		}
 		free(out_buffer);
 		out_buffer = NULL;
 
-		current_count += bytes;
-		bytes = receive_AFC_data(client, &acknowledgement); 
-		if (bytes < 0) {
+		current_count += bytes_loc;
+		bytes_loc = receive_AFC_data(client, &acknowledgement);
+		if (bytes_loc < 0) {
 			afc_unlock(client);
-			return current_count;
+			return IPHONE_E_NOT_ENOUGH_DATA;
 		}
 	}
 	
@@ -786,7 +792,8 @@ int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, 
 	// this length is fine because it's always sizeof(AFCPacket) + 8, but to be sure we do it again
 	if (current_count == length) {
 		afc_unlock(client);
-		return current_count;
+		*bytes = current_count;
+		return IPHONE_E_SUCCESS;
 	}
 	
 	client->afc_packet->this_length = sizeof(AFCPacket) + 8;
@@ -796,25 +803,26 @@ int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, 
 	memcpy(out_buffer, (char*)&file->filehandle, sizeof(uint32));
 	memcpy(out_buffer+4, (char*)&zero, sizeof(uint32));
 	memcpy(out_buffer+8, data+current_count, (length - current_count));
-	bytes = dispatch_AFC_packet(client, out_buffer, (length - current_count) + 8);
+	bytes_loc = dispatch_AFC_packet(client, out_buffer, (length - current_count) + 8);
 	free(out_buffer);
 	out_buffer = NULL;
 	
-	current_count += bytes;
+	current_count += bytes_loc;
 	
-	if (bytes <= 0) {
+	if (bytes_loc <= 0) {
 		afc_unlock(client);
-		return current_count;
+		*bytes = current_count;
+		return IPHONE_E_SUCCESS;
 	}
 	
-	zero = bytes;
-	bytes = receive_AFC_data(client, &acknowledgement);
+	zero = bytes_loc;
+	bytes_loc = receive_AFC_data(client, &acknowledgement);
 	afc_unlock(client);
-	if (bytes < 0) {
+	if (bytes_loc < 0) {
 		if (debug) fprintf(stderr, "afc_write_file: uh oh?\n");
 	}
-	
-	return current_count;
+
+	return IPHONE_E_UNKNOWN_ERROR;
 }
 
 /** Closes a file on the phone. 
@@ -823,7 +831,8 @@ int iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, 
  * @param file A pointer to an AFCFile struct containing the file handle of the
  *        file to close.
  */
-void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file) {
+iphone_error_t iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file) {
+	if (!client || !file) return IPHONE_E_INVALID_ARG;
 	char *buffer = malloc(sizeof(char) * 8);
 	uint32 zero = 0;
 	int bytes = 0;
@@ -846,7 +855,7 @@ void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file)
 	
 	if (bytes <= 0) { 
 		afc_unlock(client); 
-		return;
+		return IPHONE_E_UNKNOWN_ERROR;
 	}
 	
 	// Receive the response
@@ -854,6 +863,7 @@ void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file)
 	if (buffer) free(buffer);
 	free(file);
 	afc_unlock(client);
+	return IPHONE_E_SUCCESS;
 }
 
 /** Seeks to a given position of a pre-opened file on the phone. 
@@ -865,7 +875,7 @@ void iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file)
  * 
  * @return IPHONE_E_SUCCESS on success, IPHONE_E_NOT_ENOUGH_DATA on failure.
  */
-int iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, int seekpos) {
+iphone_error_t iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, int seekpos) {
 	char *buffer = (char*)malloc(sizeof(char) * 24);
 	uint32 seekto = 0, bytes = 0, zero = 0;
 	
@@ -916,7 +926,7 @@ int iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, i
  * @note This function is more akin to ftruncate than truncate, and truncate
  *       calls would have to open the file before calling this, sadly.
  */
-int iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc_file_t file, uint32_t newsize) {
+iphone_error_t iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc_file_t file, uint32_t newsize) {
 	char *buffer = (char*)malloc(sizeof(char) * 16);
 	uint32 bytes = 0, zero = 0;
 	

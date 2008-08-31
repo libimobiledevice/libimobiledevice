@@ -116,7 +116,7 @@ void add_connection(iphone_umux_client_t connection) {
  * @param client A mux TCP header for the connection which is used for tracking and data transfer.
  * @return IPHONE_E_SUCCESS on success, an error code otherwise.
  */
-int iphone_mux_new_client ( iphone_device_t device, uint16_t src_port, uint16_t dst_port, iphone_umux_client_t *client ){
+iphone_error_t iphone_mux_new_client ( iphone_device_t device, uint16_t src_port, uint16_t dst_port, iphone_umux_client_t *client ){
 	if (!device || !src_port || !dst_port)
 		return IPHONE_E_INVALID_ARG;
 
@@ -165,8 +165,10 @@ int iphone_mux_new_client ( iphone_device_t device, uint16_t src_port, uint16_t 
  * @note Once a connection is closed it may not be used again.
  * 
  * @param connection The connection to close.
+ *
+ * @return IPHONE_E_SUCCESS on success.
  */
-void iphone_mux_free_client ( iphone_umux_client_t client ) {
+iphone_error_t iphone_mux_free_client ( iphone_umux_client_t client ) {
 	if (!client || !client->phone) return;
 	
 	client->header->tcp_flags = 0x04;
@@ -183,6 +185,8 @@ void iphone_mux_free_client ( iphone_umux_client_t client ) {
 		printf("get_iPhone(): when reading, libusb gave me the error: %s\n", usb_strerror());
 	
 	delete_connection(client);
+
+	return IPHONE_E_SUCCESS;
 }
 
 
@@ -192,15 +196,16 @@ void iphone_mux_free_client ( iphone_umux_client_t client ) {
  * @param client The client we're sending data on.
  * @param data A pointer to the data to send.
  * @param datalen How much data we're sending.
+ * @param sent_bytes The number of bytes sent, minus the header (28)
  *
- * @return The number of bytes sent, minus the header (28), or -1 on error.
+ * @return IPHONE_E_SUCCESS on success.
  */
 
-int iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t datalen ) {
-	if (!client->phone || !client || !data || datalen == 0) return -1;
+iphone_error_t iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t datalen, uint32_t *sent_bytes ) {
+	if (!client->phone || !client || !data || datalen == 0 || !sent_bytes) return IPHONE_E_INVALID_ARG;
 	// client->scnt and client->ocnt should already be in host notation...
 	// we don't need to change them juuuust yet. 
-	int bytes = 0;
+	*sent_bytes = 0;
 	if (debug) printf("mux_send(): client wants to send %i bytes\n", datalen);
 	char *buffer = (char*)malloc(sizeof(usbmux_tcp_header) + datalen + 2); // allow 2 bytes of safety padding
 	// Set the length and pre-emptively htonl/htons it
@@ -218,12 +223,12 @@ int iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t da
 	if (debug) printf("actually sending %zi bytes of data at %p\n", sizeof(usbmux_tcp_header)+datalen, buffer);
 
 	
-	bytes = send_to_phone(client->phone, buffer, sizeof(usbmux_tcp_header)+datalen);
-	if (debug) printf("mux_send: sent %i bytes!\n", bytes);
+	*sent_bytes = send_to_phone(client->phone, buffer, sizeof(usbmux_tcp_header)+datalen);
+	if (debug) printf("mux_send: sent %i bytes!\n", *sent_bytes);
 	// Now that we've sent it off, we can clean up after our sloppy selves.
 	if (debug) {
 		FILE *packet = fopen("packet", "a+");
-		fwrite(buffer, 1, bytes, packet);
+		fwrite(buffer, 1, *sent_bytes, packet);
 		fclose(packet);
 		printf("\n");
 	}
@@ -238,13 +243,14 @@ int iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t da
 	client->header->length16 = ntohs(client->header->length16);
 	
 	// Now return the bytes.
-	if (bytes < sizeof(usbmux_tcp_header)+datalen) {
-		return -1; // blah
+	if (*sent_bytes < sizeof(usbmux_tcp_header)+datalen) {
+		*sent_bytes = 0;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	} else {
-		return bytes - 28; // actual length sent. :/
+		*sent_bytes = *sent_bytes - 28; // actual length sent. :/
 	}
 	
-	return bytes; // or something
+	return IPHONE_E_UNKNOWN_ERROR;
 }
 
 /** This is a higher-level USBMuxTCP-like function
@@ -255,7 +261,10 @@ int iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t da
  *
  * @return How many bytes were read, or -1 if something bad happens.
  */
-int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen ) {
+iphone_error_t iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t *recv_bytes ) {
+
+	if (!client || !data || datalen == 0 || !recv_bytes)
+		return IPHONE_E_INVALID_ARG;
 	/*
 	 * Order of operation:
 	 * 1.) Check if the client has a pre-received buffer.
@@ -268,6 +277,7 @@ int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen 
 	 */
 	if (debug) printf("mux_recv: datalen == %i\n", datalen);
 	int bytes = 0, i = 0, complex = 0, offset = 0;
+	*recv_bytes = 0;
 	char *buffer = NULL;
 	usbmux_tcp_header *header = NULL;
 		
@@ -304,7 +314,7 @@ int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen 
 	if (bytes < 28) {
 		free(buffer);
 		if (debug) printf("mux_recv: Did not even get the header.\n");
-		return -1;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 	
 	header = (usbmux_tcp_header*)buffer;
@@ -332,7 +342,7 @@ int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen 
 		// Free our buffer and continue.
 		free(buffer);
 		buffer = NULL;
-		return iphone_mux_recv(client, data, datalen); // recurse back in to try again
+		return iphone_mux_recv(client, data, datalen, recv_bytes); // recurse back in to try again
 	}
 
 	// The packet was absolutely meant for us if it hits this point.
@@ -348,13 +358,15 @@ int iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen 
 		memcpy(client->recv_buffer+complex, buffer+28+datalen, (bytes-28) - datalen);
 		free(buffer);
 		client->header->ocnt += bytes-28;
-		return datalen;
+		*recv_bytes = datalen;
+		return IPHONE_E_SUCCESS;
 	} else {
 		// Fill the data with what we have, and just return.
 		memcpy(data+offset, buffer+28, bytes-28); // data+offset: see #2b, above
 		client->header->ocnt += bytes-28;
 		free(buffer);
-		return (bytes-28);
+		*recv_bytes = bytes - 28;
+		return IPHONE_E_SUCCESS;
 	}
 	
 	// If we get to this point, 'tis probably bad.

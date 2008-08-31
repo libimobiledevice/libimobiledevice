@@ -34,7 +34,7 @@ extern int debug;
  * @return A structure with data on the first iPhone it finds.  (Or NULL, on
  *         error)
  */
-int  iphone_get_device ( iphone_device_t *device  ){
+iphone_error_t iphone_get_device ( iphone_device_t *device ){
 	//check we can actually write in device
 	if (!device || (device && *device))
 		return IPHONE_E_INVALID_ARG;
@@ -102,7 +102,7 @@ int  iphone_get_device ( iphone_device_t *device  ){
 		iphone_free_device(phone);
 		if (debug) fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
 		if (debug && bytes < 0) fprintf(stderr, "get_iPhone(): libusb error message %d: %s (%s)\n",
-			       			bytes, usb_strerror(), strerror(-bytes));
+						bytes, usb_strerror(), strerror(-bytes));
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
@@ -134,14 +134,21 @@ int  iphone_get_device ( iphone_device_t *device  ){
  * 
  * @param phone A pointer to an iPhone structure.
  */
-void iphone_free_device ( iphone_device_t device ) {
-	if (device->buffer) free(device->buffer);	
-	if (device->device) {
-		usb_release_interface(device->device, 1);
-		usb_reset(device->device);
-		usb_close(device->device);
+iphone_error_t iphone_free_device ( iphone_device_t device ) {
+	if (!device) return IPHONE_E_INVALID_ARG;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	if (device->buffer) {
+		free(device->buffer);
+		if (device->device) {
+			usb_release_interface(device->device, 1);
+			usb_reset(device->device);
+			usb_close(device->device);
+			ret = IPHONE_E_SUCCESS;
+		}
+		free(device);
 	}
-	free(device);
+	return ret;
 }
  
 /** Sends data to the phone

@@ -94,15 +94,18 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone) {
  *
  * @param control The lockdown client
  */
-void iphone_lckd_free_client( iphone_lckd_client_t client ) {
-	if (!client) return;
+iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client ) {
+	if (!client) return IPHONE_E_INVALID_ARG;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
 	if (client->connection) {
-		iphone_mux_free_client(client->connection);
+		ret = iphone_mux_free_client(client->connection);
 	}
 
 	if (client->ssl_session) gnutls_deinit(*client->ssl_session);
 	free(client->ssl_session);
 	free(client);
+	return ret;
 }
 
 /** Polls the iPhone for lockdownd data.
@@ -113,20 +116,28 @@ void iphone_lckd_free_client( iphone_lckd_client_t client ) {
  *
  * @return The number of bytes received
  */
-int iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data ) {
-	if (!client) return 0;
+iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data, uint32_t *recv_bytes ) {
+	if (!client || dump_data || !recv_bytes) return IPHONE_E_INVALID_ARG;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
 	
-	if (!client->in_SSL) bytes = iphone_mux_recv(client->connection, (char *)&datalen, sizeof(datalen));
-	else bytes = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
+	if (!client->in_SSL) ret = iphone_mux_recv(client->connection, (char *)&datalen, sizeof(datalen), &bytes);
+	else {
+		bytes = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
+		if (bytes > 0) ret = IPHONE_E_SUCCESS;
+	}
 	datalen = ntohl(datalen);
 	
 	receive = (char*)malloc(sizeof(char) * datalen);
-	if (!client->in_SSL) bytes = iphone_mux_recv(client->connection, receive, datalen);
-	else bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
+	if (!client->in_SSL) ret = iphone_mux_recv(client->connection, receive, datalen, &bytes);
+	else {
+		bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
+		if (bytes > 0) ret = IPHONE_E_SUCCESS;
+	}
 	*dump_data = receive;
-	return bytes;
+	*recv_bytes = bytes;
+	return ret;
 }
 
 /** Sends lockdownd data to the iPhone
@@ -140,11 +151,12 @@ int iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data ) {
  *
  * @return The number of bytes sent
  */
-int iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t length ) {
-	if (!client) return 0;
+iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t length, uint32_t *sent_bytes ) {
+	if (!client || !raw_data || length == 0 || !sent_bytes) return IPHONE_E_INVALID_ARG;
 	char *real_query;
 	int bytes;
-	
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
 	real_query = (char*)malloc(sizeof(char) * (length+4));
 	length = htonl(length);
 	memcpy(real_query, &length, sizeof(length));
@@ -157,11 +169,15 @@ int iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t len
 		packet = NULL;
 	}
 	
-	if (!client->in_SSL) bytes = iphone_mux_send(client->connection, real_query, ntohl(length)+sizeof(length));
-	else gnutls_record_send(*client->ssl_session, real_query, ntohl(length)+sizeof(length));
+	if (!client->in_SSL) ret = iphone_mux_send(client->connection, real_query, ntohl(length)+sizeof(length), &bytes);
+	else {
+		gnutls_record_send(*client->ssl_session, real_query, ntohl(length)+sizeof(length));
+		ret = IPHONE_E_SUCCESS;
+	}
 	if (debug) printf("lockdownd_send(): sent it!\n");
 	free(real_query);
-	return bytes;
+	*sent_bytes = bytes;
+	return ret;
 }
 
 /** Initiates the handshake for the lockdown session. Part of the lockdownd handshake.
@@ -307,11 +323,11 @@ int lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_
  *
  * @return 1 on success and 0 on failure
  */
-int iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client )
+iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client )
 {
 	if (!device || !client || (client && *client) )
 		return IPHONE_E_INVALID_ARG;
-	int ret = IPHONE_E_SUCCESS;
+	iphone_error_t ret = IPHONE_E_SUCCESS;
 	char *host_id = NULL;
 
 	iphone_lckd_client_t client_loc = new_lockdownd_client( device );
@@ -815,14 +831,15 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
  *
  * @return The port number the service was started on or 0 on failure.
  */
-int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service ) {
-	if (!client) return 0;
+iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service, int *port ) {
+	if (!client || !service || !port) return IPHONE_E_INVALID_ARG;
 
 	char* host_id = get_host_id();
-	if (host_id && !client->in_SSL && !lockdownd_start_SSL_session(client, host_id)) return 0;
+	if (!host_id) return IPHONE_E_INVALID_CONF;
+	if (!client->in_SSL && !lockdownd_start_SSL_session(client, host_id)) return IPHONE_E_SSL_ERROR;
 
 	char *XML_query, **dictionary;
-	uint32 length, i = 0, port = 0;
+	uint32 length, i = 0, port_loc = 0;
 	uint8 result = 0;
 
 	free(host_id);
@@ -832,9 +849,9 @@ int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	xmlNode *key;
 	key = add_key_str_dict_element(plist, dict, "Request", "StartService", 1);
-	if (!key) { xmlFreeDoc(plist); return 0; }
+	if (!key) { xmlFreeDoc(plist); return IPHONE_E_UNKNOWN_ERROR; }
 	key = add_key_str_dict_element(plist, dict, "Service", service, 1);
-	if (!key) { xmlFreeDoc(plist); return 0; }
+	if (!key) { xmlFreeDoc(plist); return IPHONE_E_UNKNOWN_ERROR; }
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_query, &length);
 	
@@ -845,24 +862,24 @@ int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service
 	
 	xmlFreeDoc(plist);
 	
-	if (length <= 0) return 0;
+	if (length <= 0) return IPHONE_E_NOT_ENOUGH_DATA;
 	else {
 		plist = xmlReadMemory(XML_query, length, NULL, NULL, 0);
-		if (!plist) return 0;
+		if (!plist) return IPHONE_E_UNKNOWN_ERROR;
 		dict = xmlDocGetRootElement(plist);
-		if (!dict) return 0;
+		if (!dict) return IPHONE_E_UNKNOWN_ERROR;
 		for (dict = dict->children; dict; dict = dict->next) {
 			if (!xmlStrcmp(dict->name, "dict")) break;
 		}
 		
-		if (!dict) return 0;
+		if (!dict) return IPHONE_E_UNKNOWN_ERROR;
 		dictionary = read_dict_element_strings(dict);
 		
 		for (i = 0; dictionary[i]; i+=2) {
 			if (debug) printf("lockdownd_start_service() dictionary %s: %s\n", dictionary[i], dictionary[i+1]);
 			
 			if (!xmlStrcmp(dictionary[i], "Port")) {
-				port = atoi(dictionary[i+1]);
+				port_loc = atoi(dictionary[i+1]);
 				if (debug) printf("lockdownd_start_service() atoi'd port: %i\n", port);
 			}
 			
@@ -882,9 +899,12 @@ int iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service
 		free(XML_query);
 		xmlFreeDoc(plist);
 		free_dictionary(dictionary);
-		if (port && result) return port;
-		else return 0;
+		if (port && result) {
+			*port = port_loc;
+			return IPHONE_E_SUCCESS;
+		}
+		else return IPHONE_E_UNKNOWN_ERROR;
 	}
 	
-	return 0;
+	return IPHONE_E_UNKNOWN_ERROR;
 }
