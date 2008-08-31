@@ -37,7 +37,7 @@ static int clients = 0;
  *
  * @return A USBMux packet
  */
-usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port)
+usbmux_tcp_header *new_mux_packet(uint16_t s_port, uint16_t d_port)
 {
 	usbmux_tcp_header *conn = (usbmux_tcp_header *) malloc(sizeof(usbmux_tcp_header));
 	conn->type = htonl(6);

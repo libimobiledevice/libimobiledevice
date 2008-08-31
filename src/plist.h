@@ -24,6 +24,12 @@
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <stdint.h>
+#include <wchar.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
 xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
@@ -35,4 +41,36 @@ xmlDocPtr new_plist();
 
 char **read_dict_element_strings(xmlNode * dict);
 void free_dictionary(char **dictionary);
+
+/* Binary plist stuff */
+
+enum {
+	BPLIST_TRUE = 0x08,
+	BPLIST_FALSE = 0x09,
+	BPLIST_FILL = 0x0F, /* will be used for length grabbing */
+	BPLIST_INT = 0x10,
+	BPLIST_REAL = 0x20,
+	BPLIST_DATE = 0x33,
+	BPLIST_DATA = 0x40,
+	BPLIST_STRING = 0x50,
+	BPLIST_UNICODE = 0x60,
+	BPLIST_UID = 0x70,
+	BPLIST_ARRAY = 0xA0,
+	BPLIST_SET = 0xC0,
+	BPLIST_DICT = 0xD0,
+	BPLIST_MASK = 0xF0
+};
+
+typedef struct _bplist_node {
+	struct _bplist_node *next, **subnodes; // subnodes is for arrays, dicts and (potentially) sets. 
+	uint64_t length, intval64;
+	uint32_t intval32; // length = subnodes 
+	uint16_t intval16;
+	uint8_t intval8;
+	uint8_t type, *indexes; // indexes for array-types; essentially specify the order in which to access for key => value pairs
+	char *strval;
+	double realval;
+	wchar_t *unicodeval;
+} bplist_node;
+
 #endif

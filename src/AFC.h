@@ -29,12 +29,12 @@
 #include <glib.h>
 
 typedef struct {
-	uint32 header1, header2;
-	uint32 entire_length, unknown1, this_length, unknown2, packet_num, unknown3, operation, unknown4;
+	uint32_t header1, header2;
+	uint32_t entire_length, unknown1, this_length, unknown2, packet_num, unknown3, operation, unknown4;
 } AFCPacket;
 
 typedef struct {
-	uint32 filehandle, unknown1, size, unknown2;
+	uint32_t filehandle, unknown1, size, unknown2;
 } AFCFilePacket;
 
 typedef struct __AFCToken {
@@ -51,7 +51,7 @@ struct iphone_afc_client_int {
 };
 
 struct iphone_afc_file_int {
-	uint32 filehandle, blocks, size, type;
+	uint32_t filehandle, blocks, size, type;
 };
 
 
@@ -74,4 +74,4 @@ enum {
 	AFC_WRITE = 0x00000010
 };
 
-uint32 iphone_afc_get_file_handle(iphone_afc_file_t file);
+uint32_t iphone_afc_get_file_handle(iphone_afc_file_t file);

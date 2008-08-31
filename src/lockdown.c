@@ -127,7 +127,7 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, char **dump_data, u
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	char *receive;
-	uint32 datalen = 0, bytes = 0;
+	uint32_t datalen = 0, bytes = 0;
 
 	if (!client->in_SSL)
 		ret = iphone_mux_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
@@ -211,7 +211,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	key = add_key_str_dict_element(plist, dict, "Request", "QueryType", 1);
 	char *XML_content;
-	uint32 length;
+	uint32_t length;
 
 	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
@@ -265,7 +265,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	char **dictionary = NULL;
 	int bytes = 0, i = 0;
 	char *XML_content = NULL;
-	uint32 length = 0;
+	uint32_t length = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	/* Setup DevicePublicKey request plist */
@@ -420,7 +420,7 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	char **dictionary = NULL;
 	int bytes = 0, i = 0;
 	char *XML_content = NULL;
-	uint32 length = 0;
+	uint32_t length = 0;
 
 	char *device_cert_b64 = NULL;
 	char *host_cert_b64 = NULL;
@@ -658,7 +658,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	xmlNode *key;
 	char *what2send = NULL, **dictionary = NULL;
-	uint32 len = 0, bytes = 0, return_me = 0, i = 0;
+	uint32_t len = 0, bytes = 0, return_me = 0, i = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	// end variables
 
@@ -893,8 +893,8 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		return IPHONE_E_SSL_ERROR;
 
 	char *XML_query, **dictionary;
-	uint32 length, i = 0, port_loc = 0, bytes = 0;
-	uint8 result = 0;
+	uint32_t length, i = 0, port_loc = 0, bytes = 0;
+	uint8_t result = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	free(host_id);
