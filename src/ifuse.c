@@ -46,7 +46,10 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 	int res = 0;
 
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	iphone_afc_get_file_attr(afc, path, stbuf);
+	iphone_error_t ret = iphone_afc_get_file_attr(afc, path, stbuf);
+
+	if (ret != IPHONE_E_SUCCESS)
+		res = -ENOENT;
 
 	return res;
 }
@@ -253,19 +256,19 @@ int ifuse_ftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
 
 int ifuse_unlink(const char *path) {
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	if (iphone_afc_delete_file(afc, path)) return 0;
+	if (IPHONE_E_SUCCESS == iphone_afc_delete_file(afc, path)) return 0;
 	else return -1;
 }
 
 int ifuse_rename(const char *from, const char *to) {
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	if (iphone_afc_rename_file(afc, from, to)) return 0;
+	if (IPHONE_E_SUCCESS == iphone_afc_rename_file(afc, from, to)) return 0;
 	else return -1;
 }
 
 int ifuse_mkdir(const char *dir, mode_t ignored) {
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	if (iphone_afc_mkdir(afc, dir)) return 0;
+	if (IPHONE_E_SUCCESS == iphone_afc_mkdir(afc, dir)) return 0;
 	else return -1;
 }
 

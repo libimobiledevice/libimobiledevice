@@ -593,7 +593,7 @@ iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path
  */
 iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf ) {
 
-	int ret = IPHONE_E_SUCCESS;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	if (!client ||!client->connection || !client->afc_packet || !stbuf) return IPHONE_E_INVALID_ARG;
 
 	memset(stbuf, 0, sizeof(struct stat));
@@ -608,8 +608,9 @@ iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char
 		stbuf->st_uid = getuid();
 		stbuf->st_gid = getgid();
 
-		iphone_afc_close_file(client,file);
+		ret = iphone_afc_close_file(client,file);
 	}
+	return ret;
 }
 
 /** Opens a file on the phone.
