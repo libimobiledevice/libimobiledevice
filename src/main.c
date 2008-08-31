@@ -56,27 +56,27 @@ int main(int argc, char *argv[]) {
 	}
 
 	char *uid = NULL;
-	if (lockdownd_get_device_uid(control, &uid)) {
+	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(control, &uid)) {
 		printf("DeviceUniqueID : %s\n", uid);
 		free(uid);
 	}
 
-	port = iphone_lckd_start_service(control, "com.apple.afc");
+	iphone_lckd_start_service(control, "com.apple.afc", &port);
 	
 	if (port) {
 		iphone_afc_client_t afc = NULL;
 		iphone_afc_new_client(phone, 3432, port, &afc);
 		if (afc) {
-			char **dirs;
-			dirs = iphone_afc_get_dir_list(afc, "/eafaedf");
-			if (!dirs) dirs = iphone_afc_get_dir_list(afc, "/");
+			char **dirs = NULL;
+			iphone_afc_get_dir_list(afc, "/eafaedf", &dirs);
+			if (!dirs) iphone_afc_get_dir_list(afc, "/", &dirs);
 			printf("Directory time.\n");
 			for (i = 0; dirs[i]; i++) {
 				printf("/%s\n", dirs[i]);
 			}
 			
 			g_strfreev(dirs);
-			dirs = iphone_afc_get_devinfo(afc);
+			iphone_afc_get_devinfo(afc, &dirs);
 			if (dirs) {
 				for (i = 0; dirs[i]; i+=2) {
 					printf("%s: %s\n", dirs[i], dirs[i+1]);
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 			if (IPHONE_E_SUCCESS == iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", AFC_FILE_READ, &my_file) && my_file) {
 				printf("A file size: %i\n", stbuf.st_size);
 				char *file_data = (char*)malloc(sizeof(char) * stbuf.st_size);
-				bytes = iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size);
+				iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size, &bytes);
 				if (bytes >= 0) {
 					printf("The file's data:\n");
 					fwrite(file_data, 1, bytes, stdout);
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_WRITE, &my_file);
 			if (my_file) {
 				char *outdatafile = strdup("this is a bitchin text file\n");
-				bytes = iphone_afc_write_file(afc, my_file, outdatafile, strlen(outdatafile));
+				iphone_afc_write_file(afc, my_file, outdatafile, strlen(outdatafile), &bytes);
 				free(outdatafile);
 				if (bytes > 0) printf("Wrote a surprise. ;)\n");
 				else printf("I wanted to write a surprise, but... :(\n");
@@ -121,10 +121,9 @@ int main(int argc, char *argv[]) {
 			
 			printf("Seek & read\n");
 			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_READ, &my_file);
-			bytes = iphone_afc_seek_file(afc, my_file, 5);
-			if (bytes) printf("WARN: SEEK DID NOT WORK\n");
+			if (IPHONE_E_SUCCESS != iphone_afc_seek_file(afc, my_file, 5)) printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char*)malloc(sizeof(char) * 5);
-			bytes = iphone_afc_read_file(afc, my_file, threeletterword, 3);
+			iphone_afc_read_file(afc, my_file, threeletterword, 3, &bytes);
 			threeletterword[3] = '\0';
 			if (bytes > 0) printf("Result: %s\n", threeletterword);
 			else printf("Couldn't read!\n");

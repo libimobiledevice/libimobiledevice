@@ -159,7 +159,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 			return -1;
 		}
 		memcpy(buffer+sizeof(AFCPacket), data, offset);
-		bytes = iphone_mux_send(client->connection, buffer, client->afc_packet->this_length);
+		iphone_mux_send(client->connection, buffer, client->afc_packet->this_length, &bytes);
 		free(buffer);
 		if (bytes <= 0) {
 			return bytes;
@@ -172,7 +172,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 			fwrite(data+offset, 1, length-offset, stdout);
 		}
 		
-		bytes = iphone_mux_send(client->connection, data+offset, length-offset);
+		iphone_mux_send(client->connection, data+offset, length-offset, &bytes);
 		return bytes;
 	} else {
 		if (debug) fprintf(stderr, "dispatch_AFC_packet doin things the old way\n");
@@ -183,7 +183,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 		if (length > 0) { memcpy(buffer+sizeof(AFCPacket), data, length); buffer[sizeof(AFCPacket)+length] = '\0'; }
 		if (debug) fwrite(buffer, 1, client->afc_packet->this_length, stdout);
 		if (debug) fprintf(stderr, "\n");
-		bytes = iphone_mux_send(client->connection, buffer, client->afc_packet->this_length);
+		iphone_mux_send(client->connection, buffer, client->afc_packet->this_length, &bytes);
 
 		if (buffer) {
 			free(buffer);
@@ -212,7 +212,7 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here) {
 	int bytes = 0, recv_len = 0, current_count=0;
 	int retval = 0;
 	
-	bytes = iphone_mux_recv(client->connection, buffer, sizeof(AFCPacket) * 4);
+	iphone_mux_recv(client->connection, buffer, sizeof(AFCPacket) * 4, &bytes);
 	if (bytes <= 0) {
 		free(buffer);
 		fprintf(stderr, "Just didn't get enough.\n");
@@ -265,7 +265,7 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here) {
 	buffer = (char*)malloc(sizeof(char) * (recv_len < MAXIMUM_PACKET_SIZE) ? recv_len : MAXIMUM_PACKET_SIZE);
 	final_buffer = (char*)malloc(sizeof(char) * recv_len);
 	while(current_count < recv_len){
-		bytes = iphone_mux_recv(client->connection, buffer, recv_len-current_count);
+		iphone_mux_recv(client->connection, buffer, recv_len-current_count, &bytes);
 		if (debug) fprintf(stderr, "receive_AFC_data: still collecting packets\n");
 		if (bytes < 0)
 		{
@@ -331,7 +331,7 @@ iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char 
 	char *data = NULL, **list_loc = NULL;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	
-	if (!client || !dir || !list) return IPHONE_E_INVALID_ARG;
+	if (!client || !dir || !list || (list && *list)) return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
 	
@@ -714,11 +714,11 @@ iphone_error_t iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_fil
 		// Receive the data
 		bytes_loc = receive_AFC_data(client, &input);
 		if (debug) fprintf(stderr, "afc_read_file: bytes returned: %i\n", bytes_loc);
-		if (bytes < 0) {
+		if (bytes_loc < 0) {
 			if (input) free(input);
 			afc_unlock(client);
 			return IPHONE_E_NOT_ENOUGH_DATA;
-		} else if (bytes == 0) {
+		} else if (bytes_loc == 0) {
 			if (input) free(input);
 			afc_unlock(client);
 			*bytes = current_count;
@@ -756,7 +756,7 @@ iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_fi
 	uint32 zero = 0, bytes_loc = 0, segments = (length / MAXIMUM_WRITE_SIZE), current_count = 0, i = 0;
 	char *out_buffer = NULL;
 
-	if (!client ||!client->afc_packet || !client->connection || !file || !bytes_loc) return IPHONE_E_INVALID_ARG;
+	if (!client ||!client->afc_packet || !client->connection || !file || !bytes) return IPHONE_E_INVALID_ARG;
 	
 	afc_lock(client);
 
@@ -821,8 +821,8 @@ iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_fi
 	if (bytes_loc < 0) {
 		if (debug) fprintf(stderr, "afc_write_file: uh oh?\n");
 	}
-
-	return IPHONE_E_UNKNOWN_ERROR;
+	*bytes = current_count;
+	return IPHONE_E_SUCCESS;
 }
 
 /** Closes a file on the phone. 

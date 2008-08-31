@@ -43,19 +43,17 @@ struct iphone_lckd_client_int {
 char *lockdownd_generate_hostid();
 
 iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone);
-int lockdownd_hello(iphone_lckd_client_t control);
-int lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
-int lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key);
+iphone_error_t lockdownd_hello(iphone_lckd_client_t control);
+iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
+iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key);
 
-int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64);
-int lockdownd_pair_device(iphone_lckd_client_t control, char *public_key, char *host_id);
-int lockdownd_recv(iphone_lckd_client_t control, char **dump_data);
-int lockdownd_send(iphone_lckd_client_t control, char *raw_data, uint32 length);
+iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64);
+iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *public_key, char *host_id);
 void lockdownd_close(iphone_lckd_client_t control);
 
 // SSL functions
 
-int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID);
+iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID);
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 

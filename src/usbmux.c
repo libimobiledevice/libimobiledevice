@@ -250,7 +250,7 @@ iphone_error_t iphone_mux_send ( iphone_umux_client_t client, const char *data, 
 		*sent_bytes = *sent_bytes - 28; // actual length sent. :/
 	}
 	
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IPHONE_E_SUCCESS;
 }
 
 /** This is a higher-level USBMuxTCP-like function
@@ -371,6 +371,6 @@ iphone_error_t iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32
 	
 	// If we get to this point, 'tis probably bad.
 	if (debug) printf("mux_recv: Heisenbug: bytes and datalen not matching up\n");
-	return -1;
+	return IPHONE_E_UNKNOWN_ERROR;
 }
 

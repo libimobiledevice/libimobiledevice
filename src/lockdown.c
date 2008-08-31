@@ -117,7 +117,7 @@ iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client ) {
  * @return The number of bytes received
  */
 iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data, uint32_t *recv_bytes ) {
-	if (!client || dump_data || !recv_bytes) return IPHONE_E_INVALID_ARG;
+	if (!client || !dump_data || !recv_bytes) return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	char *receive;
 	uint32 datalen = 0, bytes = 0;
@@ -188,12 +188,13 @@ iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, u
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_hello(iphone_lckd_client_t control) {
-	if (!control) return 0;
+iphone_error_t lockdownd_hello(iphone_lckd_client_t control) {
+	if (!control) return IPHONE_E_INVALID_ARG;
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict, *key;
 	char **dictionary;
 	int bytes = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	
 	if (debug) printf("lockdownd_hello() called\n");
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
@@ -202,33 +203,33 @@ int lockdownd_hello(iphone_lckd_client_t control) {
 	uint32 length;
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_content, &length);
-	bytes = iphone_lckd_send(control, XML_content, length);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
-	bytes = iphone_lckd_recv(control, &XML_content);
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
-	if (!plist) return 0;
+	if (!plist) return IPHONE_E_PLIST_ERROR;
 	dict = xmlDocGetRootElement(plist);
 	for (dict = dict->children; dict; dict = dict->next) {
 		if (!xmlStrcmp(dict->name, "dict")) break;
 	}
-	if (!dict) return 0;
+	if (!dict) return IPHONE_E_DICT_ERROR;
 	dictionary = read_dict_element_strings(dict);
 	xmlFreeDoc(plist);
 	free(XML_content);	
 	
 	for (i = 0; dictionary[i]; i+=2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i+1], "Success")) {
-			free_dictionary(dictionary);
 			if (debug) printf("lockdownd_hello(): success\n");
-			return 1;
+			ret = IPHONE_E_SUCCESS;
+			break;
 		}
 	}
 	
 	free_dictionary(dictionary);
-	return 0;
+	return ret;
 }
 
 /** Generic function to handle simple (key, value) requests.
@@ -237,10 +238,11 @@ int lockdownd_hello(iphone_lckd_client_t control) {
  * @param key the key to request
  * @param value a pointer to the requested value
  *
- * @return 1 on success and 0 on failure.
+ * @return IPHONE_E_SUCCESS on success.
  */
-int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char **value)
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char **value)
 {
+	if (!control || !req_key || !value || (value && *value)) return IPHONE_E_INVALID_ARG;
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = NULL;
 	xmlNode *key = NULL;;
@@ -248,6 +250,7 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
 	int bytes = 0, i = 0;
 	char *XML_content = NULL;
 	uint32 length = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	
 	/* Setup DevicePublicKey request plist */
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
@@ -256,21 +259,25 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
 	xmlDocDumpMemory(plist, (xmlChar**)&XML_content, &length);
 
 	/* send to iPhone */
-	bytes = iphone_lckd_send(control, XML_content, length);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
 
+	if (ret != IPHONE_E_SUCCESS) return ret;
+
 	/* Now get iPhone's answer */
-	bytes = iphone_lckd_recv(control, &XML_content);
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+
+	if (ret != IPHONE_E_SUCCESS) return ret;
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
-	if (!plist) return 0;
+	if (!plist) return IPHONE_E_PLIST_ERROR;
 	dict = xmlDocGetRootElement(plist);
 	for (dict = dict->children; dict; dict = dict->next) {
 		if (!xmlStrcmp(dict->name, "dict")) break;
 	}
-	if (!dict) return 0;
+	if (!dict) return IPHONE_E_DICT_ERROR;
 	
 	/* Parse xml to check success and to find public key */
 	dictionary = read_dict_element_strings(dict);
@@ -291,7 +298,8 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
 		free_dictionary(dictionary);
 		dictionary = NULL;
 	}
-	return success;
+	if (success) ret = IPHONE_E_SUCCESS;
+	return ret;
 }
 
 /** Askes for the device's unique id. Part of the lockdownd handshake.
@@ -300,7 +308,7 @@ int lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, cha
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
+iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
 {
 	return lockdownd_generic_get_value(control, "UniqueDeviceID", uid);
 }
@@ -311,7 +319,7 @@ int lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
  *
  * @return 1 on success and 0 on failure.
  */
-int lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key)
+iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key)
 {
 	return lockdownd_generic_get_value(control, "DevicePublicKey", public_key);
 }
@@ -331,16 +339,16 @@ iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_clie
 	char *host_id = NULL;
 
 	iphone_lckd_client_t client_loc = new_lockdownd_client( device );
-	if (!lockdownd_hello(client_loc)){
+	if (IPHONE_E_SUCCESS != lockdownd_hello(client_loc)){
 		fprintf(stderr, "Hello failed in the lockdownd client.\n");
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
 
 	char *uid = NULL;
-	if(IPHONE_E_SUCCESS == ret && !lockdownd_get_device_uid(client_loc, &uid)){
+	ret = lockdownd_get_device_uid(client_loc, &uid);
+	if(IPHONE_E_SUCCESS != ret){
 		fprintf(stderr, "Device refused to send uid.\n");
-		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
 	host_id = get_host_id();
@@ -357,9 +365,8 @@ iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_clie
 		uid = NULL;
 	}
 
-	if (IPHONE_E_SUCCESS == ret && lockdownd_start_SSL_session(client_loc, host_id)) {
-		ret = IPHONE_E_SUCCESS;
-	} else {
+	ret = lockdownd_start_SSL_session(client_loc, host_id);
+	if (IPHONE_E_SUCCESS != ret ) {
 		ret = IPHONE_E_SSL_ERROR;
 		fprintf(stderr, "SSL Session opening failed.\n");
 	}
@@ -381,9 +388,9 @@ iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_clie
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id)
+iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id)
 {
-	int ret = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = NULL;
 	xmlNode *dictRecord = NULL;
@@ -397,15 +404,16 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	char* root_cert_b64 = NULL;
 	char *public_key_b64 = NULL;
 
-	if(!lockdownd_get_device_public_key(control, &public_key_b64)){
+	ret = lockdownd_get_device_public_key(control, &public_key_b64);
+	if(ret != IPHONE_E_SUCCESS){
 		fprintf(stderr, "Device refused to send public key.\n");
-		return 0;
+		return ret;
 	}
 
-
-	if(!lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64)){
+	ret = lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64);
+	if(ret != IPHONE_E_SUCCESS){
 		free(public_key_b64);
-		return 0;
+		return ret;
 	}
 
 	/* Setup Pair request plist */
@@ -423,13 +431,17 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	printf("XML Pairing request : %s\n",XML_content);
 
 	/* send to iPhone */
-	bytes = iphone_lckd_send(control, XML_content, length);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 	
 	xmlFree(XML_content);
 	xmlFreeDoc(plist); plist = NULL;
 
+	if (ret != IPHONE_E_SUCCESS) return ret;
+
 	/* Now get iPhone's answer */
-	bytes = iphone_lckd_recv(control, &XML_content);
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+
+	if (ret != IPHONE_E_SUCCESS) return ret;
 
 	if (debug) {
 		printf("lockdown_pair_device: iPhone's response to our pair request:\n");
@@ -440,7 +452,7 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
 	if (!plist) {
 		free(public_key_b64);
-		return 0;
+		return IPHONE_E_PLIST_ERROR;
 		}
 	dict = xmlDocGetRootElement(plist);
 	for (dict = dict->children; dict; dict = dict->next) {
@@ -448,7 +460,7 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	}
 	if (!dict) {
 		free(public_key_b64);
-		return 0;
+		return IPHONE_E_DICT_ERROR;
 	}
 	
 	/* Parse xml to check success and to find public key */
@@ -472,9 +484,10 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 	if (success) {
 		if (debug) printf("lockdownd_pair_device: pair success\n");
 		store_device_public_key(uid, public_key_b64);
-		ret = 1;
+		ret = IPHONE_E_SUCCESS;
 	} else {
 		if (debug) printf("lockdownd_pair_device: pair failure\n");
+		ret = IPHONE_E_PAIRING_FAILED;
 	}
 	free(public_key_b64);
 	return ret;
@@ -483,11 +496,12 @@ int lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id
 /** Generates the device certificate from the public key as well as the host
  *  and root certificates.
  * 
- * @return 1 on success and 0 on failure.
+ * @return IPHONE_E_SUCCESS on success.
  */
-int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64)
+iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64, char **root_cert_b64)
 {
-	int ret = 0, error = 0;
+	if (!public_key_b64 || !device_cert_b64 || !host_cert_b64 || !root_cert_b64) return IPHONE_E_INVALID_ARG;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	gnutls_datum_t modulus = {NULL, 0};
 	gnutls_datum_t exponent = {NULL, 0};
@@ -501,7 +515,6 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 	/* now decode the PEM encoded key */
 	gnutls_datum_t der_pub_key;
 	if( GNUTLS_E_SUCCESS  == gnutls_pem_base64_decode_alloc ("RSA PUBLIC KEY", &pem_pub_key, &der_pub_key) ){
-		ret = 1;
  
 		/* initalize asn.1 parser */
 		ASN1_TYPE pkcs1 = ASN1_TYPE_EMPTY;
@@ -522,7 +535,7 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 				ret1 = asn1_read_value (asn1_pub_key, "modulus", modulus.data, &modulus.size);
 				ret2 = asn1_read_value (asn1_pub_key, "publicExponent", exponent.data, &exponent.size);
 				if (ASN1_SUCCESS == ret1 && ASN1_SUCCESS == ret2)
-					ret = 1;
+					ret = IPHONE_E_SUCCESS;
 			}
 			if (asn1_pub_key)
 				asn1_delete_structure(&asn1_pub_key);
@@ -532,7 +545,7 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 	}
 
 	/* now generate certifcates */
-	if (1 == ret && 0 != modulus.size && 0 != exponent.size) {
+	if (IPHONE_E_SUCCESS == ret && 0 != modulus.size && 0 != exponent.size) {
 
 		gnutls_global_init();
 		gnutls_datum_t essentially_null = {strdup("abababababababab"), strlen("abababababababab")};
@@ -552,20 +565,20 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 			/* get root cert */
 			gnutls_datum_t pem_root_cert = {NULL, 0};
 			get_root_certificate(&pem_root_cert);
-			ret = gnutls_x509_crt_import(root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM);
-			if (ret != GNUTLS_E_SUCCESS) error = 1;
+			if (GNUTLS_E_SUCCESS != gnutls_x509_crt_import(root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM))
+				ret = IPHONE_E_SSL_ERROR;
 
 			/* get host cert */
 			gnutls_datum_t pem_host_cert = {NULL, 0};
 			get_host_certificate(&pem_host_cert);
-			ret = gnutls_x509_crt_import(host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM);
-			if (ret != GNUTLS_E_SUCCESS) error = 1;
+			if (GNUTLS_E_SUCCESS != gnutls_x509_crt_import(host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM))
+				ret = IPHONE_E_SSL_ERROR;
 
 			/* get root private key */
 			gnutls_datum_t pem_root_priv = {NULL, 0};
 			get_root_private_key(&pem_root_priv);
-			ret = gnutls_x509_privkey_import(root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM);
-			if (ret != GNUTLS_E_SUCCESS) error = 1;
+			if (GNUTLS_E_SUCCESS != gnutls_x509_privkey_import(root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM))
+				ret = IPHONE_E_SSL_ERROR;
 
 			/* generate device certificate */
 			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
@@ -576,7 +589,7 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 			gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
-			if (!error) {
+			if (IPHONE_E_SUCCESS == ret) {
 				/* if everything went well, export in PEM format */
 				gnutls_datum_t dev_pem = {NULL, 0};
 				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
@@ -587,7 +600,6 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);
 				*host_cert_b64 = g_base64_encode(pem_host_cert.data, pem_host_cert.size);
 				*root_cert_b64 = g_base64_encode(pem_root_cert.data, pem_root_cert.size);
-				ret = 1;
 			}
 			gnutls_free(pem_root_priv.data);
 			gnutls_free(pem_root_cert.data);
@@ -600,12 +612,8 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
 
 	gnutls_free(der_pub_key.data);
 	g_free(pem_pub_key.data);
-	
-	if (error) {
-		return 0;
-	} else {
-		return ret;
-	}
+
+	return ret;
 }
 
 /** Starts SSL communication with lockdownd after the iPhone has been paired.
@@ -615,37 +623,41 @@ int lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char *
  *
  * @return 1 on success and 0 on failure
  */
-int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID) {
+iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID) {
 	xmlDocPtr plist = new_plist();
 	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	xmlNode *key;
 	char *what2send = NULL, **dictionary = NULL;
 	uint32 len = 0, bytes = 0, return_me = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	// end variables
 	
 	key = add_key_str_dict_element(plist, dict, "HostID", HostID, 1);
 	if (!key) {
 		if (debug) printf("Couldn't add a key.\n");
 		xmlFreeDoc(plist);
-		return 0;
+		return IPHONE_E_DICT_ERROR;
 	}
 	key = add_key_str_dict_element(plist, dict, "Request", "StartSession", 1);
 	if (!key) {
 		if (debug) printf("Couldn't add a key.\n");
 		xmlFreeDoc(plist);
-		return 0;
+		return IPHONE_E_DICT_ERROR;
 	}
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&what2send, &len);
-	bytes = iphone_lckd_send(control, what2send, len);
+	ret = iphone_lckd_send(control, what2send, len, &bytes);
 	
 	xmlFree(what2send);
 	xmlFreeDoc(plist);
+
+	if (ret != IPHONE_E_SUCCESS) return ret;
 	
 	if (bytes > 0) {
-		len = iphone_lckd_recv(control, &what2send);
+		ret = iphone_lckd_recv(control, &what2send, &len);
 		plist = xmlReadMemory(what2send, len, NULL, NULL, 0);
 		dict = xmlDocGetRootElement(plist);
+		if (!dict) return IPHONE_E_DICT_ERROR;
 		for (dict = dict->children; dict; dict = dict->next) {
 			if (!xmlStrcmp(dict->name, "dict")) break;
 		}
@@ -699,10 +711,10 @@ int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID
 					if (debug) printf("GnuTLS reported something wrong.\n");
 					gnutls_perror(return_me);
 					if (debug) printf("oh.. errno says %s\n", strerror(errno));
-					return 0;
+					return IPHONE_E_SSL_ERROR;
 				} else {
 					control->in_SSL = 1;
-					return 1;
+					return IPHONE_E_SUCCESS;
 				}
 			}
 		}
@@ -716,10 +728,10 @@ int lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID
 		}
 	
 		free_dictionary(dictionary);
-		return 0;
+		return IPHONE_E_SSL_ERROR;
 	} else { 
 		if (debug) printf("Didn't get enough bytes.\n");
-		return 0;
+		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 }
 
@@ -737,7 +749,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	control = (iphone_lckd_client_t)transport;
 	if (debug) printf("lockdownd_secuwrite() called\n");
 	if (debug) printf("pre-send\nlength = %zi\n", length);
-	bytes = iphone_mux_send(control->connection, buffer, length);
+	iphone_mux_send(control->connection, buffer, length, &bytes);
 	if (debug) printf("post-send\nsent %i bytes\n", bytes);
 	if (debug) {
 		FILE *my_ssl_packet = fopen("sslpacketwrite.out", "w+");
@@ -795,7 +807,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	char *recv_buffer = (char*)malloc(sizeof(char) * (length * 1000)); // ensuring nothing stupid happens
 	
 	if (debug) printf("pre-read\nclient wants %zi bytes\n", length);
-	bytes = iphone_mux_recv(control->connection, recv_buffer, (length * 1000));
+	iphone_mux_recv(control->connection, recv_buffer, (length * 1000), &bytes);
 	if (debug) printf("post-read\nwe got %i bytes\n", bytes);
 	if (debug && bytes < 0) {
 		printf("lockdownd_securead(): uh oh\n");
@@ -839,8 +851,9 @@ iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const ch
 	if (!client->in_SSL && !lockdownd_start_SSL_session(client, host_id)) return IPHONE_E_SSL_ERROR;
 
 	char *XML_query, **dictionary;
-	uint32 length, i = 0, port_loc = 0;
+	uint32 length, i = 0, port_loc = 0, bytes = 0;
 	uint8 result = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	free(host_id);
 	host_id = NULL;
@@ -855,16 +868,17 @@ iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const ch
 	
 	xmlDocDumpMemory(plist, (xmlChar **)&XML_query, &length);
 	
-	iphone_lckd_send(client, XML_query, length);
+	ret = iphone_lckd_send(client, XML_query, length, &bytes);
 	free(XML_query);
+	if (IPHONE_E_SUCCESS != ret) return ret;
 	
-	length = iphone_lckd_recv(client, &XML_query);
-	
+	ret = iphone_lckd_recv(client, &XML_query, &bytes);
 	xmlFreeDoc(plist);
+	if (IPHONE_E_SUCCESS != ret) return ret;
 	
-	if (length <= 0) return IPHONE_E_NOT_ENOUGH_DATA;
+	if (bytes <= 0) return IPHONE_E_NOT_ENOUGH_DATA;
 	else {
-		plist = xmlReadMemory(XML_query, length, NULL, NULL, 0);
+		plist = xmlReadMemory(XML_query, bytes, NULL, NULL, 0);
 		if (!plist) return IPHONE_E_UNKNOWN_ERROR;
 		dict = xmlDocGetRootElement(plist);
 		if (!dict) return IPHONE_E_UNKNOWN_ERROR;
@@ -892,7 +906,7 @@ iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const ch
 		
 		if (debug) {
 			printf("lockdownd_start_service(): DATA RECEIVED:\n\n");
-			fwrite(XML_query, 1, length, stdout);
+			fwrite(XML_query, 1, bytes, stdout);
 			printf("end data received by lockdownd_start_service()\n");
 		}
 		

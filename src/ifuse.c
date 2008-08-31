@@ -57,7 +57,7 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	char **dirs;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 
-	dirs = iphone_afc_get_dir_list(afc, path);
+	iphone_afc_get_dir_list(afc, path, &dirs);
 
 	if(!dirs)
 		return -ENOENT;
@@ -119,8 +119,8 @@ static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 		return -ENOENT;
 	}
 
-	bytes = iphone_afc_seek_file(afc, file, offset);
-	bytes = iphone_afc_read_file(afc, file, buf, size);
+	if (IPHONE_E_SUCCESS == iphone_afc_seek_file(afc, file, offset))
+		iphone_afc_read_file(afc, file, buf, size, &bytes);
 	return bytes;
 }
 
@@ -134,8 +134,8 @@ static int ifuse_write(const char *path, const char *buf, size_t size, off_t off
 	file = g_hash_table_lookup(file_handles, &(fi->fh));
 	if (!file) return -ENOENT;
 	
-	bytes = iphone_afc_seek_file(afc, file, offset);
-	bytes = iphone_afc_write_file(afc, file, buf, size);
+	if (IPHONE_E_SUCCESS == iphone_afc_seek_file(afc, file, offset))
+		iphone_afc_write_file(afc, file, buf, size, &bytes);
 	return bytes;
 }
 
@@ -179,8 +179,7 @@ void *ifuse_init(struct fuse_conn_info *conn) {
 		return NULL;
 	}
 	
-	port = iphone_lckd_start_service(control, "com.apple.afc");
-	if (!port) {
+	if (IPHONE_E_SUCCESS == iphone_lckd_start_service(control, "com.apple.afc", &port) && !port) {
 		iphone_lckd_free_client(control);
 		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
@@ -206,9 +205,10 @@ int ifuse_flush(const char *path, struct fuse_file_info *fi) {
 
 int ifuse_statfs(const char *path, struct statvfs *stats) {
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
-	char **info_raw = iphone_afc_get_devinfo(afc);
+	char **info_raw = NULL;
 	uint32_t totalspace = 0, freespace = 0, blocksize = 0, i = 0;
 	
+	iphone_afc_get_devinfo(afc, &info_raw);
 	if (!info_raw) return -ENOENT;
 	
 	for (i = 0; info_raw[i]; i++) {

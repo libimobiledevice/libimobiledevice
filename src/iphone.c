@@ -140,14 +140,14 @@ iphone_error_t iphone_free_device ( iphone_device_t device ) {
 
 	if (device->buffer) {
 		free(device->buffer);
-		if (device->device) {
-			usb_release_interface(device->device, 1);
-			usb_reset(device->device);
-			usb_close(device->device);
-			ret = IPHONE_E_SUCCESS;
-		}
-		free(device);
 	}
+	if (device->device) {
+		usb_release_interface(device->device, 1);
+		usb_reset(device->device);
+		usb_close(device->device);
+		ret = IPHONE_E_SUCCESS;
+	}
+	free(device);
 	return ret;
 }
  

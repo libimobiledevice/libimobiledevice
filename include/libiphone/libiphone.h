@@ -42,9 +42,11 @@ extern "C" {
 #define IPHONE_E_INVALID_CONF    -7
 #define IPHONE_E_PAIRING_FAILED  -8
 #define IPHONE_E_SSL_ERROR       -9
+#define IPHONE_E_PLIST_ERROR    -10
+#define IPHONE_E_DICT_ERROR     -11
 
 //afc specific error
-#define IPHONE_E_NO_SUCH_FILE    -10
+#define IPHONE_E_NO_SUCH_FILE   -12
 
 typedef short iphone_error_t;
 
