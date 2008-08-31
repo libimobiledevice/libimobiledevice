@@ -48,18 +48,18 @@ extern "C" {
 //afc specific error
 #define IPHONE_E_NO_SUCH_FILE   -12
 
-typedef short iphone_error_t;
+typedef int16_t iphone_error_t;
 
-enum {
-	AFC_FILE_READ = 0x00000002, // seems to be able to read and write files
-	AFC_FILE_WRITE = 0x00000003, // writes and creates a file, blanks it out, etc.
-	AFC_FILE_RW = 0x00000005, // seems to do the same as 2. Might even create the file. 
-	AFC_FILE_OP4 = 0x00000004, // no idea -- appears to be "write" -- clears file beforehand like 3
-	AFC_FILE_OP6 = 0x00000006, // no idea yet -- appears to be the same as 5.
-	AFC_FILE_OP1 = 0x00000001, // no idea juuust yet... probably read.
-	AFC_FILE_OP0 = 0x00000000,
-	AFC_FILE_OP10 = 0x0000000a
-};
+typedef enum {
+	IPHONE_AFC_FILE_READ = 0x00000002, // seems to be able to read and write files
+	IPHONE_AFC_FILE_WRITE = 0x00000003, // writes and creates a file, blanks it out, etc.
+	IPHONE_AFC_FILE_RW = 0x00000005, // seems to do the same as 2. Might even create the file. 
+	IPHONE_AFC_FILE_OP4 = 0x00000004, // no idea -- appears to be "write" -- clears file beforehand like 3
+	IPHONE_AFC_FILE_OP6 = 0x00000006, // no idea yet -- appears to be the same as 5.
+	IPHONE_AFC_FILE_OP1 = 0x00000001, // no idea juuust yet... probably read.
+	IPHONE_AFC_FILE_OP0 = 0x00000000,
+	IPHONE_AFC_FILE_OP10 = 0x0000000a
+} iphone_afc_file_mode_t;
 
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
@@ -106,7 +106,7 @@ iphone_error_t iphone_afc_get_devinfo ( iphone_afc_client_t client, char ***info
 iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir, char ***list);
 
 iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf );
-iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32_t file_mode, iphone_afc_file_t *file );
+iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, iphone_afc_file_mode_t file_mode, iphone_afc_file_t *file );
 iphone_error_t iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file);
 iphone_error_t iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length, uint32_t *bytes);
 iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length, uint32_t *bytes);

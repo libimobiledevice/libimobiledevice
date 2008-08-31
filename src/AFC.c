@@ -625,7 +625,7 @@ iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char
  *         received by afc_get_file_info) as well as the handle to the file or
  *         NULL in the case of failure.
  */
-iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, uint32_t file_mode, iphone_afc_file_t *file ) {
+iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, iphone_afc_file_mode_t file_mode, iphone_afc_file_t *file ) {
 	iphone_afc_file_t file_loc = NULL;
 	uint32 ag = 0;
 	int bytes = 0, length = 0;

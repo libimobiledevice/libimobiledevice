@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 			iphone_afc_file_t my_file = NULL;
 			struct stat stbuf;
 			iphone_afc_get_file_attr ( afc, "/iTunesOnTheGoPlaylist.plist", &stbuf );
-			if (IPHONE_E_SUCCESS == iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", AFC_FILE_READ, &my_file) && my_file) {
+			if (IPHONE_E_SUCCESS == iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", IPHONE_AFC_FILE_READ, &my_file) && my_file) {
 				printf("A file size: %i\n", stbuf.st_size);
 				char *file_data = (char*)malloc(sizeof(char) * stbuf.st_size);
 				iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size, &bytes);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 				free(file_data);
 			} else printf("couldn't open a file\n");
 			
-			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_WRITE, &my_file);
+			iphone_afc_open_file(afc, "/readme.libiphone.fx", IPHONE_AFC_FILE_WRITE, &my_file);
 			if (my_file) {
 				char *outdatafile = strdup("this is a bitchin text file\n");
 				iphone_afc_write_file(afc, my_file, outdatafile, strlen(outdatafile), &bytes);
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 			else printf("Failure. (expected unless you have a /renme file on your phone)\n");
 			
 			printf("Seek & read\n");
-			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FILE_READ, &my_file);
+			iphone_afc_open_file(afc, "/readme.libiphone.fx", IPHONE_AFC_FILE_READ, &my_file);
 			if (IPHONE_E_SUCCESS != iphone_afc_seek_file(afc, my_file, 5)) printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char*)malloc(sizeof(char) * 5);
 			iphone_afc_read_file(afc, my_file, threeletterword, 3, &bytes);
