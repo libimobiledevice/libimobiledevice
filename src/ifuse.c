@@ -54,7 +54,7 @@ static int ifuse_getattr(const char *path, struct stat *stbuf) {
 static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi) {
 	int i;
-	char **dirs;
+	char **dirs = NULL;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 
 	iphone_afc_get_dir_list(afc, path, &dirs);
@@ -73,7 +73,7 @@ static int ifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
 	// exactly the same as open but using a different mode
-	iphone_afc_file_t file;
+	iphone_afc_file_t file = NULL;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	
 	iphone_afc_open_file(afc, path, IPHONE_AFC_FILE_WRITE, &file);
@@ -84,7 +84,7 @@ static int ifuse_create(const char *path, mode_t mode, struct fuse_file_info *fi
 }
 
 static int ifuse_open(const char *path, struct fuse_file_info *fi) {
-	iphone_afc_file_t file;
+	iphone_afc_file_t file = NULL;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	uint32_t mode = 0;
 	
@@ -107,7 +107,7 @@ static int ifuse_open(const char *path, struct fuse_file_info *fi) {
 
 static int ifuse_read(const char *path, char *buf, size_t size, off_t offset,
 			struct fuse_file_info *fi) {
-	int bytes;
+	int bytes = 0;
 	iphone_afc_file_t file;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 
@@ -144,7 +144,7 @@ static int ifuse_fsync(const char *path, int datasync, struct fuse_file_info *fi
 }
 
 static int ifuse_release(const char *path, struct fuse_file_info *fi){
-	iphone_afc_file_t file;
+	iphone_afc_file_t file = NULL;
 	iphone_afc_client_t afc = fuse_get_context()->private_data;
 	
 	file = g_hash_table_lookup(file_handles, &(fi->fh));
