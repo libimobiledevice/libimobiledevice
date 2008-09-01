@@ -28,44 +28,44 @@
  * 
  * @return the HostID if exist in config file. Returns NULL otherwise.
  */
-char* get_host_id();
+char *get_host_id();
 
 /**
  * Determine if we already paired this device.
  * 
  * @return 1 if device is already paired. Returns 0 otherwise.
  */
-int is_device_known(char* uid);
+int is_device_known(char *uid);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int store_device_public_key(char* uid, char* public_key);
+int store_device_public_key(char *uid, char *public_key);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int get_root_private_key(gnutls_datum_t* root_privkey);
+int get_root_private_key(gnutls_datum_t * root_privkey);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int get_host_private_key(gnutls_datum_t* host_privkey);
+int get_host_private_key(gnutls_datum_t * host_privkey);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int get_root_certificate(gnutls_datum_t* root_cert);
+int get_root_certificate(gnutls_datum_t * root_cert);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int get_host_certificate(gnutls_datum_t* host_cert);
+int get_host_certificate(gnutls_datum_t * host_cert);
 
 /**
  * Setup a brand new config file.
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int init_config_file(char* host_id, gnutls_datum_t* root_key, gnutls_datum_t* host_key, gnutls_datum_t* root_cert, gnutls_datum_t* host_cert);
+int init_config_file(char *host_id, gnutls_datum_t * root_key, gnutls_datum_t * host_key, gnutls_datum_t * root_cert,
+					 gnutls_datum_t * host_cert);
 #endif
-

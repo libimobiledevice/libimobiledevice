@@ -71,4 +71,3 @@ enum {
 	AFC_READ = 0x0000000f,
 	AFC_WRITE = 0x00000010
 };
-

@@ -36,38 +36,43 @@ int debug = 1;
  *
  * @param key The pointer to the desired location of the new key.
  */
-void generate_key(gpointer key){
-	gnutls_x509_privkey_generate(*((gnutls_x509_privkey_t*)key), GNUTLS_PK_RSA, 2048, 0);
+void generate_key(gpointer key)
+{
+	gnutls_x509_privkey_generate(*((gnutls_x509_privkey_t *) key), GNUTLS_PK_RSA, 2048, 0);
 	g_thread_exit(0);
 }
+
 /** Simple function that generates a spinner until the mutex is released.
  */
-void progress_bar(gpointer mutex){
+void progress_bar(gpointer mutex)
+{
 	const char *spinner = "|/-\\|/-\\";
 	int i = 0;
 
-	while (!g_static_mutex_trylock((GStaticMutex*)mutex)){
+	while (!g_static_mutex_trylock((GStaticMutex *) mutex)) {
 		usleep(500000);
 		printf("Generating key... %c\r", spinner[i++]);
 		fflush(stdout);
-		if (i > 8) i = 0;
+		if (i > 8)
+			i = 0;
 	}
 	printf("Generating key... done\n");
 	g_thread_exit(0);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	GThread *progress_thread, *key_thread;
 	GError *err;
 	static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
-	char* host_id = NULL;
+	char *host_id = NULL;
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t root_cert;
 	gnutls_x509_crt_t host_cert;
 
 	// Create the thread
-	if (!g_thread_supported()){
+	if (!g_thread_supported()) {
 		g_thread_init(NULL);
 	}
 	gnutls_global_init();
@@ -88,28 +93,28 @@ int main(int argc, char *argv[]) {
 
 	/* generate root key */
 	g_static_mutex_lock(&mutex);
-	if((key_thread = g_thread_create((GThreadFunc)generate_key, &root_privkey, TRUE, &err)) == NULL) {
-	   printf("Thread create failed: %s!!\n", err->message );
-	   g_error_free(err) ;
+	if ((key_thread = g_thread_create((GThreadFunc) generate_key, &root_privkey, TRUE, &err)) == NULL) {
+		printf("Thread create failed: %s!!\n", err->message);
+		g_error_free(err);
 	}
-	if((progress_thread = g_thread_create((GThreadFunc)progress_bar, &mutex, TRUE, &err)) == NULL) {
-	   printf("Thread create failed: %s!!\n", err->message );
-	   g_error_free(err) ;
+	if ((progress_thread = g_thread_create((GThreadFunc) progress_bar, &mutex, TRUE, &err)) == NULL) {
+		printf("Thread create failed: %s!!\n", err->message);
+		g_error_free(err);
 	}
 	g_thread_join(key_thread);
 	g_static_mutex_unlock(&mutex);
 	g_thread_join(progress_thread);
-	
+
 	/* generate host key */
 	g_static_mutex_init(&mutex);
 	g_static_mutex_lock(&mutex);
-	if((key_thread = g_thread_create((GThreadFunc)generate_key, &host_privkey, TRUE, &err)) == NULL) {
-	   printf("Thread create failed: %s!!\n", err->message );
-	   g_error_free(err) ;
+	if ((key_thread = g_thread_create((GThreadFunc) generate_key, &host_privkey, TRUE, &err)) == NULL) {
+		printf("Thread create failed: %s!!\n", err->message);
+		g_error_free(err);
 	}
-	if((progress_thread = g_thread_create((GThreadFunc)progress_bar, &mutex, TRUE, &err)) == NULL) {
-	   printf("Thread create failed: %s!!\n", err->message );
-	   g_error_free(err) ;
+	if ((progress_thread = g_thread_create((GThreadFunc) progress_bar, &mutex, TRUE, &err)) == NULL) {
+		printf("Thread create failed: %s!!\n", err->message);
+		g_error_free(err);
 	}
 	g_thread_join(key_thread);
 	g_static_mutex_unlock(&mutex);
@@ -136,33 +141,33 @@ int main(int argc, char *argv[]) {
 
 
 	/* export to PEM format */
-	gnutls_datum_t root_key_pem = {NULL, 0};
-	gnutls_datum_t host_key_pem = {NULL, 0};
+	gnutls_datum_t root_key_pem = { NULL, 0 };
+	gnutls_datum_t host_key_pem = { NULL, 0 };
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  NULL, &root_key_pem.size);
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  NULL, &host_key_pem.size);
+	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_pem.size);
+	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_pem.size);
 
 	root_key_pem.data = gnutls_malloc(root_key_pem.size);
 	host_key_pem.data = gnutls_malloc(host_key_pem.size);
 
-	gnutls_x509_privkey_export (root_privkey, GNUTLS_X509_FMT_PEM,  root_key_pem.data, &root_key_pem.size);
-	gnutls_x509_privkey_export (host_privkey, GNUTLS_X509_FMT_PEM,  host_key_pem.data, &host_key_pem.size);
+	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, root_key_pem.data, &root_key_pem.size);
+	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, host_key_pem.data, &host_key_pem.size);
 
-	gnutls_datum_t root_cert_pem = {NULL, 0};
-	gnutls_datum_t host_cert_pem = {NULL, 0};
+	gnutls_datum_t root_cert_pem = { NULL, 0 };
+	gnutls_datum_t host_cert_pem = { NULL, 0 };
 
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  NULL, &root_cert_pem.size);
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  NULL, &host_cert_pem.size);
+	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_pem.size);
+	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_pem.size);
 
 	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
 	host_cert_pem.data = gnutls_malloc(host_cert_pem.size);
 
 	printf("Generating root certificate...");
-	gnutls_x509_crt_export (root_cert, GNUTLS_X509_FMT_PEM,  root_cert_pem.data, &root_cert_pem.size);
+	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, root_cert_pem.data, &root_cert_pem.size);
 	printf("done\n");
 
 	printf("Generating host certificate...");
-	gnutls_x509_crt_export (host_cert, GNUTLS_X509_FMT_PEM,  host_cert_pem.data, &host_cert_pem.size);
+	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_pem.size);
 	printf("done\n");
 
 
@@ -176,4 +181,3 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
-

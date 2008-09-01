@@ -25,14 +25,14 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth);
-xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth);
-xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth);
-xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode *to_node, int depth);
+xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
+xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
+xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
+xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode * to_node, int depth);
 
 void free_plist(xmlDocPtr plist);
 xmlDocPtr new_plist();
 
-char **read_dict_element_strings(xmlNode *dict);
+char **read_dict_element_strings(xmlNode * dict);
 void free_dictionary(char **dictionary);
 #endif

@@ -22,7 +22,7 @@
 #ifndef IPHONE_H
 #define IPHONE_H
 
-#ifndef USBMUX_H 
+#ifndef USBMUX_H
 #include "usbmux.h"
 #warning usbmux not included?
 #endif

@@ -40,12 +40,12 @@ const char *plist_base = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
  *
  * @return The formatted string.
  */
-char* format_string(const char* buf, int cols, int depth)
+char *format_string(const char *buf, int cols, int depth)
 {
 	int colw = depth + cols + 1;
 	int len = strlen(buf);
 	int nlines = len / cols + 1;
- 	char* new_buf = (char*)malloc(nlines * colw + depth + 1);
+	char *new_buf = (char *) malloc(nlines * colw + depth + 1);
 	int i = 0;
 	int j = 0;
 
@@ -53,18 +53,18 @@ char* format_string(const char* buf, int cols, int depth)
 	assert(depth >= 0);
 
 	// Inserts new lines and tabs at appropriate locations
-	for (i = 0; i < nlines; i++){
+	for (i = 0; i < nlines; i++) {
 		new_buf[i * colw] = '\n';
 		for (j = 0; j < depth; j++)
 			new_buf[i * colw + 1 + j] = '\t';
 		memcpy(new_buf + i * colw + 1 + depth, buf + i * cols, cols);
 	}
-	new_buf[len+(1+depth)*nlines] = '\n';
+	new_buf[len + (1 + depth) * nlines] = '\n';
 
 	// Inserts final row of indentation and termination character
 	for (j = 0; j < depth; j++)
-		new_buf[len+(1+depth)*nlines + 1 + j] = '\t';
-	new_buf[len+(1+depth)*nlines+depth+1] = '\0';
+		new_buf[len + (1 + depth) * nlines + 1 + j] = '\t';
+	new_buf[len + (1 + depth) * nlines + depth + 1] = '\0';
 
 	return new_buf;
 }
@@ -73,12 +73,14 @@ char* format_string(const char* buf, int cols, int depth)
  * 
  * @return The plist XML document.
  */
-xmlDocPtr new_plist() {
+xmlDocPtr new_plist()
+{
 	char *plist = strdup(plist_base);
 	xmlDocPtr plist_xml = xmlReadMemory(plist, strlen(plist), NULL, NULL, 0);
 
-	if (!plist_xml) return NULL;
-	
+	if (!plist_xml)
+		return NULL;
+
 	free(plist);
 
 	return plist_xml;
@@ -88,8 +90,10 @@ xmlDocPtr new_plist() {
  *
  * @param plist The XML document to destroy.
  */
-void free_plist(xmlDocPtr plist) {
-	if (!plist) return;
+void free_plist(xmlDocPtr plist)
+{
+	if (!plist)
+		return;
 
 	xmlFreeDoc(plist);
 }
@@ -109,14 +113,17 @@ void free_plist(xmlDocPtr plist) {
  *
  * @return The newly created node.
  */
-xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode *to_node, int depth) {
+xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode * to_node, int depth)
+{
 	int i = 0;
 	xmlNode *child;
 
-	if (!plist) return NULL;
+	if (!plist)
+		return NULL;
 	assert(depth >= 0);
-	if (!to_node) to_node = xmlDocGetRootElement(plist);
-	
+	if (!to_node)
+		to_node = xmlDocGetRootElement(plist);
+
 	for (i = 0; i < depth; i++) {
 		xmlNodeAddContent(to_node, "\t");
 	}
@@ -136,12 +143,13 @@ xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *conte
  *
  * @return The newly created key node.
  */
-xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
+xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
+{
 	xmlNode *keyPtr;
 
 	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
 	add_child_to_plist(plist, "string", value, dict, depth);
-	
+
 	return keyPtr;
 }
 
@@ -155,9 +163,10 @@ xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode *dict, const char *ke
  *
  * @return The newly created dict node.
  */
-xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
+xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
+{
 	xmlNode *child;
-	
+
 	add_child_to_plist(plist, "key", key, dict, depth);
 	child = add_child_to_plist(plist, "dict", value, dict, depth);
 
@@ -174,12 +183,13 @@ xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode *dict, const char *key, cons
  *
  * @return The newly created key node.
  */
-xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *key, const char *value, int depth) {
+xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
+{
 	xmlNode *keyPtr;
 
 	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
 	add_child_to_plist(plist, "data", format_string(value, 60, depth), dict, depth);
-	
+
 	return keyPtr;
 }
 
@@ -190,17 +200,18 @@ xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode *dict, const char *k
  * @return  An array where each even number is a key and the odd numbers are
  *          values.  If the odd number is \0, that's the end of the list.
  */
-char **read_dict_element_strings(xmlNode *dict) {
+char **read_dict_element_strings(xmlNode * dict)
+{
 	char **return_me = NULL, **old = NULL;
 	int current_length = 0;
 	int current_pos = 0;
 	xmlNode *dict_walker;
-	
+
 	for (dict_walker = dict->children; dict_walker; dict_walker = dict_walker->next) {
 		if (!xmlStrcmp(dict_walker->name, "key")) {
 			current_length += 2;
 			old = return_me;
-			return_me = realloc(return_me, sizeof(char*) * current_length);
+			return_me = realloc(return_me, sizeof(char *) * current_length);
 			if (!return_me) {
 				free(old);
 				return NULL;
@@ -209,25 +220,26 @@ char **read_dict_element_strings(xmlNode *dict) {
 			return_me[current_pos++] = xmlNodeGetContent(dict_walker->next->next);
 		}
 	}
-	
+
 	old = return_me;
-	return_me = realloc(return_me, sizeof(char*) * (current_length+1));
+	return_me = realloc(return_me, sizeof(char *) * (current_length + 1));
 	return_me[current_pos] = NULL;
-	
+
 	return return_me;
 }
 
 /** Destroys a dictionary as returned by read_dict_element_strings
  */
-void free_dictionary(char **dictionary) {
+void free_dictionary(char **dictionary)
+{
 	int i = 0;
-	
-	if (!dictionary) return;
-	
+
+	if (!dictionary)
+		return;
+
 	for (i = 0; dictionary[i]; i++) {
 		free(dictionary[i]);
 	}
 
 	free(dictionary);
 }
-
