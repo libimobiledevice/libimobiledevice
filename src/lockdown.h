@@ -44,6 +44,7 @@ char *lockdownd_generate_hostid();
 
 iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone);
 iphone_error_t lockdownd_hello(iphone_lckd_client_t control);
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string, char **value);
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
 iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key);
 

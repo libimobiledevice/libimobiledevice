@@ -265,7 +265,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char **value)
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string, char **value)
 {
 	if (!control || !req_key || !value || (value && *value))
 		return IPHONE_E_INVALID_ARG;
@@ -280,7 +280,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 
 	/* Setup DevicePublicKey request plist */
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Key", req_key, 1);
+	key = add_key_str_dict_element(plist, dict, req_key, req_string, 1);
 	key = add_key_str_dict_element(plist, dict, "Request", "GetValue", 1);
 	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
 
@@ -343,7 +343,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
  */
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
 {
-	return lockdownd_generic_get_value(control, "UniqueDeviceID", uid);
+	return lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", uid);
 }
 
 /** Askes for the device's public key. Part of the lockdownd handshake.
@@ -354,7 +354,7 @@ iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid
  */
 iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key)
 {
-	return lockdownd_generic_get_value(control, "DevicePublicKey", public_key);
+	return lockdownd_generic_get_value(control, "Key", "DevicePublicKey", public_key);
 }
 
 /** Completes the entire lockdownd handshake.
