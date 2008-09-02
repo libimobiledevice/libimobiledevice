@@ -169,7 +169,7 @@ static int ifuse_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
-void *ifuse_init(struct fuse_conn_info *conn)
+void *ifuse_init_with_service(struct fuse_conn_info *conn, const char *service_name)
 {
 	int port = 0;
 	iphone_afc_client_t afc = NULL;
@@ -191,7 +191,7 @@ void *ifuse_init(struct fuse_conn_info *conn)
 		return NULL;
 	}
 
-	if (IPHONE_E_SUCCESS == iphone_lckd_start_service(control, "com.apple.afc", &port) && !port) {
+	if (IPHONE_E_SUCCESS == iphone_lckd_start_service(control, service_name, &port) && !port) {
 		iphone_lckd_free_client(control);
 		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
@@ -298,6 +298,16 @@ int ifuse_mkdir(const char *dir, mode_t ignored)
 		return -1;
 }
 
+void *ifuse_init_normal(struct fuse_conn_info *conn)
+{
+	return ifuse_init_with_service(conn, "com.apple.afc");
+}
+
+void *ifuse_init_jailbroken(struct fuse_conn_info *conn)
+{
+	return ifuse_init_with_service(conn, "com.apple.afc2");
+}
+
 static struct fuse_operations ifuse_oper = {
 	.getattr = ifuse_getattr,
 	.statfs = ifuse_statfs,
@@ -314,11 +324,28 @@ static struct fuse_operations ifuse_oper = {
 	.rename = ifuse_rename,
 	.fsync = ifuse_fsync,
 	.release = ifuse_release,
-	.init = ifuse_init,
+	.init = ifuse_init_normal,
 	.destroy = ifuse_cleanup
 };
 
 int main(int argc, char *argv[])
 {
+	char **ammended_argv;
+	int i, j;
+
+	// Parse extra options
+	if (argc > 2 && (ammended_argv = malloc((argc + 1) * sizeof(*ammended_argv)))) {
+		for (i = j = 0; ammended_argv[j] = argv[i], i < argc; i++) {
+			// Try to use the (jailbroken) com.apple.afc2 if requested by the user
+			if (argv[i] && (!strcmp("--root", argv[i]) || !strcmp("--afc2", argv[i]))) {
+				ifuse_oper.init = ifuse_init_jailbroken;
+				continue;
+			}
+			j++;
+		}
+		argv = ammended_argv;
+		argc = j;
+	}
+
 	return fuse_main(argc, argv, &ifuse_oper, NULL);
 }

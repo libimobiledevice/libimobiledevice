@@ -1,6 +1,10 @@
 INSTALLATION
 ================================================================================
 
+For:
+	Apple iPhone/iPod Touch 1.0/1.1/1.1.1/1.2/1.3/2.0+
+	+ iPod USB cable
+
 You must have:
 	libgnutls-dev
 	libusb-dev
@@ -17,25 +21,106 @@ To compile run:
 	./autogen.sh
 	./configure
 	make
-	sudo make install (if you want to install it into your system directories)
-	libiphone-initconf (as the user you intend to user the library)
+	sudo make install  # (if you want to install it into your system directories)
+	libiphone-initconf  # (as the user you intend to user the library)
+
+On Ubuntu/Debian, you can do:
+	sudo apt-get install build-essential automake autoconf \
+          libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev
 
 USAGE
 ================================================================================
 
-IMPORTANT: Before using the library you must run "libiphone-initconf". It will
-generate keys and a host id for your system. It only needs to be run once but
-it MUST be run.
+Now comes the fun bit!
 
-There are currently 2 executables iphoneclient and ifuse, located in src/.
+== Generating keys ==
 
-iphoneclient is a basic commandline interface, it just runs a few various operations.
+IMPORTANT: Before using the library you must run "libiphone-initconf"
+as your own user (not root). It will generate keys and a host id for your
+system to be able to communicate with 'lockdownd' on the iPhone.
+
+It will probably take 5-10 minutes, but thankfully only needs to be
+run _once_.   It MUST be run otherwise communication will not work:
+
+	libiphone-initconf
+
+The generated keys are saved in '~/.config/libiphone/' in your home directory.
+
+== Tools ==
+
+There are currently two more executables 'ifuse' and 'iphoneclient',
+both located in src/.
+
+
+=== iFuse ===
+
+This is probably what you're after; this mounts a view of your
+iPhone/iPod Touch's filesystem over the USB interface using the native
+Apple protocol (AFC/"com.apple.afc").
 
 ifuse is a Fuse filesystem which allows you to mount your iPhone to a directory
 like this:
 
-	./src/ifuse mountpoint
+	./src/ifuse <mountpoint> -s
 
 To unmount:
-	umount mountpoint
+	umount <mountpoint>
 
+(nb: '-s' is to force single-threaded mode, as ifuse maybe unstable without it).
+
+Eg:
+	mkdir ~/iphone
+
+	ifuse ~/iphone -s
+	ls -l ~/iphone
+	...
+	umount ~/iphone	
+
+Currently ifuse (via the AFC protocol) only gives access to the
+'/var/root/Media/' chroot on the iPhone (containing music/pictures).
+
+If you have a device that has been jailedbreaked then an additional
+("com.apple.afc2") service will have been installed, without the chroot.
+On jailbroken devices only, you can do:
+
+	ifuse ~/iphone --root -s
+
+And this will mount a full view of the iPhone's filesystem.
+
+
+==== Setting up FUSE ====
+
+Note that on some systems, you may have to load the 'fuse' kernel
+module first and to ensure that you are a member of the 'fuse' group:
+
+	sudo modprobe fuse
+	sudo adduser $USER fuse
+
+You can check your membership of the 'fuse' group with:
+
+	id | grep fuse && echo yes! || echo not yet...
+
+If you have just added yourself, you will need to logout and log back
+in for the group change to become visible.
+
+
+=== iphoneclient ===
+
+'iphoneclient' is a basic commandline interface for testing, it just
+runs a few various test operations such as attempting to view/create a
+test file in the iPhone, but is mainly a developer tool.
+
+
+== Who/what/where? ==
+
+wiki:
+	http://matt.colyer.name/projects/iphone-linux/index.php?title=Main_Page
+
+code:
+	git clone http://git.matt.colyer.name/2008/libiphone/
+
+mailing list:
+	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
+
+updated:
+	2008-09-02
