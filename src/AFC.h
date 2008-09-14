@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <glib.h>
 
 typedef struct {
 	uint32 header1, header2;
@@ -46,6 +47,7 @@ struct iphone_afc_client_int {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
+	GMutex *mutex;
 };
 
 struct iphone_afc_file_int {

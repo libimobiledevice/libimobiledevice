@@ -34,10 +34,11 @@ const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
 static void afc_lock(iphone_afc_client_t client)
 {
 	log_debug_msg("Locked\n");
-	while (client->lock) {
-		usleep(500);			// they say it's obsolete, but whatever
-	}
-	client->lock = 1;
+	/*while (client->lock) {
+	   usleep(500);         // they say it's obsolete, but whatever
+	   }
+	   client->lock = 1; */
+	g_mutex_lock(client->mutex);
 }
 
 /** Unlocks an AFC client, done for thread safety stuff.
@@ -47,7 +48,8 @@ static void afc_lock(iphone_afc_client_t client)
 static void afc_unlock(iphone_afc_client_t client)
 {								// just to be pretty 
 	log_debug_msg("Unlocked\n");
-	client->lock = 0;
+	//client->lock = 0;
+	g_mutex_unlock(client->mutex);
 }
 
 /** Makes a connection to the AFC service on the phone. 
@@ -61,6 +63,10 @@ static void afc_unlock(iphone_afc_client_t client)
 iphone_error_t iphone_afc_new_client(iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t * client)
 {
 	int ret = IPHONE_E_SUCCESS;
+
+	//makes sure thread environment is available
+	if (!g_thread_supported())
+		g_thread_init(NULL);
 	iphone_afc_client_t client_loc = (iphone_afc_client_t) malloc(sizeof(struct iphone_afc_client_int));
 
 	if (!device)
@@ -92,6 +98,7 @@ iphone_error_t iphone_afc_new_client(iphone_device_t device, int src_port, int d
 	client_loc->afc_packet->header2 = 0x4141504C;
 	client_loc->file_handle = 0;
 	client_loc->lock = 0;
+	client_loc->mutex = g_mutex_new();
 
 	*client = client_loc;
 	return IPHONE_E_SUCCESS;
