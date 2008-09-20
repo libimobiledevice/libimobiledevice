@@ -61,7 +61,7 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 		for (dev = bus->devices; dev; dev = dev->next) {
 			if (dev->descriptor.idVendor == 0x05ac &&
 				(dev->descriptor.idProduct == 0x1290 ||
-				 dev->descriptor.idProduct == 0x1291 || dev->descriptor.idProduct == 0x1292)
+				 dev->descriptor.idProduct == 0x1291 || dev->descriptor.idProduct == 0x1292 || dev->descriptor.idProduct == 0x1293)
 				) {
 				phone->__device = dev;
 				phone->device = usb_open(phone->__device);
