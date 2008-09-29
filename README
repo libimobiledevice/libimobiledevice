@@ -26,7 +26,8 @@ To compile run:
 
 On Ubuntu/Debian, you can do:
 	sudo apt-get install build-essential automake autoconf \
-          libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev
+          libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev \
+          libreadline5-dev
 
 USAGE
 ================================================================================
