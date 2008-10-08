@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src 
+SUBDIRS = src include
 
 doc:
 	doxygen doxygen.cfg
