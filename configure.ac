@@ -38,4 +38,4 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
 
-AC_OUTPUT(Makefile src/Makefile include/Makefile)
+AC_OUTPUT(Makefile src/Makefile include/Makefile libiphone-1.0.pc)
