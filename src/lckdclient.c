@@ -30,7 +30,6 @@
 #include "iphone.h"
 #include <libiphone/libiphone.h>
 
-int debug = 1;
 
 int main(int argc, char *argv[])
 {
@@ -38,6 +37,7 @@ int main(int argc, char *argv[])
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
 
+	iphone_set_debug(1);
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");

@@ -29,7 +29,6 @@
 #include "userpref.h"
 #include "lockdown.h"
 
-int debug = 1;
 
 /** Generates a 2048 byte key, split into a function so that it can be run in a
  *  thread.
@@ -70,6 +69,8 @@ int main(int argc, char *argv[])
 	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t root_cert;
 	gnutls_x509_crt_t host_cert;
+
+	iphone_set_debug(1);
 
 	// Create the thread
 	if (!g_thread_supported()) {

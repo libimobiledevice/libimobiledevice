@@ -27,7 +27,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int debug;
+int iphone_debug = 0;
+
+/**
+ * Sets the level of debugging. Currently the only acceptable values are 0 and
+ * 1.
+ *
+ * @param level Set to 0 for no debugging or 1 for debugging.
+ */
+void iphone_set_debug(int level)
+{
+	iphone_debug = level;
+}
 
 /**
  * Given a USB bus and device number, returns a device handle to the iPhone on
@@ -42,8 +53,7 @@ extern int debug;
  *      descriptor on return. 
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_get_specific_device(int bus_n, int dev_n,
-        iphone_device_t *device)
+iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t * device)
 {
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;
@@ -69,26 +79,26 @@ iphone_error_t iphone_get_specific_device(int bus_n, int dev_n,
 
 	// Set the device configuration
 	for (bus = busses; bus; bus = bus->next)
-        if (bus->location == bus_n)
-            for (dev = bus->devices; dev != NULL; dev = dev->next)
-                if (dev->devnum == dev_n) {
-                    phone->__device = dev;
-                    phone->device = usb_open(phone->__device);
-                    usb_set_configuration(phone->device, 3);
-                    usb_claim_interface(phone->device, 1);
-                    goto found;
-                }
+		if (bus->location == bus_n)
+			for (dev = bus->devices; dev != NULL; dev = dev->next)
+				if (dev->devnum == dev_n) {
+					phone->__device = dev;
+					phone->device = usb_open(phone->__device);
+					usb_set_configuration(phone->device, 3);
+					usb_claim_interface(phone->device, 1);
+					goto found;
+				}
 
-    iphone_free_device(phone);
-    if (debug)
-        fprintf(stderr, "iphone_get_specific_device: iPhone not found\n");
-    return IPHONE_E_NO_DEVICE;
+	iphone_free_device(phone);
+	if (iphone_debug)
+		fprintf(stderr, "iphone_get_specific_device: iPhone not found\n");
+	return IPHONE_E_NO_DEVICE;
 
-found:
+  found:
 	// Send the version command to the phone
-    version = version_header();
+	version = version_header();
 	bytes = usb_bulk_write(phone->device, BULKOUT, (char *) version, sizeof(*version), 800);
-	if (bytes < 20 && debug) {
+	if (bytes < 20 && iphone_debug) {
 		fprintf(stderr, "get_iPhone(): libusb did NOT send enough!\n");
 		if (bytes < 0) {
 			fprintf(stderr, "get_iPhone(): libusb gave me the error %d: %s (%s)\n",
@@ -102,9 +112,9 @@ found:
 	if (bytes < 20) {
 		free(version);
 		iphone_free_device(phone);
-		if (debug)
+		if (iphone_debug)
 			fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
-		if (debug && bytes < 0)
+		if (iphone_debug && bytes < 0)
 			fprintf(stderr, "get_iPhone(): libusb error message %d: %s (%s)\n",
 					bytes, usb_strerror(), strerror(-bytes));
 		return IPHONE_E_NOT_ENOUGH_DATA;
@@ -120,13 +130,13 @@ found:
 		// Bad header
 		iphone_free_device(phone);
 		free(version);
-		if (debug)
+		if (iphone_debug)
 			fprintf(stderr, "get_iPhone(): Received a bad header/invalid version number.");
 		return IPHONE_E_BAD_HEADER;
 	}
 
 	// If it got to this point it's gotta be bad
-	if (debug)
+	if (iphone_debug)
 		fprintf(stderr, "get_iPhone(): Unknown error.\n");
 	iphone_free_device(phone);
 	free(version);
@@ -149,24 +159,22 @@ found:
  *  will be filled with a handle to the device.
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_get_device(iphone_device_t *device)
+iphone_error_t iphone_get_device(iphone_device_t * device)
 {
-    struct usb_bus *bus, *busses;
-    struct usb_device *dev;
+	struct usb_bus *bus, *busses;
+	struct usb_device *dev;
 
-    usb_init();
-    usb_find_busses();
-    usb_find_devices();
+	usb_init();
+	usb_find_busses();
+	usb_find_devices();
 
-    for (bus = usb_get_busses(); bus != NULL; bus = bus->next)
-        for (dev = bus->devices; dev != NULL; dev = dev->next)
-            if (dev->descriptor.idVendor == 0x05ac
-                    && dev->descriptor.idProduct >= 0x1290
-                    && dev->descriptor.idProduct <= 0x1293)
-                return iphone_get_specific_device(bus->location, dev->devnum,
-                        device);
+	for (bus = usb_get_busses(); bus != NULL; bus = bus->next)
+		for (dev = bus->devices; dev != NULL; dev = dev->next)
+			if (dev->descriptor.idVendor == 0x05ac
+				&& dev->descriptor.idProduct >= 0x1290 && dev->descriptor.idProduct <= 0x1293)
+				return iphone_get_specific_device(bus->location, dev->devnum, device);
 
-    return IPHONE_E_NO_DEVICE;
+	return IPHONE_E_NO_DEVICE;
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  
@@ -210,12 +218,12 @@ int send_to_phone(iphone_device_t phone, char *data, int datalen)
 
 	if (!phone)
 		return -1;
-	if (debug)
+	if (iphone_debug)
 		fprintf(stderr, "send_to_phone: Attempting to send datalen = %i data = %p\n", datalen, data);
 
 	bytes = usb_bulk_write(phone->device, BULKOUT, data, datalen, 800);
 	if (bytes < datalen) {
-		if (debug && bytes < 0)
+		if (iphone_debug && bytes < 0)
 			fprintf(stderr, "send_to_iphone(): libusb gave me the error %d: %s - %s\n", bytes, usb_strerror(),
 					strerror(-bytes));
 		return -1;
@@ -242,12 +250,12 @@ int recv_from_phone(iphone_device_t phone, char *data, int datalen)
 
 	if (!phone)
 		return -1;
-	if (debug)
+	if (iphone_debug)
 		fprintf(stderr, "recv_from_phone(): attempting to receive %i bytes\n", datalen);
 
 	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
 	if (bytes < 0) {
-		if (debug)
+		if (iphone_debug)
 			fprintf(stderr, "recv_from_phone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(),
 					strerror(-bytes));
 		return -1;

@@ -32,7 +32,6 @@
 
 #include <libiphone/libiphone.h>
 
-int debug = 1;
 
 int main(int argc, char *argv[])
 {
@@ -41,9 +40,9 @@ int main(int argc, char *argv[])
 	iphone_device_t phone = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
-		debug = 1;
+		iphone_set_debug(1);
 	} else {
-		debug = 0;
+		iphone_set_debug(0);
 	}
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
