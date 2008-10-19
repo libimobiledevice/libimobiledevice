@@ -77,6 +77,7 @@ struct iphone_afc_file_int;
 typedef struct iphone_afc_file_int *iphone_afc_file_t;
 
 //device related functions
+void iphone_set_debug(int level);
 iphone_error_t iphone_get_device ( iphone_device_t *device );
 iphone_error_t iphone_free_device ( iphone_device_t device );
 
