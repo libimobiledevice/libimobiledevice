@@ -29,19 +29,31 @@
 
 extern int debug;
 
-/** Gets a handle to an iPhone
- * 
- * @return A structure with data on the first iPhone it finds.  (Or NULL, on
- *         error)
+/**
+ * Given a USB bus and device number, returns a device handle to the iPhone on
+ * that bus. To aid compatibility with future devices, this function does not
+ * check the vendor and device IDs! To do that, you should use
+ * iphone_get_device() or a system-specific API (e.g. HAL).
+ *
+ * @param bus_n The USB bus number.
+ * @param dev_n The USB device number.
+ * @param device A pointer to a iphone_device_t, which must be set to NULL upon
+ *      calling iphone_get_specific_device, which will be filled with a device
+ *      descriptor on return. 
+ * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_get_device(iphone_device_t * device)
+iphone_error_t iphone_get_specific_device(int bus_n, int dev_n,
+        iphone_device_t *device)
 {
+	struct usb_bus *bus, *busses;
+	struct usb_device *dev;
+	usbmux_version_header *version;
+	int bytes = 0;
+
 	//check we can actually write in device
 	if (!device || (device && *device))
 		return IPHONE_E_INVALID_ARG;
 
-	struct usb_bus *bus, *busses;
-	struct usb_device *dev;
 	iphone_device_t phone = (iphone_device_t) malloc(sizeof(struct iphone_device_int));
 
 	// Initialize the struct
@@ -55,36 +67,26 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 	usb_find_devices();
 	busses = usb_get_busses();
 
-
 	// Set the device configuration
-	for (bus = busses; bus; bus = bus->next) {
-		for (dev = bus->devices; dev; dev = dev->next) {
-			if (dev->descriptor.idVendor == 0x05ac &&
-				(dev->descriptor.idProduct == 0x1290 ||
-				 dev->descriptor.idProduct == 0x1291 || dev->descriptor.idProduct == 0x1292
-				 || dev->descriptor.idProduct == 0x1293)
-				) {
-				phone->__device = dev;
-				phone->device = usb_open(phone->__device);
-				usb_set_configuration(phone->device, 3);
-				usb_claim_interface(phone->device, 1);
-				break;
-			}
-		}
-		if (phone->__device && phone->device)
-			break;
-	}
+	for (bus = busses; bus; bus = bus->next)
+        if (bus->location == bus_n)
+            for (dev = bus->devices; dev != NULL; dev = dev->next)
+                if (dev->devnum == dev_n) {
+                    phone->__device = dev;
+                    phone->device = usb_open(phone->__device);
+                    usb_set_configuration(phone->device, 3);
+                    usb_claim_interface(phone->device, 1);
+                    goto found;
+                }
 
-	// Check to see if we are connected
-	if (!phone->device || !phone->__device) {
-		iphone_free_device(phone);
-		if (debug)
-			fprintf(stderr, "get_iPhone(): iPhone not found\n");
-		return IPHONE_E_NO_DEVICE;
-	}
+    iphone_free_device(phone);
+    if (debug)
+        fprintf(stderr, "iphone_get_specific_device: iPhone not found\n");
+    return IPHONE_E_NO_DEVICE;
+
+found:
 	// Send the version command to the phone
-	int bytes = 0;
-	usbmux_version_header *version = version_header();
+    version = version_header();
 	bytes = usb_bulk_write(phone->device, BULKOUT, (char *) version, sizeof(*version), 800);
 	if (bytes < 20 && debug) {
 		fprintf(stderr, "get_iPhone(): libusb did NOT send enough!\n");
@@ -129,6 +131,42 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 	iphone_free_device(phone);
 	free(version);
 	return IPHONE_E_UNKNOWN_ERROR;	// if it got to this point it's gotta be bad
+}
+
+/**
+ * Scans all USB busses and devices for a known AFC-compatible device and
+ * returns a handle to the first such device it finds. Known devices include
+ * those with vendor ID 0x05ac and product ID between 0x1290 and 0x1293
+ * inclusive.
+ *
+ * This function is convenient, but on systems where higher-level abstractions
+ * (such as HAL) are available it may be preferable to use
+ * iphone_get_specific_device instead, because it can deal with multiple
+ * connected devices as well as devices not known to libiphone.
+ * 
+ * @param device Upon calling this function, a pointer to a location of type
+ *  iphone_device_t, which must have the value NULL. On return, this location
+ *  will be filled with a handle to the device.
+ * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ */
+iphone_error_t iphone_get_device(iphone_device_t *device)
+{
+    struct usb_bus *bus, *busses;
+    struct usb_device *dev;
+
+    usb_init();
+    usb_find_busses();
+    usb_find_devices();
+
+    for (bus = usb_get_busses(); bus != NULL; bus = bus->next)
+        for (dev = bus->devices; dev != NULL; dev = dev->next)
+            if (dev->descriptor.idVendor == 0x05ac
+                    && dev->descriptor.idProduct >= 0x1290
+                    && dev->descriptor.idProduct <= 0x1293)
+                return iphone_get_specific_device(bus->location, dev->devnum,
+                        device);
+
+    return IPHONE_E_NO_DEVICE;
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  
