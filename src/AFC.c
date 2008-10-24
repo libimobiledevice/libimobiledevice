@@ -1042,3 +1042,7 @@ iphone_error_t iphone_afc_truncate_file(iphone_afc_client_t client, iphone_afc_f
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 }
+
+uint32 iphone_afc_get_file_handle(iphone_afc_file_t file) {
+	return file->filehandle;
+}

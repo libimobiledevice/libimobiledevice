@@ -71,3 +71,5 @@ enum {
 	AFC_READ = 0x0000000f,
 	AFC_WRITE = 0x00000010
 };
+
+uint32 iphone_afc_get_file_handle(iphone_afc_file_t file);
