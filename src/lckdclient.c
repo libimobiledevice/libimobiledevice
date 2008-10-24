@@ -57,18 +57,16 @@ int main(int argc, char *argv[])
 
 	using_history();
 	int loop = TRUE;
-	while(loop)
-	{
+	while (loop) {
 		char *cmd = readline("> ");
-		if (cmd)
-		{
+		if (cmd) {
 
-			gchar** args = g_strsplit(cmd, " ", 0);
+			gchar **args = g_strsplit(cmd, " ", 0);
 
 			int len = 0;
 			if (args) {
-				while ( *(args+len) ) {
-					g_strstrip(*(args+len));
+				while (*(args + len)) {
+					g_strstrip(*(args + len));
 					len++;
 				}
 			}
@@ -80,7 +78,7 @@ int main(int argc, char *argv[])
 
 				if (!strcmp(*args, "get") && len == 3) {
 					char *value = NULL;
-					if (IPHONE_E_SUCCESS == lockdownd_generic_get_value(control, *(args+1), *(args+2), &value))
+					if (IPHONE_E_SUCCESS == lockdownd_generic_get_value(control, *(args + 1), *(args + 2), &value))
 						printf("Success : value = %s\n", value);
 					else
 						printf("Error\n");
@@ -88,7 +86,7 @@ int main(int argc, char *argv[])
 
 				if (!strcmp(*args, "start") && len == 2) {
 					int port = 0;
-					iphone_lckd_start_service(control, *(args+1), &port);
+					iphone_lckd_start_service(control, *(args + 1), &port);
 					printf("%i\n", port);
 				}
 			}
