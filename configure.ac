@@ -38,4 +38,11 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
 
+AC_ARG_ENABLE([dev-tools],
+            [AS_HELP_STRING([--enable-dev-tools],
+            [build development helper tools (default is no)])],
+            [build_dev_tools=true],
+            [build_dev_tools=false])
+AM_CONDITIONAL(BUILD_DEV_TOOLS, test x$build_dev_tools = xtrue)
+
 AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile libiphone-1.0.pc)
