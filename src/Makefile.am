@@ -6,20 +6,21 @@ AM_LDFLAGS = $(libxml2_LIBS) $(libusb_LIBS) $(libglib2_LIBS) $(libgnutls_LIBS) $
 bin_PROGRAMS = libiphone-initconf
 
 if  BUILD_DEV_TOOLS
-	bin_PROGRAMS = iphoneclient libiphone-initconf lckd-client afccheck
-	iphoneclient_SOURCES = main.c
-	iphoneclient_LDADD = libiphone.la
-
-	lckd_client_SOURCES = lckdclient.c
-	lckd_client_CFLAGS = $(AM_CFLAGS)
-	lckd_client_LDFLAGS = -lreadline $(AM_LDFLAGS)
-	lckd_client_LDADD = libiphone.la
-
-	afccheck_SOURCES = afccheck.c
-	afccheck_CFLAGS = $(AM_CFLAGS)
-	afccheck_LDFLAGS = $(AM_LDFLAGS)
-	afccheck_LDADD = libiphone.la
+	bin_PROGRAMS += iphoneclient lckd-client afccheck
 endif
+
+iphoneclient_SOURCES = main.c
+iphoneclient_LDADD = libiphone.la
+
+lckd_client_SOURCES = lckdclient.c
+lckd_client_CFLAGS = $(AM_CFLAGS)
+lckd_client_LDFLAGS = -lreadline $(AM_LDFLAGS)
+lckd_client_LDADD = libiphone.la
+
+afccheck_SOURCES = afccheck.c
+afccheck_CFLAGS = $(AM_CFLAGS)
+afccheck_LDFLAGS = $(AM_LDFLAGS)
+afccheck_LDADD = libiphone.la
 
 libiphone_initconf_SOURCES = initconf.c userpref.c lockdown.c plist.c usbmux.c iphone.c utils.c
 libiphone_initconf_CFLAGS = $(libgthread2_CFLAGS) $(AM_CFLAGS)

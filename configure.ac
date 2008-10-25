@@ -43,13 +43,13 @@ AC_ARG_ENABLE([dev-tools],
             [build development helper tools (default is no)])],
             [build_dev_tools=true],
             [build_dev_tools=false])
-AM_CONDITIONAL(BUILD_DEV_TOOLS, test x$build_dev_tools = xtrue)
+AM_CONDITIONAL([BUILD_DEV_TOOLS], [test x$build_dev_tools = xtrue])
 
 AC_ARG_ENABLE([debug-code],
             [AS_HELP_STRING([--enable-debug-code],
             [enable debug message reporting in library (default is yes)])],
             [debug_code=true],
             [debug_code=false])
-AM_CONDITIONAL(STRIP_DEBUG_CODE, test x$debug_code = xfalse)
+AM_CONDITIONAL([STRIP_DEBUG_CODE], [test x$debug_code = xfalse])
 
 AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile libiphone-1.0.pc)
