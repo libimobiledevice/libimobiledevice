@@ -39,7 +39,7 @@ void iphone_set_debug(int level)
 
 void log_debug_msg(const char *format, ...)
 {
-#ifndef STRIP_DEBUG
+#ifndef STRIP_DEBUG_CODE
 
 	va_list args;
 	/* run the real fprintf */
@@ -55,7 +55,7 @@ void log_debug_msg(const char *format, ...)
 
 inline void log_debug_buffer(const char *data, const int length)
 {
-#ifndef STRIP_DEBUG
+#ifndef STRIP_DEBUG_CODE
 
 	/* run the real fprintf */
 	if (toto_debug)
@@ -66,7 +66,7 @@ inline void log_debug_buffer(const char *data, const int length)
 
 inline void dump_debug_buffer(const char *file, const char *data, const int length)
 {
-#ifndef STRIP_DEBUG
+#ifndef STRIP_DEBUG_CODE
 
 	/* run the real fprintf */
 	if (toto_debug) {
