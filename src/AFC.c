@@ -27,16 +27,13 @@
 // This is the maximum size an AFC data packet can be
 const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
 
-extern int debug;
-
 /** Locks an AFC client, done for thread safety stuff
  * 
  * @param client The AFC client connection to lock
  */
 static void afc_lock(iphone_afc_client_t client)
 {
-	if (debug)
-		fprintf(stderr, "Locked\n");
+	log_debug_msg("Locked\n");
 	while (client->lock) {
 		usleep(500);			// they say it's obsolete, but whatever
 	}
@@ -49,8 +46,7 @@ static void afc_lock(iphone_afc_client_t client)
  */
 static void afc_unlock(iphone_afc_client_t client)
 {								// just to be pretty 
-	if (debug)
-		fprintf(stderr, "Unlocked\n");
+	log_debug_msg("Unlocked\n");
 	client->lock = 0;
 }
 
@@ -156,16 +152,12 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
 		offset = client->afc_packet->this_length - sizeof(AFCPacket);
 
-		if (debug)
-			fprintf(stderr, "dispatch_AFC_packet: Offset: %i\n", offset);
+		log_debug_msg("dispatch_AFC_packet: Offset: %i\n", offset);
 		if ((length) < (client->afc_packet->entire_length - client->afc_packet->this_length)) {
-			if (debug) {
-				fprintf(stderr, "dispatch_AFC_packet: Length did not resemble what it was supposed");
-				fprintf(stderr, "to based on the packet.\n");
-				fprintf(stderr, "length minus offset: %i\n", length - offset);
-				fprintf(stderr, "rest of packet: %i\n",
-						client->afc_packet->entire_length - client->afc_packet->this_length);
-			}
+			log_debug_msg("dispatch_AFC_packet: Length did not resemble what it was supposed");
+			log_debug_msg("to based on the packet.\n");
+			log_debug_msg("length minus offset: %i\n", length - offset);
+			log_debug_msg("rest of packet: %i\n", client->afc_packet->entire_length - client->afc_packet->this_length);
 			free(buffer);
 			return -1;
 		}
@@ -176,32 +168,25 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 			return bytes;
 		}
 
-		if (debug) {
-			fprintf(stderr, "dispatch_AFC_packet: sent the first now go with the second\n");
-			fprintf(stderr, "Length: %i\n", length - offset);
-			fprintf(stderr, "Buffer: \n");
-			fwrite(data + offset, 1, length - offset, stdout);
-		}
+		log_debug_msg("dispatch_AFC_packet: sent the first now go with the second\n");
+		log_debug_msg("Length: %i\n", length - offset);
+		log_debug_msg("Buffer: \n");
+		log_debug_msg(data + offset);
 
 		iphone_mux_send(client->connection, data + offset, length - offset, &bytes);
 		return bytes;
 	} else {
-		if (debug)
-			fprintf(stderr, "dispatch_AFC_packet doin things the old way\n");
+		log_debug_msg("dispatch_AFC_packet doin things the old way\n");
 		char *buffer = (char *) malloc(sizeof(char) * client->afc_packet->this_length);
-		if (debug)
-			fprintf(stderr, "dispatch_AFC_packet packet length = %i\n", client->afc_packet->this_length);
+		log_debug_msg("dispatch_AFC_packet packet length = %i\n", client->afc_packet->this_length);
 		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
-		if (debug)
-			fprintf(stderr, "dispatch_AFC_packet packet data follows\n");
+		log_debug_msg("dispatch_AFC_packet packet data follows\n");
 		if (length > 0) {
 			memcpy(buffer + sizeof(AFCPacket), data, length);
 			buffer[sizeof(AFCPacket) + length] = '\0';
 		}
-		if (debug)
-			fwrite(buffer, 1, client->afc_packet->this_length, stdout);
-		if (debug)
-			fprintf(stderr, "\n");
+		log_debug_buffer(buffer, client->afc_packet->this_length);
+		log_debug_msg("\n");
 		iphone_mux_send(client->connection, buffer, client->afc_packet->this_length, &bytes);
 
 		if (buffer) {
@@ -257,30 +242,23 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 	free(buffer);
 
 	if (r_packet->operation == AFC_ERROR && !(client->afc_packet->operation == AFC_DELETE && param1 == 7)) {
-		if (debug)
-			fprintf(stderr,
-					"Oops? Bad operation code received: 0x%X, operation=0x%X, param1=%d\n",
-					r_packet->operation, client->afc_packet->operation, param1);
+		log_debug_msg("Oops? Bad operation code received: 0x%X, operation=0x%X, param1=%d\n",
+					  r_packet->operation, client->afc_packet->operation, param1);
 		recv_len = r_packet->entire_length - r_packet->this_length;
 		free(r_packet);
-		if (debug)
-			fprintf(stderr, "recv_len=%d\n", recv_len);
+		log_debug_msg("recv_len=%d\n", recv_len);
 		if (param1 == 0) {
-			if (debug)
-				fprintf(stderr, "... false alarm, but still\n");
+			log_debug_msg("... false alarm, but still\n");
 			*dump_here = NULL;
 			return 0;
 		} else {
-			if (debug)
-				fprintf(stderr, "Errno %i\n", param1);
+			log_debug_msg("Errno %i\n", param1);
 		}
 		*dump_here = NULL;
 		return -1;
 	} else {
-		if (debug)
-			fprintf(stderr,
-					"Operation code %x\nFull length %i and this length %i\n",
-					r_packet->operation, r_packet->entire_length, r_packet->this_length);
+		log_debug_msg("Operation code %x\nFull length %i and this length %i\n",
+					  r_packet->operation, r_packet->entire_length, r_packet->this_length);
 	}
 
 	recv_len = r_packet->entire_length - r_packet->this_length;
@@ -294,25 +272,19 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 	final_buffer = (char *) malloc(sizeof(char) * recv_len);
 	while (current_count < recv_len) {
 		iphone_mux_recv(client->connection, buffer, recv_len - current_count, &bytes);
-		if (debug)
-			fprintf(stderr, "receive_AFC_data: still collecting packets\n");
+		log_debug_msg("receive_AFC_data: still collecting packets\n");
 		if (bytes < 0) {
-			if (debug)
-				fprintf(stderr, "receive_AFC_data: mux_recv failed: %d\n", bytes);
+			log_debug_msg("receive_AFC_data: mux_recv failed: %d\n", bytes);
 			break;
 		}
 		if (bytes > recv_len - current_count) {
-			if (debug)
-				fprintf(stderr, "receive_AFC_data: mux_recv delivered too much data\n");
+			log_debug_msg("receive_AFC_data: mux_recv delivered too much data\n");
 			break;
 		}
 		if (bytes > 7 && strstr(buffer, "CFA6LPAA")) {
-			if (debug)
-				fprintf(stderr,
-						"receive_AFC_data: WARNING: there is AFC data in this packet at %ti\n",
-						strstr(buffer, "CFA6LPAA") - buffer);
-			if (debug)
-				fprintf(stderr, "receive_AFC_data: the total packet length is %i\n", bytes);
+			log_debug_msg("receive_AFC_data: WARNING: there is AFC data in this packet at %ti\n",
+						  strstr(buffer, "CFA6LPAA") - buffer);
+			log_debug_msg("receive_AFC_data: the total packet length is %i\n", bytes);
 		}
 
 		memcpy(final_buffer + current_count, buffer, bytes);
@@ -701,8 +673,7 @@ iphone_afc_open_file(iphone_afc_client_t client, const char *filename,
 	free(data);
 
 	if (bytes <= 0) {
-		if (debug)
-			fprintf(stderr, "afc_open_file: Didn't receive a response to the command\n");
+		log_debug_msg("afc_open_file: Didn't receive a response to the command\n");
 		afc_unlock(client);
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
@@ -718,8 +689,7 @@ iphone_afc_open_file(iphone_afc_client_t client, const char *filename,
 		*file = file_loc;
 		return IPHONE_E_SUCCESS;
 	} else {
-		if (debug)
-			fprintf(stderr, "afc_open_file: Didn't get any further data\n");
+		log_debug_msg("afc_open_file: Didn't get any further data\n");
 		afc_unlock(client);
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
@@ -747,16 +717,14 @@ iphone_afc_read_file(iphone_afc_client_t client, iphone_afc_file_t file, char *d
 
 	if (!client || !client->afc_packet || !client->connection || !file)
 		return IPHONE_E_INVALID_ARG;
-	if (debug)
-		fprintf(stderr, "afc_read_file called for length %i\n", length);
+	log_debug_msg("afc_read_file called for length %i\n", length);
 
 	afc_lock(client);
 
 	// Looping here to get around the maximum amount of data that
 	// recieve_AFC_data can handle
 	while (current_count < length) {
-		if (debug)
-			fprintf(stderr, "afc_read_file: current count is %i but length is %i\n", current_count, length);
+		log_debug_msg("afc_read_file: current count is %i but length is %i\n", current_count, length);
 
 		// Send the read command
 		AFCFilePacket *packet = (AFCFilePacket *) malloc(sizeof(AFCFilePacket));
@@ -774,8 +742,7 @@ iphone_afc_read_file(iphone_afc_client_t client, iphone_afc_file_t file, char *d
 		}
 		// Receive the data
 		bytes_loc = receive_AFC_data(client, &input);
-		if (debug)
-			fprintf(stderr, "afc_read_file: bytes returned: %i\n", bytes_loc);
+		log_debug_msg("afc_read_file: bytes returned: %i\n", bytes_loc);
 		if (bytes_loc < 0) {
 			if (input)
 				free(input);
@@ -790,8 +757,7 @@ iphone_afc_read_file(iphone_afc_client_t client, iphone_afc_file_t file, char *d
 			// success
 		} else {
 			if (input) {
-				if (debug)
-					fprintf(stderr, "afc_read_file: %d\n", bytes_loc);
+				log_debug_msg("afc_read_file: %d\n", bytes_loc);
 				memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
 				free(input);
 				input = NULL;
@@ -799,8 +765,7 @@ iphone_afc_read_file(iphone_afc_client_t client, iphone_afc_file_t file, char *d
 			}
 		}
 	}
-	if (debug)
-		fprintf(stderr, "afc_read_file: returning current_count as %i\n", current_count);
+	log_debug_msg("afc_read_file: returning current_count as %i\n", current_count);
 
 	afc_unlock(client);
 	*bytes = current_count;
@@ -831,8 +796,7 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 
 	afc_lock(client);
 
-	if (debug)
-		fprintf(stderr, "afc_write_file: Write length: %i\n", length);
+	log_debug_msg("afc_write_file: Write length: %i\n", length);
 
 	// Divide the file into segments.
 	for (i = 0; i < segments; i++) {
@@ -893,8 +857,7 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 	bytes_loc = receive_AFC_data(client, &acknowledgement);
 	afc_unlock(client);
 	if (bytes_loc < 0) {
-		if (debug)
-			fprintf(stderr, "afc_write_file: uh oh?\n");
+		log_debug_msg("afc_write_file: uh oh?\n");
 	}
 	*bytes = current_count;
 	return IPHONE_E_SUCCESS;
@@ -916,8 +879,7 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 
 	afc_lock(client);
 
-	if (debug)
-		fprintf(stderr, "afc_close_file: File handle %i\n", file->filehandle);
+	log_debug_msg("afc_close_file: File handle %i\n", file->filehandle);
 
 	// Send command
 	memcpy(buffer, &file->filehandle, sizeof(uint32));

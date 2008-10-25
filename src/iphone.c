@@ -21,24 +21,13 @@
 
 #include "usbmux.h"
 #include "iphone.h"
+#include "utils.h"
 #include <arpa/inet.h>
 #include <usb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int iphone_debug = 0;
-
-/**
- * Sets the level of debugging. Currently the only acceptable values are 0 and
- * 1.
- *
- * @param level Set to 0 for no debugging or 1 for debugging.
- */
-void iphone_set_debug(int level)
-{
-	iphone_debug = level;
-}
 
 /**
  * Given a USB bus and device number, returns a device handle to the iPhone on
@@ -90,19 +79,19 @@ iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t 
 				}
 
 	iphone_free_device(phone);
-	if (iphone_debug)
-		fprintf(stderr, "iphone_get_specific_device: iPhone not found\n");
+
+	log_debug_msg("iphone_get_specific_device: iPhone not found\n");
 	return IPHONE_E_NO_DEVICE;
 
   found:
 	// Send the version command to the phone
 	version = version_header();
 	bytes = usb_bulk_write(phone->device, BULKOUT, (char *) version, sizeof(*version), 800);
-	if (bytes < 20 && iphone_debug) {
-		fprintf(stderr, "get_iPhone(): libusb did NOT send enough!\n");
+	if (bytes < 20) {
+		log_debug_msg("get_iPhone(): libusb did NOT send enough!\n");
 		if (bytes < 0) {
-			fprintf(stderr, "get_iPhone(): libusb gave me the error %d: %s (%s)\n",
-					bytes, usb_strerror(), strerror(-bytes));
+			log_debug_msg("get_iPhone(): libusb gave me the error %d: %s (%s)\n",
+						  bytes, usb_strerror(), strerror(-bytes));
 		}
 	}
 	// Read the phone's response
@@ -112,11 +101,9 @@ iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t 
 	if (bytes < 20) {
 		free(version);
 		iphone_free_device(phone);
-		if (iphone_debug)
-			fprintf(stderr, "get_iPhone(): Invalid version message -- header too short.\n");
-		if (iphone_debug && bytes < 0)
-			fprintf(stderr, "get_iPhone(): libusb error message %d: %s (%s)\n",
-					bytes, usb_strerror(), strerror(-bytes));
+		log_debug_msg("get_iPhone(): Invalid version message -- header too short.\n");
+		if (bytes < 0)
+			log_debug_msg("get_iPhone(): libusb error message %d: %s (%s)\n", bytes, usb_strerror(), strerror(-bytes));
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 	// Check for correct version
@@ -130,14 +117,12 @@ iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t 
 		// Bad header
 		iphone_free_device(phone);
 		free(version);
-		if (iphone_debug)
-			fprintf(stderr, "get_iPhone(): Received a bad header/invalid version number.");
+		log_debug_msg("get_iPhone(): Received a bad header/invalid version number.");
 		return IPHONE_E_BAD_HEADER;
 	}
 
 	// If it got to this point it's gotta be bad
-	if (iphone_debug)
-		fprintf(stderr, "get_iPhone(): Unknown error.\n");
+	log_debug_msg("get_iPhone(): Unknown error.\n");
 	iphone_free_device(phone);
 	free(version);
 	return IPHONE_E_UNKNOWN_ERROR;	// if it got to this point it's gotta be bad
@@ -218,14 +203,13 @@ int send_to_phone(iphone_device_t phone, char *data, int datalen)
 
 	if (!phone)
 		return -1;
-	if (iphone_debug)
-		fprintf(stderr, "send_to_phone: Attempting to send datalen = %i data = %p\n", datalen, data);
+	log_debug_msg("send_to_phone: Attempting to send datalen = %i data = %p\n", datalen, data);
 
 	bytes = usb_bulk_write(phone->device, BULKOUT, data, datalen, 800);
 	if (bytes < datalen) {
-		if (iphone_debug && bytes < 0)
-			fprintf(stderr, "send_to_iphone(): libusb gave me the error %d: %s - %s\n", bytes, usb_strerror(),
-					strerror(-bytes));
+		if (bytes < 0)
+			log_debug_msg("send_to_iphone(): libusb gave me the error %d: %s - %s\n", bytes, usb_strerror(),
+						  strerror(-bytes));
 		return -1;
 	} else {
 		return bytes;
@@ -250,14 +234,12 @@ int recv_from_phone(iphone_device_t phone, char *data, int datalen)
 
 	if (!phone)
 		return -1;
-	if (iphone_debug)
-		fprintf(stderr, "recv_from_phone(): attempting to receive %i bytes\n", datalen);
+	log_debug_msg("recv_from_phone(): attempting to receive %i bytes\n", datalen);
 
 	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
 	if (bytes < 0) {
-		if (iphone_debug)
-			fprintf(stderr, "recv_from_phone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(),
-					strerror(-bytes));
+		log_debug_msg("recv_from_phone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(),
+					  strerror(-bytes));
 		return -1;
 	}
 

@@ -30,8 +30,6 @@
 #include <libtasn1.h>
 #include <gnutls/x509.h>
 
-extern int debug;
-
 const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{"PKCS1", 536872976, 0},
 	{0, 1073741836, 0},
@@ -176,13 +174,8 @@ iphone_error_t iphone_lckd_send(iphone_lckd_client_t client, char *raw_data, uin
 	length = htonl(length);
 	memcpy(real_query, &length, sizeof(length));
 	memcpy(real_query + 4, raw_data, ntohl(length));
-	if (debug) {
-		printf("lockdownd_send(): made the query, sending it along\n");
-		FILE *packet = fopen("grpkt", "w");
-		fwrite(real_query, 1, ntohl(length) + 4, packet);
-		fclose(packet);
-		packet = NULL;
-	}
+	log_debug_msg("lockdownd_send(): made the query, sending it along\n");
+	dump_debug_buffer("grpkt", real_query, ntohl(length) + 4);
 
 	if (!client->in_SSL)
 		ret = iphone_mux_send(client->connection, real_query, ntohl(length) + sizeof(length), &bytes);
@@ -190,8 +183,7 @@ iphone_error_t iphone_lckd_send(iphone_lckd_client_t client, char *raw_data, uin
 		gnutls_record_send(*client->ssl_session, real_query, ntohl(length) + sizeof(length));
 		ret = IPHONE_E_SUCCESS;
 	}
-	if (debug)
-		printf("lockdownd_send(): sent it!\n");
+	log_debug_msg("lockdownd_send(): sent it!\n");
 	free(real_query);
 	*sent_bytes = bytes;
 	return ret;
@@ -215,8 +207,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	int bytes = 0, i = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
-	if (debug)
-		printf("lockdownd_hello() called\n");
+	log_debug_msg("lockdownd_hello() called\n");
 	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
 	key = add_key_str_dict_element(plist, dict, "Request", "QueryType", 1);
 	char *XML_content;
@@ -246,8 +237,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 
 	for (i = 0; dictionary[i]; i += 2) {
 		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
-			if (debug)
-				printf("lockdownd_hello(): success\n");
+			log_debug_msg("lockdownd_hello(): success\n");
 			ret = IPHONE_E_SUCCESS;
 			break;
 		}
@@ -479,11 +469,9 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	if (ret != IPHONE_E_SUCCESS)
 		return ret;
 
-	if (debug) {
-		printf("lockdown_pair_device: iPhone's response to our pair request:\n");
-		fwrite(XML_content, 1, bytes, stdout);
-		printf("\n\n");
-	}
+	log_debug_msg("lockdown_pair_device: iPhone's response to our pair request:\n");
+	log_debug_msg(XML_content);
+	log_debug_msg("\n\n");
 
 	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
 	if (!plist) {
@@ -519,13 +507,11 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 
 	/* store public key in config if pairing succeeded */
 	if (success) {
-		if (debug)
-			printf("lockdownd_pair_device: pair success\n");
+		log_debug_msg("lockdownd_pair_device: pair success\n");
 		store_device_public_key(uid, public_key_b64);
 		ret = IPHONE_E_SUCCESS;
 	} else {
-		if (debug)
-			printf("lockdownd_pair_device: pair failure\n");
+		log_debug_msg("lockdownd_pair_device: pair failure\n");
 		ret = IPHONE_E_PAIRING_FAILED;
 	}
 	free(public_key_b64);
@@ -678,15 +664,13 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 
 	key = add_key_str_dict_element(plist, dict, "HostID", HostID, 1);
 	if (!key) {
-		if (debug)
-			printf("Couldn't add a key.\n");
+		log_debug_msg("Couldn't add a key.\n");
 		xmlFreeDoc(plist);
 		return IPHONE_E_DICT_ERROR;
 	}
 	key = add_key_str_dict_element(plist, dict, "Request", "StartSession", 1);
 	if (!key) {
-		if (debug)
-			printf("Couldn't add a key.\n");
+		log_debug_msg("Couldn't add a key.\n");
 		xmlFreeDoc(plist);
 		return IPHONE_E_DICT_ERROR;
 	}
@@ -719,8 +703,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 				//gnutls_anon_client_credentials_t anoncred;
 				gnutls_certificate_credentials_t xcred;
 
-				if (debug)
-					printf("We started the session OK, now trying GnuTLS\n");
+				log_debug_msg("We started the session OK, now trying GnuTLS\n");
 				errno = 0;
 				gnutls_global_init();
 				//gnutls_anon_allocate_client_credentials(&anoncred);
@@ -743,32 +726,25 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 				}
 				gnutls_credentials_set(*control->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
 
-				if (debug)
-					printf("GnuTLS step 1...\n");
+				log_debug_msg("GnuTLS step 1...\n");
 				gnutls_transport_set_ptr(*control->ssl_session, (gnutls_transport_ptr_t) control);
-				if (debug)
-					printf("GnuTLS step 2...\n");
+				log_debug_msg("GnuTLS step 2...\n");
 				gnutls_transport_set_push_function(*control->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
-				if (debug)
-					printf("GnuTLS step 3...\n");
+				log_debug_msg("GnuTLS step 3...\n");
 				gnutls_transport_set_pull_function(*control->ssl_session, (gnutls_pull_func) & lockdownd_securead);
-				if (debug)
-					printf("GnuTLS step 4 -- now handshaking...\n");
+				log_debug_msg("GnuTLS step 4 -- now handshaking...\n");
 
-				if (errno && debug)
-					printf("WARN: errno says %s before handshake!\n", strerror(errno));
+				if (errno)
+					log_debug_msg("WARN: errno says %s before handshake!\n", strerror(errno));
 				return_me = gnutls_handshake(*control->ssl_session);
-				if (debug)
-					printf("GnuTLS handshake done...\n");
+				log_debug_msg("GnuTLS handshake done...\n");
 
 				free_dictionary(dictionary);
 
 				if (return_me != GNUTLS_E_SUCCESS) {
-					if (debug)
-						printf("GnuTLS reported something wrong.\n");
+					log_debug_msg("GnuTLS reported something wrong.\n");
 					gnutls_perror(return_me);
-					if (debug)
-						printf("oh.. errno says %s\n", strerror(errno));
+					log_debug_msg("oh.. errno says %s\n", strerror(errno));
 					return IPHONE_E_SSL_ERROR;
 				} else {
 					control->in_SSL = 1;
@@ -777,19 +753,17 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 			}
 		}
 
-		if (debug) {
-			printf("Apparently failed negotiating with lockdownd.\n");
-			printf("Responding dictionary: \n");
-			for (i = 0; dictionary[i]; i += 2) {
-				printf("\t%s: %s\n", dictionary[i], dictionary[i + 1]);
-			}
+		log_debug_msg("Apparently failed negotiating with lockdownd.\n");
+		log_debug_msg("Responding dictionary: \n");
+		for (i = 0; dictionary[i]; i += 2) {
+			log_debug_msg("\t%s: %s\n", dictionary[i], dictionary[i + 1]);
 		}
+
 
 		free_dictionary(dictionary);
 		return IPHONE_E_SSL_ERROR;
 	} else {
-		if (debug)
-			printf("Didn't get enough bytes.\n");
+		log_debug_msg("Didn't get enough bytes.\n");
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 }
@@ -807,21 +781,12 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	int bytes = 0;
 	iphone_lckd_client_t control;
 	control = (iphone_lckd_client_t) transport;
-	if (debug)
-		printf("lockdownd_secuwrite() called\n");
-	if (debug)
-		printf("pre-send\nlength = %zi\n", length);
+	log_debug_msg("lockdownd_secuwrite() called\n");
+	log_debug_msg("pre-send\nlength = %zi\n", length);
 	iphone_mux_send(control->connection, buffer, length, &bytes);
-	if (debug)
-		printf("post-send\nsent %i bytes\n", bytes);
-	if (debug) {
-		FILE *my_ssl_packet = fopen("sslpacketwrite.out", "w+");
-		fwrite(buffer, 1, length, my_ssl_packet);
-		fflush(my_ssl_packet);
-		printf("Wrote SSL packet to drive, too.\n");
-		fclose(my_ssl_packet);
-	}
+	log_debug_msg("post-send\nsent %i bytes\n", bytes);
 
+	dump_debug_buffer("sslpacketwrite.out", buffer, length);
 	return bytes;
 }
 
@@ -839,8 +804,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	char *hackhackhack = NULL;
 	iphone_lckd_client_t control;
 	control = (iphone_lckd_client_t) transport;
-	if (debug)
-		printf("lockdownd_securead() called\nlength = %zi\n", length);
+	log_debug_msg("lockdownd_securead() called\nlength = %zi\n", length);
 	// Buffering hack! Throw what we've got in our "buffer" into the stream first, then get more.
 	if (control->gtls_buffer_hack_len > 0) {
 		if (length > control->gtls_buffer_hack_len) {	// If it's asking for more than we got
@@ -849,8 +813,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 			memcpy(buffer, control->gtls_buffer_hack, control->gtls_buffer_hack_len);	// Fill their buffer partially
 			free(control->gtls_buffer_hack);	// free our memory, it's not chained anymore
 			control->gtls_buffer_hack_len = 0;	// we don't have a hack buffer anymore
-			if (debug)
-				printf("Did a partial fill to help quench thirst for data\n");
+			log_debug_msg("Did a partial fill to help quench thirst for data\n");
 		} else if (length < control->gtls_buffer_hack_len) {	// If it's asking for less...
 			control->gtls_buffer_hack_len -= length;	// subtract what they're asking for
 			memcpy(buffer, control->gtls_buffer_hack, length);	// fill their buffer
@@ -859,37 +822,33 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 			free(control->gtls_buffer_hack);	// Free the old one
 			control->gtls_buffer_hack = hackhackhack;	// And make it the new one.
 			hackhackhack = NULL;
-			if (debug)
-				printf("Quenched the thirst for data; new hack length is %i\n", control->gtls_buffer_hack_len);
+			log_debug_msg("Quenched the thirst for data; new hack length is %i\n", control->gtls_buffer_hack_len);
 			return length;		// hand it over.
 		} else {				// length == hack length
 			memcpy(buffer, control->gtls_buffer_hack, length);	// copy our buffer into theirs
 			free(control->gtls_buffer_hack);	// free our "obligation"
 			control->gtls_buffer_hack_len = 0;	// free our "obligation"
-			if (debug)
-				printf("Satiated the thirst for data; now we have to eventually receive again.\n");
+			log_debug_msg("Satiated the thirst for data; now we have to eventually receive again.\n");
 			return length;		// hand it over
 		}
 	}
 	// End buffering hack!
 	char *recv_buffer = (char *) malloc(sizeof(char) * (length * 1000));	// ensuring nothing stupid happens
 
-	if (debug)
-		printf("pre-read\nclient wants %zi bytes\n", length);
+	log_debug_msg("pre-read\nclient wants %zi bytes\n", length);
 	iphone_mux_recv(control->connection, recv_buffer, (length * 1000), &bytes);
-	if (debug)
-		printf("post-read\nwe got %i bytes\n", bytes);
-	if (debug && bytes < 0) {
-		printf("lockdownd_securead(): uh oh\n");
-		printf("I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n",
-			   usb_strerror(), strerror(errno));
+	log_debug_msg("post-read\nwe got %i bytes\n", bytes);
+	if (bytes < 0) {
+		log_debug_msg("lockdownd_securead(): uh oh\n");
+		log_debug_msg
+			("I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n",
+			 usb_strerror(), strerror(errno));
 		return bytes + 28;		// an errno
 	}
 	if (bytes >= length) {
 		if (bytes > length) {
-			if (debug)
-				printf
-					("lockdownd_securead: Client deliberately read less data than was there; resorting to GnuTLS buffering hack.\n");
+			log_debug_msg
+				("lockdownd_securead: Client deliberately read less data than was there; resorting to GnuTLS buffering hack.\n");
 			if (!control->gtls_buffer_hack_len) {	// if there's no hack buffer yet
 				//control->gtls_buffer_hack = strndup(recv_buffer+length, bytes-length); // strndup is NOT a good solution!
 				control->gtls_buffer_hack_len += bytes - length;
@@ -905,12 +864,10 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 		memcpy(buffer + pos_start_fill, recv_buffer, length);
 		free(recv_buffer);
 		if (bytes == length) {
-			if (debug)
-				printf("Returning how much we received.\n");
+			log_debug_msg("Returning how much we received.\n");
 			return bytes;
 		} else {
-			if (debug)
-				printf("Returning what they want to hear.\nHack length: %i\n", control->gtls_buffer_hack_len);
+			log_debug_msg("Returning what they want to hear.\nHack length: %i\n", control->gtls_buffer_hack_len);
 			return length;
 		}
 	}
@@ -988,13 +945,11 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		dictionary = read_dict_element_strings(dict);
 
 		for (i = 0; dictionary[i]; i += 2) {
-			if (debug)
-				printf("lockdownd_start_service() dictionary %s: %s\n", dictionary[i], dictionary[i + 1]);
+			log_debug_msg("lockdownd_start_service() dictionary %s: %s\n", dictionary[i], dictionary[i + 1]);
 
 			if (!xmlStrcmp(dictionary[i], "Port")) {
 				port_loc = atoi(dictionary[i + 1]);
-				if (debug)
-					printf("lockdownd_start_service() atoi'd port: %i\n", port);
+				log_debug_msg("lockdownd_start_service() atoi'd port: %i\n", port);
 			}
 
 			if (!xmlStrcmp(dictionary[i], "Result")) {
@@ -1004,11 +959,9 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 			}
 		}
 
-		if (debug) {
-			printf("lockdownd_start_service(): DATA RECEIVED:\n\n");
-			fwrite(XML_query, 1, bytes, stdout);
-			printf("end data received by lockdownd_start_service()\n");
-		}
+		log_debug_msg("lockdownd_start_service(): DATA RECEIVED:\n\n");
+		log_debug_msg(XML_query);
+		log_debug_msg("end data received by lockdownd_start_service()\n");
 
 		free(XML_query);
 		xmlFreeDoc(plist);

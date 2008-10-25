@@ -7,7 +7,7 @@ bin_PROGRAMS = iphoneclient libiphone-initconf lckd-client
 iphoneclient_SOURCES = main.c
 iphoneclient_LDADD = libiphone.la
 
-libiphone_initconf_SOURCES = initconf.c userpref.c lockdown.c plist.c usbmux.c iphone.c
+libiphone_initconf_SOURCES = initconf.c userpref.c lockdown.c plist.c usbmux.c iphone.c utils.c
 libiphone_initconf_CFLAGS = $(libgthread2_CFLAGS) $(AM_CFLAGS)
 libiphone_initconf_LDFLAGS = $(libgthread2_LIBS) $(AM_LDFLAGS)
 
@@ -17,4 +17,4 @@ lckd_client_LDFLAGS = -lreadline $(AM_LDFLAGS)
 lckd_client_LDADD = libiphone.la
 
 lib_LTLIBRARIES = libiphone.la
-libiphone_la_SOURCES = usbmux.c iphone.c plist.c lockdown.c AFC.c userpref.c
+libiphone_la_SOURCES = usbmux.c iphone.c plist.c lockdown.c AFC.c userpref.c utils.c

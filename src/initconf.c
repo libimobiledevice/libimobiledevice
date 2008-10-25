@@ -26,9 +26,10 @@
 #include <gnutls/x509.h>
 #include <glib.h>
 
+#include "libiphone/libiphone.h"
 #include "userpref.h"
 #include "lockdown.h"
-
+#include "utils.h"
 
 /** Generates a 2048 byte key, split into a function so that it can be run in a
  *  thread.

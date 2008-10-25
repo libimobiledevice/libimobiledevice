@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "userpref.h"
+#include "utils.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -35,7 +36,6 @@
 #define LIBIPHONE_ROOT_CERTIF "RootCertificate.pem"
 #define LIBIPHONE_HOST_CERTIF "HostCertificate.pem"
 
-extern int debug;
 
 /** Creates a freedesktop compatible configuration directory for libiphone.
  */
@@ -77,8 +77,7 @@ char *get_host_id()
 	g_key_file_free(key_file);
 	g_free(config_file);
 
-	if (debug)
-		printf("get_host_id(): Using %s as HostID\n", host_id);
+	log_debug_msg("get_host_id(): Using %s as HostID\n", host_id);
 	return host_id;
 }
 
@@ -246,8 +245,7 @@ int init_config_file(char *host_id, gnutls_datum_t * root_key, gnutls_datum_t * 
 	key_file = g_key_file_new();
 
 	/* Store in config file */
-	if (debug)
-		printf("init_config_file(): setting hostID to %s\n", host_id);
+	log_debug_msg("init_config_file(): setting hostID to %s\n", host_id);
 	g_key_file_set_value(key_file, "Global", "HostID", host_id);
 
 	/* Write config file on disk */

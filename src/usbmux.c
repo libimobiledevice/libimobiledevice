@@ -27,8 +27,6 @@
 
 #include "usbmux.h"
 
-extern int debug;
-
 static iphone_umux_client_t *connlist = NULL;
 static int clients = 0;
 
@@ -151,8 +149,7 @@ iphone_error_t iphone_mux_new_client(iphone_device_t device, uint16_t src_port, 
 			} else {
 				free(response);
 
-				if (debug)
-					printf("mux_connect: connection success\n");
+				log_debug_msg("mux_connect: connection success\n");
 				new_connection->header->tcp_flags = 0x10;
 				new_connection->header->scnt = 1;
 				new_connection->header->ocnt = 1;
@@ -189,12 +186,12 @@ iphone_error_t iphone_mux_free_client(iphone_umux_client_t client)
 	int bytes = 0;
 
 	bytes = usb_bulk_write(client->phone->device, BULKOUT, (char *) client->header, sizeof(usbmux_tcp_header), 800);
-	if (debug && bytes < 0)
-		printf("iphone_muxèfree_client(): when writing, libusb gave me the error: %s\n", usb_strerror());
+	if (bytes < 0)
+		log_debug_msg("iphone_muxèfree_client(): when writing, libusb gave me the error: %s\n", usb_strerror());
 
 	bytes = usb_bulk_read(client->phone->device, BULKIN, (char *) client->header, sizeof(usbmux_tcp_header), 800);
-	if (debug && bytes < 0)
-		printf("get_iPhone(): when reading, libusb gave me the error: %s\n", usb_strerror());
+	if (bytes < 0)
+		log_debug_msg("get_iPhone(): when reading, libusb gave me the error: %s\n", usb_strerror());
 
 	delete_connection(client);
 
@@ -220,8 +217,7 @@ iphone_error_t iphone_mux_send(iphone_umux_client_t client, const char *data, ui
 	// client->scnt and client->ocnt should already be in host notation...
 	// we don't need to change them juuuust yet. 
 	*sent_bytes = 0;
-	if (debug)
-		printf("mux_send(): client wants to send %i bytes\n", datalen);
+	log_debug_msg("mux_send(): client wants to send %i bytes\n", datalen);
 	char *buffer = (char *) malloc(sizeof(usbmux_tcp_header) + datalen + 2);	// allow 2 bytes of safety padding
 	// Set the length and pre-emptively htonl/htons it
 	client->header->length = htonl(sizeof(usbmux_tcp_header) + datalen);
@@ -235,21 +231,13 @@ iphone_error_t iphone_mux_send(iphone_umux_client_t client, const char *data, ui
 	memcpy(buffer + sizeof(usbmux_tcp_header), data, datalen);
 
 	// We have a buffer full of data, we should now send it to the phone.
-	if (debug)
-		printf("actually sending %zi bytes of data at %p\n", sizeof(usbmux_tcp_header) + datalen, buffer);
+	log_debug_msg("actually sending %zi bytes of data at %p\n", sizeof(usbmux_tcp_header) + datalen, buffer);
 
 
 	*sent_bytes = send_to_phone(client->phone, buffer, sizeof(usbmux_tcp_header) + datalen);
-	if (debug)
-		printf("mux_send: sent %i bytes!\n", *sent_bytes);
+	log_debug_msg("mux_send: sent %i bytes!\n", *sent_bytes);
 	// Now that we've sent it off, we can clean up after our sloppy selves.
-	if (debug) {
-		FILE *packet = fopen("packet", "a+");
-		fwrite(buffer, 1, *sent_bytes, packet);
-		fclose(packet);
-		printf("\n");
-	}
-
+	dump_debug_buffer("packet", buffer, *sent_bytes);
 	if (buffer)
 		free(buffer);
 	// Re-calculate scnt and ocnt
@@ -294,8 +282,7 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	 *      a.) Check incoming packet's ports. If proper, follow proper buffering and receiving operation.
 	 *      b.) If not, find the client the ports belong to and fill that client's buffer, then return mux_recv with the same args to try again.
 	 */
-	if (debug)
-		printf("mux_recv: datalen == %i\n", datalen);
+	log_debug_msg("mux_recv: datalen == %i\n", datalen);
 	int bytes = 0, i = 0, complex = 0, offset = 0;
 	*recv_bytes = 0;
 	char *buffer = NULL;
@@ -333,8 +320,7 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	bytes = recv_from_phone(client->phone, buffer, 131072);
 	if (bytes < 28) {
 		free(buffer);
-		if (debug)
-			printf("mux_recv: Did not even get the header.\n");
+		log_debug_msg("mux_recv: Did not even get the header.\n");
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
@@ -390,7 +376,6 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	}
 
 	// If we get to this point, 'tis probably bad.
-	if (debug)
-		printf("mux_recv: Heisenbug: bytes and datalen not matching up\n");
+	log_debug_msg("mux_recv: Heisenbug: bytes and datalen not matching up\n");
 	return IPHONE_E_UNKNOWN_ERROR;
 }
