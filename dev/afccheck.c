@@ -23,14 +23,11 @@
 #include <string.h>
 #include <glib.h>
 
-#include "usbmux.h"
-#include "iphone.h"
 #include <libiphone/libiphone.h>
 
 #define BUFFER_SIZE 20000
 #define NB_THREADS 10
 
-int debug = 0;
 
 typedef struct {
 	iphone_afc_client_t afc;

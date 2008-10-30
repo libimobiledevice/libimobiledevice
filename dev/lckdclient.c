@@ -25,9 +25,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-
-#include "usbmux.h"
-#include "iphone.h"
 #include <libiphone/libiphone.h>
 
 
