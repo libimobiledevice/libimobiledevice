@@ -794,7 +794,7 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 					  const char *data, int length, uint32_t * bytes)
 {
 	char *acknowledgement = NULL;
-	const int MAXIMUM_WRITE_SIZE = 1 << 16;
+	const int MAXIMUM_WRITE_SIZE = 1 << 15;
 	uint32 zero = 0, bytes_loc = 0, segments = (length / MAXIMUM_WRITE_SIZE), current_count = 0, i = 0;
 	char *out_buffer = NULL;
 
