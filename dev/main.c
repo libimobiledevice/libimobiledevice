@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 			iphone_afc_get_file_attr(afc, "/iTunesOnTheGoPlaylist.plist", &stbuf);
 			if (IPHONE_E_SUCCESS ==
 				iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", IPHONE_AFC_FILE_READ, &my_file) && my_file) {
-				printf("A file size: %i\n", stbuf.st_size);
+				printf("A file size: %i\n", (int) stbuf.st_size);
 				char *file_data = (char *) malloc(sizeof(char) * stbuf.st_size);
 				iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size, &bytes);
 				if (bytes >= 0) {

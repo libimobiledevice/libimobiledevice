@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+char *format_string(const char *buf, int cols, int depth);
 xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
 xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
 xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
@@ -47,7 +48,7 @@ void free_dictionary(char **dictionary);
 enum {
 	BPLIST_TRUE = 0x08,
 	BPLIST_FALSE = 0x09,
-	BPLIST_FILL = 0x0F, /* will be used for length grabbing */
+	BPLIST_FILL = 0x0F,			/* will be used for length grabbing */
 	BPLIST_INT = 0x10,
 	BPLIST_REAL = 0x20,
 	BPLIST_DATE = 0x33,
@@ -62,15 +63,17 @@ enum {
 };
 
 typedef struct _bplist_node {
-	struct _bplist_node *next, **subnodes; // subnodes is for arrays, dicts and (potentially) sets. 
+	struct _bplist_node *next, **subnodes;	// subnodes is for arrays, dicts and (potentially) sets. 
 	uint64_t length, intval64;
-	uint32_t intval32; // length = subnodes 
+	uint32_t intval32;			// length = subnodes 
 	uint16_t intval16;
 	uint8_t intval8;
-	uint8_t type, *indexes; // indexes for array-types; essentially specify the order in which to access for key => value pairs
+	uint8_t type, *indexes;		// indexes for array-types; essentially specify the order in which to access for key => value pairs
 	char *strval;
 	double realval;
 	wchar_t *unicodeval;
 } bplist_node;
+
+bplist_node *parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position);
 
 #endif
