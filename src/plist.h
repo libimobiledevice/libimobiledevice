@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <glib.h>
 
 char *format_string(const char *buf, int cols, int depth);
 xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth);
@@ -76,4 +77,38 @@ typedef struct _bplist_node {
 
 bplist_node *parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position);
 
+typedef enum  {
+	PLIST_BOOLEAN,
+	PLIST_UINT8,
+	PLIST_UINT16,
+	PLIST_UINT32,
+	PLIST_UINT64,
+	PLIST_FLOAT32,
+	PLIST_FLOAT64,
+	PLIST_STRING,
+	PLIST_UNICODE,
+	PLIST_ARRAY,
+	PLIST_DICT,
+	PLIST_DATE,
+	PLIST_DATA,
+	PLIST_PLIST,
+	PLIST_KEY,
+} plist_type;
+
+
+typedef GNode *plist_t;
+typedef GNode *dict_t;
+typedef GNode *array_t;
+
+void plist_new_plist(plist_t* plist);
+void plist_new_dict_in_plist(plist_t plist, dict_t* dict);
+void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void** values, array_t* array);
+void plist_add_dict_element(dict_t dict, char* key, plist_type type, void* value);
+void plist_free(plist_t plist);
+
+void plist_to_xml(plist_t plist, char** plist_xml);
+void plist_to_bin(plist_t plist, char** plist_bin);
+
+void xml_to_plist(const char* plist_xml, plist_t* plist);
+void bin_to_plist(const char* plist_bin, plist_t* plist);
 #endif
