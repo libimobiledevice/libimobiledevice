@@ -46,7 +46,7 @@ void log_debug_msg(const char *format, ...)
 	va_start(args, format);
 
 	if (toto_debug)
-		fprintf(stderr, format, args);
+		vfprintf(stderr, format, args);
 
 	va_end(args);
 
