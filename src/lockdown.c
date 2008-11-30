@@ -267,26 +267,27 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 {
 	if (!control || !req_key || !value || (value && *value))
 		return IPHONE_E_INVALID_ARG;
-	xmlDocPtr plist = new_plist();
-	xmlNode *dict = NULL;
-	xmlNode *key = NULL;;
-	char **dictionary = NULL;
+	plist_t plist = NULL;
+	dict_t dict = NULL;
 	int bytes = 0, i = 0;
 	char *XML_content = NULL;
 	uint32_t length = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	/* Setup DevicePublicKey request plist */
-	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, req_key, req_string, 1);
-	key = add_key_str_dict_element(plist, dict, "Request", "GetValue", 1);
-	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	plist_new_plist(&plist);
+	plist_new_dict_in_plist(plist, &dict);
+	plist_add_dict_element(dict, req_key, PLIST_STRING, (void *) req_string);
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "GetValue");
+	plist_to_xml(plist, &XML_content, &length);
 
 	/* send to iPhone */
+	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
 	xmlFree(XML_content);
-	xmlFreeDoc(plist);
+	XML_content = NULL;
+	plist_free(plist);
 	plist = NULL;
 
 	if (ret != IPHONE_E_SUCCESS)
@@ -294,42 +295,55 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 
 	/* Now get iPhone's answer */
 	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+	log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
 
 	if (ret != IPHONE_E_SUCCESS)
 		return ret;
 
-	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	xml_to_plist(XML_content, bytes, &plist);
 	if (!plist)
 		return IPHONE_E_PLIST_ERROR;
-	dict = xmlDocGetRootElement(plist);
-	for (dict = dict->children; dict; dict = dict->next) {
-		if (!xmlStrcmp(dict->name, "dict"))
-			break;
-	}
-	if (!dict)
-		return IPHONE_E_DICT_ERROR;
 
-	/* Parse xml to check success and to find public key */
-	dictionary = read_dict_element_strings(dict);
-	xmlFreeDoc(plist);
-	free(XML_content);
+	plist_t query_node = find_query_node(plist, "Request", "GetValue");
+	plist_t result_key_node = g_node_next_sibling(query_node);
+	plist_t result_value_node = g_node_next_sibling(result_key_node);
 
-	int success = 0;
-	for (i = 0; dictionary[i]; i += 2) {
-		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
-			success = 1;
-		}
-		if (!strcmp(dictionary[i], "Value")) {
-			*value = strdup(dictionary[i + 1]);
-		}
-	}
+	plist_type result_key_type;
+	plist_type result_value_type;
+	char *result_key = NULL;
+	char *result_value = NULL;
 
-	if (dictionary) {
-		free_dictionary(dictionary);
-		dictionary = NULL;
-	}
-	if (success)
+	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
+	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
+
+	if (result_key_type == PLIST_KEY &&
+		result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
+		log_debug_msg("lockdownd_generic_get_value(): success\n");
 		ret = IPHONE_E_SUCCESS;
+	}
+
+	if (ret != IPHONE_E_SUCCESS) {
+		return IPHONE_E_DICT_ERROR;
+	}
+
+	plist_t value_key_node = g_node_next_sibling(result_key_node);
+	plist_t value_value_node = g_node_next_sibling(value_key_node);
+	plist_type value_key_type;
+	plist_type value_value_type;
+	char *value_key = NULL;
+	char *value_value = NULL;
+
+	get_type_and_value(value_key_node, &value_key_type, (void *) (&value_key));
+	get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value));
+
+	if (value_key_type == PLIST_KEY && !strcmp(result_key, "Value")) {
+		log_debug_msg("lockdownd_generic_get_value(): success\n");
+		*value = value_value;
+		ret = IPHONE_E_SUCCESS;
+	}
+
+	plist_free(plist);
+	free(XML_content);
 	return ret;
 }
 
