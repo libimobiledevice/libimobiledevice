@@ -70,15 +70,19 @@ typedef GNode *plist_t;
 typedef GNode *dict_t;
 typedef GNode *array_t;
 
+
 void plist_new_plist(plist_t * plist);
 void plist_new_dict_in_plist(plist_t plist, dict_t * dict);
 void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void **values, array_t * array);
 void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value);
 void plist_free(plist_t plist);
 
-void plist_to_xml(plist_t plist, char **plist_xml);
-void plist_to_bin(plist_t plist, char **plist_bin, int *length);
+void plist_to_xml(plist_t plist, char **plist_xml, uint32_t * length);
+void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length);
 
-void xml_to_plist(const char *plist_xml, plist_t * plist);
-void bin_to_plist(const char *plist_bin, int length, plist_t * plist);
+void xml_to_plist(const char *plist_xml, uint32_t length, plist_t * plist);
+void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist);
+
+GNode *find_query_node(plist_t plist, char *key, char *request);
+void get_type_and_value(GNode * node, plist_type * type, void *value);
 #endif

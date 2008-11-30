@@ -286,8 +286,6 @@ void byte_convert(char *address, size_t size)
 	}
 }
 
-
-
 void print_bytes(char *val, size_t size)
 {
 	int i = 0;
@@ -421,11 +419,17 @@ void plist_free(plist_t plist)
 	g_node_destroy(plist);
 }
 
-void node_to_xml(GNode * node, gpointer data)
+struct xml_node {
+	xmlNodePtr xml;
+	uint32_t depth;
+};
+
+void node_to_xml(GNode * node, gpointer xml_struct)
 {
 	if (!node)
 		return;
 
+	struct xml_node *xstruct = (struct xml_node *) xml_struct;
 	struct plist_data *node_data = (struct plist_data *) node->data;
 
 	xmlNodePtr child_node = NULL;
@@ -510,12 +514,31 @@ void node_to_xml(GNode * node, gpointer data)
 		break;
 	}
 
-	child_node = xmlNewChild(data, NULL, tag, val);
-	xmlNodeAddContent(child_node, "\n");
+	int i = 0;
+	for (i = 0; i < xstruct->depth; i++) {
+		xmlNodeAddContent(xstruct->xml, "\t");
+	}
+	child_node = xmlNewChild(xstruct->xml, NULL, tag, val);
+	xmlNodeAddContent(xstruct->xml, "\n");
 	g_free(val);
 
-	if (isStruct)
-		g_node_children_foreach(node, G_TRAVERSE_ALL, node_to_xml, child_node);
+	//add return for structured types
+	if (node_data->type == PLIST_ARRAY ||
+		node_data->type == PLIST_DICT || node_data->type == PLIST_DATA || node_data->type == PLIST_PLIST)
+		xmlNodeAddContent(child_node, "\n");
+
+	if (isStruct) {
+		struct xml_node child = { child_node, xstruct->depth + 1 };
+		g_node_children_foreach(node, G_TRAVERSE_ALL, node_to_xml, &child);
+	}
+	//fix indent for structured types
+	if (node_data->type == PLIST_ARRAY ||
+		node_data->type == PLIST_DICT || node_data->type == PLIST_DATA || node_data->type == PLIST_PLIST) {
+
+		for (i = 0; i < xstruct->depth; i++) {
+			xmlNodeAddContent(child_node, "\t");
+		}
+	}
 
 	return;
 }
@@ -523,11 +546,17 @@ void node_to_xml(GNode * node, gpointer data)
 void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 {
 	xmlNodePtr node = NULL;
-	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
-	GNode *subnode = g_node_new(data);
-	g_node_append(plist_node, subnode);
 
 	for (node = xml_node->children; node; node = node->next) {
+
+		while (node && !xmlStrcmp(node->name, "text"))
+			node = node->next;
+		if (!node)
+			break;
+
+		struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
+		GNode *subnode = g_node_new(data);
+		g_node_append(plist_node, subnode);
 
 		if (!xmlStrcmp(node->name, "true")) {
 			data->boolval = 1;
@@ -590,15 +619,15 @@ void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 	}
 }
 
-void plist_to_xml(plist_t plist, char **plist_xml)
+void plist_to_xml(plist_t plist, char **plist_xml, uint32_t * length)
 {
 	if (!plist || !plist_xml || *plist_xml)
 		return;
 	xmlDocPtr plist_doc = new_plist();
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
-	g_node_children_foreach(plist, G_TRAVERSE_ALL, node_to_xml, root_node);
-	int size = 0;
-	xmlDocDumpMemory(plist_doc, (xmlChar **) plist_xml, &size);
+	struct xml_node root = { root_node, 0 };
+	g_node_children_foreach(plist, G_TRAVERSE_ALL, node_to_xml, &root);
+	xmlDocDumpMemory(plist_doc, (xmlChar **) plist_xml, length);
 }
 
 GNode *parse_raw_node(const char *bpbuffer, uint32_t bplength, uint32_t * position, uint8_t ref_size)
@@ -869,13 +898,13 @@ plist_t parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position
 	return root_node;
 }
 
-void plist_to_bin(plist_t plist, char **plist_bin, int *length)
+void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length)
 {
 }
 
-void xml_to_plist(const char *plist_xml, plist_t * plist)
+void xml_to_plist(const char *plist_xml, uint32_t length, plist_t * plist)
 {
-	xmlDocPtr plist_doc = xmlReadMemory(plist_xml, strlen(plist_xml), NULL, NULL, 0);
+	xmlDocPtr plist_doc = xmlReadMemory(plist_xml, length, NULL, NULL, 0);
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
 
 	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
@@ -885,8 +914,84 @@ void xml_to_plist(const char *plist_xml, plist_t * plist)
 
 }
 
-void bin_to_plist(const char *plist_bin, int length, plist_t * plist)
+void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist)
 {
 	uint32_t pos = 0;
 	*plist = parse_nodes(plist_bin, length, &pos);
+}
+
+
+GNode *find_query_node(plist_t plist, char *key, char *request)
+{
+	if (!plist)
+		return NULL;
+
+	GNode *current = NULL;
+	for (current = plist->children; current; current = current->next) {
+
+		struct plist_data *data = (struct plist_data *) current->data;
+
+		if (data->type == PLIST_KEY && !strcmp(data->strval, key) && current->next) {
+
+			data = (struct plist_data *) current->next->data;
+			if (data->type == PLIST_STRING && !strcmp(data->strval, request))
+				return current->next;
+		}
+		if (data->type == PLIST_DICT || data->type == PLIST_ARRAY || data->type == PLIST_PLIST) {
+			GNode *sub = find_query_node(current, key, request);
+			if (sub)
+				return sub;
+		}
+	}
+	return NULL;
+}
+
+void get_type_and_value(GNode * node, plist_type * type, void *value)
+{
+	if (!node)
+		return;
+
+	struct plist_data *data = (struct plist_data *) node->data;
+
+	*type = data->type;
+
+	switch (*type) {
+	case PLIST_BOOLEAN:
+		*((char *) value) = data->boolval;
+		break;
+	case PLIST_UINT8:
+		*((uint8_t *) value) = data->intval8;
+		break;
+	case PLIST_UINT16:
+		*((uint16_t *) value) = data->intval16;
+		break;
+	case PLIST_UINT32:
+		*((uint32_t *) value) = data->intval32;
+		break;
+	case PLIST_UINT64:
+		*((uint64_t *) value) = data->intval64;
+		break;
+	case PLIST_FLOAT32:
+		*((float *) value) = data->realval32;
+		break;
+	case PLIST_FLOAT64:
+		*((double *) value) = data->realval64;
+		break;
+	case PLIST_STRING:
+		*((char **) value) = strdup(data->strval);
+		break;
+	case PLIST_UNICODE:
+		*((wchar_t **) value) = wcsdup(data->unicodeval);
+		break;
+	case PLIST_KEY:
+		*((char **) value) = strdup(data->strval);
+		break;
+	case PLIST_DATA:
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+	case PLIST_DATE:
+	case PLIST_PLIST:
+	default:
+		break;
+	}
 }

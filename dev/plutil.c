@@ -47,7 +47,8 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	char *plist_xml = NULL;
-	plist_to_xml(root_node, &plist_xml);
+	int size = 0;
+	plist_to_xml(root_node, &plist_xml, &size);
 	printf("%s\n", plist_xml);
 	return 0;
 }

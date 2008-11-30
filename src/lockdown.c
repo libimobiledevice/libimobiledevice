@@ -201,49 +201,57 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 {
 	if (!control)
 		return IPHONE_E_INVALID_ARG;
-	xmlDocPtr plist = new_plist();
-	xmlNode *dict, *key;
-	char **dictionary;
+
 	int bytes = 0, i = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
-	log_debug_msg("lockdownd_hello() called\n");
-	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Request", "QueryType", 1);
-	char *XML_content;
-	uint32_t length;
+	plist_t plist = NULL;
+	plist_new_plist(&plist);
 
-	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	dict_t dict = NULL;
+	plist_new_dict_in_plist(plist, &dict);
+
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "QueryType");
+
+	log_debug_msg("lockdownd_hello() called\n");
+	char *XML_content = NULL;
+	uint32_t length = 0;
+
+	plist_to_xml(plist, &XML_content, &length);
+	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
 	xmlFree(XML_content);
-	xmlFreeDoc(plist);
+	XML_content = NULL;
+	plist_free(plist);
 	plist = NULL;
-	ret = iphone_lckd_recv(control, &XML_content, &bytes);
 
-	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+	log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
+	xml_to_plist(XML_content, bytes, &plist);
+
 	if (!plist)
 		return IPHONE_E_PLIST_ERROR;
-	dict = xmlDocGetRootElement(plist);
-	for (dict = dict->children; dict; dict = dict->next) {
-		if (!xmlStrcmp(dict->name, "dict"))
-			break;
-	}
-	if (!dict)
-		return IPHONE_E_DICT_ERROR;
-	dictionary = read_dict_element_strings(dict);
-	xmlFreeDoc(plist);
-	free(XML_content);
 
-	for (i = 0; dictionary[i]; i += 2) {
-		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
-			log_debug_msg("lockdownd_hello(): success\n");
-			ret = IPHONE_E_SUCCESS;
-			break;
-		}
+	plist_t query_node = find_query_node(plist, "Request", "QueryType");
+	plist_t result_node = g_node_next_sibling(query_node);
+	plist_t value_node = g_node_next_sibling(result_node);
+
+	plist_type result_type;
+	plist_type value_type;
+
+	char *result_value = NULL;
+	char *value_value = NULL;
+
+	get_type_and_value(result_node, &result_type, (void *) (&result_value));
+	get_type_and_value(value_node, &value_type, (void *) (&value_value));
+
+	if (result_type == PLIST_KEY &&
+		value_type == PLIST_STRING && !strcmp(result_value, "Result") && !strcmp(value_value, "Success")) {
+		log_debug_msg("lockdownd_hello(): success\n");
+		ret = IPHONE_E_SUCCESS;
 	}
 
-	free_dictionary(dictionary);
 	return ret;
 }
 
