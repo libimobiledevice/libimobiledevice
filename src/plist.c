@@ -25,6 +25,7 @@
 #include <assert.h>
 #include "utils.h"
 #include "plist.h"
+#include <wchar.h>
 
 
 const char *plist_base = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -285,147 +286,7 @@ void byte_convert(char *address, size_t size)
 	}
 }
 
-bplist_node *parse_raw_node(const char *bpbuffer, uint32_t bplength, uint32_t * position, uint8_t ref_size)
-{
-	if (!position || !bpbuffer || !bplength)
-		return NULL;
 
-	uint8_t modifier = 0;
-	bplist_node *new_node = (bplist_node *) malloc(sizeof(bplist_node));
-	bplist_node *length_stupidity = NULL;
-	memset(new_node, 0, sizeof(bplist_node));	// initialize the new struct
-
-	int myPos = *position;
-	if (myPos == bplength || (myPos + 1) == bplength) {
-		free(new_node);
-		return NULL;
-	}							// end of string
-
-	uint32_t length = 0;
-	if (!myPos) {
-		if (strncmp(bpbuffer, "bplist00", strlen("bplist00"))) {
-			return NULL;		// badness!
-		}
-		myPos += strlen("bplist00");
-	}
-	// Get the node's type.
-	if (bpbuffer[myPos] == BPLIST_DATE) {	// handle date separately, but do it as a real
-		// better handling of date; basically interpret as real or double
-		new_node->type = BPLIST_DATE;
-		new_node->length = 8;	// always 8 for "date" (Apple intended it, not me)
-		myPos++;
-		memcpy(&new_node->realval, bpbuffer + myPos, sizeof(new_node->realval));
-		byte_convert((char *) &new_node->realval, sizeof(new_node->realval));
-		myPos += new_node->length;
-		*position = myPos;
-		return new_node;
-	}
-
-	new_node->type = bpbuffer[myPos] & BPLIST_MASK;
-	new_node->length = bpbuffer[myPos] & BPLIST_FILL;
-	if (!new_node->type) {
-		// what? check if it's a boolean.
-		if (bpbuffer[myPos] == BPLIST_TRUE || bpbuffer[myPos] == BPLIST_FALSE) {
-			// okay, so it is. Carry on.
-			new_node->type = bpbuffer[myPos];
-			new_node->length = 0;
-		} else {
-			// er, what? we have a bad type here. Return NULL.
-			free(new_node);
-			//printf("parse_raw_node: lol type: type given %x\n", bpbuffer[myPos]);
-			return NULL;
-		}
-	}
-
-	myPos++;					// puts us in the data.
-	if (new_node->length == BPLIST_FILL) {	// Data happens to contain length...
-		// what? you're going to make me parse an int for the length. You suck.
-		*position = myPos;
-		length_stupidity = parse_raw_node(bpbuffer, bplength, &myPos, ref_size);
-		switch (length_stupidity->length) {
-		case sizeof(uint8_t):
-			new_node->length = length_stupidity->intval8;
-			break;
-		case sizeof(uint16_t):
-			new_node->length = length_stupidity->intval16;
-			break;
-		case sizeof(uint32_t):
-			new_node->length = length_stupidity->intval32;
-			break;
-		case sizeof(uint64_t):
-			new_node->length = length_stupidity->intval64;
-			break;
-		default:
-			free(new_node);
-			free(length_stupidity);
-			return NULL;
-		}
-		// There, we have our fucking length now.
-		*position = myPos;
-		free(length_stupidity);	// cleanup
-	}
-	// Now we're in the data. 
-	// Error-checking sorta
-	if ((myPos + new_node->length) >= bplength) {
-		new_node->length = bplength - myPos;	// truncate the object
-	}
-	// And now for the greatest show on earth: the giant fucking switch statement.
-	switch (new_node->type) {
-	case BPLIST_INT:
-		new_node->length = uipow(2, new_node->length);	// make length less misleading
-		switch (new_node->length) {
-		case sizeof(uint8_t):
-			new_node->intval8 = bpbuffer[myPos];
-			break;
-		case sizeof(uint16_t):
-			memcpy(&new_node->intval16, bpbuffer + myPos, sizeof(uint16_t));
-			new_node->intval16 = ntohs(new_node->intval16);
-			break;
-		case sizeof(uint32_t):
-			memcpy(&new_node->intval32, bpbuffer + myPos, sizeof(uint32_t));
-			new_node->intval32 = ntohl(new_node->intval32);
-			break;
-		case sizeof(uint64_t):
-			memcpy(&new_node->intval64, bpbuffer + myPos, sizeof(uint64_t));
-			byte_convert((char *) &new_node->intval64, sizeof(uint64_t));
-			break;
-		default:
-			free(new_node);
-			printf("parse_raw_node: lol: invalid int: size given %lu\n", (long unsigned int) new_node->length);
-			printf("parse_raw_node: lol: by the way sizeof(uint64) = %i\n", sizeof(uint64_t));
-			return NULL;
-		}
-		break;
-
-	case BPLIST_REAL:
-		new_node->length = uipow(2, new_node->length);
-		memcpy(&new_node->realval, bpbuffer + myPos, new_node->length);	// XXX: probable buffer overflow here
-		//new_node->realval = bpbuffer[myPos]; // why not
-		byte_convert((char *) &new_node->realval, sizeof(double));
-		break;
-
-	case BPLIST_DICT:			/* returning a raw dict, it forward-references, so. */
-		new_node->length = new_node->length * 2;	// dicts lie
-	case BPLIST_ARRAY:			/* returning a raw array, it forward-references, so. */
-		new_node->intval8 = ref_size;	// in arrays and dicts, the "ref size" alluded to in the trailer applies, and should be stored in intval8 so as to save space. 
-	case BPLIST_STRING:
-	case BPLIST_DATA:
-	default:					/* made to hold raw data. */
-		modifier = (new_node->intval8 > 0) ? new_node->intval8 : 1;
-		new_node->strval = (char *) malloc(sizeof(char) * (new_node->length * modifier));
-		memcpy(new_node->strval, bpbuffer + myPos, (new_node->length * modifier));
-		break;
-
-	case BPLIST_UNICODE:
-		new_node->unicodeval = (wchar_t *) malloc(sizeof(wchar_t) * new_node->length);
-		memcpy(new_node->unicodeval, bpbuffer + myPos, new_node->length);
-		break;
-	}
-
-	myPos += new_node->length;
-	*position = myPos;
-	return new_node;
-}
 
 void print_bytes(char *val, size_t size)
 {
@@ -435,180 +296,123 @@ void print_bytes(char *val, size_t size)
 	}
 }
 
-bplist_node *parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position)
-{
-	bplist_node **nodeslist = NULL, **newaddr = NULL;
-	bplist_node *new_node = NULL, *root_node = NULL;
 
-	uint32_t nodeslength = 0;
-	uint8_t offset_size = 0, dict_param_size = 0;
-	offset_size = bpbuffer[bplength - 26];
-	dict_param_size = bpbuffer[bplength - 25];
-	uint64_t current_offset = 0;
-	//uint64_t num_objects = *(bpbuffer+(bplength-24)), root_object = *(bpbuffer+(bplength-16)), offset_table_index = *(bpbuffer+(bplength-8));
-	uint64_t num_objects = 0, root_object = 0, offset_table_index = 0;
-	memcpy(&num_objects, bpbuffer + bplength - 24, sizeof(uint64_t));
-	memcpy(&root_object, bpbuffer + bplength - 16, sizeof(uint64_t));
-	memcpy(&offset_table_index, bpbuffer + bplength - 8, sizeof(uint64_t));
-	byte_convert((char *) &num_objects, sizeof(uint64_t));
-	byte_convert((char *) &root_object, sizeof(uint64_t));
-	byte_convert((char *) &offset_table_index, sizeof(uint64_t));
-
-	log_debug_msg("Offset size: %i\nGiven: %i\n", offset_size, bpbuffer[bplength - 26]);
-	log_debug_msg("Ref size: %i\nGiven: %i\n", dict_param_size, bpbuffer[bplength - 25]);
-	log_debug_msg("Number of objects: %lli\nGiven: %llu\n", num_objects, *(bpbuffer + bplength - 24));
-	log_debug_msg("Root object index: %lli\nGiven: %llu\n", root_object, *(bpbuffer + bplength - 16));
-	log_debug_msg("Offset table index: %lli\nGiven: %llu\n", offset_table_index, *(bpbuffer + bplength - 8));
-	log_debug_msg("Size of uint64: %i\n", sizeof(uint64_t));
-
-	int i = 0, j = 0, k = 0, str_i = 0, str_j = 0;
-	uint32_t index1 = 0, index2 = 0;
-
-	nodeslist = (bplist_node **) malloc(sizeof(bplist_node *) * num_objects);
-	if (!nodeslist)
-		return NULL;
-
-	for (i = 0; i < num_objects; i++) {
-		memcpy(&current_offset, bpbuffer + (offset_table_index + (i * offset_size)), offset_size);
-		//current_offset = (offset_size == 2) ? ntohs(current_offset) : (offset_size == 4) ? ntohl(current_offset) : current_offset;
-		//if (offset_size == 8) byte_convert(&current_offset, 8);
-		byte_convert((char *) &current_offset,
-					 (offset_size <= sizeof(current_offset)) ? offset_size : sizeof(current_offset));
-		log_debug_msg("parse_nodes: current_offset = %x\n", current_offset);
-		nodeslist[i] = parse_raw_node(bpbuffer, bplength, (uint32_t *) & current_offset, dict_param_size);
-		log_debug_msg("parse_nodes: parse_raw_node done\n");
-	}
-
-
-	for (i = 0; i < num_objects; i++) {
-		// set elements for dicts and arrays and leave the rest alone
-		log_debug_msg("parse_nodes: on node %i\n", i);
-		switch (nodeslist[i]->type) {
-		case BPLIST_DICT:
-			log_debug_msg("parse_nodes: dictionary found\n");
-			nodeslist[i]->subnodes = (bplist_node **) malloc(sizeof(bplist_node) * nodeslist[i]->length);
-			for (j = 0; j < (nodeslist[i]->length / 2); j++) {
-				str_i = j * nodeslist[i]->intval8;
-				str_j = (j + (nodeslist[i]->length / 2)) * nodeslist[i]->intval8;
-
-				memcpy(&index1, nodeslist[i]->strval + str_i, nodeslist[i]->intval8);
-				memcpy(&index2, nodeslist[i]->strval + str_j, nodeslist[i]->intval8);
-				//index1 = (dict_param_size == 1) ? index1 : (dict_param_size == 2) ? ntohs(index1) : (dict_param_size == 4) ? ntohl(index1) : index1;
-				//index2 = (dict_param_size == 1) ? index2 : (dict_param_size == 2) ? ntohs(index2) : (dict_param_size == 4) ? ntohl(index2) : index2;
-				byte_convert((char *) &index1, (dict_param_size <= sizeof(index1)) ? dict_param_size : sizeof(index2));
-				byte_convert((char *) &index2, (dict_param_size <= sizeof(index2)) ? dict_param_size : sizeof(index2));
-				//printf("parse_nodes: key index %i value %i\n", index1, index2);
-				//printf("parse_nodes: key type %x and length %i\n", nodeslist[index1]->type, nodeslist[index1]->length);
-				//printf("parse_nodes: value type %x and length %i\n", nodeslist[index2]->type, nodeslist[index2]->length);
-				nodeslist[i]->subnodes[k++] = nodeslist[index1];
-				nodeslist[i]->subnodes[k++] = nodeslist[index2];
-			}
-
-			nodeslist[i]->length = nodeslist[i]->length / 2;
-			free(nodeslist[i]->strval);
-			k = 0;
-			break;
-
-		case BPLIST_ARRAY:
-			log_debug_msg("parse_nodes: array found\n");
-			nodeslist[i]->subnodes = (bplist_node **) malloc(sizeof(bplist_node) * nodeslist[i]->length);	// memory allocation helps a lot when storing data
-
-			for (j = 0; j < nodeslist[i]->length; j++) {
-				log_debug_msg("parse_nodes: array index %i\n", j);
-				str_j = j * nodeslist[i]->intval8;
-				//index1 = nodeslist[i]->strval[j];
-				memcpy(&index1, nodeslist[i]->strval + str_j, nodeslist[i]->intval8);
-				log_debug_msg("parse_nodes: post-memcpy\n");
-				//index1 = (dict_param_size == 1) ? index1 : (dict_param_size == 2) ? ntohs(index1) : (dict_param_size == 4) ? ntohl(index1) : index1;
-				byte_convert((char *) &index1, (dict_param_size <= sizeof(index1)) ? dict_param_size : sizeof(index1));
-				log_debug_msg("parse_nodes: post-ntohl\nindex1 = %i\n", index1);
-				nodeslist[i]->subnodes[j] = nodeslist[index1];
-				log_debug_msg("parse_nodes: post-assignment\n");
-			}
-			free(nodeslist[i]->strval);
-			break;
-		default:
-			//printf("lol... type %x\n", nodeslist[i]->type);
-			break;
-		}						// those are the only two we need to correct for.
-	}
-
-	root_node = nodeslist[root_object];
-	return root_node;
-}
 
 struct plist_data {
 	union {
-		char     boolval;
-		uint8_t  intval8;
+		char boolval;
+		uint8_t intval8;
 		uint16_t intval16;
 		uint32_t intval32;
 		uint64_t intval64;
-		float    realval32;
-		double   realval64;
-		char    *strval;
+		float realval32;
+		double realval64;
+		char *strval;
 		wchar_t *unicodeval;
-		char    *buff;
+		struct {
+			char *buff;
+			uint8_t ref_size;
+		};
 	};
-	int index;
+	uint64_t length;
 	plist_type type;
 };
 
-void plist_new_plist(plist_t* plist)
+enum {
+	BPLIST_TRUE = 0x08,
+	BPLIST_FALSE = 0x09,
+	BPLIST_FILL = 0x0F,			/* will be used for length grabbing */
+	BPLIST_INT = 0x10,
+	BPLIST_REAL = 0x20,
+	BPLIST_DATE = 0x33,
+	BPLIST_DATA = 0x40,
+	BPLIST_STRING = 0x50,
+	BPLIST_UNICODE = 0x60,
+	BPLIST_UID = 0x70,
+	BPLIST_ARRAY = 0xA0,
+	BPLIST_SET = 0xC0,
+	BPLIST_DICT = 0xD0,
+	BPLIST_MASK = 0xF0
+};
+
+void plist_new_plist(plist_t * plist)
 {
-	if (*plist != NULL) return;
-	struct plist_data* data = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
+	if (*plist != NULL)
+		return;
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 	data->type = PLIST_PLIST;
-	*plist = g_node_new (data);
+	*plist = g_node_new(data);
 }
 
-void plist_new_dict_in_plist(plist_t plist, dict_t* dict)
+void plist_new_dict_in_plist(plist_t plist, dict_t * dict)
 {
-	if (!plist || *dict) return;
+	if (!plist || *dict)
+		return;
 
-	struct plist_data* data = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 	data->type = PLIST_DICT;
-	*dict = g_node_new (data);
+	*dict = g_node_new(data);
 	g_node_append(plist, *dict);
 }
 
-void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void** values, array_t* array)
+void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void **values, array_t * array)
 {
 }
 
-void plist_add_dict_element(dict_t dict, char* key, plist_type type, void* value)
+void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value)
 {
-	if (!dict || !key || !value) return;
+	if (!dict || !key || !value)
+		return;
 
-	struct plist_data* data = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 	data->type = PLIST_KEY;
 	data->strval = strdup(key);
-	GNode* keynode = g_node_new (data);
+	GNode *keynode = g_node_new(data);
 	g_node_append(dict, keynode);
 
 	//now handle value
-	struct plist_data* val = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
+	struct plist_data *val = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 	val->type = type;
 
 	switch (type) {
-		case PLIST_BOOLEAN : val->boolval = *((char*)value); break;
-		case PLIST_UINT8 : val->intval8 = *((uint8_t*)value); break;
-		case PLIST_UINT16 : val->intval16 = *((uint16_t*)value); break;
-		case PLIST_UINT32 : val->intval32 = *((uint32_t*)value); break;
-		case PLIST_UINT64 : val->intval64 = *((uint64_t*)value); break;
-		case PLIST_FLOAT32 : val->realval32 = *((float*)value); break;
-		case PLIST_FLOAT64 : val->realval64 = *((double*)value); break;
-		case PLIST_STRING : val->strval = strdup((char*) value); break;
-		case PLIST_UNICODE : val->unicodeval = wcsdup((wchar_t*) value); break;
-		case PLIST_DATA : val->buff = strdup((char*) value); break;
-		case PLIST_ARRAY :
-		case PLIST_DICT :
-		case PLIST_DATE :
-		case PLIST_PLIST :
-		default:
-			break;
+	case PLIST_BOOLEAN:
+		val->boolval = *((char *) value);
+		break;
+	case PLIST_UINT8:
+		val->intval8 = *((uint8_t *) value);
+		break;
+	case PLIST_UINT16:
+		val->intval16 = *((uint16_t *) value);
+		break;
+	case PLIST_UINT32:
+		val->intval32 = *((uint32_t *) value);
+		break;
+	case PLIST_UINT64:
+		val->intval64 = *((uint64_t *) value);
+		break;
+	case PLIST_FLOAT32:
+		val->realval32 = *((float *) value);
+		break;
+	case PLIST_FLOAT64:
+		val->realval64 = *((double *) value);
+		break;
+	case PLIST_STRING:
+		val->strval = strdup((char *) value);
+		break;
+	case PLIST_UNICODE:
+		val->unicodeval = wcsdup((wchar_t *) value);
+		break;
+	case PLIST_DATA:
+		val->buff = strdup((char *) value);
+		break;
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+	case PLIST_DATE:
+	case PLIST_PLIST:
+	default:
+		break;
 	}
-	GNode* valnode = g_node_new (val);
+	GNode *valnode = g_node_new(val);
 	g_node_append(dict, valnode);
 }
 
@@ -617,97 +421,98 @@ void plist_free(plist_t plist)
 	g_node_destroy(plist);
 }
 
-void node_to_xml (GNode *node, gpointer data)
+void node_to_xml(GNode * node, gpointer data)
 {
-	if (!node) return;
+	if (!node)
+		return;
 
-	struct plist_data* node_data = (struct plist_data*)node->data;
+	struct plist_data *node_data = (struct plist_data *) node->data;
 
 	xmlNodePtr child_node = NULL;
 	char isStruct = FALSE;
 
-	gchar* tag = NULL;
-	gchar* val = NULL;
+	gchar *tag = NULL;
+	gchar *val = NULL;
 
 	switch (node_data->type) {
-		case PLIST_BOOLEAN :
-			{
+	case PLIST_BOOLEAN:
+		{
 			if (node_data->boolval)
 				tag = "true";
 			else
 				tag = "false";
-			}
-			break;
+		}
+		break;
 
-		case PLIST_UINT8 :
-			tag = "integer";
-			val = g_strdup_printf("%u", node_data->intval8);
-			break;
+	case PLIST_UINT8:
+		tag = "integer";
+		val = g_strdup_printf("%u", node_data->intval8);
+		break;
 
-		case PLIST_UINT16 :
-			tag = "integer";
-			val = g_strdup_printf("%u", node_data->intval16);
-			break;
+	case PLIST_UINT16:
+		tag = "integer";
+		val = g_strdup_printf("%u", node_data->intval16);
+		break;
 
-		case PLIST_UINT32 :
-			tag = "integer";
-			val = g_strdup_printf("%u", node_data->intval32);
-			break;
+	case PLIST_UINT32:
+		tag = "integer";
+		val = g_strdup_printf("%u", node_data->intval32);
+		break;
 
-		case PLIST_UINT64 :
-			tag = "integer";
-			val = g_strdup_printf("%lu", (long unsigned int)node_data->intval64);
-			break;
+	case PLIST_UINT64:
+		tag = "integer";
+		val = g_strdup_printf("%lu", (long unsigned int) node_data->intval64);
+		break;
 
-		case PLIST_FLOAT32 :
-			tag = "real";
-			val = g_strdup_printf("%f", node_data->realval32);
-			break;
+	case PLIST_FLOAT32:
+		tag = "real";
+		val = g_strdup_printf("%f", node_data->realval32);
+		break;
 
-		case PLIST_FLOAT64 :
-			tag = "real";
-			val = g_strdup_printf("%Lf", (long double)node_data->intval64);
-			break;
+	case PLIST_FLOAT64:
+		tag = "real";
+		val = g_strdup_printf("%Lf", (long double) node_data->intval64);
+		break;
 
-		case PLIST_STRING :
-			tag = "string";
-			val = g_strdup(node_data->strval);
-			break;
+	case PLIST_STRING:
+		tag = "string";
+		val = g_strdup(node_data->strval);
+		break;
 
-		case PLIST_UNICODE :
-			tag = "string";
-			val = g_strdup((gchar*)node_data->unicodeval);
-			break;
+	case PLIST_UNICODE:
+		tag = "string";
+		val = g_strdup((gchar *) node_data->unicodeval);
+		break;
 
-		case PLIST_KEY :
-			tag = "key";
-			val = g_strdup((gchar*)node_data->strval);
-			break;
+	case PLIST_KEY:
+		tag = "key";
+		val = g_strdup((gchar *) node_data->strval);
+		break;
 
-		case PLIST_DATA :
-			tag = "data";
-			val = format_string(node_data->buff, 60, 0);
-			break;
-		case PLIST_ARRAY :
-			tag = "array";
-			isStruct = TRUE;
-			break;
-		case PLIST_DICT :
-			tag = "dict";
-			isStruct = TRUE;
-			break;
-		case PLIST_PLIST :
-			tag = "plist";
-			isStruct = TRUE;
-			break;
-		case PLIST_DATE : //TODO : handle date tag
-		default:
-			break;
+	case PLIST_DATA:
+		tag = "data";
+		val = format_string(node_data->buff, 60, 0);
+		break;
+	case PLIST_ARRAY:
+		tag = "array";
+		isStruct = TRUE;
+		break;
+	case PLIST_DICT:
+		tag = "dict";
+		isStruct = TRUE;
+		break;
+	case PLIST_PLIST:
+		tag = "plist";
+		isStruct = TRUE;
+		break;
+	case PLIST_DATE:			//TODO : handle date tag
+	default:
+		break;
 	}
-	return;
 
 	child_node = xmlNewChild(data, NULL, tag, val);
-	gfree(val);
+	xmlNodeAddContent(child_node, "\n");
+	g_free(val);
 
 	if (isStruct)
 		g_node_children_foreach(node, G_TRAVERSE_ALL, node_to_xml, child_node);
@@ -715,11 +520,11 @@ void node_to_xml (GNode *node, gpointer data)
 	return;
 }
 
-void xml_to_node (xmlNodePtr xml_node, GNode *plist_node)
+void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 {
 	xmlNodePtr node = NULL;
-	struct plist_data* data = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
-	GNode* subnode = g_node_new (data);
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
+	GNode *subnode = g_node_new(data);
 	g_node_append(plist_node, subnode);
 
 	for (node = xml_node->children; node; node = node->next) {
@@ -737,21 +542,21 @@ void xml_to_node (xmlNodePtr xml_node, GNode *plist_node)
 		}
 
 		if (!xmlStrcmp(node->name, "integer")) {
-			char* strval = xmlNodeGetContent(node);
+			char *strval = xmlNodeGetContent(node);
 			data->intval64 = atoi(strval);
 			data->type = PLIST_UINT64;
 			continue;
 		}
 
-		if (!xmlStrcmp(node->name, "real")){
-			char* strval = xmlNodeGetContent(node);
+		if (!xmlStrcmp(node->name, "real")) {
+			char *strval = xmlNodeGetContent(node);
 			data->realval64 = atof(strval);
 			data->type = PLIST_FLOAT64;
 			continue;
 		}
 
 		if (!xmlStrcmp(node->name, "date"))
-			continue;//TODO : handle date tag
+			continue;			//TODO : handle date tag
 
 		if (!xmlStrcmp(node->name, "string")) {
 			data->strval = strdup(xmlNodeGetContent(node));
@@ -773,45 +578,315 @@ void xml_to_node (xmlNodePtr xml_node, GNode *plist_node)
 
 		if (!xmlStrcmp(node->name, "array")) {
 			data->type = PLIST_ARRAY;
-			xml_to_node (node, subnode);
+			xml_to_node(node, subnode);
 			continue;
 		}
 
 		if (!xmlStrcmp(node->name, "dict")) {
 			data->type = PLIST_DICT;
-			xml_to_node (node, subnode);
+			xml_to_node(node, subnode);
 			continue;
 		}
 	}
 }
 
-void plist_to_xml(plist_t plist, char** plist_xml)
+void plist_to_xml(plist_t plist, char **plist_xml)
 {
-	if (!plist || !plist_xml || *plist_xml) return;
+	if (!plist || !plist_xml || *plist_xml)
+		return;
 	xmlDocPtr plist_doc = new_plist();
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
 	g_node_children_foreach(plist, G_TRAVERSE_ALL, node_to_xml, root_node);
 	int size = 0;
-	xmlDocDumpMemory (plist_doc, (xmlChar**)plist_xml, &size);
+	xmlDocDumpMemory(plist_doc, (xmlChar **) plist_xml, &size);
 }
 
+GNode *parse_raw_node(const char *bpbuffer, uint32_t bplength, uint32_t * position, uint8_t ref_size)
+{
+	if (!position || !bpbuffer || !bplength)
+		return NULL;
 
-void plist_to_bin(plist_t plist, char** plist_bin)
+	uint8_t modifier = 0;
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
+	GNode *new_node = g_node_new(data);
+	GNode *length_stupidity = NULL;
+
+	int myPos = *position;
+	if (myPos == bplength || (myPos + 1) == bplength) {
+		g_node_destroy(new_node);
+		return NULL;
+	}							// end of string
+
+	uint32_t length = 0;
+	if (!myPos) {
+		if (strncmp(bpbuffer, "bplist00", strlen("bplist00"))) {
+			return NULL;		// badness!
+		}
+		myPos += strlen("bplist00");
+	}
+	// Get the node's type.
+	if (bpbuffer[myPos] == BPLIST_DATE) {	// handle date separately, but do it as a real
+		// better handling of date; basically interpret as real or double
+		data->type = BPLIST_DATE;
+		length = 8;				// always 8 for "date" (Apple intended it, not me)
+		myPos++;
+		memcpy(&data->realval64, bpbuffer + myPos, sizeof(data->realval64));
+		byte_convert((char *) &data->realval64, sizeof(data->realval64));
+		myPos += length;
+		*position = myPos;
+		return new_node;
+	}
+
+	int type = bpbuffer[myPos] & BPLIST_MASK;
+	data->length = bpbuffer[myPos] & BPLIST_FILL;
+
+	if (!type) {
+		// what? check if it's a boolean.
+		if (bpbuffer[myPos] == BPLIST_TRUE || bpbuffer[myPos] == BPLIST_FALSE) {
+			// okay, so it is. Carry on.
+			data->type = PLIST_BOOLEAN;
+			data->boolval = TRUE;
+			data->length = 0;
+		} else {
+			// er, what? we have a bad type here. Return NULL.
+			g_node_destroy(new_node);
+			//printf("parse_raw_node: lol type: type given %x\n", bpbuffer[myPos]);
+			return NULL;
+		}
+	}
+
+	myPos++;					// puts us in the data.
+	if (length == BPLIST_FILL) {	// Data happens to contain length...
+		// what? you're going to make me parse an int for the length. You suck.
+		*position = myPos;
+		length_stupidity = parse_raw_node(bpbuffer, bplength, &myPos, ref_size);
+		switch (((struct plist_data *) length_stupidity->data)->type) {
+		case PLIST_UINT8:
+			data->length = ((struct plist_data *) length_stupidity->data)->intval8;
+			break;
+		case PLIST_UINT16:
+			data->length = ((struct plist_data *) length_stupidity->data)->intval16;
+			break;
+		case PLIST_UINT32:
+			data->length = ((struct plist_data *) length_stupidity->data)->intval32;
+			break;
+		case PLIST_UINT64:
+			data->length = ((struct plist_data *) length_stupidity->data)->intval64;
+			break;
+		default:
+			g_node_destroy(new_node);
+			g_node_destroy(length_stupidity);
+			return NULL;
+		}
+		// There, we have our fucking length now.
+		*position = myPos;
+		g_node_destroy(length_stupidity);	// cleanup
+	}
+	// Now we're in the data. 
+	// Error-checking sorta
+	if ((myPos + data->length) >= bplength) {
+		data->length = bplength - myPos;	// truncate the object
+	}
+	// And now for the greatest show on earth: the giant fucking switch statement.
+	switch (type) {
+	case BPLIST_INT:
+		data->length = uipow(2, data->length);	// make length less misleading
+		switch (data->length) {
+		case sizeof(uint8_t):
+			data->type = PLIST_UINT8;
+			data->intval8 = bpbuffer[myPos];
+			break;
+		case sizeof(uint16_t):
+			data->type = PLIST_UINT16;
+			memcpy(&data->intval16, bpbuffer + myPos, sizeof(uint16_t));
+			data->intval16 = ntohs(data->intval16);
+			break;
+		case sizeof(uint32_t):
+			data->type = PLIST_UINT32;
+			memcpy(&data->intval32, bpbuffer + myPos, sizeof(uint32_t));
+			data->intval32 = ntohl(data->intval32);
+			break;
+		case sizeof(uint64_t):
+			data->type = PLIST_UINT64;
+			memcpy(&data->intval64, bpbuffer + myPos, sizeof(uint64_t));
+			byte_convert((char *) &data->intval64, sizeof(uint64_t));
+			break;
+		default:
+			g_node_destroy(new_node);
+			printf("parse_raw_node: lol: invalid int: size given %lu\n", (long unsigned int) length);
+			printf("parse_raw_node: lol: by the way sizeof(uint64) = %i\n", sizeof(uint64_t));
+			return NULL;
+		}
+		break;
+
+	case BPLIST_REAL:
+		data->length = uipow(2, data->length);
+		switch (data->length) {
+		case sizeof(float):
+			data->type = PLIST_FLOAT32;
+			memcpy(&data->realval32, bpbuffer + myPos, data->length);
+			byte_convert((char *) &data->realval32, sizeof(float));	//necessary ??
+			break;
+		case sizeof(double):
+			data->type = PLIST_FLOAT64;
+			memcpy(&data->realval64, bpbuffer + myPos, data->length);
+			byte_convert((char *) &data->realval64, sizeof(double));
+			break;
+		default:
+			g_node_destroy(new_node);
+			printf("parse_raw_node: lol: invalid real: size given %lu\n", (long unsigned int) length);
+			printf("parse_raw_node: lol: by the way sizeof(uint64) = %i\n", sizeof(uint64_t));
+			return NULL;
+		}
+		break;
+
+	case BPLIST_STRING:
+		data->type = PLIST_STRING;
+		data->strval = (char *) malloc(sizeof(char) * data->length);
+		memcpy(data->strval, bpbuffer + myPos, data->length);
+		break;
+
+	case BPLIST_UNICODE:
+		data->type = PLIST_UNICODE;
+		data->unicodeval = (wchar_t *) malloc(sizeof(wchar_t) * data->length);
+		memcpy(data->unicodeval, bpbuffer + myPos, data->length);
+		break;
+
+	case BPLIST_DICT:			/* returning a raw dict, it forward-references, so. */
+		data->length = data->length * 2;	// dicts lie
+		data->type = PLIST_DICT;
+
+	case BPLIST_ARRAY:			/* returning a raw array, it forward-references, so. */
+		data->ref_size = ref_size;	// in arrays and dicts, the "ref size" alluded to in the trailer applies, and should be stored in intval8 so as to save space.
+		if (data->type == 0)
+			data->type = PLIST_ARRAY;
+	case BPLIST_DATA:
+		if (data->type == 0)
+			data->type = PLIST_DATA;
+	default:					/* made to hold raw data. */
+		modifier = (data->ref_size > 0) ? data->ref_size : 1;
+		data->buff = (char *) malloc(sizeof(char) * (data->length * modifier));
+		memcpy(data->buff, bpbuffer + myPos, (data->length * modifier));
+		break;
+
+	}
+
+	myPos += data->length;
+	*position = myPos;
+	return new_node;
+}
+
+plist_t parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position)
+{
+	plist_t *nodeslist = NULL, *newaddr = NULL;
+	plist_t new_node = NULL, root_node = NULL;
+
+	uint32_t nodeslength = 0;
+	uint8_t offset_size = 0, dict_param_size = 0;
+	offset_size = bpbuffer[bplength - 26];
+	dict_param_size = bpbuffer[bplength - 25];
+	uint64_t current_offset = 0;
+	uint64_t num_objects = 0, root_object = 0, offset_table_index = 0;
+	memcpy(&num_objects, bpbuffer + bplength - 24, sizeof(uint64_t));
+	memcpy(&root_object, bpbuffer + bplength - 16, sizeof(uint64_t));
+	memcpy(&offset_table_index, bpbuffer + bplength - 8, sizeof(uint64_t));
+	byte_convert((char *) &num_objects, sizeof(uint64_t));
+	byte_convert((char *) &root_object, sizeof(uint64_t));
+	byte_convert((char *) &offset_table_index, sizeof(uint64_t));
+
+	log_debug_msg("Offset size: %i\nGiven: %i\n", offset_size, bpbuffer[bplength - 26]);
+	log_debug_msg("Ref size: %i\nGiven: %i\n", dict_param_size, bpbuffer[bplength - 25]);
+	log_debug_msg("Number of objects: %lli\nGiven: %llu\n", num_objects, *(bpbuffer + bplength - 24));
+	log_debug_msg("Root object index: %lli\nGiven: %llu\n", root_object, *(bpbuffer + bplength - 16));
+	log_debug_msg("Offset table index: %lli\nGiven: %llu\n", offset_table_index, *(bpbuffer + bplength - 8));
+	log_debug_msg("Size of uint64: %i\n", sizeof(uint64_t));
+
+	int i = 0, j = 0, k = 0, str_i = 0, str_j = 0;
+	uint32_t index1 = 0, index2 = 0;
+
+	nodeslist = (plist_t *) malloc(sizeof(plist_t) * num_objects);
+	if (!nodeslist)
+		return NULL;
+
+	for (i = 0; i < num_objects; i++) {
+		memcpy(&current_offset, bpbuffer + (offset_table_index + (i * offset_size)), offset_size);
+		byte_convert((char *) &current_offset,
+					 (offset_size <= sizeof(current_offset)) ? offset_size : sizeof(current_offset));
+		log_debug_msg("parse_nodes: current_offset = %x\n", current_offset);
+		nodeslist[i] = parse_raw_node(bpbuffer, bplength, (uint32_t *) & current_offset, dict_param_size);
+		log_debug_msg("parse_nodes: parse_raw_node done\n");
+	}
+
+
+	for (i = 0; i < num_objects; i++) {
+		// set elements for dicts and arrays and leave the rest alone
+		log_debug_msg("parse_nodes: on node %i\n", i);
+		struct plist_data *data = (struct plist_data *) nodeslist[i]->data;
+
+		switch (data->type) {
+		case PLIST_DICT:
+			log_debug_msg("parse_nodes: dictionary found\n");
+			for (j = 0; j < (data->length / 2); j++) {
+				str_i = j * data->ref_size;
+				str_j = (j + (data->length / 2)) * data->ref_size;
+
+				memcpy(&index1, data->buff + str_i, data->ref_size);
+				memcpy(&index2, data->buff + str_j, data->ref_size);
+
+				byte_convert((char *) &index1, (dict_param_size <= sizeof(index1)) ? dict_param_size : sizeof(index2));
+				byte_convert((char *) &index2, (dict_param_size <= sizeof(index2)) ? dict_param_size : sizeof(index2));
+
+				g_node_append(nodeslist[i], nodeslist[index1]);
+				g_node_append(nodeslist[i], nodeslist[index2]);
+			}
+
+			data->length = data->length / 2;
+			free(data->buff);
+			k = 0;
+			break;
+
+		case PLIST_ARRAY:
+			log_debug_msg("parse_nodes: array found\n");
+			for (j = 0; j < data->length; j++) {
+				log_debug_msg("parse_nodes: array index %i\n", j);
+				str_j = j * data->ref_size;
+				memcpy(&index1, data->buff + str_j, data->ref_size);
+				log_debug_msg("parse_nodes: post-memcpy\n");
+				byte_convert((char *) &index1, (dict_param_size <= sizeof(index1)) ? dict_param_size : sizeof(index1));
+				log_debug_msg("parse_nodes: post-ntohl\nindex1 = %i\n", index1);
+				g_node_append(nodeslist[i], nodeslist[index1]);
+				log_debug_msg("parse_nodes: post-assignment\n");
+			}
+			free(data->buff);
+			break;
+		default:
+			//printf("lol... type %x\n", nodeslist[i]->type);
+			break;
+		}						// those are the only two we need to correct for.
+	}
+
+	root_node = nodeslist[root_object];
+	return root_node;
+}
+
+void plist_to_bin(plist_t plist, char **plist_bin, int *length)
 {
 }
 
-void xml_to_plist(const char* plist_xml, plist_t* plist)
+void xml_to_plist(const char *plist_xml, plist_t * plist)
 {
 	xmlDocPtr plist_doc = xmlReadMemory(plist_xml, strlen(plist_xml), NULL, NULL, 0);
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
 
-	struct plist_data* data = (struct plist_data*)calloc(sizeof(struct plist_data), 1);
-	*plist = g_node_new (data);
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
+	*plist = g_node_new(data);
 	data->type = PLIST_PLIST;
-	xml_to_node (root_node, *plist);
+	xml_to_node(root_node, *plist);
 
 }
 
-void bin_to_plist(const char* plist_bin, plist_t* plist)
+void bin_to_plist(const char *plist_bin, int length, plist_t * plist)
 {
+	uint32_t pos = 0;
+	*plist = parse_nodes(plist_bin, length, &pos);
 }

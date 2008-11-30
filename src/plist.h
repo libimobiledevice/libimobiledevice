@@ -46,38 +46,8 @@ void free_dictionary(char **dictionary);
 
 /* Binary plist stuff */
 
-enum {
-	BPLIST_TRUE = 0x08,
-	BPLIST_FALSE = 0x09,
-	BPLIST_FILL = 0x0F,			/* will be used for length grabbing */
-	BPLIST_INT = 0x10,
-	BPLIST_REAL = 0x20,
-	BPLIST_DATE = 0x33,
-	BPLIST_DATA = 0x40,
-	BPLIST_STRING = 0x50,
-	BPLIST_UNICODE = 0x60,
-	BPLIST_UID = 0x70,
-	BPLIST_ARRAY = 0xA0,
-	BPLIST_SET = 0xC0,
-	BPLIST_DICT = 0xD0,
-	BPLIST_MASK = 0xF0
-};
 
-typedef struct _bplist_node {
-	struct _bplist_node *next, **subnodes;	// subnodes is for arrays, dicts and (potentially) sets. 
-	uint64_t length, intval64;
-	uint32_t intval32;			// length = subnodes 
-	uint16_t intval16;
-	uint8_t intval8;
-	uint8_t type, *indexes;		// indexes for array-types; essentially specify the order in which to access for key => value pairs
-	char *strval;
-	double realval;
-	wchar_t *unicodeval;
-} bplist_node;
-
-bplist_node *parse_nodes(const char *bpbuffer, uint32_t bplength, uint32_t * position);
-
-typedef enum  {
+typedef enum {
 	PLIST_BOOLEAN,
 	PLIST_UINT8,
 	PLIST_UINT16,
@@ -100,15 +70,15 @@ typedef GNode *plist_t;
 typedef GNode *dict_t;
 typedef GNode *array_t;
 
-void plist_new_plist(plist_t* plist);
-void plist_new_dict_in_plist(plist_t plist, dict_t* dict);
-void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void** values, array_t* array);
-void plist_add_dict_element(dict_t dict, char* key, plist_type type, void* value);
+void plist_new_plist(plist_t * plist);
+void plist_new_dict_in_plist(plist_t plist, dict_t * dict);
+void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void **values, array_t * array);
+void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value);
 void plist_free(plist_t plist);
 
-void plist_to_xml(plist_t plist, char** plist_xml);
-void plist_to_bin(plist_t plist, char** plist_bin);
+void plist_to_xml(plist_t plist, char **plist_xml);
+void plist_to_bin(plist_t plist, char **plist_bin, int *length);
 
-void xml_to_plist(const char* plist_xml, plist_t* plist);
-void bin_to_plist(const char* plist_bin, plist_t* plist);
+void xml_to_plist(const char *plist_xml, plist_t * plist);
+void bin_to_plist(const char *plist_bin, int length, plist_t * plist);
 #endif

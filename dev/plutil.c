@@ -10,85 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void print_nodes(bplist_node * root_node)
-{
-	// Yay, great. Let's print the list of nodes recursively...
-	int i = 0;
-	if (!root_node)
-		return;					// or not, because the programmer's stupid.
-
-	switch (root_node->type) {
-	case BPLIST_DICT:
-		printf("Dictionary node.\nLength %lu\n", (long unsigned int) root_node->length);
-		for (i = 0; i < (root_node->length * 2); i += 2) {
-			// HI!
-			printf("Key: ");
-			print_nodes(root_node->subnodes[i]);
-			printf("Value: ");
-			print_nodes(root_node->subnodes[i + 1]);
-		}
-		printf("End dictionary node.\n\n");
-		break;
-
-	case BPLIST_ARRAY:
-		printf("Array node.\n");
-		for (i = 0; i < root_node->length; i++) {
-			printf("\tElement %i: ", i);
-			print_nodes(root_node->subnodes[i]);
-		}
-		break;
-
-	case BPLIST_INT:
-		if (root_node->length == sizeof(uint8_t)) {
-			printf("Integer: %i\n", root_node->intval8);
-		} else if (root_node->length == sizeof(uint16_t)) {
-			printf("Integer: %i\n", root_node->intval16);
-		} else if (root_node->length == sizeof(uint32_t)) {
-			printf("Integer: %i\n", root_node->intval32);
-		}
-		break;
-
-	case BPLIST_STRING:
-		printf("String: ");
-		fwrite(root_node->strval, sizeof(char), root_node->length, stdout);
-		fflush(stdout);
-		printf("\n");
-		break;
-
-	case BPLIST_DATA:
-		printf("Data: ");
-		char *data = g_base64_encode(root_node->strval, root_node->length);
-		fwrite(format_string(data, 60, 0), sizeof(char), strlen(data), stdout);
-		fflush(stdout);
-		printf("\n");
-		break;
-
-	case BPLIST_UNICODE:
-		printf("Unicode data, may appear crappy: ");
-		fwrite(root_node->unicodeval, sizeof(wchar_t), root_node->length, stdout);
-		fflush(stdout);
-		printf("\n");
-		break;
-
-	case BPLIST_TRUE:
-		printf("True.\n");
-		break;
-
-	case BPLIST_FALSE:
-		printf("False.\n");
-		break;
-
-	case BPLIST_REAL:
-	case BPLIST_DATE:
-		printf("Real(?): %f\n", root_node->realval);
-		break;
-
-	default:
-		printf("oops\nType set to %x and length is %lu\n", root_node->type, (long unsigned int) root_node->length);
-		break;
-	}
-}
-
 int main(int argc, char *argv[])
 {
 	struct stat *filestats = (struct stat *) malloc(sizeof(struct stat));
@@ -117,15 +38,17 @@ int main(int argc, char *argv[])
 	fclose(bplist);
 	printf("or here?\n");
 	// bplist_entire contains our stuff
-	bplist_node *root_node;
-	root_node = parse_nodes(bplist_entire, filestats->st_size, &position);
+	plist_t root_node = NULL;
+	bin_to_plist(bplist_entire, filestats->st_size, &root_node);
 	printf("plutil debug mode\n\n");
 	printf("file size %i\n\n", (int) filestats->st_size);
 	if (!root_node) {
 		printf("Invalid binary plist (or some other error occurred.)\n");
 		return 0;
 	}
-	print_nodes(root_node);
+	char *plist_xml = NULL;
+	plist_to_xml(root_node, &plist_xml);
+	printf("%s\n", plist_xml);
 	return 0;
 }
 
