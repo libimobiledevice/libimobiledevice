@@ -101,151 +101,6 @@ void free_plist(xmlDocPtr plist)
 	xmlFreeDoc(plist);
 }
 
-/** Adds a new node as a child to a given node.
- *
- * This is a lower level function so you probably want to use
- * add_key_str_dict_element, add_key_dict_node or add_key_data_dict_element
- * instead.
- *  
- * @param plist The plist XML document to which the to_node belongs.
- * @param name The name of the new node.
- * @param content The string containing the text node of the new node.
- * @param to_node The node to attach the child node to. If none is given, the
- * 		  root node of the given document is used.
- * @param depth The number of tabs to indent the new node.
- *
- * @return The newly created node.
- */
-xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode * to_node, int depth)
-{
-	int i = 0;
-	xmlNode *child;
-
-	if (!plist)
-		return NULL;
-	assert(depth >= 0);
-	if (!to_node)
-		to_node = xmlDocGetRootElement(plist);
-
-	for (i = 0; i < depth; i++) {
-		xmlNodeAddContent(to_node, "\t");
-	}
-	child = xmlNewChild(to_node, NULL, name, content);
-	xmlNodeAddContent(to_node, "\n");
-
-	return child;
-}
-
-/** Adds a string key-pair to a plist XML document.
- * 
- * @param plist The plist XML document to add the new node to.
- * @param dict The dictionary node within the plist XML document to add the new node to.
- * @param key The string containing the key value.
- * @param value The string containing the value.
- * @param depth The number of tabs to indent the new node.
- *
- * @return The newly created key node.
- */
-xmlNode *add_key_str_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
-{
-	xmlNode *keyPtr;
-
-	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
-	add_child_to_plist(plist, "string", value, dict, depth);
-
-	return keyPtr;
-}
-
-/** Adds a new dictionary key-pair to a plist XML document.
- * 
- * @param plist The plist XML document to add the new node to.
- * @param dict The dictionary node within the plist XML document to add the new node to.
- * @param key The string containing the key value.
- * @param value The string containing the value.
- * @param depth The number of tabs to indent the new node.
- *
- * @return The newly created dict node.
- */
-xmlNode *add_key_dict_node(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
-{
-	xmlNode *child;
-
-	add_child_to_plist(plist, "key", key, dict, depth);
-	child = add_child_to_plist(plist, "dict", value, dict, depth);
-
-	return child;
-}
-
-/** Adds a new data dictionary key-pair to a plist XML document.
- * 
- * @param plist The plist XML document to add the new node to.
- * @param dict The dictionary node within the plist XML document to add the new node to.
- * @param key The string containing the key value.
- * @param value The string containing the value.
- * @param depth The number of tabs to indent the new node.
- *
- * @return The newly created key node.
- */
-xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode * dict, const char *key, const char *value, int depth)
-{
-	xmlNode *keyPtr;
-
-	keyPtr = add_child_to_plist(plist, "key", key, dict, depth);
-	add_child_to_plist(plist, "data", format_string(value, 60, depth), dict, depth);
-
-	return keyPtr;
-}
-
-/** Reads a set of keys and strings into an array from a plist XML document.
- *
- * @param dict The root XMLNode of a plist XML document to be read.
- * 
- * @return  An array where each even number is a key and the odd numbers are
- *          values.  If the odd number is \0, that's the end of the list.
- */
-char **read_dict_element_strings(xmlNode * dict)
-{
-	char **return_me = NULL, **old = NULL;
-	int current_length = 0;
-	int current_pos = 0;
-	xmlNode *dict_walker;
-
-	for (dict_walker = dict->children; dict_walker; dict_walker = dict_walker->next) {
-		if (!xmlStrcmp(dict_walker->name, "key")) {
-			current_length += 2;
-			old = return_me;
-			return_me = realloc(return_me, sizeof(char *) * current_length);
-			if (!return_me) {
-				free(old);
-				return NULL;
-			}
-			return_me[current_pos++] = xmlNodeGetContent(dict_walker);
-			return_me[current_pos++] = xmlNodeGetContent(dict_walker->next->next);
-		}
-	}
-
-	old = return_me;
-	return_me = realloc(return_me, sizeof(char *) * (current_length + 1));
-	return_me[current_pos] = NULL;
-
-	return return_me;
-}
-
-/** Destroys a dictionary as returned by read_dict_element_strings
- */
-void free_dictionary(char **dictionary)
-{
-	int i = 0;
-
-	if (!dictionary)
-		return;
-
-	for (i = 0; dictionary[i]; i++) {
-		free(dictionary[i]);
-	}
-
-	free(dictionary);
-}
 
 /*
  * Binary propertylist code follows
@@ -357,6 +212,14 @@ void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void *
 {
 }
 
+/** Adds a new key pair to a dict.
+ *
+ * @param dict The dict node in the plist.
+ * @param key the key name of the key pair.
+ * @param type The the type of the value in the key pair.
+ * @param value a pointer to the actual buffer containing the value. WARNING : the buffer is supposed to match the type of the value
+ *
+ */
 void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value)
 {
 	if (!dict || !key || !value)
