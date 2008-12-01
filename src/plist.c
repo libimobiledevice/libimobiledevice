@@ -946,6 +946,73 @@ GNode *find_query_node(plist_t plist, char *key, char *request)
 	return NULL;
 }
 
+char compare_node_value(plist_type type, struct plist_data *data, void *value)
+{
+	char res = FALSE;
+	switch (type) {
+	case PLIST_BOOLEAN:
+		res = data->boolval == *((char *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_UINT8:
+		res = data->intval8 == *((uint8_t *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_UINT16:
+		res = data->intval16 == *((uint16_t *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_UINT32:
+		res = data->intval32 == *((uint32_t *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_UINT64:
+		res = data->intval64 == *((uint64_t *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_FLOAT32:
+		res = data->realval32 == *((float *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_FLOAT64:
+		res = data->realval64 == *((double *) value) ? TRUE : FALSE;
+		break;
+	case PLIST_KEY:
+	case PLIST_STRING:
+		res = !strcmp(data->strval, ((char *) value));
+		break;
+	case PLIST_UNICODE:
+		res = !wcscmp(data->unicodeval, ((wchar_t *) value));
+		break;
+	case PLIST_DATA:
+		res = !strcmp(data->buff, ((char *) value));
+		break;
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+	case PLIST_DATE:
+	case PLIST_PLIST:
+	default:
+		break;
+	}
+	return res;
+}
+
+GNode *find_node(plist_t plist, plist_type type, void *value)
+{
+	if (!plist)
+		return NULL;
+
+	GNode *current = NULL;
+	for (current = plist->children; current; current = current->next) {
+
+		struct plist_data *data = (struct plist_data *) current->data;
+
+		if (data->type == type && compare_node_value(type, data, value)) {
+			return current;
+		}
+		if (data->type == PLIST_DICT || data->type == PLIST_ARRAY || data->type == PLIST_PLIST) {
+			GNode *sub = find_node(current, type, value);
+			if (sub)
+				return sub;
+		}
+	}
+	return NULL;
+}
+
 void get_type_and_value(GNode * node, plist_type * type, void *value)
 {
 	if (!node)

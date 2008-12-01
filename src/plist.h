@@ -84,5 +84,6 @@ void xml_to_plist(const char *plist_xml, uint32_t length, plist_t * plist);
 void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist);
 
 GNode *find_query_node(plist_t plist, char *key, char *request);
+GNode *find_node(plist_t plist, plist_type type, void *value);
 void get_type_and_value(GNode * node, plist_type * type, void *value);
 #endif
