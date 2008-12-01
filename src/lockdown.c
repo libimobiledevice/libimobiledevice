@@ -662,113 +662,110 @@ iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_
  */
 iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID)
 {
-	xmlDocPtr plist = new_plist();
-	xmlNode *dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	xmlNode *key;
-	char *what2send = NULL, **dictionary = NULL;
-	uint32_t len = 0, bytes = 0, return_me = 0, i = 0;
+	plist_t plist = NULL;
+	dict_t dict = NULL;
+	char *XML_content = NULL;
+	uint32_t length = 0, bytes = 0, return_me = 0;
+
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
-	// end variables
 
-	key = add_key_str_dict_element(plist, dict, "HostID", HostID, 1);
-	if (!key) {
-		log_debug_msg("Couldn't add a key.\n");
-		xmlFreeDoc(plist);
-		return IPHONE_E_DICT_ERROR;
-	}
-	key = add_key_str_dict_element(plist, dict, "Request", "StartSession", 1);
-	if (!key) {
-		log_debug_msg("Couldn't add a key.\n");
-		xmlFreeDoc(plist);
-		return IPHONE_E_DICT_ERROR;
-	}
+	/* Setup DevicePublicKey request plist */
+	plist_new_plist(&plist);
+	plist_new_dict_in_plist(plist, &dict);
+	plist_add_dict_element(dict, "HostID", PLIST_STRING, (void *) HostID);
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartSession");
+	plist_to_xml(plist, &XML_content, &length);
+	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 
-	xmlDocDumpMemory(plist, (xmlChar **) & what2send, &len);
-	ret = iphone_lckd_send(control, what2send, len, &bytes);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
-	xmlFree(what2send);
-	xmlFreeDoc(plist);
+	xmlFree(XML_content);
+	XML_content = NULL;
+	plist_free(plist);
+	plist = NULL;
 
 	if (ret != IPHONE_E_SUCCESS)
 		return ret;
 
 	if (bytes > 0) {
-		ret = iphone_lckd_recv(control, &what2send, &len);
-		plist = xmlReadMemory(what2send, len, NULL, NULL, 0);
-		dict = xmlDocGetRootElement(plist);
-		if (!dict)
-			return IPHONE_E_DICT_ERROR;
-		for (dict = dict->children; dict; dict = dict->next) {
-			if (!xmlStrcmp(dict->name, "dict"))
-				break;
-		}
-		dictionary = read_dict_element_strings(dict);
-		xmlFreeDoc(plist);
-		free(what2send);
-		for (i = 0; dictionary[i]; i += 2) {
-			if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
-				// Set up GnuTLS...
-				//gnutls_anon_client_credentials_t anoncred;
-				gnutls_certificate_credentials_t xcred;
+		ret = iphone_lckd_recv(control, &XML_content, &bytes);
+		log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
+		xml_to_plist(XML_content, bytes, &plist);
+		if (!plist)
+			return IPHONE_E_PLIST_ERROR;
 
-				log_debug_msg("We started the session OK, now trying GnuTLS\n");
-				errno = 0;
-				gnutls_global_init();
-				//gnutls_anon_allocate_client_credentials(&anoncred);
-				gnutls_certificate_allocate_credentials(&xcred);
-				gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
-				gnutls_init(control->ssl_session, GNUTLS_CLIENT);
-				{
-					int protocol_priority[16] = { GNUTLS_SSL3, 0 };
-					int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
-					int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
-					int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
-					int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
+		plist_t query_node = find_query_node(plist, "Request", "StartSession");
+		plist_t result_key_node = g_node_next_sibling(query_node);
+		plist_t result_value_node = g_node_next_sibling(result_key_node);
 
-					gnutls_cipher_set_priority(*control->ssl_session, cipher_priority);
-					gnutls_compression_set_priority(*control->ssl_session, comp_priority);
-					gnutls_kx_set_priority(*control->ssl_session, kx_priority);
-					gnutls_protocol_set_priority(*control->ssl_session, protocol_priority);
-					gnutls_mac_set_priority(*control->ssl_session, mac_priority);
+		plist_type result_key_type;
+		plist_type result_value_type;
+		char *result_key = NULL;
+		char *result_value = NULL;
 
-				}
-				gnutls_credentials_set(*control->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
+		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
+		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
 
-				log_debug_msg("GnuTLS step 1...\n");
-				gnutls_transport_set_ptr(*control->ssl_session, (gnutls_transport_ptr_t) control);
-				log_debug_msg("GnuTLS step 2...\n");
-				gnutls_transport_set_push_function(*control->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
-				log_debug_msg("GnuTLS step 3...\n");
-				gnutls_transport_set_pull_function(*control->ssl_session, (gnutls_pull_func) & lockdownd_securead);
-				log_debug_msg("GnuTLS step 4 -- now handshaking...\n");
+		xmlFree(XML_content);
+		XML_content = NULL;
+		plist_free(plist);
+		plist = NULL;
 
-				if (errno)
-					log_debug_msg("WARN: errno says %s before handshake!\n", strerror(errno));
-				return_me = gnutls_handshake(*control->ssl_session);
-				log_debug_msg("GnuTLS handshake done...\n");
+		if (result_key_type == PLIST_KEY &&
+			result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
+			// Set up GnuTLS...
+			//gnutls_anon_client_credentials_t anoncred;
+			gnutls_certificate_credentials_t xcred;
 
-				free_dictionary(dictionary);
+			log_debug_msg("We started the session OK, now trying GnuTLS\n");
+			errno = 0;
+			gnutls_global_init();
+			//gnutls_anon_allocate_client_credentials(&anoncred);
+			gnutls_certificate_allocate_credentials(&xcred);
+			gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
+			gnutls_init(control->ssl_session, GNUTLS_CLIENT);
+			{
+				int protocol_priority[16] = { GNUTLS_SSL3, 0 };
+				int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
+				int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
+				int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
+				int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
 
-				if (return_me != GNUTLS_E_SUCCESS) {
-					log_debug_msg("GnuTLS reported something wrong.\n");
-					gnutls_perror(return_me);
-					log_debug_msg("oh.. errno says %s\n", strerror(errno));
-					return IPHONE_E_SSL_ERROR;
-				} else {
-					control->in_SSL = 1;
-					return IPHONE_E_SUCCESS;
-				}
+				gnutls_cipher_set_priority(*control->ssl_session, cipher_priority);
+				gnutls_compression_set_priority(*control->ssl_session, comp_priority);
+				gnutls_kx_set_priority(*control->ssl_session, kx_priority);
+				gnutls_protocol_set_priority(*control->ssl_session, protocol_priority);
+				gnutls_mac_set_priority(*control->ssl_session, mac_priority);
+
+			}
+			gnutls_credentials_set(*control->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
+
+			log_debug_msg("GnuTLS step 1...\n");
+			gnutls_transport_set_ptr(*control->ssl_session, (gnutls_transport_ptr_t) control);
+			log_debug_msg("GnuTLS step 2...\n");
+			gnutls_transport_set_push_function(*control->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
+			log_debug_msg("GnuTLS step 3...\n");
+			gnutls_transport_set_pull_function(*control->ssl_session, (gnutls_pull_func) & lockdownd_securead);
+			log_debug_msg("GnuTLS step 4 -- now handshaking...\n");
+
+			if (errno)
+				log_debug_msg("WARN: errno says %s before handshake!\n", strerror(errno));
+			return_me = gnutls_handshake(*control->ssl_session);
+			log_debug_msg("GnuTLS handshake done...\n");
+
+			if (return_me != GNUTLS_E_SUCCESS) {
+				log_debug_msg("GnuTLS reported something wrong.\n");
+				gnutls_perror(return_me);
+				log_debug_msg("oh.. errno says %s\n", strerror(errno));
+				return IPHONE_E_SSL_ERROR;
+			} else {
+				control->in_SSL = 1;
+				return IPHONE_E_SUCCESS;
 			}
 		}
 
 		log_debug_msg("Apparently failed negotiating with lockdownd.\n");
 		log_debug_msg("Responding dictionary: \n");
-		for (i = 0; dictionary[i]; i += 2) {
-			log_debug_msg("\t%s: %s\n", dictionary[i], dictionary[i + 1]);
-		}
-
-
-		free_dictionary(dictionary);
 		return IPHONE_E_SSL_ERROR;
 	} else {
 		log_debug_msg("Didn't get enough bytes.\n");
