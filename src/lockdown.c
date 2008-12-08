@@ -963,7 +963,7 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		if (result_key_type == PLIST_KEY &&
 			result_value_type == PLIST_STRING &&
 			port_key_type == PLIST_KEY &&
-			port_value_type == PLIST_UINT64 &&
+			port_value_type == PLIST_UINT &&
 			!strcmp(result_key, "Result") && !strcmp(result_value, "Success") && !strcmp(port_key, "Port")) {
 			port_loc = port_value;
 			ret = IPHONE_E_SUCCESS;

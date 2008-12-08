@@ -35,7 +35,7 @@ char *format_string(const char *buf, int cols, int depth);
 
 /* Binary plist stuff */
 
-
+/*
 typedef enum {
 	PLIST_BOOLEAN,
 	PLIST_UINT8,
@@ -53,6 +53,22 @@ typedef enum {
 	PLIST_PLIST,
 	PLIST_KEY,
 } plist_type;
+*/
+
+typedef enum {
+	PLIST_BOOLEAN,
+	PLIST_UINT,
+	PLIST_REAL,
+	PLIST_STRING,
+	PLIST_UNICODE,
+	PLIST_ARRAY,
+	PLIST_DICT,
+	PLIST_DATE,
+	PLIST_DATA,
+	PLIST_PLIST,
+	PLIST_KEY,
+} plist_type;
+
 
 
 typedef GNode *plist_t;
