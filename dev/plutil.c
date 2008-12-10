@@ -18,8 +18,6 @@ int main(int argc, char *argv[])
 	Options *options = parse_arguments(argc, argv);
 	int argh = 0;
 
-	printf("plistutil version 0.2 written by FxChiP\n");
-
 	if (!options) {
 		print_usage();
 		return 0;
@@ -31,26 +29,25 @@ int main(int argc, char *argv[])
 
 	stat(options->in_file, filestats);
 
-	printf("here?\n");
 	char *bplist_entire = (char *) malloc(sizeof(char) * (filestats->st_size + 1));
-	//argh = fgets(bplist_entire, filestats->st_size, bplist);
 	argh = fread(bplist_entire, sizeof(char), filestats->st_size, bplist);
-	printf("read %i bytes\n", argh);
 	fclose(bplist);
-	printf("or here?\n");
 	// bplist_entire contains our stuff
+
 	plist_t root_node = NULL;
-	bin_to_plist(bplist_entire, filestats->st_size, &root_node);
-	printf("plutil debug mode\n\n");
-	printf("file size %i\n\n", (int) filestats->st_size);
-	if (!root_node) {
-		printf("Invalid binary plist (or some other error occurred.)\n");
-		return 0;
-	}
-	char *plist_xml = NULL;
+	char *plist_out = NULL;
 	int size = 0;
-	plist_to_xml(root_node, &plist_xml, &size);
-	printf("%s\n", plist_xml);
+
+	if (memcmp(bplist_entire, "bplist00", 8) == 0) {
+		bin_to_plist(bplist_entire, filestats->st_size, &root_node);
+		plist_to_xml(root_node, &plist_out, &size);
+	} else {
+		xml_to_plist(bplist_entire, filestats->st_size, &root_node);
+		plist_to_bin(root_node, &plist_out, &size);
+	}
+
+
+	printf("%s\n", plist_out);
 	return 0;
 }
 

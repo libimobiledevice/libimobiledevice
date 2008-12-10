@@ -1014,16 +1014,16 @@ guint plist_data_hash(gconstpointer key)
 	case PLIST_REAL:
 		buff = (char *) &data->intval;
 		size = 8;
-
+		break;
 	case PLIST_KEY:
 	case PLIST_STRING:
 		buff = data->strval;
 		size = strlen(buff);
-
+		break;
 	case PLIST_UNICODE:
 		buff = data->unicodeval;
 		size = strlen(buff) * sizeof(wchar_t);
-
+		break;
 	case PLIST_DATA:
 	case PLIST_ARRAY:
 	case PLIST_DICT:
@@ -1267,7 +1267,7 @@ void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length)
 	uint8_t *buff = NULL;
 	uint8_t size = 0;
 	uint64_t offsets[num_objects];
-	for (i = 0; i <= num_objects; i++) {
+	for (i = 0; i < num_objects; i++) {
 
 		offsets[i] = bplist_buff->len;
 		struct plist_data *data = (struct plist_data *) ((GNode *) g_ptr_array_index(objects, i))->data;
