@@ -33,28 +33,6 @@
 char *format_string(const char *buf, int cols, int depth);
 
 
-/* Binary plist stuff */
-
-/*
-typedef enum {
-	PLIST_BOOLEAN,
-	PLIST_UINT8,
-	PLIST_UINT16,
-	PLIST_UINT32,
-	PLIST_UINT64,
-	PLIST_FLOAT32,
-	PLIST_FLOAT64,
-	PLIST_STRING,
-	PLIST_UNICODE,
-	PLIST_ARRAY,
-	PLIST_DICT,
-	PLIST_DATE,
-	PLIST_DATA,
-	PLIST_PLIST,
-	PLIST_KEY,
-} plist_type;
-*/
-
 typedef enum {
 	PLIST_BOOLEAN,
 	PLIST_UINT,
@@ -65,7 +43,6 @@ typedef enum {
 	PLIST_DICT,
 	PLIST_DATE,
 	PLIST_DATA,
-	PLIST_PLIST,
 	PLIST_KEY,
 } plist_type;
 
