@@ -39,34 +39,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{0, 0, 0}
 };
 
-int get_rand(int min, int max)
-{
-	int retval = (rand() % (max - min)) + min;
-	return retval;
-}
 
-/** Generates a valid HostID (which is actually a UUID).
- *
- * @param A null terminated string containing a valid HostID.
- */
-char *lockdownd_generate_hostid()
-{
-	char *hostid = (char *) malloc(sizeof(char) * 37);	// HostID's are just UUID's, and UUID's are 36 characters long
-	const char *chars = "ABCDEF0123456789";
-	srand(time(NULL));
-	int i = 0;
-
-	for (i = 0; i < 36; i++) {
-		if (i == 8 || i == 13 || i == 18 || i == 23) {
-			hostid[i] = '-';
-			continue;
-		} else {
-			hostid[i] = chars[get_rand(0, 16)];
-		}
-	}
-	hostid[36] = '\0';			// make it a real string
-	return hostid;
-}
 
 /** Creates a lockdownd client for the give iPhone.
  *

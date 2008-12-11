@@ -6,10 +6,10 @@ AM_LDFLAGS = $(libxml2_LIBS) $(libusb_LIBS) $(libglib2_LIBS) $(libgnutls_LIBS) $
 bin_PROGRAMS = libiphone-initconf
 
 
-libiphone_initconf_SOURCES = initconf.c userpref.c lockdown.c plist.c usbmux.c iphone.c utils.c
+libiphone_initconf_SOURCES = initconf.c userpref.c utils.c
 libiphone_initconf_CFLAGS = $(libgthread2_CFLAGS) $(AM_CFLAGS)
 libiphone_initconf_LDFLAGS = $(libgthread2_LIBS) $(AM_LDFLAGS)
 
 
 lib_LTLIBRARIES = libiphone.la
-libiphone_la_SOURCES = usbmux.c iphone.c plist.c lockdown.c AFC.c userpref.c utils.c
+libiphone_la_SOURCES = usbmux.c iphone.c plist.c bplist.c xplist.c lockdown.c AFC.c userpref.c utils.c

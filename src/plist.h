@@ -47,6 +47,20 @@ typedef enum {
 } plist_type;
 
 
+struct plist_data {
+	union {
+		char boolval;
+		uint64_t intval;
+		double realval;
+		char *strval;
+		wchar_t *unicodeval;
+		char *buff;
+	};
+	uint64_t length;
+	plist_type type;
+};
+
+
 
 typedef GNode *plist_t;
 typedef GNode *dict_t;
@@ -67,4 +81,5 @@ void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist);
 GNode *find_query_node(plist_t plist, char *key, char *request);
 GNode *find_node(plist_t plist, plist_type type, void *value);
 void get_type_and_value(GNode * node, plist_type * type, void *value);
+
 #endif
