@@ -29,7 +29,7 @@
 #include <stdio.h>
 
 
-void plist_new_plist(plist_t * plist)
+void plist_new_dict(plist_t * plist)
 {
 	if (*plist != NULL)
 		return;
@@ -38,7 +38,16 @@ void plist_new_plist(plist_t * plist)
 	*plist = g_node_new(data);
 }
 
-void plist_new_dict_in_plist(plist_t plist, dict_t * dict)
+void plist_new_array(plist_t * plist)
+{
+	if (*plist != NULL)
+		return;
+	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
+	data->type = PLIST_ARRAY;
+	*plist = g_node_new(data);
+}
+
+void plist_new_dict_in_plist(plist_t plist, plist_t * dict)
 {
 	if (!plist || *dict)
 		return;
@@ -49,9 +58,6 @@ void plist_new_dict_in_plist(plist_t plist, dict_t * dict)
 	g_node_append(plist, *dict);
 }
 
-void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void **values, array_t * array)
-{
-}
 
 /** Adds a new key pair to a dict.
  *
@@ -61,7 +67,7 @@ void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void *
  * @param value a pointer to the actual buffer containing the value. WARNING : the buffer is supposed to match the type of the value
  *
  */
-void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value)
+void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value)
 {
 	if (!dict || !key || !value)
 		return;
@@ -110,7 +116,7 @@ void plist_free(plist_t plist)
 	g_node_destroy(plist);
 }
 
-GNode *find_query_node(plist_t plist, char *key, char *request)
+plist_t find_query_node(plist_t plist, char *key, char *request)
 {
 	if (!plist)
 		return NULL;
@@ -167,7 +173,7 @@ char compare_node_value(plist_type type, struct plist_data *data, void *value)
 	return res;
 }
 
-GNode *find_node(plist_t plist, plist_type type, void *value)
+plist_t find_node(plist_t plist, plist_type type, void *value)
 {
 	if (!plist)
 		return NULL;
@@ -228,7 +234,10 @@ void get_type_and_value(GNode * node, plist_type * type, void *value)
 
 plist_type plist_get_node_type(plist_t node)
 {
-	return ((struct plist_data *) node->data)->type;
+	if (node && node->data)
+		return ((struct plist_data *) node->data)->type;
+	else
+		return PLIST_NONE;
 }
 
 uint64_t plist_get_node_uint_val(plist_t node)

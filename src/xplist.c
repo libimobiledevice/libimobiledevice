@@ -89,7 +89,7 @@ struct xml_node {
  * 
  * @return The plist XML document.
  */
-xmlDocPtr new_plist()
+xmlDocPtr new_xml_plist()
 {
 	char *plist = strdup(plist_base);
 	xmlDocPtr plist_xml = xmlReadMemory(plist, strlen(plist), NULL, NULL, 0);
@@ -207,7 +207,7 @@ void node_to_xml(GNode * node, gpointer xml_struct)
 	return;
 }
 
-void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
+void xml_to_node(xmlNodePtr xml_node, plist_t * plist_node)
 {
 	xmlNodePtr node = NULL;
 
@@ -220,7 +220,10 @@ void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 
 		struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 		GNode *subnode = g_node_new(data);
-		g_node_append(plist_node, subnode);
+		if (*plist_node)
+			g_node_append(*plist_node, subnode);
+		else
+			*plist_node = subnode;
 
 		if (!xmlStrcmp(node->name, "true")) {
 			data->boolval = 1;
@@ -236,7 +239,7 @@ void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 
 		if (!xmlStrcmp(node->name, "integer")) {
 			char *strval = xmlNodeGetContent(node);
-			data->intval = atoi(strval);
+			data->intval = g_ascii_strtoull(strval, NULL, 0);
 			data->type = PLIST_UINT;
 			continue;
 		}
@@ -271,13 +274,13 @@ void xml_to_node(xmlNodePtr xml_node, GNode * plist_node)
 
 		if (!xmlStrcmp(node->name, "array")) {
 			data->type = PLIST_ARRAY;
-			xml_to_node(node, subnode);
+			xml_to_node(node, &subnode);
 			continue;
 		}
 
 		if (!xmlStrcmp(node->name, "dict")) {
 			data->type = PLIST_DICT;
-			xml_to_node(node, subnode);
+			xml_to_node(node, &subnode);
 			continue;
 		}
 	}
@@ -287,10 +290,12 @@ void plist_to_xml(plist_t plist, char **plist_xml, uint32_t * length)
 {
 	if (!plist || !plist_xml || *plist_xml)
 		return;
-	xmlDocPtr plist_doc = new_plist();
+	xmlDocPtr plist_doc = new_xml_plist();
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
 	struct xml_node root = { root_node, 0 };
-	g_node_children_foreach(plist, G_TRAVERSE_ALL, node_to_xml, &root);
+
+	node_to_xml(plist, &root);
+
 	xmlDocDumpMemory(plist_doc, (xmlChar **) plist_xml, length);
 }
 
@@ -299,8 +304,5 @@ void xml_to_plist(const char *plist_xml, uint32_t length, plist_t * plist)
 	xmlDocPtr plist_doc = xmlReadMemory(plist_xml, length, NULL, NULL, 0);
 	xmlNodePtr root_node = xmlDocGetRootElement(plist_doc);
 
-	struct plist_data *data = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
-	*plist = g_node_new(data);
-	data->type = PLIST_DICT;
-	xml_to_node(root_node, *plist);
+	xml_to_node(root_node, plist);
 }

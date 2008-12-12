@@ -14,9 +14,7 @@
 int main(int argc, char *argv[])
 {
 	struct stat *filestats = (struct stat *) malloc(sizeof(struct stat));
-	uint32_t position = 0;
 	Options *options = parse_arguments(argc, argv);
-	int argh = 0;
 
 	if (!options) {
 		print_usage();
@@ -25,29 +23,42 @@ int main(int argc, char *argv[])
 
 	iphone_set_debug(options->debug);
 
-	FILE *bplist = fopen(options->in_file, "r");
-
+	//read input file
+	FILE *iplist = fopen(options->in_file, "r");
+	if (!iplist)
+		return 1;
 	stat(options->in_file, filestats);
+	char *plist_entire = (char *) malloc(sizeof(char) * (filestats->st_size + 1));
+	fread(plist_entire, sizeof(char), filestats->st_size, iplist);
+	fclose(iplist);
 
-	char *bplist_entire = (char *) malloc(sizeof(char) * (filestats->st_size + 1));
-	argh = fread(bplist_entire, sizeof(char), filestats->st_size, bplist);
-	fclose(bplist);
-	// bplist_entire contains our stuff
 
+	//convert one format to another
 	plist_t root_node = NULL;
 	char *plist_out = NULL;
 	int size = 0;
 
-	if (memcmp(bplist_entire, "bplist00", 8) == 0) {
-		bin_to_plist(bplist_entire, filestats->st_size, &root_node);
+	if (memcmp(plist_entire, "bplist00", 8) == 0) {
+		bin_to_plist(plist_entire, filestats->st_size, &root_node);
 		plist_to_xml(root_node, &plist_out, &size);
 	} else {
-		xml_to_plist(bplist_entire, filestats->st_size, &root_node);
+		xml_to_plist(plist_entire, filestats->st_size, &root_node);
 		plist_to_bin(root_node, &plist_out, &size);
 	}
 
-
-	printf("%s\n", plist_out);
+	if (plist_out) {
+		if (options->out_file != NULL) {
+			FILE *oplist = fopen(options->out_file, "wb");
+			if (!oplist)
+				return 1;
+			fwrite(plist_out, size, sizeof(char), oplist);
+			fclose(oplist);
+		}
+		//if no output file specified, write to stdout
+		else
+			fwrite(plist_out, size, sizeof(char), stdout);
+	} else
+		printf("ERROR\n");
 	return 0;
 }
 

@@ -30,8 +30,6 @@
 #include <unistd.h>
 #include <glib.h>
 
-char *format_string(const char *buf, int cols, int depth);
-
 
 typedef enum {
 	PLIST_BOOLEAN,
@@ -44,6 +42,7 @@ typedef enum {
 	PLIST_DATE,
 	PLIST_DATA,
 	PLIST_KEY,
+	PLIST_NONE
 } plist_type;
 
 
@@ -63,13 +62,12 @@ struct plist_data {
 
 
 typedef GNode *plist_t;
-typedef GNode *dict_t;
-typedef GNode *array_t;
 
-void plist_new_plist(plist_t * plist);
-void plist_new_dict_in_plist(plist_t plist, dict_t * dict);
-void plist_new_array_in_plist(plist_t plist, int length, plist_type type, void **values, array_t * array);
-void plist_add_dict_element(dict_t dict, char *key, plist_type type, void *value);
+
+void plist_new_dict(plist_t * plist);
+void plist_new_array(plist_t * plist);
+void plist_new_dict_in_plist(plist_t plist, plist_t * dict);
+void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value);
 void plist_free(plist_t plist);
 
 void plist_to_xml(plist_t plist, char **plist_xml, uint32_t * length);
@@ -78,8 +76,8 @@ void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length);
 void xml_to_plist(const char *plist_xml, uint32_t length, plist_t * plist);
 void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist);
 
-GNode *find_query_node(plist_t plist, char *key, char *request);
-GNode *find_node(plist_t plist, plist_type type, void *value);
-void get_type_and_value(GNode * node, plist_type * type, void *value);
+plist_t find_query_node(plist_t plist, char *key, char *request);
+plist_t find_node(plist_t plist, plist_type type, void *value);
+void get_type_and_value(plist_t node, plist_type * type, void *value);
 
 #endif

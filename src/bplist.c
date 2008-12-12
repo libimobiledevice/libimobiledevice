@@ -567,15 +567,15 @@ void serialize_plist(GNode * node, gpointer data)
 	return;
 }
 
-
+#define Log2(x) (x == 8 ? 3 : (x == 4 ? 2 : (x == 2 ? 1 : 0)))
 
 void write_int(GByteArray * bplist, uint64_t val)
 {
 	uint64_t size = get_needed_bytes(val);
 	uint8_t *buff = (uint8_t *) malloc(sizeof(uint8_t) + size);
-	buff[0] = BPLIST_UINT | size >> 1;
+	buff[0] = BPLIST_UINT | Log2(size);
 	memcpy(buff + 1, &val, size);
-	swap_n_bytes(buff + 1, size);
+	byte_convert(buff + 1, size);
 	g_byte_array_append(bplist, buff, sizeof(uint8_t) + size);
 	free(buff);
 }
@@ -584,9 +584,9 @@ void write_real(GByteArray * bplist, double val)
 {
 	uint64_t size = get_real_bytes(*((uint64_t *) & val));	//cheat to know used space
 	uint8_t *buff = (uint8_t *) malloc(sizeof(uint8_t) + size);
-	buff[0] = BPLIST_REAL | size >> 1;
+	buff[0] = BPLIST_REAL | Log2(size);
 	memcpy(buff + 1, &val, size);
-	swap_n_bytes(buff + 1, size);
+	byte_convert(buff + 1, size);
 	g_byte_array_append(bplist, buff, sizeof(uint8_t) + size);
 	free(buff);
 }
@@ -638,7 +638,7 @@ void write_array(GByteArray * bplist, GNode * node, GHashTable * ref_table, uint
 	for (i = 0, cur = node->children; cur && i < size; cur = cur->next, i++) {
 		idx = GPOINTER_TO_UINT(g_hash_table_lookup(ref_table, cur));
 		memcpy(buff + i * dict_param_size, &idx, dict_param_size);
-		swap_n_bytes(buff + i * dict_param_size, dict_param_size);
+		byte_convert(buff + i * dict_param_size, dict_param_size);
 	}
 
 	//now append to bplist
@@ -650,7 +650,7 @@ void write_array(GByteArray * bplist, GNode * node, GHashTable * ref_table, uint
 void write_dict(GByteArray * bplist, GNode * node, GHashTable * ref_table, uint8_t dict_param_size)
 {
 	uint64_t size = g_node_n_children(node) / 2;
-	uint8_t marker = BPLIST_ARRAY | (size < 15 ? size : 0xf);
+	uint8_t marker = BPLIST_DICT | (size < 15 ? size : 0xf);
 	g_byte_array_append(bplist, &marker, sizeof(uint8_t));
 	if (size >= 15) {
 		GByteArray *int_buff = g_byte_array_new();
@@ -668,22 +668,24 @@ void write_dict(GByteArray * bplist, GNode * node, GHashTable * ref_table, uint8
 	for (i = 0, cur = node->children; cur && i < size; cur = cur->next->next, i++) {
 		idx1 = GPOINTER_TO_UINT(g_hash_table_lookup(ref_table, cur));
 		memcpy(buff + i * dict_param_size, &idx1, dict_param_size);
-		swap_n_bytes(buff + i * dict_param_size, dict_param_size);
+		byte_convert(buff + i * dict_param_size, dict_param_size);
 
 		idx2 = GPOINTER_TO_UINT(g_hash_table_lookup(ref_table, cur->next));
 		memcpy(buff + (i + size) * dict_param_size, &idx2, dict_param_size);
-		swap_n_bytes(buff + (i + size) * dict_param_size, dict_param_size);
+		byte_convert(buff + (i + size) * dict_param_size, dict_param_size);
 	}
 
 	//now append to bplist
-	g_byte_array_append(bplist, buff, size * dict_param_size);
+	g_byte_array_append(bplist, buff, size * 2 * dict_param_size);
 	free(buff);
 
 }
 
 void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length)
 {
-	//first serialize tree
+	//check for valid input
+	if (!plist || !plist_bin || *plist_bin || !length)
+		return;
 
 	//list of objects
 	GPtrArray *objects = g_ptr_array_new();
@@ -692,7 +694,7 @@ void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length)
 
 	//serialize plist
 	struct serialize_s ser_s = { objects, ref_table };
-	g_node_children_foreach(plist, G_TRAVERSE_ALL, serialize_plist, &ser_s);
+	serialize_plist(plist, &ser_s);
 
 	//now stream to output buffer
 	uint8_t offset_size = 0;	//unknown yet
@@ -759,10 +761,11 @@ void plist_to_bin(plist_t plist, char **plist_bin, uint32_t * length)
 
 	//write offsets
 	offset_size = get_needed_bytes(bplist_buff->len);
+	offset_table_index = bplist_buff->len;
 	for (i = 0; i <= num_objects; i++) {
 		uint8_t *buff = (uint8_t *) malloc(offset_size);
 		memcpy(buff, offsets + i, offset_size);
-		swap_n_bytes(buff, offset_size);
+		byte_convert(buff, offset_size);
 		g_byte_array_append(bplist_buff, buff, offset_size);
 		free(buff);
 	}
