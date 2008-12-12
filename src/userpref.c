@@ -114,10 +114,10 @@ int is_device_known(char *uid)
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-int store_device_public_key(char *uid, char *public_key)
+int store_device_public_key(char *uid, gnutls_datum_t public_key)
 {
 
-	if (NULL == public_key || is_device_known(uid))
+	if (NULL == public_key.data || is_device_known(uid))
 		return 0;
 
 	/* ensure config directory exists */
@@ -127,15 +127,11 @@ int store_device_public_key(char *uid, char *public_key)
 	gchar *device_file = g_strconcat(uid, ".pem", NULL);
 	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
 
-	/* decode public key for storing */
-	gsize decoded_size;
-	gchar *data = g_base64_decode(public_key, &decoded_size);
 	/* store file */
 	FILE *pFile = fopen(pem, "wb");
-	fwrite(data, 1, decoded_size, pFile);
+	fwrite(public_key.data, 1, public_key.size, pFile);
 	fclose(pFile);
 	g_free(pem);
-	g_free(data);
 	g_free(device_file);
 	return 1;
 }

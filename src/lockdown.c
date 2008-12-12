@@ -180,7 +180,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	plist_t dict = NULL;
 	plist_new_dict(&dict);
 
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "QueryType");
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "QueryType", strlen("QueryType"));
 
 	log_debug_msg("lockdownd_hello() called\n");
 	char *XML_content = NULL;
@@ -190,7 +190,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
-	xmlFree(XML_content);
+	free(XML_content);
 	XML_content = NULL;
 	plist_free(dict);
 	dict = NULL;
@@ -211,9 +211,11 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 
 	char *result_value = NULL;
 	char *value_value = NULL;
+	uint64_t result_length = 0;
+	uint64_t value_length = 0;
 
-	get_type_and_value(result_node, &result_type, (void *) (&result_value));
-	get_type_and_value(value_node, &value_type, (void *) (&value_value));
+	get_type_and_value(result_node, &result_type, (void *) (&result_value), &result_length);
+	get_type_and_value(value_node, &value_type, (void *) (&value_value), &value_length);
 
 	if (result_type == PLIST_KEY &&
 		value_type == PLIST_STRING && !strcmp(result_value, "Result") && !strcmp(value_value, "Success")) {
@@ -232,9 +234,10 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string, char **value)
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string,
+										   gnutls_datum_t * value)
 {
-	if (!control || !req_key || !value || (value && *value))
+	if (!control || !req_key || !value || value->data)
 		return IPHONE_E_INVALID_ARG;
 
 	plist_t dict = NULL;
@@ -245,15 +248,15 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 
 	/* Setup DevicePublicKey request plist */
 	plist_new_dict(&dict);
-	plist_add_dict_element(dict, req_key, PLIST_STRING, (void *) req_string);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "GetValue");
+	plist_add_dict_element(dict, req_key, PLIST_STRING, (void *) req_string, strlen(req_string));
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "GetValue", strlen("GetValue"));
 	plist_to_xml(dict, &XML_content, &length);
 
 	/* send to iPhone */
 	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
-	xmlFree(XML_content);
+	free(XML_content);
 	XML_content = NULL;
 	plist_free(dict);
 	dict = NULL;
@@ -280,9 +283,11 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	plist_type result_value_type;
 	char *result_key = NULL;
 	char *result_value = NULL;
+	uint64_t result_length = 0;
+	uint64_t value_length = 0;
 
-	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
-	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
+	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &result_length);
+	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &value_length);
 
 	if (result_key_type == PLIST_KEY &&
 		result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
@@ -300,13 +305,16 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	plist_type value_value_type;
 	char *value_key = NULL;
 	char *value_value = NULL;
+	uint64_t key_length = 0;
+	uint64_t valval_length = 0;
 
-	get_type_and_value(value_key_node, &value_key_type, (void *) (&value_key));
-	get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value));
+	get_type_and_value(value_key_node, &value_key_type, (void *) (&value_key), &key_length);
+	get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value), &valval_length);
 
 	if (value_key_type == PLIST_KEY && !strcmp(result_key, "Value")) {
 		log_debug_msg("lockdownd_generic_get_value(): success\n");
-		*value = value_value;
+		value->data = value_value;
+		value->size = valval_length;
 		ret = IPHONE_E_SUCCESS;
 	}
 
@@ -323,7 +331,9 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
  */
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
 {
-	return lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", uid);
+	gnutls_datum_t temp = { NULL, 0 };
+	return lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", &temp);
+	*uid = temp.data;
 }
 
 /** Askes for the device's public key. Part of the lockdownd handshake.
@@ -332,7 +342,7 @@ iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid
  *
  * @return 1 on success and 0 on failure.
  */
-iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key)
+iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, gnutls_datum_t * public_key)
 {
 	return lockdownd_generic_get_value(control, "Key", "DevicePublicKey", public_key);
 }
@@ -410,39 +420,39 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	char *XML_content = NULL;
 	uint32_t length = 0;
 
-	char *device_cert_b64 = NULL;
-	char *host_cert_b64 = NULL;
-	char *root_cert_b64 = NULL;
-	char *public_key_b64 = NULL;
+	gnutls_datum_t device_cert = { NULL, 0 };
+	gnutls_datum_t host_cert = { NULL, 0 };
+	gnutls_datum_t root_cert = { NULL, 0 };
+	gnutls_datum_t public_key = { NULL, 0 };
 
-	ret = lockdownd_get_device_public_key(control, &public_key_b64);
+	ret = lockdownd_get_device_public_key(control, &public_key);
 	if (ret != IPHONE_E_SUCCESS) {
 		fprintf(stderr, "Device refused to send public key.\n");
 		return ret;
 	}
 
-	ret = lockdownd_gen_pair_cert(public_key_b64, &device_cert_b64, &host_cert_b64, &root_cert_b64);
+	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != IPHONE_E_SUCCESS) {
-		free(public_key_b64);
+		free(public_key.data);
 		return ret;
 	}
 
 	/* Setup Pair request plist */
 	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "PairRecord", PLIST_DICT, NULL);
+	plist_add_dict_element(dict, "PairRecord", PLIST_DICT, NULL, 0);
 	dict_record = g_node_last_child(dict);
-	plist_add_dict_element(dict_record, "DeviceCertificate", PLIST_DATA, (void *) device_cert_b64);
-	plist_add_dict_element(dict_record, "HostCertificate", PLIST_DATA, (void *) host_cert_b64);
-	plist_add_dict_element(dict_record, "HostID", PLIST_STRING, (void *) host_id);
-	plist_add_dict_element(dict_record, "RootCertificate", PLIST_DATA, (void *) root_cert_b64);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "Pair");
+	plist_add_dict_element(dict_record, "DeviceCertificate", PLIST_DATA, (void *) device_cert.data, device_cert.size);
+	plist_add_dict_element(dict_record, "HostCertificate", PLIST_DATA, (void *) host_cert.data, host_cert.size);
+	plist_add_dict_element(dict_record, "HostID", PLIST_STRING, (void *) host_id, strlen(host_id));
+	plist_add_dict_element(dict_record, "RootCertificate", PLIST_DATA, (void *) root_cert.data, root_cert.size);
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "Pair", strlen("Pair"));
 	plist_to_xml(dict, &XML_content, &length);
 	log_debug_msg("XML Pairing request :\nsize : %i\nxml :\n %s", length, XML_content);
 
 	/* send to iPhone */
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
-	xmlFree(XML_content);
+	free(XML_content);
 	plist_free(dict);
 	dict = NULL;
 
@@ -471,9 +481,11 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	plist_type result_value_type;
 	char *result_key = NULL;
 	char *result_value = NULL;
+	uint64_t key_length = 0;
+	uint64_t val_length = 0;
 
-	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
-	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
+	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
+	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
 
 	if (result_key_type == PLIST_KEY &&
 		result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
@@ -483,13 +495,13 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	/* store public key in config if pairing succeeded */
 	if (ret == IPHONE_E_SUCCESS) {
 		log_debug_msg("lockdownd_pair_device: pair success\n");
-		store_device_public_key(uid, public_key_b64);
+		store_device_public_key(uid, public_key);
 		ret = IPHONE_E_SUCCESS;
 	} else {
 		log_debug_msg("lockdownd_pair_device: pair failure\n");
 		ret = IPHONE_E_PAIRING_FAILED;
 	}
-	free(public_key_b64);
+	free(public_key.data);
 	return ret;
 }
 
@@ -498,25 +510,19 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
  * 
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64,
-									   char **root_cert_b64)
+iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * odevice_cert,
+									   gnutls_datum_t * ohost_cert, gnutls_datum_t * oroot_cert)
 {
-	if (!public_key_b64 || !device_cert_b64 || !host_cert_b64 || !root_cert_b64)
+	if (!public_key.data || !odevice_cert || !ohost_cert || !oroot_cert)
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	gnutls_datum_t modulus = { NULL, 0 };
 	gnutls_datum_t exponent = { NULL, 0 };
 
-	/* first decode base64 public_key */
-	gnutls_datum_t pem_pub_key;
-	gsize decoded_size;
-	pem_pub_key.data = g_base64_decode(public_key_b64, &decoded_size);
-	pem_pub_key.size = decoded_size;
-
 	/* now decode the PEM encoded key */
 	gnutls_datum_t der_pub_key;
-	if (GNUTLS_E_SUCCESS == gnutls_pem_base64_decode_alloc("RSA PUBLIC KEY", &pem_pub_key, &der_pub_key)) {
+	if (GNUTLS_E_SUCCESS == gnutls_pem_base64_decode_alloc("RSA PUBLIC KEY", &public_key, &der_pub_key)) {
 
 		/* initalize asn.1 parser */
 		ASN1_TYPE pkcs1 = ASN1_TYPE_EMPTY;
@@ -600,10 +606,18 @@ iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_
 				dev_pem.data = gnutls_malloc(dev_pem.size);
 				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
 
-				/* now encode certificates for output */
-				*device_cert_b64 = g_base64_encode(dev_pem.data, dev_pem.size);
-				*host_cert_b64 = g_base64_encode(pem_host_cert.data, pem_host_cert.size);
-				*root_cert_b64 = g_base64_encode(pem_root_cert.data, pem_root_cert.size);
+				/* copy buffer for output */
+				odevice_cert->data = malloc(dev_pem.size);
+				memcpy(odevice_cert->data, dev_pem.data, dev_pem.size);
+				odevice_cert->size = dev_pem.size;
+
+				ohost_cert->data = malloc(pem_host_cert.size);
+				memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
+				ohost_cert->size = pem_host_cert.size;
+
+				oroot_cert->data = malloc(pem_root_cert.size);
+				memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
+				oroot_cert->size = pem_root_cert.size;
 			}
 			gnutls_free(pem_root_priv.data);
 			gnutls_free(pem_root_cert.data);
@@ -615,7 +629,6 @@ iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_
 	gnutls_free(exponent.data);
 
 	gnutls_free(der_pub_key.data);
-	g_free(pem_pub_key.data);
 
 	return ret;
 }
@@ -637,14 +650,14 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 
 	/* Setup DevicePublicKey request plist */
 	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "HostID", PLIST_STRING, (void *) HostID);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartSession");
+	plist_add_dict_element(dict, "HostID", PLIST_STRING, (void *) HostID, strlen(HostID));
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartSession", strlen("StartSession"));
 	plist_to_xml(dict, &XML_content, &length);
 	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 
 	ret = iphone_lckd_send(control, XML_content, length, &bytes);
 
-	xmlFree(XML_content);
+	free(XML_content);
 	XML_content = NULL;
 	plist_free(dict);
 	dict = NULL;
@@ -667,11 +680,13 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		plist_type result_value_type;
 		char *result_key = NULL;
 		char *result_value = NULL;
+		uint64_t key_length = 0;
+		uint64_t val_length = 0;
 
-		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
-		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
+		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
+		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
 
-		xmlFree(XML_content);
+		free(XML_content);
 		XML_content = NULL;
 		plist_free(dict);
 		dict = NULL;
@@ -872,15 +887,15 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 	host_id = NULL;
 
 	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartService");
-	plist_add_dict_element(dict, "Service", PLIST_STRING, (void *) service);
+	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartService", strlen("StartService"));
+	plist_add_dict_element(dict, "Service", PLIST_STRING, (void *) service, strlen(service));
 	plist_to_xml(dict, &XML_content, &length);
 
 	/* send to iPhone */
 	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 	ret = iphone_lckd_send(client, XML_content, length, &bytes);
 
-	xmlFree(XML_content);
+	free(XML_content);
 	XML_content = NULL;
 	plist_free(dict);
 	dict = NULL;
@@ -916,12 +931,16 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		char *result_key = NULL;
 		char *result_value = NULL;
 		char *port_key = NULL;
+		uint64_t res_key_length = 0;
+		uint64_t res_val_length = 0;
+		uint64_t port_key_length = 0;
+		uint64_t port_val_length = 0;
 		uint64_t port_value = 0;
 
-		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key));
-		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value));
-		get_type_and_value(port_key_node, &port_key_type, (void *) (&port_key));
-		get_type_and_value(port_value_node, &port_value_type, (void *) (&port_value));
+		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &res_key_length);
+		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &res_val_length);
+		get_type_and_value(port_key_node, &port_key_type, (void *) (&port_key), &port_key_length);
+		get_type_and_value(port_value_node, &port_value_type, (void *) (&port_value), &port_val_length);
 
 		if (result_key_type == PLIST_KEY &&
 			result_value_type == PLIST_STRING &&

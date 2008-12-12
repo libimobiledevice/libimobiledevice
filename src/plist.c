@@ -67,7 +67,7 @@ void plist_new_dict_in_plist(plist_t plist, plist_t * dict)
  * @param value a pointer to the actual buffer containing the value. WARNING : the buffer is supposed to match the type of the value
  *
  */
-void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value)
+void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value, uint64_t length)
 {
 	if (!dict || !key || !value)
 		return;
@@ -81,6 +81,7 @@ void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *valu
 	//now handle value
 	struct plist_data *val = (struct plist_data *) calloc(sizeof(struct plist_data), 1);
 	val->type = type;
+	val->length = length;
 
 	switch (type) {
 	case PLIST_BOOLEAN:
@@ -99,7 +100,7 @@ void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *valu
 		val->unicodeval = wcsdup((wchar_t *) value);
 		break;
 	case PLIST_DATA:
-		val->buff = strdup((char *) value);
+		memcpy(val->buff, value, length);
 		break;
 	case PLIST_ARRAY:
 	case PLIST_DICT:
@@ -195,7 +196,7 @@ plist_t find_node(plist_t plist, plist_type type, void *value)
 	return NULL;
 }
 
-void get_type_and_value(GNode * node, plist_type * type, void *value)
+void get_type_and_value(GNode * node, plist_type * type, void *value, uint64_t * length)
 {
 	if (!node)
 		return;
@@ -203,6 +204,7 @@ void get_type_and_value(GNode * node, plist_type * type, void *value)
 	struct plist_data *data = (struct plist_data *) node->data;
 
 	*type = data->type;
+	*length = data->length;
 
 	switch (*type) {
 	case PLIST_BOOLEAN:

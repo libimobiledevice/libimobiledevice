@@ -40,7 +40,7 @@ int is_device_known(char *uid);
 /**
  * @return 1 if everything went well. Returns 0 otherwise.
  */
-int store_device_public_key(char *uid, char *public_key);
+int store_device_public_key(char *uid, gnutls_datum_t public_key);
 
 /**
  * @return 1 if everything went well. Returns 0 otherwise.

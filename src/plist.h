@@ -67,7 +67,7 @@ typedef GNode *plist_t;
 void plist_new_dict(plist_t * plist);
 void plist_new_array(plist_t * plist);
 void plist_new_dict_in_plist(plist_t plist, plist_t * dict);
-void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value);
+void plist_add_dict_element(plist_t dict, char *key, plist_type type, void *value, uint64_t length);
 void plist_free(plist_t plist);
 
 void plist_to_xml(plist_t plist, char **plist_xml, uint32_t * length);
@@ -78,6 +78,6 @@ void bin_to_plist(const char *plist_bin, uint32_t length, plist_t * plist);
 
 plist_t find_query_node(plist_t plist, char *key, char *request);
 plist_t find_node(plist_t plist, plist_type type, void *value);
-void get_type_and_value(plist_t node, plist_type * type, void *value);
+void get_type_and_value(plist_t node, plist_type * type, void *value, uint64_t * length);
 
 #endif

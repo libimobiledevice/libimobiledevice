@@ -42,13 +42,14 @@ struct iphone_lckd_client_int {
 
 iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone);
 iphone_error_t lockdownd_hello(iphone_lckd_client_t control);
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string, char **value);
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string,
+										   gnutls_datum_t * value);
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
-iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key);
+iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, gnutls_datum_t * public_key);
 
-iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64,
-									   char **root_cert_b64);
-iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *public_key, char *host_id);
+iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * device_cert,
+									   gnutls_datum_t * host_cert, gnutls_datum_t * root_cert);
+iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, char *host_id);
 void lockdownd_close(iphone_lckd_client_t control);
 
 // SSL functions

@@ -165,7 +165,9 @@ void node_to_xml(GNode * node, gpointer xml_struct)
 
 	case PLIST_DATA:
 		tag = "data";
-		val = format_string(node_data->buff, 60, xstruct->depth);
+		gchar *valtmp = g_base64_encode(node_data->buff, node_data->length);
+		val = format_string(valtmp, 60, xstruct->depth);
+		g_free(valtmp);
 		break;
 	case PLIST_ARRAY:
 		tag = "array";
@@ -267,7 +269,9 @@ void xml_to_node(xmlNodePtr xml_node, plist_t * plist_node)
 		}
 
 		if (!xmlStrcmp(node->name, "data")) {
-			data->buff = strdup(xmlNodeGetContent(node));
+			gsize size = 0;
+			data->buff = g_base64_decode(xmlNodeGetContent(node), &size);
+			data->length = size;
 			data->type = PLIST_DATA;
 			continue;
 		}
