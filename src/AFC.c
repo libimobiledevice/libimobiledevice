@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include "AFC.h"
-#include "plist.h"
 
 
 // This is the maximum size an AFC data packet can be

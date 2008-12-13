@@ -30,6 +30,8 @@
 #include <libtasn1.h>
 #include <gnutls/x509.h>
 
+#include <plist/plist.h>
+
 const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{"PKCS1", 536872976, 0},
 	{0, 1073741836, 0},
@@ -177,10 +179,9 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	int bytes = 0, i = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
-	plist_t dict = NULL;
-	plist_new_dict(&dict);
-
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "QueryType", strlen("QueryType"));
+	plist_t dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "QueryType", strlen("QueryType"));
 
 	log_debug_msg("lockdownd_hello() called\n");
 	char *XML_content = NULL;
@@ -197,14 +198,14 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 
 	ret = iphone_lckd_recv(control, &XML_content, &bytes);
 	log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
-	xml_to_plist(XML_content, bytes, &dict);
+	plist_from_xml(XML_content, bytes, &dict);
 
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
-	plist_t query_node = find_query_node(dict, "Request", "QueryType");
-	plist_t result_node = g_node_next_sibling(query_node);
-	plist_t value_node = g_node_next_sibling(result_node);
+	plist_t query_node = plist_find_node(dict, PLIST_STRING, "QueryType", strlen("QueryType"));
+	plist_t result_node = plist_get_next_sibling(query_node);
+	plist_t value_node = plist_get_next_sibling(result_node);
 
 	plist_type result_type;
 	plist_type value_type;
@@ -214,8 +215,8 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
 	uint64_t result_length = 0;
 	uint64_t value_length = 0;
 
-	get_type_and_value(result_node, &result_type, (void *) (&result_value), &result_length);
-	get_type_and_value(value_node, &value_type, (void *) (&value_value), &value_length);
+	plist_get_type_and_value(result_node, &result_type, (void *) (&result_value), &result_length);
+	plist_get_type_and_value(value_node, &value_type, (void *) (&value_value), &value_length);
 
 	if (result_type == PLIST_KEY &&
 		value_type == PLIST_STRING && !strcmp(result_value, "Result") && !strcmp(value_value, "Success")) {
@@ -247,9 +248,11 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	/* Setup DevicePublicKey request plist */
-	plist_new_dict(&dict);
-	plist_add_dict_element(dict, req_key, PLIST_STRING, (void *) req_string, strlen(req_string));
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "GetValue", strlen("GetValue"));
+	dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) req_key, strlen(req_key));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) req_string, strlen(req_string));
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "GetValue", strlen("GetValue"));
 	plist_to_xml(dict, &XML_content, &length);
 
 	/* send to iPhone */
@@ -271,13 +274,13 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	if (ret != IPHONE_E_SUCCESS)
 		return ret;
 
-	xml_to_plist(XML_content, bytes, &dict);
+	plist_from_xml(XML_content, bytes, &dict);
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
-	plist_t query_node = find_query_node(dict, "Request", "GetValue");
-	plist_t result_key_node = g_node_next_sibling(query_node);
-	plist_t result_value_node = g_node_next_sibling(result_key_node);
+	plist_t query_node = plist_find_node(dict, PLIST_STRING, "GetValue", strlen("GetValue"));
+	plist_t result_key_node = plist_get_next_sibling(query_node);
+	plist_t result_value_node = plist_get_next_sibling(result_key_node);
 
 	plist_type result_key_type;
 	plist_type result_value_type;
@@ -286,8 +289,8 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	uint64_t result_length = 0;
 	uint64_t value_length = 0;
 
-	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &result_length);
-	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &value_length);
+	plist_get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &result_length);
+	plist_get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &value_length);
 
 	if (result_key_type == PLIST_KEY &&
 		result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
@@ -299,8 +302,8 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 		return IPHONE_E_DICT_ERROR;
 	}
 
-	plist_t value_key_node = g_node_next_sibling(result_key_node);
-	plist_t value_value_node = g_node_next_sibling(value_key_node);
+	plist_t value_key_node = plist_get_next_sibling(result_key_node);
+	plist_t value_value_node = plist_get_next_sibling(value_key_node);
 	plist_type value_key_type;
 	plist_type value_value_type;
 	char *value_key = NULL;
@@ -308,8 +311,8 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *r
 	uint64_t key_length = 0;
 	uint64_t valval_length = 0;
 
-	get_type_and_value(value_key_node, &value_key_type, (void *) (&value_key), &key_length);
-	get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value), &valval_length);
+	plist_get_type_and_value(value_key_node, &value_key_type, (void *) (&value_key), &key_length);
+	plist_get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value), &valval_length);
 
 	if (value_key_type == PLIST_KEY && !strcmp(result_key, "Value")) {
 		log_debug_msg("lockdownd_generic_get_value(): success\n");
@@ -438,14 +441,19 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	}
 
 	/* Setup Pair request plist */
-	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "PairRecord", PLIST_DICT, NULL, 0);
-	dict_record = g_node_last_child(dict);
-	plist_add_dict_element(dict_record, "DeviceCertificate", PLIST_DATA, (void *) device_cert.data, device_cert.size);
-	plist_add_dict_element(dict_record, "HostCertificate", PLIST_DATA, (void *) host_cert.data, host_cert.size);
-	plist_add_dict_element(dict_record, "HostID", PLIST_STRING, (void *) host_id, strlen(host_id));
-	plist_add_dict_element(dict_record, "RootCertificate", PLIST_DATA, (void *) root_cert.data, root_cert.size);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "Pair", strlen("Pair"));
+	dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "PairRecord", strlen("PairRecord"));
+	dict_record = plist_add_sub_element(dict, PLIST_DICT, NULL, 0);
+	plist_add_sub_element(dict_record, PLIST_KEY, (void *) "DeviceCertificate", strlen("DeviceCertificate"));
+	plist_add_sub_element(dict_record, PLIST_DATA, (void *) device_cert.data, device_cert.size);
+	plist_add_sub_element(dict_record, PLIST_KEY, (void *) "HostCertificate", strlen("HostCertificate"));
+	plist_add_sub_element(dict_record, PLIST_DATA, (void *) host_cert.data, host_cert.size);
+	plist_add_sub_element(dict_record, PLIST_KEY, (void *) "HostID", strlen("HostID"));
+	plist_add_sub_element(dict_record, PLIST_STRING, (void *) host_id, strlen(host_id));
+	plist_add_sub_element(dict_record, PLIST_KEY, (void *) "RootCertificate", strlen("RootCertificate"));
+	plist_add_sub_element(dict_record, PLIST_DATA, (void *) root_cert.data, root_cert.size);
+	plist_add_sub_element(dict_record, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict_record, PLIST_STRING, (void *) "Pair", strlen("Pair"));
 	plist_to_xml(dict, &XML_content, &length);
 	log_debug_msg("XML Pairing request :\nsize : %i\nxml :\n %s", length, XML_content);
 
@@ -469,13 +477,13 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	log_debug_msg(XML_content);
 	log_debug_msg("\n\n");
 
-	xml_to_plist(XML_content, bytes, &dict);
+	plist_from_xml(XML_content, bytes, &dict);
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
-	plist_t query_node = find_query_node(dict, "Request", "Pair");
-	plist_t result_key_node = g_node_next_sibling(query_node);
-	plist_t result_value_node = g_node_next_sibling(result_key_node);
+	plist_t query_node = plist_find_node(dict, PLIST_STRING, "Pair", strlen("Pair"));
+	plist_t result_key_node = plist_get_next_sibling(query_node);
+	plist_t result_value_node = plist_get_next_sibling(result_key_node);
 
 	plist_type result_key_type;
 	plist_type result_value_type;
@@ -484,8 +492,8 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	uint64_t key_length = 0;
 	uint64_t val_length = 0;
 
-	get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
-	get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
+	plist_get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
+	plist_get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
 
 	if (result_key_type == PLIST_KEY &&
 		result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
@@ -649,9 +657,11 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	/* Setup DevicePublicKey request plist */
-	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "HostID", PLIST_STRING, (void *) HostID, strlen(HostID));
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartSession", strlen("StartSession"));
+	dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "HostID", strlen("HostID"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) HostID, strlen(HostID));
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "StartSession", strlen("StartSession"));
 	plist_to_xml(dict, &XML_content, &length);
 	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
 
@@ -668,13 +678,13 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	if (bytes > 0) {
 		ret = iphone_lckd_recv(control, &XML_content, &bytes);
 		log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
-		xml_to_plist(XML_content, bytes, &dict);
+		plist_from_xml(XML_content, bytes, &dict);
 		if (!dict)
 			return IPHONE_E_PLIST_ERROR;
 
-		plist_t query_node = find_query_node(dict, "Request", "StartSession");
-		plist_t result_key_node = g_node_next_sibling(query_node);
-		plist_t result_value_node = g_node_next_sibling(result_key_node);
+		plist_t query_node = plist_find_node(dict, PLIST_STRING, "StartSession", strlen("StartSession"));
+		plist_t result_key_node = plist_get_next_sibling(query_node);
+		plist_t result_value_node = plist_get_next_sibling(result_key_node);
 
 		plist_type result_key_type;
 		plist_type result_value_type;
@@ -683,8 +693,8 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		uint64_t key_length = 0;
 		uint64_t val_length = 0;
 
-		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
-		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
+		plist_get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
+		plist_get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
 
 		free(XML_content);
 		XML_content = NULL;
@@ -886,9 +896,11 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 	free(host_id);
 	host_id = NULL;
 
-	plist_new_dict(&dict);
-	plist_add_dict_element(dict, "Request", PLIST_STRING, (void *) "StartService", strlen("StartService"));
-	plist_add_dict_element(dict, "Service", PLIST_STRING, (void *) service, strlen(service));
+	dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "StartService", strlen("StartService"));
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Service", strlen("Service"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) service, strlen(service));
 	plist_to_xml(dict, &XML_content, &length);
 
 	/* send to iPhone */
@@ -908,7 +920,7 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 	if (IPHONE_E_SUCCESS != ret)
 		return ret;
 
-	xml_to_plist(XML_content, bytes, &dict);
+	plist_from_xml(XML_content, bytes, &dict);
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
@@ -917,12 +929,12 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	else {
 
-		plist_t query_node = find_query_node(dict, "Request", "StartService");
-		plist_t result_key_node = g_node_next_sibling(query_node);
-		plist_t result_value_node = g_node_next_sibling(result_key_node);
+		plist_t query_node = plist_find_node(dict, PLIST_STRING, "StartService", strlen("StartService"));
+		plist_t result_key_node = plist_get_next_sibling(query_node);
+		plist_t result_value_node = plist_get_next_sibling(result_key_node);
 
-		plist_t port_key_node = find_node(dict, PLIST_KEY, "Port");
-		plist_t port_value_node = g_node_next_sibling(port_key_node);
+		plist_t port_key_node = plist_find_node(dict, PLIST_KEY, "Port", strlen("Port"));
+		plist_t port_value_node = plist_get_next_sibling(port_key_node);
 
 		plist_type result_key_type;
 		plist_type result_value_type;
@@ -937,10 +949,10 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 		uint64_t port_val_length = 0;
 		uint64_t port_value = 0;
 
-		get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &res_key_length);
-		get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &res_val_length);
-		get_type_and_value(port_key_node, &port_key_type, (void *) (&port_key), &port_key_length);
-		get_type_and_value(port_value_node, &port_value_type, (void *) (&port_value), &port_val_length);
+		plist_get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &res_key_length);
+		plist_get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &res_val_length);
+		plist_get_type_and_value(port_key_node, &port_key_type, (void *) (&port_key), &port_key_length);
+		plist_get_type_and_value(port_value_node, &port_value_type, (void *) (&port_value), &port_val_length);
 
 		if (result_key_type == PLIST_KEY &&
 			result_value_type == PLIST_STRING &&

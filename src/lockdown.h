@@ -23,7 +23,6 @@
 #define LOCKDOWND_H
 
 #include "usbmux.h"
-#include "plist.h"
 
 #include <gnutls/gnutls.h>
 #include <string.h>
