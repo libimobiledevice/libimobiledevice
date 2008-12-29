@@ -20,6 +20,7 @@
  */
 
 #include "usbmux.h"
+#include "utils.h"
 #include "iphone.h"
 #include "lockdown.h"
 #include "userpref.h"

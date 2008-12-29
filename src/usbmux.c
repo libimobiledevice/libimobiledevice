@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "usbmux.h"
+#include "utils.h"
 
 static iphone_umux_client_t *connlist = NULL;
 static int clients = 0;
