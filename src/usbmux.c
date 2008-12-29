@@ -179,7 +179,7 @@ iphone_error_t iphone_mux_new_client(iphone_device_t device, uint16_t src_port, 
 iphone_error_t iphone_mux_free_client(iphone_umux_client_t client)
 {
 	if (!client || !client->phone)
-		return;
+		return IPHONE_E_INVALID_ARG;
 
 	client->header->tcp_flags = 0x04;
 	client->header->scnt = htonl(client->header->scnt);
