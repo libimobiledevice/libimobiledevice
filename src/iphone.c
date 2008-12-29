@@ -214,7 +214,7 @@ int send_to_phone(iphone_device_t phone, char *data, int datalen)
 	} else {
 		return bytes;
 	}
-
+	/* Should not be reached */
 	return -1;
 }
 
