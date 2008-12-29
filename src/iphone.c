@@ -42,7 +42,7 @@
  *      descriptor on return. 
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t * device)
+static iphone_error_t iphone_get_specific_device(unsigned int bus_n, int dev_n, iphone_device_t * device)
 {
 	struct usb_bus *bus, *busses;
 	struct usb_device *dev;

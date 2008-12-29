@@ -28,7 +28,7 @@
  * 
  * @return the HostID if exist in config file. Returns NULL otherwise.
  */
-char *get_host_id();
+char *get_host_id(void);
 
 /**
  * Determine if we already paired this device.

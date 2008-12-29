@@ -40,7 +40,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{0, 0, 0}
 };
 
-int get_rand(int min, int max)
+static int get_rand(int min, int max)
 {
 	int retval = (rand() % (max - min)) + min;
 	return retval;
@@ -50,7 +50,7 @@ int get_rand(int min, int max)
  *
  * @param A null terminated string containing a valid HostID.
  */
-char *lockdownd_generate_hostid()
+char *lockdownd_generate_hostid(void)
 {
 	char *hostid = (char *) malloc(sizeof(char) * 37);	// HostID's are just UUID's, and UUID's are 36 characters long
 	const char *chars = "ABCDEF0123456789";
@@ -256,7 +256,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string, char **value)
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, const char *req_string, char **value)
 {
 	if (!control || !req_key || !value || (value && *value))
 		return IPHONE_E_INVALID_ARG;

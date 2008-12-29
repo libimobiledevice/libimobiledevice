@@ -40,7 +40,7 @@ const char *plist_base = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
  *
  * @return The formatted string.
  */
-char *format_string(const char *buf, int cols, int depth)
+static char *format_string(const char *buf, int cols, int depth)
 {
 	int colw = depth + cols + 1;
 	int len = strlen(buf);
@@ -73,7 +73,7 @@ char *format_string(const char *buf, int cols, int depth)
  * 
  * @return The plist XML document.
  */
-xmlDocPtr new_plist()
+xmlDocPtr new_plist(void)
 {
 	char *plist = strdup(plist_base);
 	xmlDocPtr plist_xml = xmlReadMemory(plist, strlen(plist), NULL, NULL, 0);

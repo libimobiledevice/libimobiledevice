@@ -36,7 +36,7 @@
  *
  * @param key The pointer to the desired location of the new key.
  */
-void generate_key(gpointer key)
+static void generate_key(gpointer key)
 {
 	gnutls_x509_privkey_generate(*((gnutls_x509_privkey_t *) key), GNUTLS_PK_RSA, 2048, 0);
 	g_thread_exit(0);
@@ -44,7 +44,7 @@ void generate_key(gpointer key)
 
 /** Simple function that generates a spinner until the mutex is released.
  */
-void progress_bar(gpointer mutex)
+static void progress_bar(gpointer mutex)
 {
 	const char *spinner = "|/-\\|/-\\";
 	int i = 0;

@@ -31,7 +31,7 @@ xmlNode *add_key_data_dict_element(xmlDocPtr plist, xmlNode * dict, const char *
 xmlNode *add_child_to_plist(xmlDocPtr plist, const char *name, const char *content, xmlNode * to_node, int depth);
 
 void free_plist(xmlDocPtr plist);
-xmlDocPtr new_plist();
+xmlDocPtr new_plist(void);
 
 char **read_dict_element_strings(xmlNode * dict);
 void free_dictionary(char **dictionary);

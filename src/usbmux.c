@@ -58,7 +58,7 @@ usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port)
  * 
  * @return A USBMux header
  */
-usbmux_version_header *version_header()
+usbmux_version_header *version_header(void)
 {
 	usbmux_version_header *version = (usbmux_version_header *) malloc(sizeof(usbmux_version_header));
 	version->type = 0;
@@ -77,7 +77,7 @@ usbmux_version_header *version_header()
  * 
  * @param connection The connection to delete from the tracking list.
  */
-void delete_connection(iphone_umux_client_t connection)
+static void delete_connection(iphone_umux_client_t connection)
 {
 	iphone_umux_client_t *newlist = (iphone_umux_client_t *) malloc(sizeof(iphone_umux_client_t) * (clients - 1));
 	int i = 0, j = 0;
@@ -106,7 +106,7 @@ void delete_connection(iphone_umux_client_t connection)
  * @param connection The connection to add to the global list of connections.
  */
 
-void add_connection(iphone_umux_client_t connection)
+static void add_connection(iphone_umux_client_t connection)
 {
 	iphone_umux_client_t *newlist =
 		(iphone_umux_client_t *) realloc(connlist, sizeof(iphone_umux_client_t) * (clients + 1));

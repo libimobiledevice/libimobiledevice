@@ -557,7 +557,7 @@ iphone_error_t iphone_afc_mkdir(iphone_afc_client_t client, const char *dir)
  * @return A pointer to an AFCFile struct containing the information received,
  *         or NULL on failure.
  */
-iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path)
+static iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path)
 {
 	char *received, **list;
 	iphone_afc_file_t my_file;
