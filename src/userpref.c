@@ -92,9 +92,6 @@ int is_device_known(char *uid)
 {
 	int ret = 0;
 	gchar *config_file;
-	GKeyFile *key_file;
-	gchar **devices_list, **pcur, *keyfilepath, *stored_key;
-	GIOChannel *keyfile;
 
 	/* first get config file */
 	gchar *device_file = g_strconcat(uid, ".pem", NULL);

@@ -146,7 +146,7 @@ iphone_error_t iphone_get_specific_device(int bus_n, int dev_n, iphone_device_t 
  */
 iphone_error_t iphone_get_device(iphone_device_t * device)
 {
-	struct usb_bus *bus, *busses;
+	struct usb_bus *bus;
 	struct usb_device *dev;
 
 	usb_init();
