@@ -983,7 +983,7 @@ iphone_error_t iphone_afc_seek_file(iphone_afc_client_t client, iphone_afc_file_
 iphone_error_t iphone_afc_truncate_file(iphone_afc_client_t client, iphone_afc_file_t file, uint32_t newsize)
 {
 	char *buffer = (char *) malloc(sizeof(char) * 16);
-	int bytes = 0; 
+	int bytes = 0;
 	uint32 zero = 0;
 
 	afc_lock(client);

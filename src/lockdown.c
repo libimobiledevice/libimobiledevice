@@ -256,7 +256,8 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, const char *req_string, char **value)
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, const char *req_string,
+										   char **value)
 {
 	if (!control || !req_key || !value || (value && *value))
 		return IPHONE_E_INVALID_ARG;
