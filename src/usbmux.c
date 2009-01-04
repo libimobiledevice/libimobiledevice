@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "usbmux.h"
+#include "utils.h"
 
 static iphone_umux_client_t *connlist = NULL;
 static int clients = 0;
@@ -57,7 +58,7 @@ usbmux_tcp_header *new_mux_packet(uint16_t s_port, uint16_t d_port)
  * 
  * @return A USBMux header
  */
-usbmux_version_header *version_header()
+usbmux_version_header *version_header(void)
 {
 	usbmux_version_header *version = (usbmux_version_header *) malloc(sizeof(usbmux_version_header));
 	version->type = 0;
@@ -76,7 +77,7 @@ usbmux_version_header *version_header()
  * 
  * @param connection The connection to delete from the tracking list.
  */
-void delete_connection(iphone_umux_client_t connection)
+static void delete_connection(iphone_umux_client_t connection)
 {
 	iphone_umux_client_t *newlist = (iphone_umux_client_t *) malloc(sizeof(iphone_umux_client_t) * (clients - 1));
 	int i = 0, j = 0;
@@ -105,7 +106,7 @@ void delete_connection(iphone_umux_client_t connection)
  * @param connection The connection to add to the global list of connections.
  */
 
-void add_connection(iphone_umux_client_t connection)
+static void add_connection(iphone_umux_client_t connection)
 {
 	iphone_umux_client_t *newlist =
 		(iphone_umux_client_t *) realloc(connlist, sizeof(iphone_umux_client_t) * (clients + 1));
@@ -178,7 +179,7 @@ iphone_error_t iphone_mux_new_client(iphone_device_t device, uint16_t src_port, 
 iphone_error_t iphone_mux_free_client(iphone_umux_client_t client)
 {
 	if (!client || !client->phone)
-		return;
+		return IPHONE_E_INVALID_ARG;
 
 	client->header->tcp_flags = 0x04;
 	client->header->scnt = htonl(client->header->scnt);

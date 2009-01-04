@@ -23,6 +23,7 @@
 #include "AFC.h"
 
 
+
 // This is the maximum size an AFC data packet can be
 const int MAXIMUM_PACKET_SIZE = (2 << 15) - 32;
 
@@ -555,7 +556,7 @@ iphone_error_t iphone_afc_mkdir(iphone_afc_client_t client, const char *dir)
  * @return A pointer to an AFCFile struct containing the information received,
  *         or NULL on failure.
  */
-iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path)
+static iphone_afc_file_t afc_get_file_info(iphone_afc_client_t client, const char *path)
 {
 	char *received, **list;
 	iphone_afc_file_t my_file;
@@ -794,7 +795,9 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 {
 	char *acknowledgement = NULL;
 	const int MAXIMUM_WRITE_SIZE = 1 << 15;
-	uint32_t zero = 0, bytes_loc = 0, segments = (length / MAXIMUM_WRITE_SIZE), current_count = 0, i = 0;
+	uint32_t zero = 0, current_count = 0, i = 0;
+	uint32_t segments = (length / MAXIMUM_WRITE_SIZE);
+	int bytes_loc = 0;
 	char *out_buffer = NULL;
 
 	if (!client || !client->afc_packet || !client->connection || !file || !bytes)
@@ -925,7 +928,8 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 iphone_error_t iphone_afc_seek_file(iphone_afc_client_t client, iphone_afc_file_t file, int seekpos)
 {
 	char *buffer = (char *) malloc(sizeof(char) * 24);
-	uint32_t seekto = 0, bytes = 0, zero = 0;
+	uint32_t seekto = 0, zero = 0;
+	int bytes = 0;
 
 	if (seekpos < 0)
 		seekpos = file->size - abs(seekpos);
@@ -978,7 +982,8 @@ iphone_error_t iphone_afc_seek_file(iphone_afc_client_t client, iphone_afc_file_
 iphone_error_t iphone_afc_truncate_file(iphone_afc_client_t client, iphone_afc_file_t file, uint32_t newsize)
 {
 	char *buffer = (char *) malloc(sizeof(char) * 16);
-	uint32_t bytes = 0, zero = 0;
+	int bytes = 0;
+	uint32_t zero = 0;
 
 	afc_lock(client);
 

@@ -39,7 +39,7 @@
 
 /** Creates a freedesktop compatible configuration directory for libiphone.
  */
-inline void create_config_dir()
+static void create_config_dir(void)
 {
 	gchar *config_dir = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
 
@@ -56,7 +56,7 @@ inline void create_config_dir()
  *
  * @return The string containing the HostID or NULL
  */
-char *get_host_id()
+char *get_host_id(void)
 {
 	char *host_id = NULL;
 	gchar *config_file;
@@ -92,9 +92,6 @@ int is_device_known(char *uid)
 {
 	int ret = 0;
 	gchar *config_file;
-	GKeyFile *key_file;
-	gchar **devices_list, **pcur, *keyfilepath, *stored_key;
-	GIOChannel *keyfile;
 
 	/* first get config file */
 	gchar *device_file = g_strconcat(uid, ".pem", NULL);
@@ -143,7 +140,7 @@ int store_device_public_key(char *uid, gnutls_datum_t public_key)
  *
  * @return 1 if the file contents where read successfully and 0 otherwise.
  */
-int read_file_in_confdir(char *file, gnutls_datum_t * data)
+static int read_file_in_confdir(const char *file, gnutls_datum_t * data)
 {
 	gboolean success;
 	gsize size;

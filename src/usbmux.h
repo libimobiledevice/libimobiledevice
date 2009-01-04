@@ -52,7 +52,7 @@ typedef struct {
 	uint32_t type, length, major, minor, allnull;
 } usbmux_version_header;
 
-usbmux_version_header *version_header();
+usbmux_version_header *version_header(void);
 
 
 #endif

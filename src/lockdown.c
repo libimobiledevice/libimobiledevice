@@ -20,6 +20,7 @@
  */
 
 #include "usbmux.h"
+#include "utils.h"
 #include "iphone.h"
 #include "lockdown.h"
 #include "userpref.h"
@@ -40,8 +41,6 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{"publicExponent", 3, 0},
 	{0, 0, 0}
 };
-
-
 
 /** Creates a lockdownd client for the give iPhone.
  *
@@ -235,7 +234,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, char *req_key, char *req_string,
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, char *req_string,
 										   gnutls_datum_t * value)
 {
 	if (!control || !req_key || !value || value->data)
