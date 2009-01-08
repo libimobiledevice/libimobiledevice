@@ -845,6 +845,8 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		ret = iphone_lckd_recv(control, &XML_content, &bytes);
 		log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
 		plist_from_xml(XML_content, bytes, &dict);
+		free(XML_content);
+		XML_content = NULL;
 		if (!dict)
 			return IPHONE_E_PLIST_ERROR;
 
@@ -862,10 +864,6 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		plist_get_type_and_value(result_key_node, &result_key_type, (void *) (&result_key), &key_length);
 		plist_get_type_and_value(result_value_node, &result_value_type, (void *) (&result_value), &val_length);
 
-		free(XML_content);
-		XML_content = NULL;
-		plist_free(dict);
-		dict = NULL;
 		ret = IPHONE_E_SSL_ERROR;
 		if (result_key_type == PLIST_KEY &&
 			result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
@@ -934,14 +932,14 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 				// we need to store the session ID for StopSession
 				strcpy(control->session_id, session_id);
 				log_debug_msg("SessionID: %s\n", control->session_id);
-				return ret;
 			}
-		}
-
-		if (ret == IPHONE_E_SUCCESS) {
+		} else
 			log_debug_msg("Failed to get SessionID!\n");
+		plist_free(dict);
+		dict = NULL;
+
+		if (ret == IPHONE_E_SUCCESS)
 			return ret;
-		}
 
 		log_debug_msg("Apparently failed negotiating with lockdownd.\n");
 		return IPHONE_E_SSL_ERROR;
