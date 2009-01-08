@@ -182,8 +182,11 @@ iphone_error_t iphone_mux_free_client(iphone_umux_client_t client)
 		return IPHONE_E_INVALID_ARG;
 
 	client->header->tcp_flags = 0x04;
+	client->header->length = htonl(0x1C);
 	client->header->scnt = htonl(client->header->scnt);
 	client->header->ocnt = htonl(client->header->ocnt);
+	client->header->window = 0;
+	client->header->length16 = htons(0x1C);
 	int bytes = 0;
 
 	bytes = usb_bulk_write(client->phone->device, BULKOUT, (char *) client->header, sizeof(usbmux_tcp_header), 800);

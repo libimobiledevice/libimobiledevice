@@ -56,11 +56,35 @@ void log_debug_msg(const char *format, ...)
 inline void log_debug_buffer(const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
+	int i;
+	int j;
+	unsigned char c;
 
-	/* run the real fprintf */
-	if (toto_debug)
-		fwrite(data, 1, length, stderr);
-
+	if (toto_debug) {
+		for (i = 0; i < length; i += 16) {
+			fprintf(stderr, "%04x: ", i);
+			for (j = 0; j < 16; j++) {
+				if (i + j >= length) {
+					fprintf(stderr, "   ");
+					continue;
+				}
+				fprintf(stderr, "%02hhx ", *(data + i + j));
+			}
+			fprintf(stderr, "  | ");
+			for (j = 0; j < 16; j++) {
+				if (i + j >= length)
+					break;
+				c = *(data + i + j);
+				if ((c < 32) || (c > 127)) {
+					fprintf(stderr, ".");
+					continue;
+				}
+				fprintf(stderr, "%c", c);
+			}
+			fprintf(stderr, "\n");
+		}
+		fprintf(stderr, "\n");
+	}
 #endif
 }
 

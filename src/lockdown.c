@@ -65,6 +65,104 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone)
 	return control;
 }
 
+/**
+ * Closes the lockdownd communication session, by sending
+ * the StopSession Request to the device. 
+ *
+ * @param control The lockdown client
+ */
+static void iphone_lckd_stop_session(iphone_lckd_client_t control)
+{
+	if (!control)
+		return;					//IPHONE_E_INVALID_ARG;
+
+	int bytes = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "StopSession", strlen("StopSession"));
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "SessionID", strlen("SessionID"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) control->session_id, strlen(control->session_id));
+
+	log_debug_msg("iphone_lckd_stop_session() called\n");
+	char *XML_content = NULL;
+	uint32_t length = 0;
+
+	plist_to_xml(dict, &XML_content, &length);
+	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
+
+	free(XML_content);
+	XML_content = NULL;
+	plist_free(dict);
+	dict = NULL;
+
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+	log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
+	plist_from_xml(XML_content, bytes, &dict);
+
+	if (!dict) {
+		log_debug_msg("lockdownd_stop_session(): IPHONE_E_PLIST_ERROR\n");
+		return;					// IPHONE_E_PLIST_ERROR;
+	}
+
+	plist_t query_node = plist_find_node(dict, PLIST_STRING, "StopSession", strlen("StopSession"));
+	plist_t result_node = plist_get_next_sibling(query_node);
+	plist_t value_node = plist_get_next_sibling(result_node);
+
+	plist_type result_type;
+	plist_type value_type;
+
+	char *result_value = NULL;
+	char *value_value = NULL;
+	uint64_t result_length = 0;
+	uint64_t value_length = 0;
+
+	plist_get_type_and_value(result_node, &result_type, (void *) (&result_value), &result_length);
+	plist_get_type_and_value(value_node, &value_type, (void *) (&value_value), &value_length);
+
+	if (result_type == PLIST_KEY &&
+		value_type == PLIST_STRING && !strcmp(result_value, "Result") && !strcmp(value_value, "Success")) {
+		log_debug_msg("lockdownd_stop_session(): success\n");
+		ret = IPHONE_E_SUCCESS;
+	}
+
+	return;						// ret;
+}
+
+
+/**
+ * Shuts down the SSL session by first calling iphone_lckd_stop_session
+ * to cleanly close the lockdownd communication session, and then 
+ * performing a close notify, which is done by "gnutls_bye".
+ *
+ * @param client The lockdown client
+ */
+static void iphone_lckd_stop_SSL_session(iphone_lckd_client_t client)
+{
+	if (!client) {
+		log_debug_msg("lockdownd_stop_SSL_session(): invalid argument!\n");
+		return;
+	}
+
+	if (client->in_SSL) {
+		log_debug_msg("Stopping SSL Session\n");
+		iphone_lckd_stop_session(client);
+		log_debug_msg("Sending SSL close notify\n");
+		gnutls_bye(*client->ssl_session, GNUTLS_SHUT_RDWR);
+	}
+	if (client->ssl_session) {
+		gnutls_deinit(*client->ssl_session);
+		free(client->ssl_session);
+	}
+	client->in_SSL = 0;
+	client->gtls_buffer_hack_len = 0;	// dunno if required?!
+
+	return;
+}
+
+
 /** Closes the lockdownd client and does the necessary housekeeping.
  *
  * @param control The lockdown client
@@ -75,13 +173,17 @@ iphone_error_t iphone_lckd_free_client(iphone_lckd_client_t client)
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
+	iphone_lckd_stop_SSL_session(client);
+
 	if (client->connection) {
+		lockdownd_close(client);
+
+		// IMO, read of final "sessionUpcall connection closed" packet
+		//  should come here instead of in iphone_free_device
+
 		ret = iphone_mux_free_client(client->connection);
 	}
 
-	if (client->ssl_session)
-		gnutls_deinit(*client->ssl_session);
-	free(client->ssl_session);
 	free(client);
 	return ret;
 }
@@ -512,6 +614,70 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	return ret;
 }
 
+/**
+ * Performs the Goodbye Request to tell the device the communication
+ * session is now closed.
+ *
+ * @param control The lockdown client
+ */
+void lockdownd_close(iphone_lckd_client_t control)
+{
+	if (!control)
+		return;					//IPHONE_E_INVALID_ARG;
+
+	int bytes = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_add_sub_element(dict, PLIST_KEY, (void *) "Request", strlen("Request"));
+	plist_add_sub_element(dict, PLIST_STRING, (void *) "Goodbye", strlen("Goodbye"));
+
+	log_debug_msg("lockdownd_close() called\n");
+	char *XML_content = NULL;
+	uint32_t length = 0;
+
+	plist_to_xml(dict, &XML_content, &length);
+	log_debug_msg("Send msg :\nsize : %i\nxml : %s", length, XML_content);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
+
+	free(XML_content);
+	XML_content = NULL;
+	plist_free(dict);
+	dict = NULL;
+
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+	log_debug_msg("Receive msg :\nsize : %i\nxml : %s", bytes, XML_content);
+	plist_from_xml(XML_content, bytes, &dict);
+
+	if (!dict) {
+		log_debug_msg("lockdownd_close(): IPHONE_E_PLIST_ERROR\n");
+		return;					// IPHONE_E_PLIST_ERROR;
+	}
+
+	plist_t query_node = plist_find_node(dict, PLIST_STRING, "Goodbye", strlen("Goodbye"));
+	plist_t result_node = plist_get_next_sibling(query_node);
+	plist_t value_node = plist_get_next_sibling(result_node);
+
+	plist_type result_type;
+	plist_type value_type;
+
+	char *result_value = NULL;
+	char *value_value = NULL;
+	uint64_t result_length = 0;
+	uint64_t value_length = 0;
+
+	plist_get_type_and_value(result_node, &result_type, (void *) (&result_value), &result_length);
+	plist_get_type_and_value(value_node, &value_type, (void *) (&value_value), &value_length);
+
+	if (result_type == PLIST_KEY &&
+		value_type == PLIST_STRING && !strcmp(result_value, "Result") && !strcmp(value_value, "Success")) {
+		log_debug_msg("lockdownd_close(): success\n");
+		ret = IPHONE_E_SUCCESS;
+	}
+
+	return;						// ret;
+}
+
 /** Generates the device certificate from the public key as well as the host
  *  and root certificates.
  * 
@@ -654,6 +820,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	uint32_t length = 0, bytes = 0, return_me = 0;
 
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	control->session_id[0] = '\0';
 
 	/* Setup DevicePublicKey request plist */
 	dict = plist_new_dict();
@@ -699,7 +866,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		XML_content = NULL;
 		plist_free(dict);
 		dict = NULL;
-
+		ret = IPHONE_E_SSL_ERROR;
 		if (result_key_type == PLIST_KEY &&
 			result_value_type == PLIST_STRING && !strcmp(result_key, "Result") && !strcmp(result_value, "Success")) {
 			// Set up GnuTLS...
@@ -749,12 +916,34 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 				return IPHONE_E_SSL_ERROR;
 			} else {
 				control->in_SSL = 1;
-				return IPHONE_E_SUCCESS;
+				ret = IPHONE_E_SUCCESS;
+			}
+		}
+		//store session id
+		plist_t session_node = plist_find_node(dict, PLIST_KEY, "SessionID", strlen("SessionID"));
+		if (session_node) {
+
+			plist_type session_node_val_type;
+			char *session_id = NULL;
+			uint64_t session_id_length = 0;
+			plist_t session_node_val = plist_get_next_sibling(session_node);
+
+			plist_get_type_and_value(session_node_val, &session_node_val_type, (void *) (&session_id),
+									 &session_id_length);
+			if (session_node_val_type == PLIST_STRING && session_id_length > 0) {
+				// we need to store the session ID for StopSession
+				strcpy(control->session_id, session_id);
+				log_debug_msg("SessionID: %s\n", control->session_id);
+				return ret;
 			}
 		}
 
+		if (ret == IPHONE_E_SUCCESS) {
+			log_debug_msg("Failed to get SessionID!\n");
+			return ret;
+		}
+
 		log_debug_msg("Apparently failed negotiating with lockdownd.\n");
-		log_debug_msg("Responding dictionary: \n");
 		return IPHONE_E_SSL_ERROR;
 	} else {
 		log_debug_msg("Didn't get enough bytes.\n");

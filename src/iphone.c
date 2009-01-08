@@ -28,6 +28,49 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * This function sets the configuration of the given device to 3
+ * and claims the interface 1. If usb_set_configuration fails, it detaches
+ * the kernel driver that blocks the device, and retries configuration.
+ *
+ * @param phone which device to configure
+ */
+static void iphone_config_usb_device(iphone_device_t phone)
+{
+	int ret;
+
+	log_debug_msg("setting configuration... ");
+	ret = usb_set_configuration(phone->device, 3);
+	if (ret != 0) {
+		log_debug_msg("Hm, usb_set_configuration returned %d: %s, trying to fix:\n", ret, strerror(-ret));
+		log_debug_msg("-> detaching kernel driver... ");
+		ret =
+			usb_detach_kernel_driver_np(phone->device,
+										phone->__device->config->interface->altsetting->bInterfaceNumber);
+		if (ret != 0) {
+			log_debug_msg("usb_detach_kernel_driver_np returned %d: %s\n", ret, strerror(-ret));
+		} else {
+			log_debug_msg("done.\n");
+			log_debug_msg("setting configuration again... ");
+			ret = usb_set_configuration(phone->device, 3);
+			if (ret != 0) {
+				log_debug_msg("Error: usb_set_configuration returned %d: %s\n", ret, strerror(-ret));
+			} else {
+				log_debug_msg("done.\n");
+			}
+		}
+	} else {
+		log_debug_msg("done.\n");
+	}
+
+	log_debug_msg("claiming interface... ");
+	ret = usb_claim_interface(phone->device, 1);
+	if (ret != 0) {
+		log_debug_msg("Error: usb_claim_interface returned %d: %s\n", ret, strerror(-ret));
+	} else {
+		log_debug_msg("done.\n");
+	}
+}
 
 /**
  * Given a USB bus and device number, returns a device handle to the iPhone on
@@ -73,8 +116,7 @@ static iphone_error_t iphone_get_specific_device(unsigned int bus_n, int dev_n, 
 				if (dev->devnum == dev_n) {
 					phone->__device = dev;
 					phone->device = usb_open(phone->__device);
-					usb_set_configuration(phone->device, 3);
-					usb_claim_interface(phone->device, 1);
+					iphone_config_usb_device(phone);
 					goto found;
 				}
 
@@ -115,9 +157,10 @@ static iphone_error_t iphone_get_specific_device(unsigned int bus_n, int dev_n, 
 		return IPHONE_E_SUCCESS;
 	} else {
 		// Bad header
+		log_debug_msg("get_iPhone(): Received a bad header/invalid version number.\n");
+		log_debug_buffer((char *) version, sizeof(*version));
 		iphone_free_device(phone);
 		free(version);
-		log_debug_msg("get_iPhone(): Received a bad header/invalid version number.");
 		return IPHONE_E_BAD_HEADER;
 	}
 
@@ -173,13 +216,21 @@ iphone_error_t iphone_free_device(iphone_device_t device)
 	if (!device)
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	int bytes;
+	unsigned char buf[512];
+
+	// read final package
+	bytes = usb_bulk_read(device->device, BULKIN, (void *) &buf, 512, 1000);
+	if (bytes > 0) {
+		log_debug_msg("iphone_free_device: final read returned\n");
+		log_debug_buffer(buf, bytes);
+	}
 
 	if (device->buffer) {
 		free(device->buffer);
 	}
 	if (device->device) {
 		usb_release_interface(device->device, 1);
-		usb_reset(device->device);
 		usb_close(device->device);
 		ret = IPHONE_E_SUCCESS;
 	}
