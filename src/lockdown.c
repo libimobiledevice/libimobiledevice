@@ -92,6 +92,97 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone)
 	return control;
 }
 
+/**
+ * Closes the lockdownd communication session, by sending
+ * the StopSession Request to the device. 
+ *
+ * @param control The lockdown client
+ */
+static void iphone_lckd_stop_session(iphone_lckd_client_t control)
+{
+	if (!control)
+		return;					// IPHONE_E_INVALID_ARG;
+	xmlDocPtr plist = new_plist();
+	xmlNode *dict, *key;
+	char **dictionary;
+	int bytes = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	log_debug_msg("lockdownd_stop_session() called\n");
+	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
+	key = add_key_str_dict_element(plist, dict, "Request", "StopSession", 1);
+	key = add_key_str_dict_element(plist, dict, "SessionID", control->session_id, 1);
+
+	char *XML_content;
+	uint32 length;
+
+	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
+
+	xmlFree(XML_content);
+	xmlFreeDoc(plist);
+	plist = NULL;
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+
+	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	if (!plist) {
+		fprintf(stderr, "lockdownd_stop_session(): IPHONE_E_PLIST_ERROR\n");
+		return;					//IPHONE_E_PLIST_ERROR;
+	}
+	dict = xmlDocGetRootElement(plist);
+	for (dict = dict->children; dict; dict = dict->next) {
+		if (!xmlStrcmp(dict->name, "dict"))
+			break;
+	}
+	if (!dict) {
+		fprintf(stderr, "lockdownd_stop_session(): IPHONE_E_DICT_ERROR\n");
+		return;					//IPHONE_E_DICT_ERROR;
+	}
+	dictionary = read_dict_element_strings(dict);
+	xmlFreeDoc(plist);
+	free(XML_content);
+
+	for (i = 0; dictionary[i]; i += 2) {
+		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
+			log_debug_msg("lockdownd_stop_session(): success\n");
+			ret = IPHONE_E_SUCCESS;
+			break;
+		}
+	}
+
+	free_dictionary(dictionary);
+	return;						//ret;
+}
+
+/**
+ * Shuts down the SSL session by first calling iphone_lckd_stop_session
+ * to cleanly close the lockdownd communication session, and then 
+ * performing a close notify, which is done by "gnutls_bye".
+ *
+ * @param client The lockdown client
+ */
+static void iphone_lckd_stop_SSL_session(iphone_lckd_client_t client)
+{
+	if (!client) {
+		log_debug_msg("lockdownd_stop_SSL_session(): invalid argument!\n");
+		return;
+	}
+
+	if (client->in_SSL) {
+		log_debug_msg("Stopping SSL Session\n");
+		iphone_lckd_stop_session(client);
+		log_debug_msg("Sending SSL close notify\n");
+		gnutls_bye(*client->ssl_session, GNUTLS_SHUT_RDWR);
+	}
+	if (client->ssl_session) {
+		gnutls_deinit(*client->ssl_session);
+		free(client->ssl_session);
+	}
+	client->in_SSL = 0;
+	client->gtls_buffer_hack_len = 0;	// dunno if required?!
+
+	return;
+}
 
 /** Closes the lockdownd client and does the necessary housekeeping.
  *
@@ -103,13 +194,17 @@ iphone_error_t iphone_lckd_free_client(iphone_lckd_client_t client)
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
+	iphone_lckd_stop_SSL_session(client);
+
 	if (client->connection) {
+		lockdownd_close(client);
+
+		// IMO, read of final "sessionUpcall connection closed" packet
+		//  should come here instead of in iphone_free_device
+
 		ret = iphone_mux_free_client(client->connection);
 	}
 
-	if (client->ssl_session)
-		gnutls_deinit(*client->ssl_session);
-	free(client->ssl_session);
 	free(client);
 	return ret;
 }
@@ -520,6 +615,66 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	return ret;
 }
 
+/**
+ * Performs the Goodbye Request to tell the device the communication
+ * session is now closed.
+ *
+ * @param control The lockdown client
+ */
+void lockdownd_close(iphone_lckd_client_t control)
+{
+	if (!control)
+		return;					// IPHONE_E_INVALID_ARG;
+	xmlDocPtr plist = new_plist();
+	xmlNode *dict, *key;
+	char **dictionary;
+	int bytes = 0, i = 0;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	log_debug_msg("lockdownd_close() called\n");
+	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
+	key = add_key_str_dict_element(plist, dict, "Request", "Goodbye", 1);
+	char *XML_content;
+	uint32 length;
+
+	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	ret = iphone_lckd_send(control, XML_content, length, &bytes);
+
+	xmlFree(XML_content);
+	xmlFreeDoc(plist);
+	plist = NULL;
+	ret = iphone_lckd_recv(control, &XML_content, &bytes);
+
+	plist = xmlReadMemory(XML_content, bytes, NULL, NULL, 0);
+	if (!plist) {
+		fprintf(stderr, "lockdownd_close(): IPHONE_E_PLIST_ERROR\n");
+		return;					//IPHONE_E_PLIST_ERROR;
+	}
+	dict = xmlDocGetRootElement(plist);
+	for (dict = dict->children; dict; dict = dict->next) {
+		if (!xmlStrcmp(dict->name, "dict"))
+			break;
+	}
+	if (!dict) {
+		fprintf(stderr, "lockdownd_close(): IPHONE_E_DICT_ERROR\n");
+		return;					//IPHONE_E_DICT_ERROR;
+	}
+	dictionary = read_dict_element_strings(dict);
+	xmlFreeDoc(plist);
+	free(XML_content);
+
+	for (i = 0; dictionary[i]; i += 2) {
+		if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
+			log_debug_msg("lockdownd_close(): success\n");
+			ret = IPHONE_E_SUCCESS;
+			break;
+		}
+	}
+
+	free_dictionary(dictionary);
+	return;						//ret;
+}
+
 /** Generates the device certificate from the public key as well as the host
  *  and root certificates.
  * 
@@ -664,6 +819,8 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	// end variables
 
+	control->session_id[0] = '\0';
+
 	key = add_key_str_dict_element(plist, dict, "HostID", HostID, 1);
 	if (!key) {
 		log_debug_msg("Couldn't add a key.\n");
@@ -699,6 +856,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 		dictionary = read_dict_element_strings(dict);
 		xmlFreeDoc(plist);
 		free(what2send);
+		ret = IPHONE_E_SSL_ERROR;
 		for (i = 0; dictionary[i]; i += 2) {
 			if (!strcmp(dictionary[i], "Result") && !strcmp(dictionary[i + 1], "Success")) {
 				// Set up GnuTLS...
@@ -741,8 +899,6 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 				return_me = gnutls_handshake(*control->ssl_session);
 				log_debug_msg("GnuTLS handshake done...\n");
 
-				free_dictionary(dictionary);
-
 				if (return_me != GNUTLS_E_SUCCESS) {
 					log_debug_msg("GnuTLS reported something wrong.\n");
 					gnutls_perror(return_me);
@@ -750,9 +906,19 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 					return IPHONE_E_SSL_ERROR;
 				} else {
 					control->in_SSL = 1;
-					return IPHONE_E_SUCCESS;
+					ret = IPHONE_E_SUCCESS;
 				}
+			} else if (!strcmp(dictionary[i], "SessionID")) {
+				// we need to store the session ID for StopSession
+				strcpy(control->session_id, dictionary[i + 1]);
+				log_debug_msg("SessionID: %s\n", control->session_id);
+				free_dictionary(dictionary);
+				return ret;
 			}
+		}
+		if (ret == IPHONE_E_SUCCESS) {
+			log_debug_msg("Failed to get SessionID!\n");
+			return ret;
 		}
 
 		log_debug_msg("Apparently failed negotiating with lockdownd.\n");

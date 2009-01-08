@@ -38,6 +38,7 @@ struct iphone_lckd_client_int {
 	int in_SSL;
 	char *gtls_buffer_hack;
 	int gtls_buffer_hack_len;
+	char session_id[40];
 };
 
 char *lockdownd_generate_hostid(void);
