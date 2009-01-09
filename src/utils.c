@@ -23,6 +23,7 @@
 #include "utils.h"
 
 int toto_debug = 0;
+uint16_t dbg_mask = 0;
 
 /**
  * Sets the level of debugging. Currently the only acceptable values are 0 and
@@ -36,6 +37,15 @@ void iphone_set_debug(int level)
 }
 
 
+/**
+ * Set debug ids to display. Values can be OR-ed
+ *
+ * @param level Set to 0 for no debugging or 1 for debugging.
+ */
+void iphone_set_debug_mask(uint16_t mask)
+{
+	dbg_mask = mask;
+}
 
 void log_debug_msg(const char *format, ...)
 {
@@ -50,6 +60,22 @@ void log_debug_msg(const char *format, ...)
 
 	va_end(args);
 
+#endif
+}
+
+void log_dbg_msg(uint16_t id, const char *format, ...)
+{
+#ifndef STRIP_DEBUG_CODE
+
+	if (id & dbg_mask) {
+		va_list args;
+		/* run the real fprintf */
+		va_start(args, format);
+
+		vfprintf(stderr, format, args);
+
+		va_end(args);
+	}
 #endif
 }
 
