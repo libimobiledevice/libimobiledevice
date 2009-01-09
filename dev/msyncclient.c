@@ -29,6 +29,7 @@
 
 #include <libiphone/libiphone.h>
 #include "../src/MobileSync.h"
+#include "../src/utils.h"
 
 
 int main(int argc, char *argv[])
@@ -37,11 +38,9 @@ int main(int argc, char *argv[])
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
 
-	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
-		iphone_set_debug(1);
-	} else {
-		iphone_set_debug(0);
-	}
+	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
+		iphone_set_debug_mask(DBGMASK_MOBILESYNC);
+
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
@@ -58,8 +57,10 @@ int main(int argc, char *argv[])
 	if (port) {
 		iphone_msync_client_t msync = NULL;
 		iphone_msync_new_client(phone, 3432, port, &msync);
-		if (msync)
+		if (msync) {
+			iphone_msync_get_all_contacts(msync);
 			iphone_msync_free_client(msync);
+		}
 	} else {
 		printf("Start service failure.\n");
 	}

@@ -23,6 +23,9 @@
 
 #include "usbmux.h"
 #include "iphone.h"
+#include "utils.h"
+
+#include <plist/plist.h>
 
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
@@ -35,7 +38,9 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 									   iphone_msync_client_t * client);
 void iphone_msync_free_client(iphone_msync_client_t client);
 
-iphone_error_t iphone_msync_recv(iphone_msync_client_t client, char **dump_data, uint32_t * recv_bytes);
-iphone_error_t iphone_msync_send(iphone_msync_client_t client, char *raw_data, uint32_t length, uint32_t * sent_bytes);
+iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
+iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
+
+iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client);
 
 #endif

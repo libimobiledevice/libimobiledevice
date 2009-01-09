@@ -23,6 +23,7 @@
 #include <plist/plist.h>
 #include <string.h>
 
+
 #define MSYNC_VERSION_INT1 100
 #define MSYNC_VERSION_INT2 100
 
@@ -44,19 +45,10 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 		return ret;
 	}
 	//perform handshake
-	int bytes = 0;
-	char *content = NULL;
-	uint32_t length = 0;
 	plist_t array = NULL;
 
 	//first receive version
-	ret = iphone_msync_recv(client_loc, &content, &bytes);
-	log_debug_msg("Receive msg :\nsize : %i\nbuffer :\n", bytes);
-	log_debug_buffer(content, bytes);
-	plist_from_bin(content, bytes, &array);
-
-	free(content);
-	content = NULL;
+	ret = iphone_msync_recv(client_loc, &array);
 
 	plist_t msg_node =
 		plist_find_node(array, PLIST_STRING, "DLMessageVersionExchange", strlen("DLMessageVersionExchange"));
@@ -84,24 +76,12 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 			plist_add_sub_string_el(array, "DLMessageVersionExchange");
 			plist_add_sub_string_el(array, "DLVersionsOk");
 
-			plist_to_bin(array, &content, &length);
-			log_debug_msg("Send msg :\nsize : %i\nbuffer :\n", length);
-			log_debug_buffer(content, length);
-			ret = iphone_msync_send(client_loc, content, length, &bytes);
+			ret = iphone_msync_send(client_loc, array);
 
-			free(content);
-			content = NULL;
 			plist_free(array);
 			array = NULL;
 
-			ret = iphone_msync_recv(client_loc, &content, &bytes);
-			log_debug_msg("Receive msg :\nsize : %i\nbuffer :\n", bytes);
-			log_debug_buffer(content, bytes);
-			plist_from_bin(content, bytes, &array);
-
-			free(content);
-			content = NULL;
-
+			ret = iphone_msync_recv(client_loc, &array);
 			plist_t rep_node =
 				plist_find_node(array, PLIST_STRING, "DLMessageDeviceReady", strlen("DLMessageDeviceReady"));
 
@@ -109,6 +89,9 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 				ret = IPHONE_E_SUCCESS;
 				*client = client_loc;
 			}
+			plist_free(array);
+			array = NULL;
+
 		}
 	}
 
@@ -123,21 +106,11 @@ static void iphone_msync_stop_session(iphone_msync_client_t client)
 	if (!client)
 		return;
 
-	int bytes = 0;
-	char *content = NULL;
-	uint32_t length = 0;
-
 	plist_t array = plist_new_array();
 	plist_add_sub_string_el(array, "DLMessageDisconnect");
 	plist_add_sub_string_el(array, "All done, thanks for the memories");
 
-	plist_to_bin(array, &content, &length);
-	log_debug_msg("Send msg :\nsize : %i\nbuffer :\n", length);
-	log_debug_buffer(content, length);
-	iphone_msync_send(client, content, length, &bytes);
-
-	free(content);
-	content = NULL;
+	iphone_msync_send(client, array);
 	plist_free(array);
 	array = NULL;
 }
@@ -158,9 +131,9 @@ void iphone_msync_free_client(iphone_msync_client_t client)
  *
  * @return an error code
  */
-iphone_error_t iphone_msync_recv(iphone_msync_client_t client, char **dump_data, uint32_t * recv_bytes)
+iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist)
 {
-	if (!client || !dump_data || !recv_bytes)
+	if (!client || !plist || (plist && *plist))
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	char *receive;
@@ -172,8 +145,14 @@ iphone_error_t iphone_msync_recv(iphone_msync_client_t client, char **dump_data,
 	receive = (char *) malloc(sizeof(char) * datalen);
 	ret = iphone_mux_recv(client->connection, receive, datalen, &bytes);
 
-	*dump_data = receive;
-	*recv_bytes = bytes;
+	plist_from_bin(receive, bytes, plist);
+
+	char *XMLContent = NULL;
+	uint32_t length = 0;
+	plist_to_xml(*plist, &XMLContent, &length);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "Recv msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	free(XMLContent);
+
 	return ret;
 }
 
@@ -189,10 +168,22 @@ iphone_error_t iphone_msync_recv(iphone_msync_client_t client, char **dump_data,
  *
  * @return an error code
  */
-iphone_error_t iphone_msync_send(iphone_msync_client_t client, char *raw_data, uint32_t length, uint32_t * sent_bytes)
+iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist)
 {
-	if (!client || !raw_data || length == 0 || !sent_bytes)
+	if (!client || !plist)
 		return IPHONE_E_INVALID_ARG;
+
+	char *XMLContent = NULL;
+	uint32_t length = 0;
+	plist_to_xml(plist, &XMLContent, &length);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "Send msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	free(XMLContent);
+
+	char *content = NULL;
+	length = 0;
+
+	plist_to_bin(plist, &content, &length);
+
 	char *real_query;
 	int bytes;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
@@ -200,11 +191,113 @@ iphone_error_t iphone_msync_send(iphone_msync_client_t client, char *raw_data, u
 	real_query = (char *) malloc(sizeof(char) * (length + 4));
 	length = htonl(length);
 	memcpy(real_query, &length, sizeof(length));
-	memcpy(real_query + 4, raw_data, ntohl(length));
+	memcpy(real_query + 4, content, ntohl(length));
 
 	ret = iphone_mux_send(client->connection, real_query, ntohl(length) + sizeof(length), &bytes);
 	free(real_query);
-	*sent_bytes = bytes;
 	return ret;
 }
 
+iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client)
+{
+	if (!client)
+		return IPHONE_E_INVALID_ARG;
+
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	plist_t array = NULL;
+
+	array = plist_new_array();
+	plist_add_sub_string_el(array, "SDMessageSyncDataClassWithDevice");
+	plist_add_sub_string_el(array, "com.apple.Contacts");
+	plist_add_sub_string_el(array, "---");
+	plist_add_sub_string_el(array, "2009-01-09 18:03:58 +0100");
+	plist_add_sub_uint_el(array, 106);
+	plist_add_sub_string_el(array, "___EmptyParameterString___");
+
+	ret = iphone_msync_send(client, array);
+	plist_free(array);
+	array = NULL;
+
+	ret = iphone_msync_recv(client, &array);
+
+	plist_t rep_node = plist_find_node(array, PLIST_STRING, "SDSyncTypeSlow", strlen("SDSyncTypeSlow"));
+
+	if (!rep_node)
+		return ret;
+
+	plist_free(array);
+	array = NULL;
+
+	array = plist_new_array();
+	plist_add_sub_string_el(array, "SDMessageGetAllRecordsFromDevice");
+	plist_add_sub_string_el(array, "com.apple.Contacts");
+
+
+	ret = iphone_msync_send(client, array);
+	plist_free(array);
+	array = NULL;
+
+	ret = iphone_msync_recv(client, &array);
+
+	plist_t contact_node;
+	plist_t switch_node;
+
+	contact_node = plist_find_node(array, PLIST_STRING, "com.apple.Contacts", strlen("com.apple.Contacts"));
+	switch_node =
+		plist_find_node(array, PLIST_STRING, "SDMessageDeviceReadyToReceiveChanges",
+						strlen("SDMessageDeviceReadyToReceiveChanges"));
+
+	while (NULL == switch_node) {
+
+		plist_free(array);
+		array = NULL;
+
+		array = plist_new_array();
+		plist_add_sub_string_el(array, "SDMessageAcknowledgeChangesFromDevice");
+		plist_add_sub_string_el(array, "com.apple.Contacts");
+
+		ret = iphone_msync_send(client, array);
+		plist_free(array);
+		array = NULL;
+
+		ret = iphone_msync_recv(client, &array);
+
+		contact_node = plist_find_node(array, PLIST_STRING, "com.apple.Contacts", strlen("com.apple.Contacts"));
+		switch_node =
+			plist_find_node(array, PLIST_STRING, "SDMessageDeviceReadyToReceiveChanges",
+							strlen("SDMessageDeviceReadyToReceiveChanges"));
+	}
+
+	array = plist_new_array();
+	plist_add_sub_string_el(array, "DLMessagePing");
+	plist_add_sub_string_el(array, "Preparing to get changes for device");
+
+	ret = iphone_msync_send(client, array);
+	plist_free(array);
+	array = NULL;
+
+	array = plist_new_array();
+	plist_add_sub_string_el(array, "SDMessageProcessChanges");
+	plist_add_sub_string_el(array, "com.apple.Contacts");
+	plist_add_sub_node(array, plist_new_dict());
+	plist_add_sub_bool_el(array, 0);
+	plist_t dict = plist_new_dict();
+	plist_add_sub_node(array, dict);
+	plist_add_sub_key_el(dict, "SyncDeviceLinkEntityNamesKey");
+	plist_t array2 = plist_new_array();
+	plist_add_sub_string_el(array2, "com.apple.contacts.Contact");
+	plist_add_sub_string_el(array2, "com.apple.contacts.Group");
+	plist_add_sub_key_el(dict, "SyncDeviceLinkAllRecordsOfPulledEntityTypeSentKey");
+	plist_add_sub_bool_el(dict, 0);
+
+	ret = iphone_msync_send(client, array);
+	plist_free(array);
+	array = NULL;
+
+	ret = iphone_msync_recv(client, &array);
+	plist_free(array);
+	array = NULL;
+
+
+	return ret;
+}
