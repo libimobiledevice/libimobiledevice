@@ -24,6 +24,8 @@
 
 #include "libiphone/libiphone.h"
 
+#define DBGMASK_ALL        0xFFFF
+#define DBGMASK_NONE       0x0000
 #define DBGMASK_USBMUX     (1 << 1)
 #define DBGMASK_LOCKDOWND  (1 << 2)
 #define DBGMASK_MOBILESYNC (1 << 3)

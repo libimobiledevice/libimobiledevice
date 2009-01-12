@@ -29,6 +29,7 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <plist/plist.h>
 
 //general errors
 #define IPHONE_E_SUCCESS          0
@@ -88,8 +89,8 @@ iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_clie
 iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client );
 
 iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service, int *port );
-iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, char **dump_data, uint32_t *recv_bytes );
-iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, char *raw_data, uint32_t length, uint32_t *recv_bytes );
+iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, plist_t* plist);
+iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, plist_t plist);
 
 
 //usbmux related functions

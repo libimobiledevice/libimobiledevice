@@ -28,6 +28,7 @@
 #include <libxml/tree.h>
 
 #include <libiphone/libiphone.h>
+#include "../src/utils.h"
 
 
 int main(int argc, char *argv[])
@@ -38,8 +39,10 @@ int main(int argc, char *argv[])
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug(1);
+		iphone_set_debug_mask(DBGMASK_ALL);
 	} else {
 		iphone_set_debug(0);
+		iphone_set_debug_mask(DBGMASK_NONE);
 	}
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
