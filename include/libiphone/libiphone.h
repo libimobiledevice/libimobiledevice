@@ -78,6 +78,9 @@ typedef struct iphone_afc_client_int *iphone_afc_client_t;
 struct iphone_afc_file_int;
 typedef struct iphone_afc_file_int *iphone_afc_file_t;
 
+struct iphone_msync_client_int;
+typedef struct iphone_msync_client_int *iphone_msync_client_t;
+
 //device related functions
 void iphone_set_debug(int level);
 iphone_error_t iphone_get_device ( iphone_device_t *device );
@@ -119,6 +122,14 @@ iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *
 iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
 iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
 
+
+
+iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int dst_port,
+									   iphone_msync_client_t * client);
+iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
+
+iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
+iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
 
 #ifdef __cplusplus
 }

@@ -27,19 +27,12 @@
 
 #include <plist/plist.h>
 
-struct iphone_msync_client_int;
-typedef struct iphone_msync_client_int *iphone_msync_client_t;
+
 
 struct iphone_msync_client_int {
 	iphone_umux_client_t connection;
 };
 
-iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int dst_port,
-									   iphone_msync_client_t * client);
-void iphone_msync_free_client(iphone_msync_client_t client);
-
-iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
-iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
 
 iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client);
 

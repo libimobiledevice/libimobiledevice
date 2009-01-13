@@ -6,8 +6,14 @@ AC_INIT(libiphone, 0.1.0, nospam@nowhere.com)
 AM_INIT_AUTOMAKE(libiphone, 0.1.0)
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADER([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_LIBTOOL
+
+AM_PATH_PYTHON(2.3)
+AC_PROG_SWIG(1.3.21)
+SWIG_PYTHON
+
 
 # Checks for programs.
 AC_PROG_CC
@@ -60,4 +66,4 @@ if test "$no_debug_code" = true; then
 	AC_DEFINE(STRIP_DEBUG_CODE,1,[Strip debug reporting code])
 fi
 
-AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile libiphone-1.0.pc)
+AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile swig/Makefile libiphone-1.0.pc)

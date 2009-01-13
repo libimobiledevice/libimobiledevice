@@ -115,11 +115,11 @@ static void iphone_msync_stop_session(iphone_msync_client_t client)
 	array = NULL;
 }
 
-void iphone_msync_free_client(iphone_msync_client_t client)
+iphone_error_t iphone_msync_free_client(iphone_msync_client_t client)
 {
 	iphone_msync_stop_session(client);
 
-	iphone_mux_free_client(client->connection);
+	return iphone_mux_free_client(client->connection);
 }
 
 /** Polls the iPhone for MobileSync data.
