@@ -4,7 +4,7 @@
  /* Includes the header in the wrapper code */
  #include <libiphone/libiphone.h>
  #include <plist/plist.h>
-
+#include "../src/utils.h"
  typedef struct {
 	iphone_device_t dev;
  } iPhone;
@@ -17,13 +17,10 @@
  typedef struct {
 	iphone_msync_client_t client;
  } MobileSync;
-//typedef struct {
-//	plist_t node;
-//} PListNode;
  %}
 /* Parse the header file to generate wrappers */
+%include "stdint.i"
 %include "plist/swig/plist.i"
- //(module="libplist.PList")override module name until package path gets fixed in swig (1.3.37)
 
 typedef struct {
 	iphone_device_t dev;
@@ -41,10 +38,9 @@ typedef struct {
 %extend iPhone {             // Attach these functions to struct iPhone
 	iPhone() {
 		iPhone* phone = (iPhone*) malloc(sizeof(iPhone));
-		if (IPHONE_E_SUCCESS == iphone_get_device ( &phone->dev ))
-			return phone;
-		free(phone);
-		return NULL;
+		phone->dev = NULL;
+		iphone_set_debug_mask(DBGMASK_LOCKDOWND | DBGMASK_MOBILESYNC);
+		return phone;
 	}
 
 	~iPhone() {
@@ -52,9 +48,16 @@ typedef struct {
 		free($self);
 	}
 
+	int InitDevice() {
+		if (IPHONE_E_SUCCESS == iphone_get_device ( &($self->dev)))
+			return 1;
+		return 0;
+	}
+
 	Lockdownd* GetLockdownClient() {
 		Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
 		client->client = NULL;
+		client->dev = NULL;
 		if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( $self->dev , &(client->client)) ) {
 			client->dev = $self->dev;
 			return client;
@@ -69,7 +72,7 @@ typedef struct {
 		if (!phone) return NULL;
 		Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
 		client->client = NULL;
-		if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( phone->dev , &client->client)) {
+		if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( phone->dev , &(client->client))) {
 			client->dev = phone->dev;
 			return client;
 		}
@@ -101,7 +104,7 @@ typedef struct {
 		if (!phone) return NULL;
 		MobileSync* client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->client = NULL;
-		iphone_msync_new_client ( phone->dev, src_port, dst_port, &client->client);
+		iphone_msync_new_client ( phone->dev, src_port, dst_port, &(client->client));
 		return client;
 	}
 
@@ -115,7 +118,8 @@ typedef struct {
 	}
 
 	PListNode* Receive() {
-		PListNode* node = NULL;
+		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
+		node->node = NULL;
 		iphone_msync_recv($self->client, &(node->node));
 		return node;
 	}
