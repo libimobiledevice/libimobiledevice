@@ -151,7 +151,7 @@ static iphone_error_t iphone_get_specific_device(unsigned int bus_n, int dev_n, 
 	// Check for correct version
 	if (ntohl(version->major) == 1 && ntohl(version->minor) == 0) {
 		// We're all ready to roll.
-		fprintf(stderr, "get_iPhone() success\n");
+		log_debug_msg("get_iPhone() success\n");
 		free(version);
 		*device = phone;
 		return IPHONE_E_SUCCESS;
