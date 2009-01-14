@@ -52,10 +52,10 @@ extern "C" {
 typedef int16_t iphone_error_t;
 
 typedef enum {
-	IPHONE_AFC_FILE_READ = 0x00000002, // seems to be able to read and write files
-	IPHONE_AFC_FILE_WRITE = 0x00000003, // writes and creates a file, blanks it out, etc.
-	IPHONE_AFC_FILE_RW = 0x00000005, // seems to do the same as 2. Might even create the file. 
-	IPHONE_AFC_FILE_OP4 = 0x00000004, // no idea -- appears to be "write" -- clears file beforehand like 3
+	IPHONE_AFC_FILE_READ = 0x00000001, // seems to be able to read and write files
+	IPHONE_AFC_FILE_WRITE = 0x00000002, // writes and creates a file, blanks it out, etc.
+	IPHONE_AFC_FILE_RW = 0x00000003, // seems to do the same as 2. Might even create the file. 
+	IPHONE_AFC_FILE_CREAT = 0x00000004, // no idea -- appears to be "write" -- clears file beforehand like 3
 	IPHONE_AFC_FILE_OP6 = 0x00000006, // no idea yet -- appears to be the same as 5.
 	IPHONE_AFC_FILE_OP1 = 0x00000001, // no idea juuust yet... probably read.
 	IPHONE_AFC_FILE_OP0 = 0x00000000,
