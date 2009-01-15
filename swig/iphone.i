@@ -10,13 +10,21 @@
  } iPhone;
 
  typedef struct {
-	iphone_device_t dev;
+	iPhone* dev;
 	iphone_lckd_client_t client;
  } Lockdownd;
 
  typedef struct {
+	Lockdownd* lckd;
 	iphone_msync_client_t client;
  } MobileSync;
+
+//now declare funtions to handle creation and deletion of objects
+void my_delete_iPhone(iPhone* dev);
+Lockdownd* my_new_Lockdownd(iPhone* phone);
+void my_delete_Lockdownd(Lockdownd* lckd);
+MobileSync* my_new_MobileSync(Lockdownd* lckd);
+
  %}
 /* Parse the header file to generate wrappers */
 %include "stdint.i"
@@ -27,13 +35,63 @@ typedef struct {
 } iPhone;
 
 typedef struct {
-	iphone_device_t dev;
+	iPhone* dev;
 	iphone_lckd_client_t client;
 } Lockdownd;
 
 typedef struct {
+	Lockdownd* lckd;
 	iphone_msync_client_t client;
 } MobileSync;
+
+%inline %{
+//now define funtions to handle creation and deletion of objects
+
+
+void my_delete_iPhone(iPhone* dev) {
+	if (dev) {
+		iphone_free_device ( dev->dev );
+		free(dev);
+	}
+}
+
+Lockdownd* my_new_Lockdownd(iPhone* phone) {
+	if (!phone) return NULL;
+	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
+	client->dev = phone;
+	client->client = NULL;
+	if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( phone->dev , &(client->client))) {
+		return client;
+	}
+	else {
+		free(client);
+		return NULL;
+	}
+}
+
+void my_delete_Lockdownd(Lockdownd* lckd) {
+	if (lckd) {
+		my_delete_iPhone(lckd->dev);
+		iphone_lckd_free_client ( lckd->client );
+		free(lckd);
+	}
+}
+
+MobileSync* my_new_MobileSync(Lockdownd* lckd) {
+	if (!lckd || !lckd->dev) return NULL;
+	MobileSync* client = NULL;
+	int port = 0;
+	if (IPHONE_E_SUCCESS == iphone_lckd_start_service ( lckd->client, "com.apple.mobilesync", &port )) {
+		client = (MobileSync*) malloc(sizeof(MobileSync));
+		client->lckd = lckd;
+		client->client = NULL;
+		iphone_msync_new_client ( lckd->dev->dev, 3432, port, &(client->client));
+	}
+	return client;
+}
+
+%}
+
 
 %extend iPhone {             // Attach these functions to struct iPhone
 	iPhone() {
@@ -44,8 +102,7 @@ typedef struct {
 	}
 
 	~iPhone() {
-		iphone_free_device ( $self->dev );
-		free($self);
+		my_delete_iPhone($self);
 	}
 
 	int InitDevice() {
@@ -55,60 +112,32 @@ typedef struct {
 	}
 
 	Lockdownd* GetLockdownClient() {
-		Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
-		client->client = NULL;
-		client->dev = NULL;
-		if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( $self->dev , &(client->client)) ) {
-			client->dev = $self->dev;
-			return client;
-		}
-		free(client);
-		return NULL;
+		return my_new_Lockdownd($self);
 	}
 };
 
+
 %extend Lockdownd {             // Attach these functions to struct Lockdownd
 	Lockdownd(iPhone* phone) {
-		if (!phone) return NULL;
-		Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
-		client->client = NULL;
-		if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( phone->dev , &(client->client))) {
-			client->dev = phone->dev;
-			return client;
-		}
-		else {
-			free(client);
-			return NULL;
-		}
+		return my_new_Lockdownd(phone);
 	}
 
 	~Lockdownd() {
-		iphone_lckd_free_client ( $self->client );
-		free($self);
+		my_delete_Lockdownd($self);
 	}
 
 	MobileSync* GetMobileSyncClient() {
-		int port = 0;
-		if (IPHONE_E_SUCCESS == iphone_lckd_start_service ( $self->client, "com.apple.mobilesync", &port )) {
-			MobileSync* client = (MobileSync*) malloc(sizeof(MobileSync));
-			client->client = NULL;
-			if (IPHONE_E_SUCCESS == iphone_msync_new_client ( $self->dev, 3432, port, &(client->client)))
-				return client;
-		}
-		return NULL;
+		return my_new_MobileSync($self);
 	}
 };
 
 %extend MobileSync {             // Attach these functions to struct MobileSync
-	MobileSync(iPhone* phone, int src_port, int dst_port) {
-		if (!phone) return NULL;
-		MobileSync* client = (MobileSync*) malloc(sizeof(MobileSync));
-		client->client = NULL;
-		iphone_msync_new_client ( phone->dev, src_port, dst_port, &(client->client));
-		return client;
+	MobileSync(Lockdownd* lckd) {
+		return my_new_MobileSync(lckd);
 	}
 
 	~MobileSync() {
+		my_delete_Lockdownd($self->lckd);
 		iphone_msync_free_client ( $self->client );
 		free($self);
 	}
