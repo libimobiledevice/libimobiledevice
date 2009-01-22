@@ -28,8 +28,6 @@
 #include <libxml/tree.h>
 
 #include <libiphone/libiphone.h>
-#include "../src/MobileSync.h"
-#include "../src/utils.h"
 
 
 int main(int argc, char *argv[])

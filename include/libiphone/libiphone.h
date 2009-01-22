@@ -81,8 +81,17 @@ typedef struct iphone_afc_file_int *iphone_afc_file_t;
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
 
-//device related functions
+//debug related functions
+#define DBGMASK_ALL        0xFFFF
+#define DBGMASK_NONE       0x0000
+#define DBGMASK_USBMUX     (1 << 1)
+#define DBGMASK_LOCKDOWND  (1 << 2)
+#define DBGMASK_MOBILESYNC (1 << 3)
+
+void iphone_set_debug_mask(uint16_t mask);
 void iphone_set_debug(int level);
+
+//device related functions
 iphone_error_t iphone_get_device ( iphone_device_t *device );
 iphone_error_t iphone_free_device ( iphone_device_t device );
 

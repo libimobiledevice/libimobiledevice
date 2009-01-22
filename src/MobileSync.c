@@ -51,7 +51,7 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 	ret = iphone_msync_recv(client_loc, &array);
 
 	plist_t msg_node =
-		plist_find_node(array, PLIST_STRING, "DLMessageVersionExchange", strlen("DLMessageVersionExchange"));
+		plist_find_node_by_string(array, "DLMessageVersionExchange");
 	plist_t ver_1 = plist_get_next_sibling(msg_node);
 	plist_t ver_2 = plist_get_next_sibling(ver_1);
 
@@ -83,7 +83,7 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 
 			ret = iphone_msync_recv(client_loc, &array);
 			plist_t rep_node =
-				plist_find_node(array, PLIST_STRING, "DLMessageDeviceReady", strlen("DLMessageDeviceReady"));
+				plist_find_node_by_string(array, "DLMessageDeviceReady");
 
 			if (rep_node) {
 				ret = IPHONE_E_SUCCESS;
@@ -117,8 +117,10 @@ static void iphone_msync_stop_session(iphone_msync_client_t client)
 
 iphone_error_t iphone_msync_free_client(iphone_msync_client_t client)
 {
-	iphone_msync_stop_session(client);
+	if (!client)
+		return IPHONE_E_INVALID_ARG;
 
+	iphone_msync_stop_session(client);
 	return iphone_mux_free_client(client->connection);
 }
 

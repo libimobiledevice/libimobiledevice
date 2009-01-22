@@ -313,6 +313,7 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 		} else {
 			memcpy(data, client->recv_buffer, client->r_len);
 			free(client->recv_buffer);	// don't need to deal with anymore, but...
+			client->recv_buffer = NULL;
 			offset = client->r_len;	// see #2b, above
 			client->r_len = 0;
 		}
