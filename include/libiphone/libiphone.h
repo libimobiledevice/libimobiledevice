@@ -84,6 +84,7 @@ iphone_error_t iphone_free_device ( iphone_device_t device );
 
 
 //lockdownd related functions
+iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
 iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client );
 iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client );
 

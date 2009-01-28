@@ -47,7 +47,6 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone);
 iphone_error_t lockdownd_hello(iphone_lckd_client_t control);
 iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, const char *req_string,
 										   char **value);
-iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
 iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, char **public_key);
 
 iphone_error_t lockdownd_gen_pair_cert(char *public_key_b64, char **device_cert_b64, char **host_cert_b64,
