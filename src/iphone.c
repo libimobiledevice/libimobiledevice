@@ -38,6 +38,8 @@
 static void iphone_config_usb_device(iphone_device_t phone)
 {
 	int ret;
+	int bytes;
+	unsigned char buf[512];
 
 	log_debug_msg("setting configuration... ");
 	ret = usb_set_configuration(phone->device, 3);
@@ -70,6 +72,14 @@ static void iphone_config_usb_device(iphone_device_t phone)
 	} else {
 		log_debug_msg("done.\n");
 	}
+
+	do {
+		bytes = usb_bulk_read(phone->device, BULKIN, (void *) &buf, 512, 800);
+		if (bytes > 0) {
+			log_debug_msg("iphone_config_usb_device: initial read returned %d bytes of data.\n", bytes);
+			log_debug_buffer(buf, bytes);
+		}
+	} while (bytes > 0);
 }
 
 /**
@@ -219,12 +229,14 @@ iphone_error_t iphone_free_device(iphone_device_t device)
 	int bytes;
 	unsigned char buf[512];
 
-	// read final package
-	bytes = usb_bulk_read(device->device, BULKIN, (void *) &buf, 512, 1000);
-	if (bytes > 0) {
-		log_debug_msg("iphone_free_device: final read returned\n");
-		log_debug_buffer(buf, bytes);
-	}
+	// read final package(s)
+	do {
+		bytes = usb_bulk_read(device->device, BULKIN, (void *) &buf, 512, 800);
+		if (bytes > 0) {
+			log_debug_msg("iphone_free_device: final read returned\n");
+			log_debug_buffer(buf, bytes);
+		}
+	} while (bytes > 0);
 
 	if (device->buffer) {
 		free(device->buffer);
