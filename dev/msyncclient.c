@@ -24,9 +24,6 @@
 #include <errno.h>
 #include <usb.h>
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-
 #include <libiphone/libiphone.h>
 
 
