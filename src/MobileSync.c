@@ -222,7 +222,7 @@ iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client)
 
 	ret = iphone_msync_recv(client, &array);
 
-	plist_t rep_node = plist_find_node(array, PLIST_STRING, "SDSyncTypeSlow", strlen("SDSyncTypeSlow"));
+	plist_t rep_node = plist_find_node_by_string(array, "SDSyncTypeSlow");
 
 	if (!rep_node)
 		return ret;
@@ -244,10 +244,9 @@ iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client)
 	plist_t contact_node;
 	plist_t switch_node;
 
-	contact_node = plist_find_node(array, PLIST_STRING, "com.apple.Contacts", strlen("com.apple.Contacts"));
+	contact_node = plist_find_node_by_string(array, "com.apple.Contacts");
 	switch_node =
-		plist_find_node(array, PLIST_STRING, "SDMessageDeviceReadyToReceiveChanges",
-						strlen("SDMessageDeviceReadyToReceiveChanges"));
+		plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
 
 	while (NULL == switch_node) {
 
@@ -264,10 +263,8 @@ iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client)
 
 		ret = iphone_msync_recv(client, &array);
 
-		contact_node = plist_find_node(array, PLIST_STRING, "com.apple.Contacts", strlen("com.apple.Contacts"));
-		switch_node =
-			plist_find_node(array, PLIST_STRING, "SDMessageDeviceReadyToReceiveChanges",
-							strlen("SDMessageDeviceReadyToReceiveChanges"));
+		contact_node = plist_find_node_by_string(array, "com.apple.Contacts");
+		switch_node = plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
 	}
 
 	array = plist_new_array();

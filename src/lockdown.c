@@ -411,15 +411,15 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 		if (!strcmp(result_key, "Value")) {
 			log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_generic_get_value(): success\n");
 
-			plist_type value_value_type;
-			char *value_value = NULL;
-			uint64_t valval_length = 0;
+			plist_type value_value_type = plist_get_node_type(value_value_node);
+			if (PLIST_STRING == value_value_type) {
+				char *value_value = NULL;
+				plist_get_string_val(value_value_node, &value_value);
 
-			plist_get_type_and_value(value_value_node, &value_value_type, (void *) (&value_value), &valval_length);
-
-			value->data = value_value;
-			value->size = valval_length;
-			ret = IPHONE_E_SUCCESS;
+				value->data = value_value;
+				value->size = strlen(value_value);
+				ret = IPHONE_E_SUCCESS;
+			}
 		}
 		free(result_key);
 	}
@@ -825,7 +825,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
-	plist_t query_node = plist_find_node(dict, PLIST_STRING, "StartSession", strlen("StartSession"));
+	plist_t query_node = plist_find_node_by_string(dict, "StartSession");
 	plist_t result_key_node = plist_get_next_sibling(query_node);
 	plist_t result_value_node = plist_get_next_sibling(result_key_node);
 
