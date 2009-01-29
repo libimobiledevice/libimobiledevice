@@ -227,7 +227,7 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 	iphone_mux_recv(client->connection, buffer, sizeof(AFCPacket) * 4, &bytes);
 	if (bytes <= 0) {
 		free(buffer);
-		fprintf(stderr, "Just didn't get enough.\n");
+		log_debug_msg("Just didn't get enough.\n");
 		*dump_here = NULL;
 		return -1;
 	}

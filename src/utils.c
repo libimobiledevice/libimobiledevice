@@ -66,7 +66,6 @@ void log_debug_msg(const char *format, ...)
 void log_dbg_msg(uint16_t id, const char *format, ...)
 {
 #ifndef STRIP_DEBUG_CODE
-
 	if (id & dbg_mask) {
 		va_list args;
 		/* run the real fprintf */

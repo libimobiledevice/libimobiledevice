@@ -77,7 +77,6 @@ static void iphone_lckd_stop_session(iphone_lckd_client_t control)
 	if (!control)
 		return;					//IPHONE_E_INVALID_ARG;
 
-	int bytes = 0, i = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
@@ -128,7 +127,6 @@ static void iphone_lckd_stop_session(iphone_lckd_client_t control)
 	return;						// ret;
 }
 
-
 /**
  * Shuts down the SSL session by first calling iphone_lckd_stop_session
  * to cleanly close the lockdownd communication session, and then 
@@ -158,7 +156,6 @@ static void iphone_lckd_stop_SSL_session(iphone_lckd_client_t client)
 
 	return;
 }
-
 
 /** Closes the lockdownd client and does the necessary housekeeping.
  *
@@ -471,7 +468,7 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 
 	iphone_lckd_client_t client_loc = new_lockdownd_client(device);
 	if (IPHONE_E_SUCCESS != lockdownd_hello(client_loc)) {
-		fprintf(stderr, "Hello failed in the lockdownd client.\n");
+		log_debug_msg("Hello failed in the lockdownd client.\n");
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
@@ -479,12 +476,12 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 	char *uid = NULL;
 	ret = lockdownd_get_device_uid(client_loc, &uid);
 	if (IPHONE_E_SUCCESS != ret) {
-		fprintf(stderr, "Device refused to send uid.\n");
+		log_debug_msg("Device refused to send uid.\n");
 	}
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
-		fprintf(stderr, "No HostID found, run libiphone-initconf.\n");
+		log_debug_msg("No HostID found, run libiphone-initconf.\n");
 		ret = IPHONE_E_INVALID_CONF;
 	}
 
@@ -499,7 +496,7 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 	ret = lockdownd_start_SSL_session(client_loc, host_id);
 	if (IPHONE_E_SUCCESS != ret) {
 		ret = IPHONE_E_SSL_ERROR;
-		fprintf(stderr, "SSL Session opening failed.\n");
+		log_debug_msg("SSL Session opening failed.\n");
 	}
 
 	if (host_id) {
@@ -532,7 +529,7 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 
 	ret = lockdownd_get_device_public_key(control, &public_key);
 	if (ret != IPHONE_E_SUCCESS) {
-		fprintf(stderr, "Device refused to send public key.\n");
+		log_debug_msg("Device refused to send public key.\n");
 		return ret;
 	}
 
@@ -804,8 +801,7 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID)
 {
 	plist_t dict = NULL;
-	char *XML_content = NULL;
-	uint32_t length = 0, bytes = 0, return_me = 0;
+	uint32_t  return_me = 0;
 
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	control->session_id[0] = '\0';
