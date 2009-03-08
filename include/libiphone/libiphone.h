@@ -118,6 +118,7 @@ iphone_error_t iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc
 iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *path);
 iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
 iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
+iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path, off_t newsize);
 
 
 #ifdef __cplusplus
