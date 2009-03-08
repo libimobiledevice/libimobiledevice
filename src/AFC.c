@@ -917,6 +917,63 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 	return IPHONE_E_SUCCESS;
 }
 
+/** Locks or unlocks a file on the phone. 
+ *
+ * makes use of flock, see
+ * http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
+ *
+ * operation (same as in sys/file.h on linux):
+ *
+ * LOCK_SH   1    // shared lock
+ * LOCK_EX   2   // exclusive lock
+ * LOCK_NB   4   // don't block when locking
+ * LOCK_UN   8   // unlock
+ *
+ * @param client The client to close the file with.
+ * @param file A pointer to an AFCFile struct containing the file handle of the
+ *        file to close.
+ * @operation the lock or unlock operation to perform.
+ */
+iphone_error_t iphone_afc_lock_file(iphone_afc_client_t client, iphone_afc_file_t file, int operation)
+{
+	if (!client || !file)
+		return IPHONE_E_INVALID_ARG;
+	char *buffer = malloc(16);
+	uint32 zero = 0;
+	int bytes = 0;
+	uint64_t op = operation;
+
+	afc_lock(client);
+
+	log_debug_msg("afc_lock_file: File handle %i\n", file->filehandle);
+
+	// Send command
+	memcpy(buffer, &file->filehandle, sizeof(uint32));
+	memcpy(buffer + sizeof(uint32), &zero, sizeof(zero));
+	memcpy(buffer + 8, &op, 8);
+
+	client->afc_packet->operation = AFC_FILE_LOCK;
+	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	bytes = dispatch_AFC_packet(client, buffer, 15);
+	free(buffer);
+	buffer = NULL;
+
+	if (bytes <= 0) {
+		afc_unlock(client);
+		log_debug_msg("fuck\n");
+		return IPHONE_E_UNKNOWN_ERROR;
+	}
+	// Receive the response
+	bytes = receive_AFC_data(client, &buffer);
+	log_debug_msg("%s: receiving response (%d bytes)\n", __func__, bytes);
+	if (buffer) {
+		log_debug_buffer(buffer, bytes);
+		free(buffer);
+	}
+	afc_unlock(client);
+	return IPHONE_E_SUCCESS;
+}
+
 /** Seeks to a given position of a pre-opened file on the phone. 
  * 
  * @param client The client to use to seek to the position.

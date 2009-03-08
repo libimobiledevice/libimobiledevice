@@ -12,4 +12,4 @@ libiphone_initconf_LDFLAGS = $(libgthread2_LIBS) $(AM_LDFLAGS)
 
 
 lib_LTLIBRARIES = libiphone.la
-libiphone_la_SOURCES = usbmux.c iphone.c plist.c lockdown.c AFC.c userpref.c utils.c
+libiphone_la_SOURCES = usbmux.c iphone.c plist.c lockdown.c AFC.c NotificationProxy.c userpref.c utils.c
