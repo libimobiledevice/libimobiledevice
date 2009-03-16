@@ -81,6 +81,9 @@ typedef struct iphone_afc_file_int *iphone_afc_file_t;
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
 
+struct iphone_np_client_int;
+typedef struct iphone_np_client_int *iphone_np_client_t;
+
 //debug related functions
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
@@ -124,6 +127,7 @@ iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char 
 iphone_error_t iphone_afc_get_file_attr ( iphone_afc_client_t client, const char *filename, struct stat *stbuf );
 iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, iphone_afc_file_mode_t file_mode, iphone_afc_file_t *file );
 iphone_error_t iphone_afc_close_file ( iphone_afc_client_t client, iphone_afc_file_t file);
+iphone_error_t iphone_afc_lock_file ( iphone_afc_client_t client, iphone_afc_file_t file, int operation);
 iphone_error_t iphone_afc_read_file ( iphone_afc_client_t client, iphone_afc_file_t file, char *data, int length, uint32_t *bytes);
 iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, iphone_afc_file_t file, const char *data, int length, uint32_t *bytes);
 iphone_error_t iphone_afc_seek_file ( iphone_afc_client_t client, iphone_afc_file_t file, int seekpos);
@@ -131,6 +135,7 @@ iphone_error_t iphone_afc_truncate_file ( iphone_afc_client_t client, iphone_afc
 iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *path);
 iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
 iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
+iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path, off_t newsize);
 
 
 

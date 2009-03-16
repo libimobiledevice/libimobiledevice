@@ -68,4 +68,32 @@ fi
 AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith  -Wwrite-strings -Wswitch-default -Wno-unused-parameter")
 AC_SUBST(GLOBAL_CFLAGS)
 
+# check for large file support
+AC_SYS_LARGEFILE
+LFS_CFLAGS=''
+if test "$enable_largefile" != no; then
+    if test "$ac_cv_sys_file_offset_bits" != 'no'; then
+	LFS_CFLAGS="$LFS_CFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+    else
+	AC_MSG_CHECKING(for native large file support)
+	AC_RUN_IFELSE([#include <unistd.h>
+	  int main (int argc, char **argv)
+	  {
+	      exit(!(sizeof(off_t) == 8));
+	  }],
+	[ac_cv_sys_file_offset_bits=64; AC_DEFINE(_FILE_OFFSET_BITS,64)
+	 AC_MSG_RESULT(yes)],
+	[AC_MSG_RESULT(no)])
+    fi
+    if test "$ac_cv_sys_large_files" != 'no'; then
+	LFS_CFLAGS="$LFS_CFLAGS -D_LARGE_FILES=1"
+    fi
+    AC_FUNC_FSEEKO
+    if test "$ac_cv_sys_largefile_source" != 'no'; then
+	LFS_CFLAGS="$LFS_CFLAGS -D_LARGEFILE_SOURCE=1"
+    fi
+fi
+AC_SUBST(LFS_CFLAGS)
+
 AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile swig/Makefile libiphone-1.0.pc)
+

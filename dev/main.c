@@ -27,12 +27,51 @@
 #include <libiphone/libiphone.h>
 #include "../src/utils.h"
 
+void perform_syncWillStart(iphone_device_t phone, iphone_lckd_client_t control)
+{
+	int nport = 0;
+	iphone_np_client_t np;
+
+	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
+	if (nport) {
+		printf("::::::::::::::: np was started ::::::::::::\n");
+		iphone_np_new_client(phone, 3555, nport, &np);
+		if (np) {
+			printf("::::::::: PostNotification com.apple.itunes-mobdev.syncWillStart\n");
+			iphone_np_post_notification(np, "com.apple.itunes-mobdev.syncWillStart");
+			iphone_np_free_client(np);
+		}
+	} else {
+		printf("::::::::::::::: np was NOT started ::::::::::::\n");
+	}
+}
+
+void perform_syncDidStart(iphone_device_t phone, iphone_lckd_client_t control)
+{
+	int nport = 0;
+	iphone_np_client_t np;
+
+	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
+	if (nport) {
+		printf("::::::::::::::: np was started ::::::::::::\n");
+		sleep(1);
+		iphone_np_new_client(phone, 3555, nport, &np);
+		if (np) {
+			printf("::::::::: PostNotification com.apple.itunes-mobdev.syncDidStart\n");
+			iphone_np_post_notification(np, "com.apple.itunes-mobdev.syncDidStart");
+			iphone_np_free_client(np);
+		}
+	} else {
+		printf("::::::::::::::: np was NOT started ::::::::::::\n");
+	}
+}
 
 int main(int argc, char *argv[])
 {
 	int bytes = 0, port = 0, i = 0;
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
+	iphone_afc_file_t lockfile = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug(1);
@@ -64,6 +103,16 @@ int main(int argc, char *argv[])
 		iphone_afc_client_t afc = NULL;
 		iphone_afc_new_client(phone, 3432, port, &afc);
 		if (afc) {
+			perform_syncWillStart(phone, control);
+
+			iphone_afc_open_file(afc, "/com.apple.itunes.lock_sync", IPHONE_AFC_FILE_WRITE, &lockfile);
+			if (lockfile) {
+				printf("locking file\n");
+				iphone_afc_lock_file(afc, lockfile, 2 | 4);
+
+				perform_syncDidStart(phone, control);
+			}
+
 			char **dirs = NULL;
 			iphone_afc_get_dir_list(afc, "/eafaedf", &dirs);
 			if (!dirs)
@@ -138,7 +187,17 @@ int main(int argc, char *argv[])
 				printf("Couldn't read!\n");
 			free(threeletterword);
 			iphone_afc_close_file(afc, my_file);
+		}
 
+		if (lockfile) {
+			printf("XXX sleeping 2 seconds\n");
+			sleep(2);
+
+			printf("XXX unlocking file\n");
+			iphone_afc_lock_file(afc, lockfile, 8 | 4);
+
+			printf("XXX closing file\n");
+			iphone_afc_close_file(afc, lockfile);
 		}
 		iphone_afc_free_client(afc);
 	} else {

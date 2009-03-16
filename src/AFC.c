@@ -178,7 +178,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 		log_debug_msg("dispatch_AFC_packet: sent the first now go with the second\n");
 		log_debug_msg("Length: %i\n", length - offset);
 		log_debug_msg("Buffer: \n");
-		log_debug_msg(data + offset);
+		log_debug_buffer(data + offset, length - offset);
 
 		iphone_mux_send(client->connection, data + offset, length - offset, &bytes);
 		return bytes;
@@ -916,6 +916,63 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 	return IPHONE_E_SUCCESS;
 }
 
+/** Locks or unlocks a file on the phone. 
+ *
+ * makes use of flock, see
+ * http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
+ *
+ * operation (same as in sys/file.h on linux):
+ *
+ * LOCK_SH   1    // shared lock
+ * LOCK_EX   2   // exclusive lock
+ * LOCK_NB   4   // don't block when locking
+ * LOCK_UN   8   // unlock
+ *
+ * @param client The client to close the file with.
+ * @param file A pointer to an AFCFile struct containing the file handle of the
+ *        file to close.
+ * @operation the lock or unlock operation to perform.
+ */
+iphone_error_t iphone_afc_lock_file(iphone_afc_client_t client, iphone_afc_file_t file, int operation)
+{
+	if (!client || !file)
+		return IPHONE_E_INVALID_ARG;
+	char *buffer = malloc(16);
+	uint32_t zero = 0;
+	int bytes = 0;
+	uint64_t op = operation;
+
+	afc_lock(client);
+
+	log_debug_msg("afc_lock_file: File handle %i\n", file->filehandle);
+
+	// Send command
+	memcpy(buffer, &file->filehandle, sizeof(uint32_t));
+	memcpy(buffer + sizeof(uint32_t), &zero, sizeof(zero));
+	memcpy(buffer + 8, &op, 8);
+
+	client->afc_packet->operation = AFC_FILE_LOCK;
+	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	bytes = dispatch_AFC_packet(client, buffer, 15);
+	free(buffer);
+	buffer = NULL;
+
+	if (bytes <= 0) {
+		afc_unlock(client);
+		log_debug_msg("fuck\n");
+		return IPHONE_E_UNKNOWN_ERROR;
+	}
+	// Receive the response
+	bytes = receive_AFC_data(client, &buffer);
+	log_debug_msg("%s: receiving response (%d bytes)\n", __func__, bytes);
+	if (buffer) {
+		log_debug_buffer(buffer, bytes);
+		free(buffer);
+	}
+	afc_unlock(client);
+	return IPHONE_E_SUCCESS;
+}
+
 /** Seeks to a given position of a pre-opened file on the phone. 
  * 
  * @param client The client to use to seek to the position.
@@ -1015,6 +1072,53 @@ iphone_error_t iphone_afc_truncate_file(iphone_afc_client_t client, iphone_afc_f
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 }
+
+/** Sets the size of a file on the phone without prior opening it.
+ * 
+ * @param client The client to use to set the file size.
+ * @param path The path of the file to be truncated.
+ * @param newsize The size to set the file to. 
+ * 
+ * @return IPHONE_E_SUCCESS if everything went well, IPHONE_E_INVALID_ARG
+ *         if arguments are NULL or invalid, IPHONE_E_NOT_ENOUGH_DATA otherwise.
+ */
+iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path, off_t newsize)
+{
+	char *response = NULL;
+	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
+	int bytes = 0;
+	uint64_t size_requested = newsize;
+
+	if (!client || !path || !client->afc_packet || !client->connection)
+		return IPHONE_E_INVALID_ARG;
+
+	afc_lock(client);
+
+	// Send command
+	memcpy(send, &size_requested, 8);
+	memcpy(send + 8, path, strlen(path) + 1);
+	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	client->afc_packet->operation = AFC_TRUNCATE;
+	bytes = dispatch_AFC_packet(client, send, 8 + strlen(path));
+	free(send);
+	if (bytes <= 0) {
+		afc_unlock(client);
+		return IPHONE_E_NOT_ENOUGH_DATA;
+	}
+	// Receive response
+	bytes = receive_AFC_data(client, &response);
+	if (response)
+		free(response);
+
+	afc_unlock(client);
+
+	if (bytes < 0) {
+		return IPHONE_E_NOT_ENOUGH_DATA;
+	} else {
+		return IPHONE_E_SUCCESS;
+	}
+}
+
 
 uint32_t iphone_afc_get_file_handle(iphone_afc_file_t file)
 {

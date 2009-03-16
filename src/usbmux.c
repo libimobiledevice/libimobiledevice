@@ -309,7 +309,8 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 			}
 
 			// Since we were able to fill the data straight from our buffer, we can just return datalen. See 2a above.
-			return datalen;
+			*recv_bytes = datalen;
+			return IPHONE_E_SUCCESS;
 		} else {
 			memcpy(data, client->recv_buffer, client->r_len);
 			free(client->recv_buffer);	// don't need to deal with anymore, but...
@@ -362,10 +363,10 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	if ((bytes - 28) > datalen) {
 		// Copy what we need into the data, buffer the rest because we can.
 		memcpy(data + offset, buffer + 28, datalen);	// data+offset: see #2b, above
-		complex = client->r_len + (bytes - 28) - datalen;
+		complex = client->r_len + ((bytes - 28) - datalen);
 		client->recv_buffer = (char *) realloc(client->recv_buffer, (sizeof(char) * complex));
 		client->r_len = complex;
-		complex = client->r_len - (bytes - 28) - datalen;
+		complex = client->r_len - ((bytes - 28) - datalen);
 		memcpy(client->recv_buffer + complex, buffer + 28 + datalen, (bytes - 28) - datalen);
 		free(buffer);
 		client->header->ocnt += bytes - 28;
