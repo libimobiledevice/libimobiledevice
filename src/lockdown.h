@@ -36,8 +36,6 @@ struct iphone_lckd_client_int {
 	iphone_umux_client_t connection;
 	gnutls_session_t *ssl_session;
 	int in_SSL;
-	char *gtls_buffer_hack;
-	int gtls_buffer_hack_len;
 	char session_id[40];
 };
 
