@@ -27,4 +27,3 @@ struct iphone_np_client_int {
 	iphone_umux_client_t connection;
 	GMutex *mutex;
 };
-
