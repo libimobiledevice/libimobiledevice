@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = src include fdi $(DEV_SUB)
+SUBDIRS = src include fdi udev $(DEV_SUB)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libiphone-1.0.pc
