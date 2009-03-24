@@ -53,10 +53,13 @@ wiki:
 	http://matt.colyer.name/projects/iphone-linux/index.php?title=Main_Page
 
 code:
-	git clone http://git.matt.colyer.name/2008/libiphone/
+	git clone git://github.com/MattColyer/libiphone.git
+
+tickets:
+	http://iphone-linux.lighthouseapp.com/projects/27916-iphone-linux/tickets?q=all
 
 mailing list:
 	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
 
 updated:
-	2008-09-02
+	2009-03-23
