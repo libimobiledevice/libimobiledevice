@@ -50,8 +50,7 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 	//first receive version
 	ret = iphone_msync_recv(client_loc, &array);
 
-	plist_t msg_node =
-		plist_find_node_by_string(array, "DLMessageVersionExchange");
+	plist_t msg_node = plist_find_node_by_string(array, "DLMessageVersionExchange");
 	plist_t ver_1 = plist_get_next_sibling(msg_node);
 	plist_t ver_2 = plist_get_next_sibling(ver_1);
 
@@ -82,8 +81,7 @@ iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int
 			array = NULL;
 
 			ret = iphone_msync_recv(client_loc, &array);
-			plist_t rep_node =
-				plist_find_node_by_string(array, "DLMessageDeviceReady");
+			plist_t rep_node = plist_find_node_by_string(array, "DLMessageDeviceReady");
 
 			if (rep_node) {
 				ret = IPHONE_E_SUCCESS;
@@ -245,8 +243,7 @@ iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client)
 	plist_t switch_node;
 
 	contact_node = plist_find_node_by_string(array, "com.apple.Contacts");
-	switch_node =
-		plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
+	switch_node = plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
 
 	while (NULL == switch_node) {
 

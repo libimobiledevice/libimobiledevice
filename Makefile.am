@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include fdi swig $(DEV_SUB)
+SUBDIRS = src include fdi swig udev $(DEV_SUB)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libiphone-1.0.pc

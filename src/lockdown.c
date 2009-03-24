@@ -62,7 +62,6 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone)
 
 	control->ssl_session = (gnutls_session_t *) malloc(sizeof(gnutls_session_t));
 	control->in_SSL = 0;
-	control->gtls_buffer_hack_len = 0;
 	return control;
 }
 
@@ -152,7 +151,6 @@ static void iphone_lckd_stop_SSL_session(iphone_lckd_client_t client)
 		free(client->ssl_session);
 	}
 	client->in_SSL = 0;
-	client->gtls_buffer_hack_len = 0;	// dunno if required?!
 
 	return;
 }
@@ -467,6 +465,10 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 	char *host_id = NULL;
 
 	iphone_lckd_client_t client_loc = new_lockdownd_client(device);
+	if (!client_loc) {
+		log_debug_msg("FATAL: lockdownd client could not be created!\n");
+		return IPHONE_E_UNKNOWN_ERROR;
+	}
 	if (IPHONE_E_SUCCESS != lockdownd_hello(client_loc)) {
 		log_debug_msg("Hello failed in the lockdownd client.\n");
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
@@ -801,7 +803,7 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const char *HostID)
 {
 	plist_t dict = NULL;
-	uint32_t  return_me = 0;
+	uint32_t return_me = 0;
 
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	control->session_id[0] = '\0';
@@ -956,79 +958,53 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length)
 {
 	int bytes = 0, pos_start_fill = 0;
-	char *hackhackhack = NULL;
+	int tbytes = 0;
+	int this_len = length;
+	iphone_error_t res;
 	iphone_lckd_client_t control;
 	control = (iphone_lckd_client_t) transport;
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_securead() called\nlength = %zi\n", length);
-	// Buffering hack! Throw what we've got in our "buffer" into the stream first, then get more.
-	if (control->gtls_buffer_hack_len > 0) {
-		if (length > control->gtls_buffer_hack_len) {	// If it's asking for more than we got
-			length -= control->gtls_buffer_hack_len;	// Subtract what we have from their requested length
-			pos_start_fill = control->gtls_buffer_hack_len;	// set the pos to start filling at
-			memcpy(buffer, control->gtls_buffer_hack, control->gtls_buffer_hack_len);	// Fill their buffer partially
-			free(control->gtls_buffer_hack);	// free our memory, it's not chained anymore
-			control->gtls_buffer_hack_len = 0;	// we don't have a hack buffer anymore
-			log_dbg_msg(DBGMASK_LOCKDOWND, "Did a partial fill to help quench thirst for data\n");
-		} else if (length < control->gtls_buffer_hack_len) {	// If it's asking for less...
-			control->gtls_buffer_hack_len -= length;	// subtract what they're asking for
-			memcpy(buffer, control->gtls_buffer_hack, length);	// fill their buffer
-			hackhackhack = (char *) malloc(sizeof(char) * control->gtls_buffer_hack_len);	// strndup is NOT a good solution -- concatenates \0!!!! Anyway, make a new "hack" buffer.
-			memcpy(hackhackhack, control->gtls_buffer_hack + length, control->gtls_buffer_hack_len);	// Move what's left into the new one
-			free(control->gtls_buffer_hack);	// Free the old one
-			control->gtls_buffer_hack = hackhackhack;	// And make it the new one.
-			hackhackhack = NULL;
-			log_dbg_msg(DBGMASK_LOCKDOWND, "Quenched the thirst for data; new hack length is %i\n",
-						control->gtls_buffer_hack_len);
-			return length;		// hand it over.
-		} else {				// length == hack length
-			memcpy(buffer, control->gtls_buffer_hack, length);	// copy our buffer into theirs
-			free(control->gtls_buffer_hack);	// free our "obligation"
-			control->gtls_buffer_hack_len = 0;	// free our "obligation"
-			log_dbg_msg(DBGMASK_LOCKDOWND, "Satiated the thirst for data; now we have to eventually receive again.\n");
-			return length;		// hand it over
-		}
-	}
-	// End buffering hack!
-	char *recv_buffer = (char *) malloc(sizeof(char) * (length * 1000));	// ensuring nothing stupid happens
+	char *recv_buffer;
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "pre-read\nclient wants %zi bytes\n", length);
-	iphone_mux_recv(control->connection, recv_buffer, (length * 1000), &bytes);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "post-read\nwe got %i bytes\n", bytes);
-	if (bytes < 0) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_securead(): uh oh\n");
-		log_dbg_msg(DBGMASK_LOCKDOWND,
-					"I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n",
-					usb_strerror(), strerror(errno));
-		return bytes + 28;		// an errno
-	}
-	if (bytes >= length) {
-		if (bytes > length) {
-			log_dbg_msg(DBGMASK_LOCKDOWND,
-						"lockdownd_securead: Client deliberately read less data than was there; resorting to GnuTLS buffering hack.\n");
-			if (!control->gtls_buffer_hack_len) {	// if there's no hack buffer yet
-				//control->gtls_buffer_hack = strndup(recv_buffer+length, bytes-length); // strndup is NOT a good solution!
-				control->gtls_buffer_hack_len += bytes - length;
-				control->gtls_buffer_hack = (char *) malloc(sizeof(char) * control->gtls_buffer_hack_len);
-				memcpy(control->gtls_buffer_hack, recv_buffer + length, control->gtls_buffer_hack_len);
-			} else {			// if there is. 
-				control->gtls_buffer_hack =
-					realloc(control->gtls_buffer_hack, control->gtls_buffer_hack_len + (bytes - length));
-				memcpy(control->gtls_buffer_hack + control->gtls_buffer_hack_len, recv_buffer + length, bytes - length);
-				control->gtls_buffer_hack_len += bytes - length;
-			}
+	log_debug_msg("lockdownd_securead() called\nlength = %zi\n", length);
+
+	log_debug_msg("pre-read\nclient wants %zi bytes\n", length);
+
+	recv_buffer = (char *) malloc(sizeof(char) * this_len);
+
+	// repeat until we have the full data or an error occurs.
+	do {
+		if ((res = iphone_mux_recv(control->connection, recv_buffer, this_len, &bytes)) != IPHONE_E_SUCCESS) {
+			log_debug_msg("%s: ERROR: iphone_mux_recv returned %d\n", __func__, res);
+			return res;
 		}
-		memcpy(buffer + pos_start_fill, recv_buffer, length);
+		log_debug_msg("post-read\nwe got %i bytes\n", bytes);
+
+		if (bytes < 0) {
+			log_debug_msg("lockdownd_securead(): uh oh\n");
+			log_debug_msg
+				("I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n",
+				 usb_strerror(), strerror(errno));
+			return bytes;		// + 28;      // an errno
+		}
+		// increase read count
+		tbytes += bytes;
+
+		// fill the buffer with what we got right now
+		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
+		pos_start_fill += bytes;
+
+		if (tbytes >= length) {
+			break;
+		}
+
+		this_len = length - tbytes;
+		log_debug_msg("re-read\ntrying to read missing %i bytes\n", this_len);
+	} while (tbytes < length);
+	if (recv_buffer) {
 		free(recv_buffer);
-		if (bytes == length) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "Returning how much we received.\n");
-			return bytes;
-		} else {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "Returning what they want to hear.\nHack length: %i\n",
-						control->gtls_buffer_hack_len);
-			return length;
-		}
 	}
-	return bytes;
+
+	return tbytes;
 }
 
 /** Command to start the desired service

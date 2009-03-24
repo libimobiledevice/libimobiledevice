@@ -52,7 +52,7 @@ static void np_unlock(iphone_np_client_t client)
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-iphone_error_t iphone_np_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_np_client_t *client )
+iphone_error_t iphone_np_new_client(iphone_device_t device, int src_port, int dst_port, iphone_np_client_t * client)
 {
 	int ret = IPHONE_E_SUCCESS;
 
@@ -75,16 +75,16 @@ iphone_error_t iphone_np_new_client ( iphone_device_t device, int src_port, int 
 	client_loc->mutex = g_mutex_new();
 
 	*client = client_loc;
-	return IPHONE_E_SUCCESS;	
+	return IPHONE_E_SUCCESS;
 }
 
 /** Disconnects an NP client from the phone.
  * 
  * @param client The client to disconnect.
  */
-iphone_error_t iphone_np_free_client ( iphone_np_client_t client )
+iphone_error_t iphone_np_free_client(iphone_np_client_t client)
 {
-	if (!client || !client->connection )
+	if (!client || !client->connection)
 		return IPHONE_E_INVALID_ARG;
 
 	iphone_mux_free_client(client->connection);
@@ -101,7 +101,7 @@ iphone_error_t iphone_np_free_client ( iphone_np_client_t client )
  * @param client The client to send to
  * @param notification The notification Message
  */
-iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const char *notification )
+iphone_error_t iphone_np_post_notification(iphone_np_client_t client, const char *notification)
 {
 	char *XML_content = NULL;
 	uint32_t length = 0;
@@ -126,9 +126,9 @@ iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const cha
 
 	nlen = htonl(length);
 
-	memcpy(sndbuf+sndlen, &nlen, 4);
+	memcpy(sndbuf + sndlen, &nlen, 4);
 	sndlen += 4;
-	memcpy(sndbuf+sndlen, XML_content, length);
+	memcpy(sndbuf + sndlen, XML_content, length);
 	sndlen += length;
 
 	plist_free(dict);
@@ -143,11 +143,11 @@ iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const cha
 
 	nlen = htonl(length);
 
-	memcpy(sndbuf+sndlen, &nlen, 4);
-	sndlen+=4;
+	memcpy(sndbuf + sndlen, &nlen, 4);
+	sndlen += 4;
 
-	memcpy(sndbuf+sndlen, XML_content, length);
-	sndlen+=length;
+	memcpy(sndbuf + sndlen, XML_content, length);
+	sndlen += length;
 
 	plist_free(dict);
 	dict = NULL;
@@ -157,7 +157,7 @@ iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const cha
 	log_debug_buffer(sndbuf, sndlen);
 
 	iphone_mux_send(client->connection, sndbuf, sndlen, &bytes);
-        if (bytes <= 0) {
+	if (bytes <= 0) {
 		np_unlock(client);
 		return bytes;
 	}
@@ -181,7 +181,7 @@ iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const cha
  *
  * @param client The client to send to
  */
-iphone_error_t iphone_np_observe_notification( iphone_np_client_t client )
+iphone_error_t iphone_np_observe_notification(iphone_np_client_t client)
 {
 	plist_t dict = NULL;
 	char *XML_content = NULL;
@@ -191,18 +191,19 @@ iphone_error_t iphone_np_observe_notification( iphone_np_client_t client )
 	unsigned char sndbuf[4096];
 	int sndlen = 0;
 	int nlen = 0;
-	int i=0;
+	int i = 0;
 	const char *notifications[10] = {
-	    "com.apple.itunes-client.syncCancelRequest",
-	    "com.apple.itunes-client.syncSuspendRequest",
-	    "com.apple.itunes-client.syncResumeRequest",
-	    "com.apple.mobile.lockdown.phone_number_changed",
-	    "com.apple.mobile.lockdown.device_name_changed",
-	    "com.apple.springboard.attemptactivation",
-	    "com.apple.mobile.data_sync.domain_changed",
-	    "com.apple.mobile.application_installed",
-	    "com.apple.mobile.application_uninstalled",
-	    NULL};
+		"com.apple.itunes-client.syncCancelRequest",
+		"com.apple.itunes-client.syncSuspendRequest",
+		"com.apple.itunes-client.syncResumeRequest",
+		"com.apple.mobile.lockdown.phone_number_changed",
+		"com.apple.mobile.lockdown.device_name_changed",
+		"com.apple.springboard.attemptactivation",
+		"com.apple.mobile.data_sync.domain_changed",
+		"com.apple.mobile.application_installed",
+		"com.apple.mobile.application_uninstalled",
+		NULL
+	};
 
 	sndlen = 0;
 
@@ -221,11 +222,11 @@ iphone_error_t iphone_np_observe_notification( iphone_np_client_t client )
 		plist_to_xml(dict, &XML_content, &length);
 
 		nlen = htonl(length);
-		memcpy(sndbuf+sndlen, &nlen, 4);
+		memcpy(sndbuf + sndlen, &nlen, 4);
 		sndlen += 4;
-		memcpy(sndbuf+sndlen, XML_content, length);
+		memcpy(sndbuf + sndlen, XML_content, length);
 		sndlen += length;
- 
+
 		plist_free(dict);
 		dict = NULL;
 		free(XML_content);
@@ -239,11 +240,11 @@ iphone_error_t iphone_np_observe_notification( iphone_np_client_t client )
 
 	nlen = htonl(length);
 
-	memcpy(sndbuf+sndlen, &nlen, 4);
-	sndlen+=4;
+	memcpy(sndbuf + sndlen, &nlen, 4);
+	sndlen += 4;
 
-	memcpy(sndbuf+sndlen, XML_content, length);
-	sndlen+=length;
+	memcpy(sndbuf + sndlen, XML_content, length);
+	sndlen += length;
 
 	plist_free(dict);
 	dict = NULL;
@@ -253,7 +254,7 @@ iphone_error_t iphone_np_observe_notification( iphone_np_client_t client )
 	log_debug_buffer(sndbuf, sndlen);
 
 	iphone_mux_send(client->connection, sndbuf, sndlen, &bytes);
-        if (bytes <= 0) {
+	if (bytes <= 0) {
 		np_unlock(client);
 		return bytes;
 	}
