@@ -1,5 +1,0 @@
-# Forces iPhone 1.0, 3G and iPodTouch 1 and 2 to USB configuration 3
-KERNEL=="?-?", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1290", ACTION=="add", RUN+="@bindir@/set-usb-configuration-3.sh"
-KERNEL=="?-?", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1291", ACTION=="add", RUN+="@bindir@/set-usb-configuration-3.sh"
-KERNEL=="?-?", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1292", ACTION=="add", RUN+="@bindir@/set-usb-configuration-3.sh"
-KERNEL=="?-?", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1293", ACTION=="add", RUN+="@bindir@/set-usb-configuration-3.sh"
