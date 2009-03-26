@@ -56,10 +56,10 @@ code:
 	git clone git://github.com/MattColyer/libiphone.git
 
 tickets:
-	http://iphone-linux.lighthouseapp.com/projects/27916-iphone-linux/tickets?q=all
+	http://libiphone.lighthouseapp.com/projects/27916-libiphone/tickets?q=all
 
 mailing list:
 	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
 
 updated:
-	2009-03-23
+	2009-03-25
