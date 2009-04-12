@@ -1,22 +1,22 @@
 /*
  * lockdown.c
  * libiphone built-in lockdownd client
- * 
+ *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "usbmux.h"
@@ -67,7 +67,7 @@ iphone_lckd_client_t new_lockdownd_client(iphone_device_t phone)
 
 /**
  * Closes the lockdownd communication session, by sending
- * the StopSession Request to the device. 
+ * the StopSession Request to the device.
  *
  * @param control The lockdown client
  */
@@ -128,7 +128,7 @@ static void iphone_lckd_stop_session(iphone_lckd_client_t control)
 
 /**
  * Shuts down the SSL session by first calling iphone_lckd_stop_session
- * to cleanly close the lockdownd communication session, and then 
+ * to cleanly close the lockdownd communication session, and then
  * performing a close notify, which is done by "gnutls_bye".
  *
  * @param client The lockdown client
@@ -219,6 +219,7 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
+	log_dbg_msg(DBGMASK_LOCKDOWND, "Recv msg :\nsize : %i\nbuffer :\n%s\n", bytes, receive);
 	plist_from_xml(receive, bytes, plist);
 	free(receive);
 
@@ -229,7 +230,7 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 }
 
 /** Sends lockdownd data to the iPhone
- * 
+ *
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.
  *
@@ -272,7 +273,7 @@ iphone_error_t iphone_lckd_send(iphone_lckd_client_t client, plist_t plist)
 }
 
 /** Initiates the handshake for the lockdown session. Part of the lockdownd handshake.
- * 
+ *
  * @note You most likely want lockdownd_init unless you are doing something special.
  *
  * @param control The lockdownd client
@@ -338,7 +339,7 @@ iphone_error_t lockdownd_hello(iphone_lckd_client_t control)
  *
  * @return IPHONE_E_SUCCESS on success.
  */
-iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, char *req_string,
+iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const char *req_key, const char *req_string,
 										   gnutls_datum_t * value)
 {
 	if (!control || !req_key || !value || value->data)
@@ -396,7 +397,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 		return ret;
 	}
 
-	plist_t value_key_node = plist_get_next_sibling(result_key_node);
+	plist_t value_key_node = plist_find_node_by_key(dict, "Value");//plist_get_next_sibling(result_value_node);
 	plist_t value_value_node = plist_get_next_sibling(value_key_node);
 
 	plist_type value_key_type = plist_get_node_type(value_key_node);
@@ -418,6 +419,16 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 				value->size = strlen(value_value);
 				ret = IPHONE_E_SUCCESS;
 			}
+
+			if (PLIST_DATA == value_value_type) {
+				char *value_value = NULL;
+				uint64_t size = 0;
+				plist_get_data_val(value_value_node, &value_value, &size);
+
+				value->data = value_value;
+				value->size = size;
+				ret = IPHONE_E_SUCCESS;
+			}
 		}
 		free(result_key);
 	}
@@ -435,8 +446,9 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid)
 {
 	gnutls_datum_t temp = { NULL, 0 };
-	return lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", &temp);
+	iphone_error_t ret = lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", &temp);
 	*uid = temp.data;
+	return ret;
 }
 
 /** Askes for the device's public key. Part of the lockdownd handshake.
@@ -480,6 +492,7 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 	if (IPHONE_E_SUCCESS != ret) {
 		log_debug_msg("Device refused to send uid.\n");
 	}
+	log_debug_msg("Device uid: %s\n", uid);
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
@@ -495,19 +508,22 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 		uid = NULL;
 	}
 
-	ret = lockdownd_start_SSL_session(client_loc, host_id);
-	if (IPHONE_E_SUCCESS != ret) {
-		ret = IPHONE_E_SSL_ERROR;
-		log_debug_msg("SSL Session opening failed.\n");
+	if (IPHONE_E_SUCCESS == ret) {
+		ret = lockdownd_start_SSL_session(client_loc, host_id);
+		if (IPHONE_E_SUCCESS != ret) {
+			ret = IPHONE_E_SSL_ERROR;
+			log_debug_msg("SSL Session opening failed.\n");
+		}
+
+		if (host_id) {
+			free(host_id);
+			host_id = NULL;
+		}
+
+		if (IPHONE_E_SUCCESS == ret)
+			*client = client_loc;
 	}
 
-	if (host_id) {
-		free(host_id);
-		host_id = NULL;
-	}
-
-	if (IPHONE_E_SUCCESS == ret)
-		*client = client_loc;
 	return ret;
 }
 
@@ -534,6 +550,7 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 		log_debug_msg("Device refused to send public key.\n");
 		return ret;
 	}
+	log_debug_msg("device public key :\n %s.\n", public_key.data);
 
 	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != IPHONE_E_SUCCESS) {
@@ -547,15 +564,15 @@ iphone_error_t lockdownd_pair_device(iphone_lckd_client_t control, char *uid, ch
 	dict_record = plist_new_dict();
 	plist_add_sub_node(dict, dict_record);
 	plist_add_sub_key_el(dict_record, "DeviceCertificate");
-	plist_add_sub_data_el(dict_record, device_cert.data, device_cert.size);
+	plist_add_sub_data_el(dict_record, (const char*)device_cert.data, device_cert.size);
 	plist_add_sub_key_el(dict_record, "HostCertificate");
-	plist_add_sub_data_el(dict_record, host_cert.data, host_cert.size);
+	plist_add_sub_data_el(dict_record, (const char*)host_cert.data, host_cert.size);
 	plist_add_sub_key_el(dict_record, "HostID");
 	plist_add_sub_string_el(dict_record, host_id);
 	plist_add_sub_key_el(dict_record, "RootCertificate");
-	plist_add_sub_data_el(dict_record, root_cert.data, root_cert.size);
-	plist_add_sub_key_el(dict_record, "Request");
-	plist_add_sub_string_el(dict_record, "Pair");
+	plist_add_sub_data_el(dict_record, (const char*)root_cert.data, root_cert.size);
+	plist_add_sub_key_el(dict, "Request");
+	plist_add_sub_string_el(dict, "Pair");
 
 	/* send to iPhone */
 	ret = iphone_lckd_send(control, dict);
@@ -667,7 +684,7 @@ void lockdownd_close(iphone_lckd_client_t control)
 
 /** Generates the device certificate from the public key as well as the host
  *  and root certificates.
- * 
+ *
  * @return IPHONE_E_SUCCESS on success.
  */
 iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * odevice_cert,
@@ -718,7 +735,7 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 		gnutls_global_init();
 		gnutls_datum_t essentially_null = { strdup("abababababababab"), strlen("abababababababab") };
 
-		gnutls_x509_privkey_t fake_privkey, root_privkey;
+		gnutls_x509_privkey_t fake_privkey, root_privkey, host_privkey;
 		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
 
 		gnutls_x509_privkey_init(&fake_privkey);
@@ -731,57 +748,50 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 											   &essentially_null, &essentially_null)) {
 
 			gnutls_x509_privkey_init(&root_privkey);
+			gnutls_x509_privkey_init(&host_privkey);
 
-			/* get root cert */
-			gnutls_datum_t pem_root_cert = { NULL, 0 };
-			get_root_certificate(&pem_root_cert);
-			if (GNUTLS_E_SUCCESS != gnutls_x509_crt_import(root_cert, &pem_root_cert, GNUTLS_X509_FMT_PEM))
-				ret = IPHONE_E_SSL_ERROR;
-
-			/* get host cert */
-			gnutls_datum_t pem_host_cert = { NULL, 0 };
-			get_host_certificate(&pem_host_cert);
-			if (GNUTLS_E_SUCCESS != gnutls_x509_crt_import(host_cert, &pem_host_cert, GNUTLS_X509_FMT_PEM))
-				ret = IPHONE_E_SSL_ERROR;
-
-			/* get root private key */
-			gnutls_datum_t pem_root_priv = { NULL, 0 };
-			get_root_private_key(&pem_root_priv);
-			if (GNUTLS_E_SUCCESS != gnutls_x509_privkey_import(root_privkey, &pem_root_priv, GNUTLS_X509_FMT_PEM))
-				ret = IPHONE_E_SSL_ERROR;
-
-			/* generate device certificate */
-			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
-			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
-			gnutls_x509_crt_set_version(dev_cert, 3);
-			gnutls_x509_crt_set_ca_status(dev_cert, 0);
-			gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
-			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-			gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
+			ret = get_keys_and_certs( root_privkey, root_cert, host_privkey, host_cert);
 
 			if (IPHONE_E_SUCCESS == ret) {
-				/* if everything went well, export in PEM format */
-				gnutls_datum_t dev_pem = { NULL, 0 };
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
-				dev_pem.data = gnutls_malloc(dev_pem.size);
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
 
-				/* copy buffer for output */
-				odevice_cert->data = malloc(dev_pem.size);
-				memcpy(odevice_cert->data, dev_pem.data, dev_pem.size);
-				odevice_cert->size = dev_pem.size;
+				/* generate device certificate */
+				gnutls_x509_crt_set_key(dev_cert, fake_privkey);
+				gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+				gnutls_x509_crt_set_version(dev_cert, 3);
+				gnutls_x509_crt_set_ca_status(dev_cert, 0);
+				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
+				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
-				ohost_cert->data = malloc(pem_host_cert.size);
-				memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
-				ohost_cert->size = pem_host_cert.size;
+				if (IPHONE_E_SUCCESS == ret) {
+					/* if everything went well, export in PEM format */
+					gnutls_datum_t dev_pem = { NULL, 0 };
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
+					dev_pem.data = gnutls_malloc(dev_pem.size);
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
 
-				oroot_cert->data = malloc(pem_root_cert.size);
-				memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
-				oroot_cert->size = pem_root_cert.size;
+					gnutls_datum_t pem_root_cert = { NULL, 0 };
+					gnutls_datum_t pem_host_cert = { NULL, 0 };
+
+					if ( IPHONE_E_SUCCESS ==  get_certs_as_pem(&pem_root_cert, &pem_host_cert) ) {
+						/* copy buffer for output */
+						odevice_cert->data = malloc(dev_pem.size);
+						memcpy(odevice_cert->data, dev_pem.data, dev_pem.size);
+						odevice_cert->size = dev_pem.size;
+
+						ohost_cert->data = malloc(pem_host_cert.size);
+						memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
+						ohost_cert->size = pem_host_cert.size;
+
+						oroot_cert->data = malloc(pem_root_cert.size);
+						memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
+						oroot_cert->size = pem_root_cert.size;
+
+						g_free(pem_root_cert.data);
+						g_free(pem_host_cert.data);
+					}
+				}
 			}
-			gnutls_free(pem_root_priv.data);
-			gnutls_free(pem_root_cert.data);
-			gnutls_free(pem_host_cert.data);
 		}
 	}
 
