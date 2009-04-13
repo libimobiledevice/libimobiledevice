@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/include  $(libplist_CFLAGS)
+INCLUDES = -I$(top_srcdir)/include  $(libplist_CFLAGS) -I$(includedir)
 
 BUILT_SOURCES = $(srcdir)/iphone_wrap.c
 SWIG_SOURCES = iphone.i
