@@ -83,6 +83,7 @@ typedef struct iphone_np_client_int *iphone_np_client_t;
 //device related functions
 void iphone_set_debug(int level);
 iphone_error_t iphone_get_device ( iphone_device_t *device );
+iphone_error_t iphone_get_specific_device( unsigned int bus_n, int dev_n, iphone_device_t * device );
 iphone_error_t iphone_free_device ( iphone_device_t device );
 
 
