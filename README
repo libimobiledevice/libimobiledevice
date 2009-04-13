@@ -15,6 +15,7 @@ You must have:
 	autoheader
 	automake
 	autoconf
+	libtool
 	gcc
 
 To compile run:
@@ -22,10 +23,10 @@ To compile run:
 	./configure
 	make
 	sudo make install  # (if you want to install it into your system directories)
-	libiphone-initconf  # (as the user you intend to user the library)
+	libiphone-initconf  # (as the user you intend to use the library)
 
 On Ubuntu/Debian, you can do:
-	sudo apt-get install build-essential automake autoconf \
+	sudo apt-get install build-essential automake autoconf libtool\
           libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev \
           libreadline5-dev
 
