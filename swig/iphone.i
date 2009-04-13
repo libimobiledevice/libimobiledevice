@@ -1,5 +1,6 @@
  /* swig.i */
  %module(package="libiphone") iPhone
+ %feature("autodoc", "1");
  %{
  /* Includes the header in the wrapper code */
  #include <libiphone/libiphone.h>
@@ -105,13 +106,13 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		my_delete_iPhone($self);
 	}
 
-	int InitDevice() {
+	int init_device() {
 		if (IPHONE_E_SUCCESS == iphone_get_device ( &($self->dev)))
 			return 1;
 		return 0;
 	}
 
-	Lockdownd* GetLockdownClient() {
+	Lockdownd* get_lockdown_client() {
 		return my_new_Lockdownd($self);
 	}
 };
@@ -126,7 +127,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		my_delete_Lockdownd($self);
 	}
 
-	MobileSync* GetMobileSyncClient() {
+	MobileSync* get_mobile_sync_client() {
 		return my_new_MobileSync($self);
 	}
 };
@@ -142,11 +143,11 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		free($self);
 	}
 
-	void Send(PListNode* node) {
+	void send(PListNode* node) {
 		iphone_msync_send($self->client, node->node);
 	}
 
-	PListNode* Receive() {
+	PListNode* receive() {
 		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
 		node->node = NULL;
 		iphone_msync_recv($self->client, &(node->node));
