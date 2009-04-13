@@ -121,9 +121,9 @@ iphone_error_t iphone_get_specific_device(unsigned int bus_n, int dev_n, iphone_
 
 	// Set the device configuration
 	for (bus = busses; bus; bus = bus->next)
-		if (bus->location == bus_n)
+		if (strtoul(bus->dirname, NULL, 10) == bus_n)
 			for (dev = bus->devices; dev != NULL; dev = dev->next)
-				if (dev->devnum == dev_n) {
+				if (strtol(dev->filename, NULL, 10) == dev_n) {
 					phone->__device = dev;
 					phone->device = usb_open(phone->__device);
 					iphone_config_usb_device(phone);
@@ -210,7 +210,7 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 		for (dev = bus->devices; dev != NULL; dev = dev->next)
 			if (dev->descriptor.idVendor == 0x05ac
 				&& dev->descriptor.idProduct >= 0x1290 && dev->descriptor.idProduct <= 0x1293)
-				return iphone_get_specific_device(bus->location, dev->devnum, device);
+				return iphone_get_specific_device(strtoul(bus->dirname, NULL, 10), strtol(dev->filename, NULL, 10), device);
 
 	return IPHONE_E_NO_DEVICE;
 }
