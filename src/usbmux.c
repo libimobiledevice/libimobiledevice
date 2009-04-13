@@ -38,7 +38,7 @@ static int clients = 0;
  *
  * @return A USBMux packet
  */
-usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port)
+usbmux_tcp_header *new_mux_packet(uint16_t s_port, uint16_t d_port)
 {
 	usbmux_tcp_header *conn = (usbmux_tcp_header *) malloc(sizeof(usbmux_tcp_header));
 	conn->type = htonl(6);
@@ -314,6 +314,7 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 		} else {
 			memcpy(data, client->recv_buffer, client->r_len);
 			free(client->recv_buffer);	// don't need to deal with anymore, but...
+			client->recv_buffer = NULL;
 			offset = client->r_len;	// see #2b, above
 			client->r_len = 0;
 		}

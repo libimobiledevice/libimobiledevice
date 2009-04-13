@@ -21,8 +21,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <plist/plist.h>
 #include "NotificationProxy.h"
-#include "plist.h"
 #include "utils.h"
 
 /** Locks an NP client, done for thread safety stuff.
@@ -104,26 +104,26 @@ iphone_error_t iphone_np_free_client(iphone_np_client_t client)
  */
 iphone_error_t iphone_np_post_notification(iphone_np_client_t client, const char *notification)
 {
-	xmlDocPtr plist;
-	xmlNode *dict, *key;
-	char *XML_content;
-	uint32_t length;
-	int bytes;
+	char *XML_content = NULL;
+	uint32_t length = 0;
+	int bytes = 0;
 	iphone_error_t ret;
 	unsigned char sndbuf[4096];
 	int sndlen = 0;
-	int nlen;
+	int nlen = 0;
+	plist_t dict = NULL;
 
 	if (!client || !notification) {
 		return IPHONE_E_INVALID_ARG;
 	}
 	np_lock(client);
 
-	plist = new_plist();
-	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Command", "PostNotification", 1);
-	key = add_key_str_dict_element(plist, dict, "Name", notification, 1);
-	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	dict = plist_new_dict();
+	plist_add_sub_key_el(dict, "Command");
+	plist_add_sub_string_el(dict, "PostNotification");
+	plist_add_sub_key_el(dict, "Name");
+	plist_add_sub_string_el(dict, notification);
+	plist_to_xml(dict, &XML_content, &length);
 
 	nlen = htonl(length);
 
@@ -132,13 +132,15 @@ iphone_error_t iphone_np_post_notification(iphone_np_client_t client, const char
 	memcpy(sndbuf + sndlen, XML_content, length);
 	sndlen += length;
 
-	xmlFree(XML_content);
-	xmlFreeDoc(plist);
+	plist_free(dict);
+	dict = NULL;
+	free(XML_content);
+	XML_content = NULL;
 
-	plist = new_plist();
-	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Command", "Shutdown", 1);
-	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	dict = plist_new_dict();
+	plist_add_sub_key_el(dict, "Command");
+	plist_add_sub_string_el(dict, "Shutdown");
+	plist_to_xml(dict, &XML_content, &length);
 
 	nlen = htonl(length);
 
@@ -148,9 +150,10 @@ iphone_error_t iphone_np_post_notification(iphone_np_client_t client, const char
 	memcpy(sndbuf + sndlen, XML_content, length);
 	sndlen += length;
 
-	xmlFree(XML_content);
-	xmlFreeDoc(plist);
-	plist = NULL;
+	plist_free(dict);
+	dict = NULL;
+	free(XML_content);
+	XML_content = NULL;
 
 	log_debug_buffer(sndbuf, sndlen);
 
@@ -181,17 +184,16 @@ iphone_error_t iphone_np_post_notification(iphone_np_client_t client, const char
  */
 iphone_error_t iphone_np_observe_notification(iphone_np_client_t client)
 {
-	xmlDocPtr plist;
-	xmlNode *dict, *key;
-	char *XML_content;
-	uint32_t length;
-	int bytes;
+	plist_t dict = NULL;
+	char *XML_content = NULL;
+	uint32_t length = 0;
+	int bytes = 0;
 	iphone_error_t ret;
 	unsigned char sndbuf[4096];
 	int sndlen = 0;
-	int nlen;
+	int nlen = 0;
 	int i = 0;
-	char *notifications[10] = {
+	const char *notifications[10] = {
 		"com.apple.itunes-client.syncCancelRequest",
 		"com.apple.itunes-client.syncSuspendRequest",
 		"com.apple.itunes-client.syncResumeRequest",
@@ -212,11 +214,13 @@ iphone_error_t iphone_np_observe_notification(iphone_np_client_t client)
 	np_lock(client);
 
 	while (notifications[i]) {
-		plist = new_plist();
-		dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-		key = add_key_str_dict_element(plist, dict, "Command", "ObserveNotification", 1);
-		key = add_key_str_dict_element(plist, dict, "Name", notifications[i++], 1);
-		xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+
+		dict = plist_new_dict();
+		plist_add_sub_key_el(dict, "Command");
+		plist_add_sub_string_el(dict, "ObserveNotification");
+		plist_add_sub_key_el(dict, "Name");
+		plist_add_sub_string_el(dict, notifications[i++]);
+		plist_to_xml(dict, &XML_content, &length);
 
 		nlen = htonl(length);
 		memcpy(sndbuf + sndlen, &nlen, 4);
@@ -224,14 +228,16 @@ iphone_error_t iphone_np_observe_notification(iphone_np_client_t client)
 		memcpy(sndbuf + sndlen, XML_content, length);
 		sndlen += length;
 
-		xmlFree(XML_content);
-		xmlFreeDoc(plist);
+		plist_free(dict);
+		dict = NULL;
+		free(XML_content);
+		XML_content = NULL;
 	}
 
-	plist = new_plist();
-	dict = add_child_to_plist(plist, "dict", "\n", NULL, 0);
-	key = add_key_str_dict_element(plist, dict, "Command", "Shutdown", 1);
-	xmlDocDumpMemory(plist, (xmlChar **) & XML_content, &length);
+	dict = plist_new_dict();
+	plist_add_sub_key_el(dict, "Command");
+	plist_add_sub_string_el(dict, "Shutdown");
+	plist_to_xml(dict, &XML_content, &length);
 
 	nlen = htonl(length);
 
@@ -241,9 +247,10 @@ iphone_error_t iphone_np_observe_notification(iphone_np_client_t client)
 	memcpy(sndbuf + sndlen, XML_content, length);
 	sndlen += length;
 
-	xmlFree(XML_content);
-	xmlFreeDoc(plist);
-	plist = NULL;
+	plist_free(dict);
+	dict = NULL;
+	free(XML_content);
+	XML_content = NULL;
 
 	log_debug_buffer(sndbuf, sndlen);
 

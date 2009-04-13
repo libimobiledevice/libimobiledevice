@@ -1,8 +1,8 @@
 /*
- * lckdclient.c
- * Rudimentary command line interface to the Lockdown protocol
+ * msyncclient.c
+ * Rudimentary interface to the MobileSync iPhone
  *
- * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
+ * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,11 +20,9 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <glib.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include <errno.h>
+#include <usb.h>
 
 #include <libiphone/libiphone.h>
 
@@ -35,7 +33,9 @@ int main(int argc, char *argv[])
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
 
-	iphone_set_debug(1);
+	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
+		iphone_set_debug_mask(DBGMASK_MOBILESYNC);
+
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
@@ -47,53 +47,21 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	char *uid = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(control, &uid)) {
-		printf("DeviceUniqueID : %s\n", uid);
-		free(uid);
-	}
+	iphone_lckd_start_service(control, "com.apple.mobilesync", &port);
 
-	using_history();
-	int loop = TRUE;
-	while (loop) {
-		char *cmd = readline("> ");
-		if (cmd) {
-
-			gchar **args = g_strsplit(cmd, " ", 0);
-
-			int len = 0;
-			if (args) {
-				while (*(args + len)) {
-					g_strstrip(*(args + len));
-					len++;
-				}
-			}
-
-			if (len > 0) {
-				add_history(cmd);
-				if (!strcmp(*args, "quit"))
-					loop = FALSE;
-
-				if (!strcmp(*args, "get") && len == 3) {
-					char *value = NULL;
-					if (IPHONE_E_SUCCESS == lockdownd_generic_get_value(control, *(args + 1), *(args + 2), &value))
-						printf("Success : value = %s\n", value);
-					else
-						printf("Error\n");
-				}
-
-				if (!strcmp(*args, "start") && len == 2) {
-					int port = 0;
-					iphone_lckd_start_service(control, *(args + 1), &port);
-					printf("%i\n", port);
-				}
-			}
-			g_strfreev(args);
+	if (port) {
+		iphone_msync_client_t msync = NULL;
+		iphone_msync_new_client(phone, 3432, port, &msync);
+		if (msync) {
+			iphone_msync_get_all_contacts(msync);
+			iphone_msync_free_client(msync);
 		}
-		free(cmd);
-		cmd = NULL;
+	} else {
+		printf("Start service failure.\n");
 	}
-	clear_history();
+
+	printf("All done.\n");
+
 	iphone_lckd_free_client(control);
 	iphone_free_device(phone);
 

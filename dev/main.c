@@ -24,10 +24,8 @@
 #include <errno.h>
 #include <usb.h>
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-
 #include <libiphone/libiphone.h>
+#include "../src/utils.h"
 
 void perform_syncWillStart(iphone_device_t phone, iphone_lckd_client_t control)
 {
@@ -77,8 +75,10 @@ int main(int argc, char *argv[])
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug(1);
+		iphone_set_debug_mask(DBGMASK_ALL);
 	} else {
 		iphone_set_debug(0);
+		iphone_set_debug_mask(DBGMASK_NONE);
 	}
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 			iphone_afc_get_file_attr(afc, "/iTunesOnTheGoPlaylist.plist", &stbuf);
 			if (IPHONE_E_SUCCESS ==
 				iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", IPHONE_AFC_FILE_READ, &my_file) && my_file) {
-				printf("A file size: %i\n", stbuf.st_size);
+				printf("A file size: %i\n", (int) stbuf.st_size);
 				char *file_data = (char *) malloc(sizeof(char) * stbuf.st_size);
 				iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size, &bytes);
 				if (bytes >= 0) {

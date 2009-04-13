@@ -7,10 +7,11 @@ For:
 
 You must have:
 	libgnutls-dev
+	libgcrypt-dev
 	libusb-dev
 	libfuse-dev (and the associated kernel modules)
 	libglib2.0-dev
-	libxml2-dev
+	libplist-dev
 	make
 	autoheader
 	automake
@@ -29,24 +30,6 @@ On Ubuntu/Debian, you can do:
 	sudo apt-get install build-essential automake autoconf libtool\
           libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev \
           libreadline5-dev
-
-USAGE
-================================================================================
-
-Now comes the fun bit!
-
-== Generating keys ==
-
-IMPORTANT: Before using the library you must run "libiphone-initconf"
-as your own user (not root). It will generate keys and a host id for your
-system to be able to communicate with 'lockdownd' on the iPhone.
-
-It will probably take 5-10 minutes, but thankfully only needs to be
-run _once_.   It MUST be run otherwise communication will not work:
-
-	libiphone-initconf
-
-The generated keys are saved in '~/.config/libiphone/' in your home directory.
 
 == Who/what/where? ==
 

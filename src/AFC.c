@@ -21,8 +21,7 @@
 
 #include <stdio.h>
 #include "AFC.h"
-#include "plist.h"
-#include "utils.h"
+
 
 
 // This is the maximum size an AFC data packet can be
@@ -246,7 +245,7 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 		return retval;
 	}
 
-	uint32 param1 = buffer[sizeof(AFCPacket)];
+	uint32_t param1 = buffer[sizeof(AFCPacket)];
 	free(buffer);
 
 	if (r_packet->operation == AFC_ERROR && !(client->afc_packet->operation == AFC_DELETE && param1 == 7)) {
@@ -475,7 +474,7 @@ iphone_error_t iphone_afc_delete_file(iphone_afc_client_t client, const char *pa
 iphone_error_t iphone_afc_rename_file(iphone_afc_client_t client, const char *from, const char *to)
 {
 	char *response = NULL;
-	char *send = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32)));
+	char *send = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
 	int bytes = 0;
 
 	if (!client || !from || !to || !client->afc_packet || !client->connection)
@@ -661,7 +660,7 @@ iphone_afc_open_file(iphone_afc_client_t client, const char *filename,
 					 iphone_afc_file_mode_t file_mode, iphone_afc_file_t * file)
 {
 	iphone_afc_file_t file_loc = NULL;
-	uint32 ag = 0;
+	uint32_t ag = 0;
 	int bytes = 0, length = 0;
 	char *data = (char *) malloc(sizeof(char) * (8 + strlen(filename) + 1));
 
@@ -796,8 +795,8 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 {
 	char *acknowledgement = NULL;
 	const int MAXIMUM_WRITE_SIZE = 1 << 15;
-	uint32 zero = 0, current_count = 0, i = 0;
-	uint32 segments = (length / MAXIMUM_WRITE_SIZE);
+	uint32_t zero = 0, current_count = 0, i = 0;
+	uint32_t segments = (length / MAXIMUM_WRITE_SIZE);
 	int bytes_loc = 0;
 	char *out_buffer = NULL;
 
@@ -815,8 +814,8 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 		client->afc_packet->entire_length = client->afc_packet->this_length + MAXIMUM_WRITE_SIZE;
 		client->afc_packet->operation = AFC_WRITE;
 		out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
-		memcpy(out_buffer, (char *) &file->filehandle, sizeof(uint32));
-		memcpy(out_buffer + 4, (char *) &zero, sizeof(uint32));
+		memcpy(out_buffer, (char *) &file->filehandle, sizeof(uint32_t));
+		memcpy(out_buffer + 4, (char *) &zero, sizeof(uint32_t));
 		memcpy(out_buffer + 8, data + current_count, MAXIMUM_WRITE_SIZE);
 		bytes_loc = dispatch_AFC_packet(client, out_buffer, MAXIMUM_WRITE_SIZE + 8);
 		if (bytes_loc < 0) {
@@ -848,8 +847,8 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 	client->afc_packet->entire_length = client->afc_packet->this_length + (length - current_count);
 	client->afc_packet->operation = AFC_WRITE;
 	out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
-	memcpy(out_buffer, (char *) &file->filehandle, sizeof(uint32));
-	memcpy(out_buffer + 4, (char *) &zero, sizeof(uint32));
+	memcpy(out_buffer, (char *) &file->filehandle, sizeof(uint32_t));
+	memcpy(out_buffer + 4, (char *) &zero, sizeof(uint32_t));
 	memcpy(out_buffer + 8, data + current_count, (length - current_count));
 	bytes_loc = dispatch_AFC_packet(client, out_buffer, (length - current_count) + 8);
 	free(out_buffer);
@@ -884,7 +883,7 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 	if (!client || !file)
 		return IPHONE_E_INVALID_ARG;
 	char *buffer = malloc(sizeof(char) * 8);
-	uint32 zero = 0;
+	uint32_t zero = 0;
 	int bytes = 0;
 
 	afc_lock(client);
@@ -892,8 +891,8 @@ iphone_error_t iphone_afc_close_file(iphone_afc_client_t client, iphone_afc_file
 	log_debug_msg("afc_close_file: File handle %i\n", file->filehandle);
 
 	// Send command
-	memcpy(buffer, &file->filehandle, sizeof(uint32));
-	memcpy(buffer + sizeof(uint32), &zero, sizeof(zero));
+	memcpy(buffer, &file->filehandle, sizeof(uint32_t));
+	memcpy(buffer + sizeof(uint32_t), &zero, sizeof(zero));
 	client->afc_packet->operation = AFC_FILE_CLOSE;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, sizeof(char) * 8);
@@ -939,7 +938,7 @@ iphone_error_t iphone_afc_lock_file(iphone_afc_client_t client, iphone_afc_file_
 	if (!client || !file)
 		return IPHONE_E_INVALID_ARG;
 	char *buffer = malloc(16);
-	uint32 zero = 0;
+	uint32_t zero = 0;
 	int bytes = 0;
 	uint64_t op = operation;
 
@@ -948,8 +947,8 @@ iphone_error_t iphone_afc_lock_file(iphone_afc_client_t client, iphone_afc_file_
 	log_debug_msg("afc_lock_file: File handle %i\n", file->filehandle);
 
 	// Send command
-	memcpy(buffer, &file->filehandle, sizeof(uint32));
-	memcpy(buffer + sizeof(uint32), &zero, sizeof(zero));
+	memcpy(buffer, &file->filehandle, sizeof(uint32_t));
+	memcpy(buffer + sizeof(uint32_t), &zero, sizeof(zero));
 	memcpy(buffer + 8, &op, 8);
 
 	client->afc_packet->operation = AFC_FILE_LOCK;
@@ -986,7 +985,7 @@ iphone_error_t iphone_afc_lock_file(iphone_afc_client_t client, iphone_afc_file_
 iphone_error_t iphone_afc_seek_file(iphone_afc_client_t client, iphone_afc_file_t file, int seekpos)
 {
 	char *buffer = (char *) malloc(sizeof(char) * 24);
-	uint32 seekto = 0, zero = 0;
+	uint32_t seekto = 0, zero = 0;
 	int bytes = 0;
 
 	if (seekpos < 0)
@@ -996,12 +995,12 @@ iphone_error_t iphone_afc_seek_file(iphone_afc_client_t client, iphone_afc_file_
 
 	// Send the command
 	seekto = seekpos;
-	memcpy(buffer, &file->filehandle, sizeof(uint32));	// handle
-	memcpy(buffer + 4, &zero, sizeof(uint32));	// pad
-	memcpy(buffer + 8, &zero, sizeof(uint32));	// fromwhere
-	memcpy(buffer + 12, &zero, sizeof(uint32));	// pad
-	memcpy(buffer + 16, &seekto, sizeof(uint32));	// offset
-	memcpy(buffer + 20, &zero, sizeof(uint32));	// pad
+	memcpy(buffer, &file->filehandle, sizeof(uint32_t));	// handle
+	memcpy(buffer + 4, &zero, sizeof(uint32_t));	// pad
+	memcpy(buffer + 8, &zero, sizeof(uint32_t));	// fromwhere
+	memcpy(buffer + 12, &zero, sizeof(uint32_t));	// pad
+	memcpy(buffer + 16, &seekto, sizeof(uint32_t));	// offset
+	memcpy(buffer + 20, &zero, sizeof(uint32_t));	// pad
 	client->afc_packet->operation = AFC_FILE_SEEK;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, 23);
@@ -1041,14 +1040,14 @@ iphone_error_t iphone_afc_truncate_file(iphone_afc_client_t client, iphone_afc_f
 {
 	char *buffer = (char *) malloc(sizeof(char) * 16);
 	int bytes = 0;
-	uint32 zero = 0;
+	uint32_t zero = 0;
 
 	afc_lock(client);
 
 	// Send command
-	memcpy(buffer, &file->filehandle, sizeof(uint32));	// handle
-	memcpy(buffer + 4, &zero, sizeof(uint32));	// pad
-	memcpy(buffer + 8, &newsize, sizeof(uint32));	// newsize
+	memcpy(buffer, &file->filehandle, sizeof(uint32_t));	// handle
+	memcpy(buffer + 4, &zero, sizeof(uint32_t));	// pad
+	memcpy(buffer + 8, &newsize, sizeof(uint32_t));	// newsize
 	memcpy(buffer + 12, &zero, 3);	// pad
 	client->afc_packet->operation = AFC_FILE_TRUNCATE;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
@@ -1121,7 +1120,7 @@ iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path,
 }
 
 
-uint32 iphone_afc_get_file_handle(iphone_afc_file_t file)
+uint32_t iphone_afc_get_file_handle(iphone_afc_file_t file)
 {
 	return file->filehandle;
 }

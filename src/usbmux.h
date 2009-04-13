@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "libiphone/libiphone.h"
 
 #ifndef USBMUX_H
 #define USBMUX_H
@@ -30,17 +31,12 @@
 #include "iphone.h"
 #endif
 
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint8_t uint8;
-
-
 typedef struct {
-	uint32 type, length;
-	uint16 sport, dport;
-	uint32 scnt, ocnt;
-	uint8 offset, tcp_flags;
-	uint16 window, nullnull, length16;
+	uint32_t type, length;
+	uint16_t sport, dport;
+	uint32_t scnt, ocnt;
+	uint8_t offset, tcp_flags;
+	uint16_t window, nullnull, length16;
 } usbmux_tcp_header;
 
 struct iphone_umux_client_int {
@@ -50,10 +46,10 @@ struct iphone_umux_client_int {
 	int r_len;
 };
 
-usbmux_tcp_header *new_mux_packet(uint16 s_port, uint16 d_port);
+usbmux_tcp_header *new_mux_packet(uint16_t s_port, uint16_t d_port);
 
 typedef struct {
-	uint32 type, length, major, minor, allnull;
+	uint32_t type, length, major, minor, allnull;
 } usbmux_version_header;
 
 usbmux_version_header *version_header(void);
