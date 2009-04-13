@@ -230,13 +230,15 @@ iphone_error_t iphone_free_device(iphone_device_t device)
 	unsigned char buf[512];
 
 	// read final package(s)
-	do {
-		bytes = usb_bulk_read(device->device, BULKIN, (void *) &buf, 512, 800);
-		if (bytes > 0) {
-			log_debug_msg("iphone_free_device: final read returned\n");
-			log_debug_buffer(buf, bytes);
-		}
-	} while (bytes > 0);
+	if (device->device != NULL) {
+		do {
+			bytes = usb_bulk_read(device->device, BULKIN, (void *) &buf, 512, 800);
+			if (bytes > 0) {
+				log_debug_msg("iphone_free_device: final read returned\n");
+				log_debug_buffer(buf, bytes);
+			}
+		} while (bytes > 0);
+	}
 
 	if (device->buffer) {
 		free(device->buffer);
