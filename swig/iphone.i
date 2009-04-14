@@ -31,6 +31,12 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd);
 %include "stdint.i"
 %include "plist/swig/plist.i"
 
+#define DBGMASK_ALL        0xFFFF
+#define DBGMASK_NONE       0x0000
+#define DBGMASK_USBMUX     (1 << 1)
+#define DBGMASK_LOCKDOWND  (1 << 2)
+#define DBGMASK_MOBILESYNC (1 << 3)
+
 typedef struct {
 	iphone_device_t dev;
 } iPhone;
@@ -98,7 +104,6 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	iPhone() {
 		iPhone* phone = (iPhone*) malloc(sizeof(iPhone));
 		phone->dev = NULL;
-		iphone_set_debug_mask(DBGMASK_LOCKDOWND | DBGMASK_MOBILESYNC);
 		return phone;
 	}
 
@@ -106,8 +111,18 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		my_delete_iPhone($self);
 	}
 
+	void set_debug_mask(uint16_t mask) {
+		iphone_set_debug_mask(mask);
+	}
+
 	int init_device() {
 		if (IPHONE_E_SUCCESS == iphone_get_device ( &($self->dev)))
+			return 1;
+		return 0;
+	}
+
+	int init_specific_device(int busnumber, int devicenumber) {
+		if (IPHONE_E_SUCCESS == iphone_get_specific_device ( busnumber, devicenumber, &($self->dev)))
 			return 1;
 		return 0;
 	}
@@ -125,6 +140,17 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 
 	~Lockdownd() {
 		my_delete_Lockdownd($self);
+	}
+
+	void send(PListNode* node) {
+		iphone_lckd_send($self->client, node->node);
+	}
+
+	PListNode* receive() {
+		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
+		node->node = NULL;
+		iphone_lckd_recv($self->client, &(node->node));
+		return node;
 	}
 
 	MobileSync* get_mobile_sync_client() {
