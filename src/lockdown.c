@@ -1021,8 +1021,9 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
  *
  * @param control The lockdownd client
  * @param service The name of the service to start
- *
- * @return The port number the service was started on or 0 on failure.
+ * @param port The port number the service was started on
+ 
+ * @return an error code
  */
 iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char *service, int *port)
 {
@@ -1064,6 +1065,8 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
 
+	ret = IPHONE_E_UNKNOWN_ERROR;
+
 	plist_t query_node = plist_find_node_by_string(dict, "StartService");
 	plist_t result_key_node = plist_get_next_sibling(query_node);
 	plist_t result_value_node = plist_get_next_sibling(result_key_node);
@@ -1076,9 +1079,7 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 	plist_type port_key_type = plist_get_node_type(port_key_node);
 	plist_type port_value_type = plist_get_node_type(port_value_node);
 
-	if (result_key_type == PLIST_KEY && result_value_type == PLIST_STRING && port_key_type == PLIST_KEY
-		&& port_value_type == PLIST_UINT) {
-
+	if (result_key_type == PLIST_KEY && result_value_type == PLIST_STRING) {
 		char *result_key = NULL;
 		char *result_value = NULL;
 		char *port_key = NULL;
@@ -1086,18 +1087,23 @@ iphone_error_t iphone_lckd_start_service(iphone_lckd_client_t client, const char
 
 		plist_get_key_val(result_key_node, &result_key);
 		plist_get_string_val(result_value_node, &result_value);
-		plist_get_key_val(port_key_node, &port_key);
-		plist_get_uint_val(port_value_node, &port_value);
 
-		if (!strcmp(result_key, "Result") && !strcmp(result_value, "Success") && !strcmp(port_key, "Port")) {
-			port_loc = port_value;
-			ret = IPHONE_E_SUCCESS;
+		if (!strcmp(result_key, "Result") && !strcmp(result_value, "Failure")) {
+			ret = IPHONE_E_START_SERVICE_FAILED;
+		} else {
+			if (port_key_type == PLIST_KEY && port_value_type == PLIST_UINT) {
+				plist_get_key_val(port_key_node, &port_key);
+				plist_get_uint_val(port_value_node, &port_value);
+
+				if (!strcmp(result_key, "Result") && !strcmp(result_value, "Success") && !strcmp(port_key, "Port")) {
+					port_loc = port_value;
+					ret = IPHONE_E_SUCCESS;
+				}
+
+				if (port && ret == IPHONE_E_SUCCESS)
+					*port = port_loc;
+			}
 		}
-
-		if (port && ret == IPHONE_E_SUCCESS)
-			*port = port_loc;
-		else
-			ret = IPHONE_E_UNKNOWN_ERROR;
 	}
 
 	plist_free(dict);

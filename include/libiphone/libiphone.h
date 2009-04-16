@@ -32,23 +32,24 @@ extern "C" {
 #include <plist/plist.h>
 
 //general errors
-#define IPHONE_E_SUCCESS          0
-#define IPHONE_E_INVALID_ARG     -1
-#define IPHONE_E_UNKNOWN_ERROR   -2
-#define IPHONE_E_NO_DEVICE       -3
-#define IPHONE_E_TIMEOUT         -4
-#define IPHONE_E_NOT_ENOUGH_DATA -5
-#define IPHONE_E_BAD_HEADER      -6
+#define IPHONE_E_SUCCESS                0
+#define IPHONE_E_INVALID_ARG           -1
+#define IPHONE_E_UNKNOWN_ERROR         -2
+#define IPHONE_E_NO_DEVICE             -3
+#define IPHONE_E_TIMEOUT               -4
+#define IPHONE_E_NOT_ENOUGH_DATA       -5
+#define IPHONE_E_BAD_HEADER            -6
 
 //lockdownd specific error
-#define IPHONE_E_INVALID_CONF    -7
-#define IPHONE_E_PAIRING_FAILED  -8
-#define IPHONE_E_SSL_ERROR       -9
-#define IPHONE_E_PLIST_ERROR    -10
-#define IPHONE_E_DICT_ERROR     -11
+#define IPHONE_E_INVALID_CONF          -7
+#define IPHONE_E_PAIRING_FAILED        -8
+#define IPHONE_E_SSL_ERROR             -9
+#define IPHONE_E_PLIST_ERROR          -10
+#define IPHONE_E_DICT_ERROR           -11
+#define IPHONE_E_START_SERVICE_FAILED -12
 
 //afc specific error
-#define IPHONE_E_NO_SUCH_FILE   -12
+#define IPHONE_E_NO_SUCH_FILE         -13
 
 typedef int16_t iphone_error_t;
 
