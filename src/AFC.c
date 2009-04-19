@@ -637,7 +637,8 @@ iphone_error_t iphone_afc_get_file_attr(iphone_afc_client_t client, const char *
 		stbuf->st_uid = getuid();
 		stbuf->st_gid = getgid();
 
-		ret = iphone_afc_close_file(client, file);
+		free(file);
+		ret = IPHONE_E_SUCCESS;
 	}
 	return ret;
 }
