@@ -28,6 +28,8 @@
 
 void print_usage(int argc, char **argv);
 void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, const char *request, const char *key);
+void plist_node_to_string(plist_t *node);
+void plist_children_to_string(plist_t *node);
 
 int main(int argc, char *argv[])
 {
@@ -82,11 +84,18 @@ int main(int argc, char *argv[])
 	}
 
 	/* dump all information we can retrieve */
+	printf("# general\n");
 	print_lckd_request_info(control, NULL, "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.disk_usage", "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.mobile.battery", "GetValue", NULL);
+	/* FIXME: For some reason lockdownd segfaults on this, works sometimes though
+	print_lckd_request_info(control, "com.apple.mobile.debug", "GetValue", NULL);
+	*/
+	print_lckd_request_info(control, "com.apple.xcode.developerdomain", "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.international", "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.mobile.sync_data_class", "GetValue", NULL);
+	print_lckd_request_info(control, "com.apple.iTunes", "GetValue", NULL);
+	print_lckd_request_info(control, "com.apple.mobile.iTunes.store", "GetValue", NULL);
 
 	iphone_lckd_free_client(control);
 	iphone_free_device(phone);
@@ -104,14 +113,91 @@ void print_usage(int argc, char **argv)
 	printf("\n");
 }
 
-void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, const char *request, const char *key) {
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+void plist_node_to_string(plist_t *node)
+{
+	char *s = NULL;
+	double d;
+	uint8_t b;
+
+	uint64_t u = 0;
+
 	plist_type t;
 
+	if (!node)
+		return;
+
+	t = plist_get_node_type(node);
+
+	switch (t) {
+	case PLIST_BOOLEAN:
+		plist_get_bool_val(node, &b);
+		printf("%s\n", (b ? "true" : "false"));
+		break;
+
+	case PLIST_UINT:
+		plist_get_uint_val(node, &u);
+		printf("%llu\n", u);
+		break;
+
+	case PLIST_REAL:
+		plist_get_real_val(node, &d);
+		printf("%f\n", d);
+		break;
+
+	case PLIST_STRING:
+		plist_get_string_val(node, &s);
+		printf("%s\n", s);
+		free(s);
+		break;
+
+	case PLIST_UNICODE:
+		plist_get_unicode_val(node, &s);
+		printf("%s\n", s);
+		free(s);
+		break;
+
+	case PLIST_KEY:
+		plist_get_key_val(node, &s);
+		printf("%s: ", s);
+		free(s);
+		break;
+
+	case PLIST_DATA:
+		printf("\n");
+		break;
+	case PLIST_DATE:
+		printf("\n");
+		break;
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+		printf("\n");
+		plist_children_to_string(node);
+		break;
+	default:
+		break;
+	}
+}
+
+void plist_children_to_string(plist_t *node)
+{
+	/* iterate over key/value pairs */
+	for (
+		node = plist_get_first_child(node);
+		node != NULL;
+		node = plist_get_next_sibling(node)
+	) {
+		plist_node_to_string(node);
+	}
+}
+
+void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, const char *request, const char *key) {
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	
 	plist_t node = plist_new_dict();
 	if (domain) {
 		plist_add_sub_key_el(node, "Domain");
 		plist_add_sub_string_el(node, domain);
+		printf("# %s\n", domain);
 	}
 	if (key) {
 		plist_add_sub_key_el(node, "Key");
@@ -129,57 +215,12 @@ void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, c
 			/* seek to first dict node */
 			for (
 				node = plist_get_first_child(node);
-				(node != NULL) && (plist_get_node_type(node) != PLIST_DICT);
+				node && (plist_get_node_type(node) != PLIST_DICT);
 				node = plist_get_next_sibling(node)
 			) {
 			}
-
-			/* iterate over key/value pairs */
-			for (
-				node = plist_get_first_child(node);
-				node;
-				node = plist_get_next_sibling(node)
-			) {
-				char *s = NULL;
-				uint8_t b;
-				
-				t = plist_get_node_type(node);
-				if (t == PLIST_KEY) {
-					plist_get_key_val(node, &s);
-					node = plist_get_next_sibling(node);
-					t = plist_get_node_type(node);
-					/* only print string nodes for now */
-					if ((t != PLIST_STRING) &&
-					    (t != PLIST_BOOLEAN) &&
-					    (t != PLIST_UINT) &&
-					    (t != PLIST_DICT)
-					    ) {
-						free(s);
-						continue;
-					}
-					printf("%s: ", s);
-				}
-				uint64_t u = 0;
-				switch(t) {
-					case PLIST_DICT:
-					printf("<dict/>\n");
-					break;
-					case PLIST_UINT:
-					plist_get_uint_val(node, &u);
-					printf("%llu\n", u);
-					break;
-					case PLIST_STRING:
-					plist_get_string_val(node, &s);
-					printf("%s\n", s);
-					free(s);
-					break;
-					case PLIST_BOOLEAN:
-					plist_get_bool_val(node, &b);
-					printf("%s\n", (b ? "true" : "false"));
-					default:
-					continue;
-				}
-			}
+			if(plist_get_first_child(node))
+				plist_children_to_string(node);
 		}
 	}
 	if (node)
