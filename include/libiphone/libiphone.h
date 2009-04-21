@@ -49,7 +49,7 @@ extern "C" {
 #define IPHONE_E_START_SERVICE_FAILED -12
 
 //afc specific error
-#define IPHONE_E_NO_SUCH_FILE         -13
+#define IPHONE_E_AFC_ERROR            -13
 
 typedef int16_t iphone_error_t;
 
@@ -122,6 +122,8 @@ iphone_error_t iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32
 //afc related functions
 iphone_error_t iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t *client );
 iphone_error_t iphone_afc_free_client ( iphone_afc_client_t client );
+int iphone_afc_get_afcerror ( iphone_afc_client_t client );
+int iphone_afc_get_errno ( iphone_afc_client_t client );
 
 iphone_error_t iphone_afc_get_devinfo ( iphone_afc_client_t client, char ***infos );
 iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir, char ***list);

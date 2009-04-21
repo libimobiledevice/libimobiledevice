@@ -27,14 +27,18 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <glib.h>
+#include <stdint.h>
+
+#define AFC_MAGIC "CFA6LPAA"
+#define AFC_MAGIC_LEN (8)
 
 typedef struct {
-	uint32_t header1, header2;
-	uint32_t entire_length, unknown1, this_length, unknown2, packet_num, unknown3, operation, unknown4;
+	char magic[AFC_MAGIC_LEN];
+	uint64_t entire_length, this_length, packet_num, operation;
 } AFCPacket;
 
 typedef struct {
-	uint32_t filehandle, unknown1, size, unknown2;
+	uint64_t filehandle, size;
 } AFCFilePacket;
 
 typedef struct __AFCToken {
@@ -47,11 +51,16 @@ struct iphone_afc_client_int {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
+	int afcerror;
 	GMutex *mutex;
 };
 
 struct iphone_afc_file_int {
-	uint32_t filehandle, blocks, size, type;
+	uint32_t filehandle;
+	uint32_t blocks;
+	off_t size;
+	uint32_t mode;
+	uint32_t nlink;
 };
 
 
@@ -88,3 +97,4 @@ enum {
 };
 
 uint32_t iphone_afc_get_file_handle(iphone_afc_file_t file);
+static int afcerror_to_errno(int afcerror);
