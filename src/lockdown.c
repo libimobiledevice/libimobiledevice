@@ -506,7 +506,6 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
-		log_debug_msg("No HostID found, run libiphone-initconf.\n");
 		ret = IPHONE_E_INVALID_CONF;
 	}
 
@@ -846,6 +845,60 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
 
 	if (!dict)
 		return IPHONE_E_PLIST_ERROR;
+
+	plist_t request_node = plist_get_dict_el_from_key(dict, "Request");
+	plist_t result_node = plist_get_dict_el_from_key(dict, "Result");
+
+	if (request_node && PLIST_STRING == plist_get_node_type(request_node) &&
+		result_node && PLIST_STRING == plist_get_node_type(result_node)){
+
+		char *request = NULL;
+		char *result = NULL;
+
+		plist_get_string_val(request_node, &request);
+		plist_get_string_val(result_node, &result);
+
+		if (!strcmp(request, "StartSession")) {
+			if (!strcmp(result, "Failure")) {
+
+				plist_t error_node = plist_get_dict_el_from_key(dict, "Error");
+				if (error_node && PLIST_STRING == plist_get_node_type(error_node)) {
+
+					char *error = NULL;
+					plist_get_string_val(error_node, &error);
+
+					if (!strcmp(error, "InvalidHostID")) {
+						//hostid is not know. Pair and try again
+						char *uid = NULL;
+						char* host_id = get_host_id();
+						if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(control, &uid) ) {
+							if (IPHONE_E_SUCCESS == lockdownd_pair_device(control, uid, host_id) ) {
+
+								//start session again
+								plist_free(dict);
+								dict = plist_new_dict();
+								plist_add_sub_key_el(dict, "HostID");
+								plist_add_sub_string_el(dict, HostID);
+								plist_add_sub_key_el(dict, "Request");
+								plist_add_sub_string_el(dict, "StartSession");
+
+								ret = iphone_lckd_send(control, dict);
+								plist_free(dict);
+								dict = NULL;
+
+								ret = iphone_lckd_recv(control, &dict);
+							}
+						}
+						free(uid);
+						free(host_id);
+					}
+					free(error);
+				}
+			}
+		}
+		free(request);
+		free(result);
+	}
 
 	plist_t query_node = plist_find_node_by_string(dict, "StartSession");
 	plist_t result_key_node = plist_get_next_sibling(query_node);
