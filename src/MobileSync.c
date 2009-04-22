@@ -22,6 +22,7 @@
 #include "MobileSync.h"
 #include <plist/plist.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 
 #define MSYNC_VERSION_INT1 100
@@ -136,16 +137,27 @@ iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist)
 	if (!client || !plist || (plist && *plist))
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
-	char *receive;
-	uint32_t datalen = 0, bytes = 0;
+	char *receive = NULL;
+	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
 	ret = iphone_mux_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
 	datalen = ntohl(datalen);
 
 	receive = (char *) malloc(sizeof(char) * datalen);
-	ret = iphone_mux_recv(client->connection, receive, datalen, &bytes);
 
-	plist_from_bin(receive, bytes, plist);
+	/* fill buffer and request more packets if needed */
+	while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
+		ret = iphone_mux_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
+		received_bytes += bytes;
+	}
+
+	if (ret != IPHONE_E_SUCCESS) {
+		free(receive);
+		return ret;
+	}
+
+	plist_from_bin(receive, received_bytes, plist);
+	free(receive);
 
 	char *XMLContent = NULL;
 	uint32_t length = 0;

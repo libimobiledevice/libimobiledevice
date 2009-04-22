@@ -193,8 +193,8 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 	if (!client || !plist || (plist && *plist))
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
-	char *receive;
-	uint32_t datalen = 0, bytes = 0;
+	char *receive = NULL;
+	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
 	if (!client->in_SSL)
 		ret = iphone_mux_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
@@ -206,21 +206,31 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 	datalen = ntohl(datalen);
 
 	receive = (char *) malloc(sizeof(char) * datalen);
-	if (!client->in_SSL)
-		ret = iphone_mux_recv(client->connection, receive, datalen, &bytes);
-	else {
-		bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
-		if (bytes > 0)
+
+	if (!client->in_SSL) {
+		/* fill buffer and request more packets if needed */
+		while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
+			ret = iphone_mux_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
+			received_bytes += bytes;
+		}
+	} else {
+		received_bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
+		if (received_bytes > 0)
 			ret = IPHONE_E_SUCCESS;
 	}
 
-	if (bytes <= 0) {
+	if (ret != IPHONE_E_SUCCESS) {
+		free(receive);
+		return ret;
+	}
+
+	if (received_bytes <= 0) {
 		free(receive);
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "Recv msg :\nsize : %i\nbuffer :\n%s\n", bytes, receive);
-	plist_from_xml(receive, bytes, plist);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "Recv msg :\nsize : %i\nbuffer :\n%s\n", received_bytes, receive);
+	plist_from_xml(receive, received_bytes, plist);
 	free(receive);
 
 	if (!*plist)
