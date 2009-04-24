@@ -506,7 +506,7 @@ iphone_error_t iphone_lckd_new_client(iphone_device_t device, iphone_lckd_client
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
-		log_debug_msg("No HostID found, generation of HostID required.\n");
+		log_debug_msg("No HostID found, run libiphone-initconf.\n");
 		ret = IPHONE_E_INVALID_CONF;
 	}
 
