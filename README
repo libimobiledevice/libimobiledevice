@@ -24,7 +24,6 @@ To compile run:
 	./configure
 	make
 	sudo make install  # (if you want to install it into your system directories)
-	libiphone-initconf  # (as the user you intend to use the library)
 
 On Ubuntu/Debian, you can do:
 	sudo apt-get install build-essential automake autoconf libtool\
@@ -46,4 +45,4 @@ mailing list:
 	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
 
 updated:
-	2009-03-25
+	2009-04-23
