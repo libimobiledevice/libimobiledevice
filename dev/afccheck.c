@@ -53,7 +53,7 @@ void check_afc(gpointer data)
 	iphone_afc_file_t file = NULL;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
-	iphone_afc_open_file(((param *) data)->afc, path, IPHONE_AFC_FILE_WRITE, &file);
+	iphone_afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
 	iphone_afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
 	iphone_afc_close_file(((param *) data)->afc, file);
 	file = NULL;
@@ -62,7 +62,7 @@ void check_afc(gpointer data)
 
 	//now read it
 	bytes = 0;
-	iphone_afc_open_file(((param *) data)->afc, path, IPHONE_AFC_FILE_READ, &file);
+	iphone_afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
 	iphone_afc_read_file(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
 	iphone_afc_close_file(((param *) data)->afc, file);
 	if (bytes != buffersize)
