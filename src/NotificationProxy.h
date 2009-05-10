@@ -27,4 +27,20 @@
 struct iphone_np_client_int {
 	iphone_umux_client_t connection;
 	GMutex *mutex;
+	GThread *notifier;
 };
+
+static const char *np_default_notifications[10] = {
+	NP_SYNC_SUSPEND_REQUEST,
+	NP_SYNC_RESUME_REQUEST,
+	NP_PHONE_NUMBER_CHANGED,
+	NP_SYNC_CANCEL_REQUEST,
+	NP_DEVICE_NAME_CHANGED,
+	NP_ATTEMPTACTIVATION,
+	NP_DS_DOMAIN_CHANGED,
+	NP_APP_INSTALLED,
+	NP_APP_UNINSTALLED,
+	NULL
+};
+
+gpointer iphone_np_notifier( gpointer arg );

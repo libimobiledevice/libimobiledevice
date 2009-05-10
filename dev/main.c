@@ -27,26 +27,14 @@
 #include <libiphone/libiphone.h>
 #include "../src/utils.h"
 
-void perform_syncWillStart(iphone_device_t phone, iphone_lckd_client_t control)
+void notifier(const char *notification)
 {
-	int nport = 0;
-	iphone_np_client_t np;
-
-	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
-	if (nport) {
-		printf("::::::::::::::: np was started ::::::::::::\n");
-		iphone_np_new_client(phone, 3555, nport, &np);
-		if (np) {
-			printf("::::::::: PostNotification com.apple.itunes-mobdev.syncWillStart\n");
-			iphone_np_post_notification(np, "com.apple.itunes-mobdev.syncWillStart");
-			iphone_np_free_client(np);
-		}
-	} else {
-		printf("::::::::::::::: np was NOT started ::::::::::::\n");
-	}
+	printf("---------------------------------------------------------\n");
+	printf("------> Notification received: %s\n", notification);
+	printf("---------------------------------------------------------\n");
 }
 
-void perform_syncDidStart(iphone_device_t phone, iphone_lckd_client_t control)
+void perform_notification(iphone_device_t phone, iphone_lckd_client_t control, const char *notification)
 {
 	int nport = 0;
 	iphone_np_client_t np;
@@ -54,11 +42,10 @@ void perform_syncDidStart(iphone_device_t phone, iphone_lckd_client_t control)
 	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
 	if (nport) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
-		sleep(1);
 		iphone_np_new_client(phone, 3555, nport, &np);
 		if (np) {
-			printf("::::::::: PostNotification com.apple.itunes-mobdev.syncDidStart\n");
-			iphone_np_post_notification(np, "com.apple.itunes-mobdev.syncDidStart");
+			printf("::::::::: PostNotification %s\n", notification);
+			iphone_np_post_notification(np, notification);
 			iphone_np_free_client(np);
 		}
 	} else {
@@ -69,9 +56,11 @@ void perform_syncDidStart(iphone_device_t phone, iphone_lckd_client_t control)
 int main(int argc, char *argv[])
 {
 	int bytes = 0, port = 0, i = 0;
+	int npp;
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
 	iphone_afc_file_t lockfile = NULL;
+	iphone_np_client_t gnp = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug(1);
@@ -88,6 +77,7 @@ int main(int argc, char *argv[])
 
 	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
 		iphone_free_device(phone);
+		printf("Exiting.\n");
 		return -1;
 	}
 
@@ -97,20 +87,45 @@ int main(int argc, char *argv[])
 		free(uid);
 	}
 
+
+	char *nnn = NULL;
+	if (IPHONE_E_SUCCESS == lockdownd_get_device_name(control, &nnn)) {
+		printf("DeviceName : %s\n", nnn);
+		free(nnn);
+	}
+
 	iphone_lckd_start_service(control, "com.apple.afc", &port);
 
 	if (port) {
 		iphone_afc_client_t afc = NULL;
 		iphone_afc_new_client(phone, 3432, port, &afc);
 		if (afc) {
-			perform_syncWillStart(phone, control);
+			iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &npp);
+			if (npp) {
+				printf("Notification Proxy started.\n");
+				iphone_np_new_client(phone, 3756, npp, &gnp);
+			} else {
+				printf("ERROR: Notification proxy could not be started.\n");
+			}
+			if (gnp) {
+				const char *nspec[4] = {
+					NP_SYNC_CANCEL_REQUEST,
+					NP_SYNC_SUSPEND_REQUEST,
+					NP_SYNC_RESUME_REQUEST,
+					NULL
+				};
+				iphone_np_observe_notifications(gnp, nspec);
+				//iphone_np_set_notify_callback(gnp, notifier);
+			}
+
+			perform_notification(phone, control, NP_SYNC_WILL_START);
 
 			iphone_afc_open_file(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 			if (lockfile) {
 				printf("locking file\n");
 				iphone_afc_lock_file(afc, lockfile, 2 | 4);
 
-				perform_syncDidStart(phone, control);
+				perform_notification(phone, control, NP_SYNC_DID_START);
 			}
 
 			char **dirs = NULL;
@@ -123,6 +138,8 @@ int main(int argc, char *argv[])
 			}
 
 			g_strfreev(dirs);
+
+			dirs = NULL;
 			iphone_afc_get_devinfo(afc, &dirs);
 			if (dirs) {
 				for (i = 0; dirs[i]; i += 2) {
@@ -189,9 +206,31 @@ int main(int argc, char *argv[])
 			iphone_afc_close_file(afc, my_file);
 		}
 
-		if (lockfile) {
-			printf("XXX sleeping 2 seconds\n");
-			sleep(2);
+		if (gnp && lockfile) {
+			char *noti;
+
+			noti = NULL;
+			iphone_np_get_notification(gnp, &noti);
+			if (noti) {
+				printf("------> received notification '%s'\n", noti);
+				free(noti);
+			}
+
+			printf("XXX sleeping\n");
+			for (i = 0; i < 5; i++) {
+				noti = NULL;
+				printf("--- getting notification\n");
+				iphone_np_get_notification(gnp, &noti);
+				if (noti) {
+					printf("------> received notification '%s'\n", noti);
+					free(noti);
+				} else {
+					printf("---- no notification\n");
+				}
+				sleep(1);
+			}
+
+			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
 
 			printf("XXX unlocking file\n");
 			iphone_afc_lock_file(afc, lockfile, 8 | 4);
@@ -199,6 +238,12 @@ int main(int argc, char *argv[])
 			printf("XXX closing file\n");
 			iphone_afc_close_file(afc, lockfile);
 		}
+
+		if (gnp) {
+			iphone_np_free_client(gnp);
+			gnp = NULL;
+		}
+
 		iphone_afc_free_client(afc);
 	} else {
 		printf("Start service failure.\n");

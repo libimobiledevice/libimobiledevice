@@ -101,6 +101,7 @@ iphone_error_t iphone_free_device ( iphone_device_t device );
 
 //lockdownd related functions
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
+iphone_error_t lockdownd_get_device_name ( iphone_lckd_client_t client, char **device_name );
 iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client );
 iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client );
 
@@ -115,6 +116,7 @@ iphone_error_t iphone_mux_free_client ( iphone_umux_client_t client );
 
 iphone_error_t iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t datalen, uint32_t *sent_bytes );
 iphone_error_t iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t *recv_bytes  );
+iphone_error_t iphone_mux_recv_timeout ( iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t *recv_bytes, int timeout);
 
 
 //afc related functions
@@ -147,6 +149,36 @@ iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
 
 iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
 iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
+
+// NotificationProxy related
+// notifications for use with post_notification (client --> device)
+#define NP_SYNC_WILL_START      "com.apple.itunes-mobdev.syncWillStart"
+#define NP_SYNC_DID_START       "com.apple.itunes-mobdev.syncDidStart"
+#define NP_SYNC_DID_FINISH      "com.apple.itunes-mobdev.syncDidFinish"
+
+// notifications for use with observe_notification (device --> client)
+#define NP_SYNC_CANCEL_REQUEST  "com.apple.itunes-client.syncCancelRequest"
+#define NP_SYNC_SUSPEND_REQUEST "com.apple.itunes-client.syncSuspendRequest"
+#define NP_SYNC_RESUME_REQUEST  "com.apple.itunes-client.syncResumeRequest"
+#define NP_PHONE_NUMBER_CHANGED "com.apple.mobile.lockdown.phone_number_changed"
+#define NP_DEVICE_NAME_CHANGED  "com.apple.mobile.lockdown.device_name_changed"
+#define NP_ATTEMPTACTIVATION    "com.apple.springboard.attemptactivation"
+#define NP_DS_DOMAIN_CHANGED    "com.apple.mobile.data_sync.domain_changed"
+#define NP_APP_INSTALLED        "com.apple.mobile.application_installed"
+#define NP_APP_UNINSTALLED      "com.apple.mobile.application_uninstalled"
+
+iphone_error_t iphone_np_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_np_client_t *client );
+iphone_error_t iphone_np_free_client ( iphone_np_client_t client );
+
+iphone_error_t iphone_np_post_notification ( iphone_np_client_t client, const char *notification );
+
+iphone_error_t iphone_np_observe_notification ( iphone_np_client_t client, const char *notification );
+iphone_error_t iphone_np_observe_notifications ( iphone_np_client_t client, const char **notification_spec );
+iphone_error_t iphone_np_get_notification ( iphone_np_client_t client, char **notification );
+
+typedef void (*iphone_np_notify_cb_t) ( const char *notification );
+
+iphone_error_t iphone_np_set_notify_callback ( iphone_np_client_t client, iphone_np_notify_cb_t notify_cb );
 
 #ifdef __cplusplus
 }

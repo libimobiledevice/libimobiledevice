@@ -41,5 +41,5 @@ struct iphone_device_int {
 
 // Function definitions
 int send_to_phone(iphone_device_t phone, char *data, int datalen);
-int recv_from_phone(iphone_device_t phone, char *data, int datalen);
+int recv_from_phone(iphone_device_t phone, char *data, int datalen, int timeout);
 #endif

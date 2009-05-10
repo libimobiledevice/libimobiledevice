@@ -472,6 +472,19 @@ iphone_error_t lockdownd_get_device_public_key(iphone_lckd_client_t control, gnu
 	return lockdownd_generic_get_value(control, "Key", "DevicePublicKey", public_key);
 }
 
+/** Askes for the device's name.
+ *
+ * @return IPHONE_E_SUCCESS on succes or an error value < 0 on failure.
+ */
+iphone_error_t lockdownd_get_device_name(iphone_lckd_client_t control, char **device_name)
+{
+	gnutls_datum_t temp = { NULL, 0 };
+	iphone_error_t res = lockdownd_generic_get_value(control, "Key", "DeviceName", &temp);
+	log_debug_msg("%s: %s\n", __func__, temp.data);
+	*device_name = (char*)temp.data;
+	return res;
+}
+
 /** Completes the entire lockdownd handshake.
  *
  * @param phone The iPhone

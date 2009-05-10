@@ -288,10 +288,11 @@ int send_to_phone(iphone_device_t phone, char *data, int datalen)
  * @param phone The iPhone to receive data from
  * @param data Where to put data read
  * @param datalen How much data to read in
+ * @param timeout How many milliseconds to wait for data
  * 
  * @return How many bytes were read in, or -1 on error.
  */
-int recv_from_phone(iphone_device_t phone, char *data, int datalen)
+int recv_from_phone(iphone_device_t phone, char *data, int datalen, int timeout)
 {
 	if (!phone)
 		return -1;
@@ -301,7 +302,7 @@ int recv_from_phone(iphone_device_t phone, char *data, int datalen)
 		return -1;
 	log_debug_msg("recv_from_phone(): attempting to receive %i bytes\n", datalen);
 
-	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, 3500);
+	bytes = usb_bulk_read(phone->device, BULKIN, data, datalen, timeout);
 	if (bytes < 0) {
 		log_debug_msg("recv_from_phone(): libusb gave me the error %d: %s (%s)\n", bytes, usb_strerror(),
 					  strerror(-bytes));

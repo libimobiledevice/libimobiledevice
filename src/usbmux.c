@@ -143,7 +143,7 @@ iphone_error_t iphone_mux_new_client(iphone_device_t device, uint16_t src_port, 
 		if (send_to_phone(device, (char *) new_connection->header, sizeof(usbmux_tcp_header)) >= 0) {
 			usbmux_tcp_header *response;
 			response = (usbmux_tcp_header *) malloc(sizeof(usbmux_tcp_header));
-			bytes = recv_from_phone(device, (char *) response, sizeof(*response));
+			bytes = recv_from_phone(device, (char *) response, sizeof(*response), 3500);
 			if (response->tcp_flags != 0x12) {
 				free(response);
 				return IPHONE_E_UNKNOWN_ERROR;
@@ -268,10 +268,13 @@ iphone_error_t iphone_mux_send(iphone_umux_client_t client, const char *data, ui
  * @param connection The connection to receive data on.
  * @param data Where to put the data we receive. 
  * @param datalen How much data to read.
+ * @param recv_bytes Pointer to a uint32_t that will be set
+ *        to the number of bytes received.
+ * @param timeout How many milliseconds to wait for data.
  *
- * @return How many bytes were read, or -1 if something bad happens.
+ * @return IPHONE_E_SUCCESS on success, or and error value.
  */
-iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t * recv_bytes)
+iphone_error_t iphone_mux_recv_timeout(iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t * recv_bytes, int timeout)
 {
 
 	if (!client || !data || datalen == 0 || !recv_bytes)
@@ -323,7 +326,7 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	buffer = (char *) malloc(sizeof(char) * 131072);	// make sure we get enough ;)
 
 	// See #3.
-	bytes = recv_from_phone(client->phone, buffer, 131072);
+	bytes = recv_from_phone(client->phone, buffer, 131072, timeout);
 	if (bytes < 28) {
 		free(buffer);
 		log_debug_msg("mux_recv: Did not even get the header.\n");
@@ -384,4 +387,24 @@ iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t
 	// If we get to this point, 'tis probably bad.
 	log_debug_msg("mux_recv: Heisenbug: bytes and datalen not matching up\n");
 	return IPHONE_E_UNKNOWN_ERROR;
+}
+
+/**
+ * This function is just like 'iphone_mux_recv_timeout' but you do not need
+ * to specify a timeout. It simply calls iphone_mux_recv_timeout with a
+ * timeout value of 3500 milliseconds.
+ *
+ * @param connection The connection to receive data on.
+ * @param data Where to put the data we receive.
+ * @param datalen How much data to read.
+ * @param recv_bytes Pointer to a uint32_t that will be set
+ *        to the number of bytes received.
+ *
+ * @return The return value of iphone_mux_recv_timeout.
+ *
+ * @see iphone_mux_recv_timeout
+ */
+iphone_error_t iphone_mux_recv(iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t * recv_bytes)
+{
+	return iphone_mux_recv_timeout(client, data, datalen, recv_bytes, 3500);
 }
