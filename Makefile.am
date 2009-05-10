@@ -10,3 +10,6 @@ doc:
 
 indent:
 	indent -kr -ut -ts4 -l120 src/*.c src/*.h dev/*.c
+
+release:
+	git archive --format=tar --prefix=libiphone-${RELEASE}/ tags/${RELEASE} | bzip2 > libiphone-${RELEASE}.tar.bz2
