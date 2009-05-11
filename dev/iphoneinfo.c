@@ -150,12 +150,6 @@ void plist_node_to_string(plist_t *node)
 		free(s);
 		break;
 
-	case PLIST_UNICODE:
-		plist_get_unicode_val(node, &s);
-		printf("%s\n", s);
-		free(s);
-		break;
-
 	case PLIST_KEY:
 		plist_get_key_val(node, &s);
 		printf("%s: ", s);

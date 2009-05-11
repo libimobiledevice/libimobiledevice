@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT(libiphone, 0.1.0, nospam@nowhere.com)
-AM_INIT_AUTOMAKE(libiphone, 0.1.0)
+AM_INIT_AUTOMAKE(libiphone, 0.9.1)
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
