@@ -4,7 +4,7 @@
  %{
  /* Includes the header in the wrapper code */
  #include <libiphone/libiphone.h>
- #include <plist/plist.h>
+ #include <plist.h>
 #include "../src/utils.h"
  typedef struct {
 	iphone_device_t dev;
@@ -29,7 +29,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd);
  %}
 /* Parse the header file to generate wrappers */
 %include "stdint.i"
-%include "plist/swig/plist.i"
+%include "swig/plist.i"
 
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
