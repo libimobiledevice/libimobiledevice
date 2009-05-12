@@ -126,9 +126,7 @@ iphone_error_t iphone_msync_free_client(iphone_msync_client_t client)
 /** Polls the iPhone for MobileSync data.
  *
  * @param client The MobileSync client
- * @param dump_data The pointer to the location of the buffer in which to store
- *                  the received data
- * @param recv_byhtes The number of bytes received
+ * @param plist A pointer to the location where the plist should be stored
  *
  * @return an error code
  */
@@ -174,9 +172,7 @@ iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist)
  *        a new type of message.
  *
  * @param client The MobileSync client
- * @param raw_data The null terminated string buffer to send
- * @param length The length of data to send
- * @param sent_bytes The number of bytes sent
+ * @param plist The location of the plist to send
  *
  * @return an error code
  */
