@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include fdi swig udev $(DEV_SUB)
+SUBDIRS = src include fdi swig $(DEV_SUB)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-dev-tools
 

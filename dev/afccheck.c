@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	iphone_afc_new_client(phone, 3432, port, &afc);
+	iphone_afc_new_client(phone, port, &afc);
 
 	//makes sure thread environment is available
 	if (!g_thread_supported())

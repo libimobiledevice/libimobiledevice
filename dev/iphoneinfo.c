@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (bus_n != -1) {
+/*	if (bus_n != -1) {
 		ret = iphone_get_specific_device(bus_n, dev_n, &phone);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found for usb bus %d and dev %d, is it plugged in?\n", bus_n, dev_n);
@@ -70,13 +70,13 @@ int main(int argc, char *argv[])
 		}
 	}
 	else
-	{
+	{*/
 		ret = iphone_get_device(&phone);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
-	}
+/*	}*/
 
 	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
 		iphone_free_device(phone);

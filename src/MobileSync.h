@@ -21,7 +21,6 @@
 #ifndef MOBILESYNC_H
 #define MOBILESYNC_H
 
-#include "usbmux.h"
 #include "iphone.h"
 #include "utils.h"
 
@@ -30,7 +29,7 @@
 
 
 struct iphone_msync_client_int {
-	iphone_umux_client_t connection;
+	int sfd;
 };
 
 

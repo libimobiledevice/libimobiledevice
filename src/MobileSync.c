@@ -22,29 +22,30 @@
 #include "MobileSync.h"
 #include <plist/plist.h>
 #include <string.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 
 
 #define MSYNC_VERSION_INT1 100
 #define MSYNC_VERSION_INT2 100
 
-iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int dst_port,
+iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,
 									   iphone_msync_client_t * client)
 {
-	if (!device || src_port == 0 || dst_port == 0 || !client || *client)
+	if (!device || dst_port == 0 || !client || *client)
 		return IPHONE_E_INVALID_ARG;
 
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
-	iphone_msync_client_t client_loc = (iphone_msync_client_t) malloc(sizeof(struct iphone_msync_client_int));
-
 	// Attempt connection
-	client_loc->connection = NULL;
-	ret = iphone_mux_new_client(device, src_port, dst_port, &client_loc->connection);
-	if (IPHONE_E_SUCCESS != ret || !client_loc->connection) {
-		free(client_loc);
+	int sfd = usbmuxd_connect(device->handle, dst_port);
+	if (sfd < 0) {
 		return ret;
 	}
+
+	iphone_msync_client_t client_loc = (iphone_msync_client_t) malloc(sizeof(struct iphone_msync_client_int));
+	client_loc->sfd = sfd;
+
 	//perform handshake
 	plist_t array = NULL;
 
@@ -120,7 +121,7 @@ iphone_error_t iphone_msync_free_client(iphone_msync_client_t client)
 		return IPHONE_E_INVALID_ARG;
 
 	iphone_msync_stop_session(client);
-	return iphone_mux_free_client(client->connection);
+	return usbmuxd_disconnect(client->sfd);
 }
 
 /** Polls the iPhone for MobileSync data.
@@ -138,14 +139,14 @@ iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist)
 	char *receive = NULL;
 	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
-	ret = iphone_mux_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
+	ret = usbmuxd_recv(client->sfd, (char *) &datalen, sizeof(datalen), &bytes);
 	datalen = ntohl(datalen);
 
 	receive = (char *) malloc(sizeof(char) * datalen);
 
 	/* fill buffer and request more packets if needed */
 	while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
-		ret = iphone_mux_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
+		ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
 		received_bytes += bytes;
 	}
 
@@ -201,7 +202,7 @@ iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist)
 	memcpy(real_query, &length, sizeof(length));
 	memcpy(real_query + 4, content, ntohl(length));
 
-	ret = iphone_mux_send(client->connection, real_query, ntohl(length) + sizeof(length), &bytes);
+	ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	free(real_query);
 	return ret;
 }

@@ -20,7 +20,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 
 # Checks for libraries.
-PKG_CHECK_MODULES(libusb, libusb >= 0.1.12)
+PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.0)
 PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgthread2, gthread-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3 )
@@ -95,4 +95,4 @@ if test "$enable_largefile" != no; then
 fi
 AC_SUBST(LFS_CFLAGS)
 
-AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile swig/Makefile udev/Makefile libiphone-1.0.pc)
+AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile swig/Makefile libiphone-1.0.pc)

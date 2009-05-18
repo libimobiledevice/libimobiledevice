@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include "usbmux.h"
+#include "libiphone/libiphone.h"
 #include "iphone.h"
 
 #include <string.h>
@@ -47,7 +47,7 @@ typedef struct __AFCToken {
 } AFCToken;
 
 struct iphone_afc_client_int {
-	iphone_umux_client_t connection;
+	int sfd;
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;

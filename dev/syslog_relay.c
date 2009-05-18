@@ -27,6 +27,7 @@
 #include <usb.h>
 
 #include <libiphone/libiphone.h>
+#include <usbmuxd.h>
 
 static int quit_flag = 0;
 
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (bus_n != -1) {
+/*	if (bus_n != -1) {
 		ret = iphone_get_specific_device(bus_n, dev_n, &phone);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found for usb bus %d and dev %d, is it plugged in?\n", bus_n, dev_n);
@@ -86,13 +87,13 @@ int main(int argc, char *argv[])
 		}
 	}
 	else
-	{
+	{*/
 		ret = iphone_get_device(&phone);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
-	}
+/*	}*/
 
 	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
 		iphone_free_device(phone);
@@ -103,15 +104,19 @@ int main(int argc, char *argv[])
 	ret = iphone_lckd_start_service(control, "com.apple.syslog_relay", &port);
 	if ((ret == IPHONE_E_SUCCESS) && port) {
 		/* connect to socket relay messages */
-		iphone_umux_client_t syslog_client = NULL;
+		//iphone_umux_client_t syslog_client = NULL;
 		
-		ret = iphone_mux_new_client(phone, 514, port, &syslog_client);
-		if (ret == IPHONE_E_SUCCESS) {
+		//ret = iphone_mux_new_client(phone, 514, port, &syslog_client);
+		int sfd = usbmuxd_connect(iphone_get_device_handle(phone), port);
+		//if (ret == IPHONE_E_SUCCESS) {
+		if (sfd < 0) {
+			printf("ERROR: Could not open usbmux connection.\n");
+		} else {
 			while (!quit_flag) {
 				char *receive = NULL;
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
-				ret = iphone_mux_recv(syslog_client, (char *) &datalen, sizeof(datalen), &bytes);
+				ret = usbmuxd_recv(sfd, (char *) &datalen, sizeof(datalen), &bytes);
 				datalen = ntohl(datalen);
 
 				if (datalen == 0)
@@ -121,7 +126,7 @@ int main(int argc, char *argv[])
 				receive = (char *) malloc(sizeof(char) * datalen);
 
 				while (!quit_flag && (recv_bytes <= datalen)) {
-					ret = iphone_mux_recv(syslog_client, receive, datalen, &bytes);
+					ret = usbmuxd_recv(sfd, receive, datalen, &bytes);
 
 					if (bytes == 0)
 						break;
@@ -133,10 +138,8 @@ int main(int argc, char *argv[])
 
 				free(receive);
 			}
-		} else {
-			printf("ERROR: Could not open usbmux connection.\n");
 		}
-		iphone_mux_free_client(syslog_client);
+		usbmuxd_disconnect(sfd); //iphone_mux_free_client(syslog_client);
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
