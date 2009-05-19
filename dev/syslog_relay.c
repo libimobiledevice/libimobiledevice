@@ -104,11 +104,8 @@ int main(int argc, char *argv[])
 	ret = iphone_lckd_start_service(control, "com.apple.syslog_relay", &port);
 	if ((ret == IPHONE_E_SUCCESS) && port) {
 		/* connect to socket relay messages */
-		//iphone_umux_client_t syslog_client = NULL;
 		
-		//ret = iphone_mux_new_client(phone, 514, port, &syslog_client);
 		int sfd = usbmuxd_connect(iphone_get_device_handle(phone), port);
-		//if (ret == IPHONE_E_SUCCESS) {
 		if (sfd < 0) {
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
@@ -139,7 +136,7 @@ int main(int argc, char *argv[])
 				free(receive);
 			}
 		}
-		usbmuxd_disconnect(sfd); //iphone_mux_free_client(syslog_client);
+		usbmuxd_disconnect(sfd);
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}

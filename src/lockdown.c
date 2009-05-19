@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 #include <glib.h>
 #include <libtasn1.h>
 #include <gnutls/x509.h>
@@ -200,9 +201,14 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 	if (!client->in_SSL)
 		ret = usbmuxd_recv(client->sfd, (char *) &datalen, sizeof(datalen), &bytes);
 	else {
-		bytes = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
-		if (bytes > 0)
+		ssize_t res = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
+		if (res < 0) {
+			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
+			return IPHONE_E_SSL_ERROR;
+		} else {
+			bytes = res;
 			ret = IPHONE_E_SUCCESS;
+		}
 	}
 	datalen = ntohl(datalen);
 
@@ -211,13 +217,18 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 	if (!client->in_SSL) {
 		/* fill buffer and request more packets if needed */
 		while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
-			ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes); //iphone_mux_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
+			ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
 			received_bytes += bytes;
 		}
 	} else {
-		received_bytes = gnutls_record_recv(*client->ssl_session, receive, datalen);
-		if (received_bytes > 0)
+		ssize_t res = gnutls_record_recv(*client->ssl_session, receive, datalen);
+		if (res < 0) {
+			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
+			ret = IPHONE_E_SSL_ERROR;
+		} else {
+			received_bytes = res;
 			ret = IPHONE_E_SUCCESS;
+		}
 	}
 
 	if (ret != IPHONE_E_SUCCESS) {
@@ -225,7 +236,7 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 		return ret;
 	}
 
-	if (received_bytes <= 0) {
+	if ((ssize_t)received_bytes <= 0) {
 		free(receive);
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
@@ -272,12 +283,22 @@ iphone_error_t iphone_lckd_send(iphone_lckd_client_t client, plist_t plist)
 	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): made the query, sending it along\n");
 
 	if (!client->in_SSL)
-		ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes); //iphone_mux_send(client->connection, real_query, ntohl(length) + sizeof(length), &bytes);
+		ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	else {
-		gnutls_record_send(*client->ssl_session, real_query, ntohl(length) + sizeof(length));
-		ret = IPHONE_E_SUCCESS;
+		ssize_t res = gnutls_record_send(*client->ssl_session, real_query, ntohl(length) + sizeof(length));
+		if (res < 0) {
+			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_send: Error occured: %s\n", gnutls_strerror(res));
+			ret = IPHONE_E_SSL_ERROR;
+		} else {
+			bytes = res;
+			ret = IPHONE_E_SUCCESS;
+		}
 	}
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): sent it!\n");
+	if (ret == IPHONE_E_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): sent it!\n");
+	} else {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): sending failed!\n");
+	}
 	free(real_query);
 
 	return ret;
@@ -426,7 +447,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 				char *value_value = NULL;
 				plist_get_string_val(value_value_node, &value_value);
 
-				value->data = value_value;
+				value->data = (unsigned char*)value_value;
 				value->size = strlen(value_value);
 				ret = IPHONE_E_SUCCESS;
 			}
@@ -436,7 +457,7 @@ iphone_error_t lockdownd_generic_get_value(iphone_lckd_client_t control, const c
 				uint64_t size = 0;
 				plist_get_data_val(value_value_node, &value_value, &size);
 
-				value->data = value_value;
+				value->data = (unsigned char*)value_value;
 				value->size = size;
 				ret = IPHONE_E_SUCCESS;
 			}
@@ -458,7 +479,7 @@ iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid
 {
 	gnutls_datum_t temp = { NULL, 0 };
 	iphone_error_t ret = lockdownd_generic_get_value(control, "Key", "UniqueDeviceID", &temp);
-	*uid = temp.data;
+	*uid = (char*)temp.data;
 	return ret;
 }
 
@@ -734,14 +755,14 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 			if (ASN1_SUCCESS == asn1_der_decoding(&asn1_pub_key, der_pub_key.data, der_pub_key.size, NULL)) {
 
 				/* get size to read */
-				int ret1 = asn1_read_value(asn1_pub_key, "modulus", NULL, &modulus.size);
-				int ret2 = asn1_read_value(asn1_pub_key, "publicExponent", NULL, &exponent.size);
+				int ret1 = asn1_read_value(asn1_pub_key, "modulus", NULL, (int*)&modulus.size);
+				int ret2 = asn1_read_value(asn1_pub_key, "publicExponent", NULL, (int*)&exponent.size);
 
 				modulus.data = gnutls_malloc(modulus.size);
 				exponent.data = gnutls_malloc(exponent.size);
 
-				ret1 = asn1_read_value(asn1_pub_key, "modulus", modulus.data, &modulus.size);
-				ret2 = asn1_read_value(asn1_pub_key, "publicExponent", exponent.data, &exponent.size);
+				ret1 = asn1_read_value(asn1_pub_key, "modulus", modulus.data, (int*)&modulus.size);
+				ret2 = asn1_read_value(asn1_pub_key, "publicExponent", exponent.data, (int*)&exponent.size);
 				if (ASN1_SUCCESS == ret1 && ASN1_SUCCESS == ret2)
 					ret = IPHONE_E_SUCCESS;
 			}
@@ -756,7 +777,7 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 	if (IPHONE_E_SUCCESS == ret && 0 != modulus.size && 0 != exponent.size) {
 
 		gnutls_global_init();
-		gnutls_datum_t essentially_null = { strdup("abababababababab"), strlen("abababababababab") };
+		gnutls_datum_t essentially_null = { (unsigned char*)strdup("abababababababab"), strlen("abababababababab") };
 
 		gnutls_x509_privkey_t fake_privkey, root_privkey, host_privkey;
 		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
@@ -1022,7 +1043,7 @@ iphone_error_t lockdownd_start_SSL_session(iphone_lckd_client_t control, const c
  */
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length)
 {
-	int bytes = 0;
+	uint32_t bytes = 0;
 	iphone_lckd_client_t control;
 	control = (iphone_lckd_client_t) transport;
 	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_secuwrite() called\n");
@@ -1045,7 +1066,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length)
 {
 	int bytes = 0, pos_start_fill = 0;
-	int tbytes = 0;
+	size_t tbytes = 0;
 	int this_len = length;
 	iphone_error_t res;
 	iphone_lckd_client_t control;
@@ -1060,19 +1081,12 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 
 	// repeat until we have the full data or an error occurs.
 	do {
-		if ((res = usbmuxd_recv(control->sfd, recv_buffer, this_len, &bytes)) != IPHONE_E_SUCCESS) {
+		if ((res = usbmuxd_recv(control->sfd, recv_buffer, this_len, (uint32_t*)&bytes)) != IPHONE_E_SUCCESS) {
 			log_debug_msg("%s: ERROR: iphone_mux_recv returned %d\n", __func__, res);
 			return res;
 		}
 		log_debug_msg("post-read\nwe got %i bytes\n", bytes);
 
-		if (bytes < 0) {
-			log_debug_msg("lockdownd_securead(): uh oh\n");
-			log_debug_msg
-				("I believe what we have here is a failure to communicate... libusb says %s but strerror says %s\n",
-				 usb_strerror(), strerror(errno));
-			return bytes;		// + 28;      // an errno
-		}
 		// increase read count
 		tbytes += bytes;
 
