@@ -92,7 +92,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->lckd = lckd;
 		client->client = NULL;
-		iphone_msync_new_client ( lckd->dev->dev, 3432, port, &(client->client));
+		iphone_msync_new_client ( lckd->dev->dev, port, &(client->client));
 	}
 	return client;
 }
