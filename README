@@ -12,6 +12,7 @@ You must have:
 	libfuse-dev (and the associated kernel modules)
 	libglib2.0-dev
 	libplist-dev
+	usbmuxd (http://pims.selfip.net/git/usbmuxd)
 	make
 	autoheader
 	automake
