@@ -43,6 +43,7 @@ iphone_error_t iphone_get_device_by_uuid(iphone_device_t * device, const char *u
 {
 	iphone_device_t phone;
 	uint32_t handle = 0;
+	char *serial_number = malloc(41);
 	usbmuxd_scan_result *dev_list = NULL;
 	int i;
 
@@ -53,12 +54,14 @@ iphone_error_t iphone_get_device_by_uuid(iphone_device_t * device, const char *u
 		if (!uuid) {
 			// select first device found if no UUID specified
 			handle = dev_list[0].handle;
+			strcpy(serial_number, dev_list[0].serial_number);
 		} else {
 			// otherwise walk through the list
 			for (i = 0; dev_list[i].handle > 0; i++) {
 				log_debug_msg("%s: device handle=%d, uuid=%s\n", __func__, dev_list[i].handle, dev_list[i].serial_number);
 				if (strcasecmp(uuid, dev_list[i].serial_number) == 0) {
 					handle = dev_list[i].handle;
+					strcpy(serial_number, dev_list[i].serial_number);
 					break;
 				}
 			}
@@ -68,6 +71,7 @@ iphone_error_t iphone_get_device_by_uuid(iphone_device_t * device, const char *u
 		if (handle > 0) {
 			phone = (iphone_device_t) malloc(sizeof(struct iphone_device_int));
 			phone->handle = handle;
+			phone->serial_number = serial_number;
 			*device = phone;
 			return IPHONE_E_SUCCESS;
 		}
@@ -100,6 +104,15 @@ uint32_t iphone_get_device_handle(iphone_device_t device)
 	}
 }
 
+char* iphone_get_uuid(iphone_device_t device)
+{
+	if (device) {
+		return device->serial_number;
+	} else {
+		return NULL;
+	}
+}
+
 /** Cleans up an iPhone structure, then frees the structure itself.  
  * This is a library-level function; deals directly with the iPhone to tear
  *  down relations, but otherwise is mostly internal.
@@ -114,6 +127,7 @@ iphone_error_t iphone_free_device(iphone_device_t device)
 
 	ret = IPHONE_E_SUCCESS;
 
+	free(device->serial_number);
 	free(device);
 	return ret;
 }

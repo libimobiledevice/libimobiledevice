@@ -121,11 +121,9 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		return 0;
 	}
 
-	int init_specific_device(int busnumber, int devicenumber) {
-		if (IPHONE_E_SUCCESS == iphone_get_specific_device ( busnumber, devicenumber, &($self->dev)))
-			return 1;
-		return 0;
-	}
+    char* serial_number(){
+        return iphone_get_uuid($self->dev);
+    }
 
 	Lockdownd* get_lockdown_client() {
 		return my_new_Lockdownd($self);

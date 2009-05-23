@@ -27,6 +27,7 @@
 struct iphone_device_int {
 	char *buffer;
 	uint32_t handle;
+	char *serial_number;
 };
 
 #endif
