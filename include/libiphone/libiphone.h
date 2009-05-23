@@ -30,6 +30,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <plist/plist.h>
+#include <usbmuxd.h>
 
 //general errors
 #define IPHONE_E_SUCCESS                0
@@ -68,9 +69,6 @@ typedef struct iphone_device_int *iphone_device_t;
 struct iphone_lckd_client_int;
 typedef struct iphone_lckd_client_int *iphone_lckd_client_t;
 
-struct iphone_umux_client_int;
-typedef struct iphone_umux_client_int *iphone_umux_client_t;
-
 struct iphone_afc_client_int;
 typedef struct iphone_afc_client_int *iphone_afc_client_t;
 
@@ -95,9 +93,10 @@ void iphone_set_debug(int level);
 
 //device related functions
 iphone_error_t iphone_get_device ( iphone_device_t *device );
-iphone_error_t iphone_get_specific_device( unsigned int bus_n, int dev_n, iphone_device_t * device );
+iphone_error_t iphone_get_device_by_uuid ( iphone_device_t *device, const char *uuid );
 iphone_error_t iphone_free_device ( iphone_device_t device );
 
+uint32_t iphone_get_device_handle ( iphone_device_t device );
 
 //lockdownd related functions
 iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
@@ -110,17 +109,8 @@ iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, plist_t* plist);
 iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, plist_t plist);
 
 
-//usbmux related functions
-iphone_error_t iphone_mux_new_client ( iphone_device_t device, uint16_t src_port, uint16_t dst_port, iphone_umux_client_t *client );
-iphone_error_t iphone_mux_free_client ( iphone_umux_client_t client );
-
-iphone_error_t iphone_mux_send ( iphone_umux_client_t client, const char *data, uint32_t datalen, uint32_t *sent_bytes );
-iphone_error_t iphone_mux_recv ( iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t *recv_bytes  );
-iphone_error_t iphone_mux_recv_timeout ( iphone_umux_client_t client, char *data, uint32_t datalen, uint32_t *recv_bytes, int timeout);
-
-
 //afc related functions
-iphone_error_t iphone_afc_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t *client );
+iphone_error_t iphone_afc_new_client ( iphone_device_t device, int dst_port, iphone_afc_client_t *client );
 iphone_error_t iphone_afc_free_client ( iphone_afc_client_t client );
 int iphone_afc_get_afcerror ( iphone_afc_client_t client );
 int iphone_afc_get_errno ( iphone_afc_client_t client );
@@ -143,7 +133,7 @@ iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path,
 
 
 
-iphone_error_t iphone_msync_new_client(iphone_device_t device, int src_port, int dst_port,
+iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,
 									   iphone_msync_client_t * client);
 iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
 
@@ -167,7 +157,7 @@ iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
 #define NP_APP_INSTALLED        "com.apple.mobile.application_installed"
 #define NP_APP_UNINSTALLED      "com.apple.mobile.application_uninstalled"
 
-iphone_error_t iphone_np_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_np_client_t *client );
+iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, iphone_np_client_t *client );
 iphone_error_t iphone_np_free_client ( iphone_np_client_t client );
 
 iphone_error_t iphone_np_post_notification ( iphone_np_client_t client, const char *notification );

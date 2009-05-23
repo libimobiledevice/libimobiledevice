@@ -42,7 +42,7 @@ void perform_notification(iphone_device_t phone, iphone_lckd_client_t control, c
 	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
 	if (nport) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
-		iphone_np_new_client(phone, 3555, nport, &np);
+		iphone_np_new_client(phone, nport, &np);
 		if (np) {
 			printf("::::::::: PostNotification %s\n", notification);
 			iphone_np_post_notification(np, notification);
@@ -98,12 +98,12 @@ int main(int argc, char *argv[])
 
 	if (port) {
 		iphone_afc_client_t afc = NULL;
-		iphone_afc_new_client(phone, 3432, port, &afc);
+		iphone_afc_new_client(phone, port, &afc);
 		if (afc) {
 			iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &npp);
 			if (npp) {
 				printf("Notification Proxy started.\n");
-				iphone_np_new_client(phone, 3756, npp, &gnp);
+				iphone_np_new_client(phone, npp, &gnp);
 			} else {
 				printf("ERROR: Notification proxy could not be started.\n");
 			}
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 					NULL
 				};
 				iphone_np_observe_notifications(gnp, nspec);
-				//iphone_np_set_notify_callback(gnp, notifier);
+				iphone_np_set_notify_callback(gnp, notifier);
 			}
 
 			perform_notification(phone, control, NP_SYNC_WILL_START);
@@ -209,15 +209,16 @@ int main(int argc, char *argv[])
 		if (gnp && lockfile) {
 			char *noti;
 
+			/*
 			noti = NULL;
 			iphone_np_get_notification(gnp, &noti);
 			if (noti) {
 				printf("------> received notification '%s'\n", noti);
 				free(noti);
-			}
+			}*/
 
 			printf("XXX sleeping\n");
-			for (i = 0; i < 5; i++) {
+			/*for (i = 0; i < 5; i++) {
 				noti = NULL;
 				printf("--- getting notification\n");
 				iphone_np_get_notification(gnp, &noti);
@@ -229,6 +230,8 @@ int main(int argc, char *argv[])
 				}
 				sleep(1);
 			}
+			*/
+			sleep(5);
 
 			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
 

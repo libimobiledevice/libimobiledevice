@@ -22,24 +22,11 @@
 #ifndef IPHONE_H
 #define IPHONE_H
 
-#ifndef USBMUX_H
-#include "usbmux.h"
-#warning usbmux not included?
-#endif
-
-#include <usb.h>
-#include <libiphone/libiphone.h>
-
-#define BULKIN 0x85
-#define BULKOUT 0x04
+#include <stdint.h>
 
 struct iphone_device_int {
 	char *buffer;
-	struct usb_dev_handle *device;
-	struct usb_device *__device;
+	uint32_t handle;
 };
 
-// Function definitions
-int send_to_phone(iphone_device_t phone, char *data, int datalen);
-int recv_from_phone(iphone_device_t phone, char *data, int datalen, int timeout);
 #endif

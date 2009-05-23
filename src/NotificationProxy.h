@@ -19,13 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 #include "libiphone/libiphone.h"
-#include "usbmux.h"
 #include "iphone.h"
 
 #include <glib.h>
 
 struct iphone_np_client_int {
-	iphone_umux_client_t connection;
+	int sfd;
 	GMutex *mutex;
 	GThread *notifier;
 };

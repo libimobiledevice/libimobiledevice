@@ -22,8 +22,6 @@
 #ifndef LOCKDOWND_H
 #define LOCKDOWND_H
 
-#include "usbmux.h"
-
 #include <gnutls/gnutls.h>
 #include <string.h>
 #include <libiphone/libiphone.h>
@@ -32,7 +30,7 @@
 
 
 struct iphone_lckd_client_int {
-	iphone_umux_client_t connection;
+	int sfd;
 	gnutls_session_t *ssl_session;
 	int in_SSL;
 	char session_id[40];

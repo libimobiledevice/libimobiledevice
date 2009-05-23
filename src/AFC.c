@@ -20,7 +20,9 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 #include "AFC.h"
 #include "utils.h"
 
@@ -61,29 +63,28 @@ static void afc_unlock(iphone_afc_client_t client)
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-iphone_error_t iphone_afc_new_client(iphone_device_t device, int src_port, int dst_port, iphone_afc_client_t * client)
+iphone_error_t iphone_afc_new_client(iphone_device_t device, int dst_port, iphone_afc_client_t * client)
 {
-	int ret = IPHONE_E_SUCCESS;
-
 	//makes sure thread environment is available
 	if (!g_thread_supported())
 		g_thread_init(NULL);
-	iphone_afc_client_t client_loc = (iphone_afc_client_t) malloc(sizeof(struct iphone_afc_client_int));
 
 	if (!device)
 		return IPHONE_E_INVALID_ARG;
 
 	// Attempt connection
-	client_loc->connection = NULL;
-	ret = iphone_mux_new_client(device, src_port, dst_port, &client_loc->connection);
-	if (IPHONE_E_SUCCESS != ret || !client_loc->connection) {
-		free(client_loc);
-		return ret;
+	int sfd = usbmuxd_connect(device->handle, dst_port);
+	if (sfd < 0) {
+		return IPHONE_E_UNKNOWN_ERROR; // ret;
 	}
+
+	iphone_afc_client_t client_loc = (iphone_afc_client_t) malloc(sizeof(struct iphone_afc_client_int));
+	client_loc->sfd = sfd;
+
 	// Allocate a packet
 	client_loc->afc_packet = (AFCPacket *) malloc(sizeof(AFCPacket));
 	if (!client_loc->afc_packet) {
-		iphone_mux_free_client(client_loc->connection);
+		usbmuxd_disconnect(client_loc->sfd);
 		free(client_loc);
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
@@ -106,10 +107,10 @@ iphone_error_t iphone_afc_new_client(iphone_device_t device, int src_port, int d
  */
 iphone_error_t iphone_afc_free_client(iphone_afc_client_t client)
 {
-	if (!client || !client->connection || !client->afc_packet)
+	if (!client || client->sfd < 0 || !client->afc_packet)
 		return IPHONE_E_INVALID_ARG;
 
-	iphone_mux_free_client(client->connection);
+	usbmuxd_disconnect(client->sfd);
 	free(client->afc_packet);
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
@@ -217,7 +218,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 	int bytes = 0, offset = 0;
 	char *buffer;
 
-	if (!client || !client->connection || !client->afc_packet)
+	if (!client || client->sfd < 0 || !client->afc_packet)
 		return 0;
 	if (!data || !length)
 		length = 0;
@@ -248,7 +249,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 			return -1;
 		}
 		memcpy(buffer + sizeof(AFCPacket), data, offset);
-		iphone_mux_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
+		usbmuxd_send(client->sfd, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
 		free(buffer);
 		if (bytes <= 0) {
 			return bytes;
@@ -259,7 +260,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 		log_debug_msg("Buffer: \n");
 		log_debug_buffer(data + offset, length - offset);
 
-		iphone_mux_send(client->connection, data + offset, length - offset, (uint32_t*)&bytes);
+		usbmuxd_send(client->sfd, data + offset, length - offset, (uint32_t*)&bytes);
 		return bytes;
 	} else {
 		log_debug_msg("dispatch_AFC_packet doin things the old way\n");
@@ -273,7 +274,7 @@ static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int
 		}
 		log_debug_buffer(buffer, client->afc_packet->this_length);
 		log_debug_msg("\n");
-		iphone_mux_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
+		usbmuxd_send(client->sfd, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
 
 		if (buffer) {
 			free(buffer);
@@ -307,7 +308,7 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 	client->afcerror = 0;
 
 	// first, read the AFC header
-	iphone_mux_recv(client->connection, (char*)&header, sizeof(AFCPacket), (uint32_t*)&bytes);
+	usbmuxd_recv(client->sfd, (char*)&header, sizeof(AFCPacket), (uint32_t*)&bytes);
 	if (bytes <= 0) {
 		log_debug_msg("%s: Just didn't get enough.\n", __func__);
 		*dump_here = NULL;
@@ -359,24 +360,26 @@ static int receive_AFC_data(iphone_afc_client_t client, char **dump_here)
 	}
 
 	*dump_here = (char*)malloc(entire_len);
-	iphone_mux_recv(client->connection, *dump_here, this_len, (uint32_t*)&bytes);
-	if (bytes <= 0) {
-		free(*dump_here);
-		*dump_here = NULL;
-		log_debug_msg("%s: Did not get packet contents!\n", __func__);
-		return -1;
-	} else if ((uint32_t)bytes < this_len) {
-		free(*dump_here);
-		*dump_here = NULL;
-		log_debug_msg("%s: Could not receive this_len=%d bytes\n", __func__, this_len);
-		return -1;
+	if (this_len > 0) {
+		usbmuxd_recv(client->sfd, *dump_here, this_len, (uint32_t*)&bytes);
+		if (bytes <= 0) {
+			free(*dump_here);
+			*dump_here = NULL;
+			log_debug_msg("%s: Did not get packet contents!\n", __func__);
+			return -1;
+		} else if ((uint32_t)bytes < this_len) {
+			free(*dump_here);
+			*dump_here = NULL;
+			log_debug_msg("%s: Could not receive this_len=%d bytes\n", __func__, this_len);
+			return -1;
+		}
 	}
 
 	current_count = this_len;
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			iphone_mux_recv(client->connection, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)&bytes);
+			usbmuxd_recv(client->sfd, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)&bytes);
 			if (bytes <= 0) {
 				log_debug_msg("%s: Error receiving data (recv returned %d)\n", __func__, bytes);
 				break;
@@ -559,7 +562,7 @@ iphone_error_t iphone_afc_delete_file(iphone_afc_client_t client, const char *pa
 	char *response = NULL;
 	int bytes;
 
-	if (!client || !path || !client->afc_packet || !client->connection)
+	if (!client || !path || !client->afc_packet || client->sfd < 0)
 		return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -600,7 +603,7 @@ iphone_error_t iphone_afc_rename_file(iphone_afc_client_t client, const char *fr
 	char *send = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
 	int bytes = 0;
 
-	if (!client || !from || !to || !client->afc_packet || !client->connection)
+	if (!client || !from || !to || !client->afc_packet || client->sfd < 0)
 		return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -748,7 +751,7 @@ iphone_error_t iphone_afc_get_file_attr(iphone_afc_client_t client, const char *
 {
 
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
-	if (!client || !client->connection || !client->afc_packet || !stbuf)
+	if (!client || client->sfd < 0 || !client->afc_packet || !stbuf)
 		return IPHONE_E_INVALID_ARG;
 
 	memset(stbuf, 0, sizeof(struct stat));
@@ -793,7 +796,7 @@ iphone_afc_open_file(iphone_afc_client_t client, const char *filename,
 	int bytes = 0, length = 0;
 	char *data = (char *) malloc(sizeof(char) * (8 + strlen(filename) + 1));
 
-	if (!client || !client->connection || !client->afc_packet)
+	if (!client || client->sfd < 0|| !client->afc_packet)
 		return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -851,7 +854,7 @@ iphone_afc_read_file(iphone_afc_client_t client, iphone_afc_file_t file, char *d
 	int current_count = 0, bytes_loc = 0;
 	const int MAXIMUM_READ_SIZE = 1 << 16;
 
-	if (!client || !client->afc_packet || !client->connection || !file)
+	if (!client || !client->afc_packet || client->sfd < 0 || !file)
 		return IPHONE_E_INVALID_ARG;
 	log_debug_msg("afc_read_file called for length %i\n", length);
 
@@ -926,7 +929,7 @@ iphone_afc_write_file(iphone_afc_client_t client, iphone_afc_file_t file,
 	int bytes_loc = 0;
 	char *out_buffer = NULL;
 
-	if (!client || !client->afc_packet || !client->connection || !file || !bytes)
+	if (!client || !client->afc_packet || client->sfd < 0 || !file || !bytes)
 		return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -1219,7 +1222,7 @@ iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path,
 	int bytes = 0;
 	uint64_t size_requested = newsize;
 
-	if (!client || !path || !client->afc_packet || !client->connection)
+	if (!client || !path || !client->afc_packet || client->sfd < 0)
 		return IPHONE_E_INVALID_ARG;
 
 	afc_lock(client);

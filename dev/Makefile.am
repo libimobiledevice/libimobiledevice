@@ -1,9 +1,9 @@
 INCLUDES = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusb_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libusb_LIBS) $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
+AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
-bin_PROGRAMS = iphoneclient lckd-client afccheck msyncclient iphoneinfo iphonesyslog
+bin_PROGRAMS = iphoneclient lckd-client afccheck msyncclient iphoneinfo iphonesyslog iphone_id
 
 iphoneclient_SOURCES = main.c
 iphoneclient_LDADD = ../src/libiphone.la
@@ -32,3 +32,8 @@ iphonesyslog_SOURCES = syslog_relay.c
 iphonesyslog_CFLAGS = $(AM_CFLAGS)
 iphonesyslog_LDFLAGS = $(AM_LDFLAGS)
 iphonesyslog_LDADD = ../src/libiphone.la
+
+iphone_id_SOURCES = iphone_id.c
+iphone_id_CFLAGS = $(AM_CFLAGS)
+iphone_id_LDFLAGS = $(AM_LDFLAGS)
+iphone_id_LDADD = ../src/libiphone.la

@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <plist/plist.h>
 #include "NotificationProxy.h"
@@ -79,9 +80,9 @@ static iphone_error_t np_plist_send(iphone_np_client_t client, plist_t dict)
 	}
 
 	nlen = htonl(length);
-	iphone_mux_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	usbmuxd_send(client->sfd, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		iphone_mux_send(client->connection, XML_content, length, (uint32_t*)&bytes);
+		usbmuxd_send(client->sfd, XML_content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			if ((uint32_t)bytes == length) {
 				res = IPHONE_E_SUCCESS;
@@ -107,25 +108,23 @@ static iphone_error_t np_plist_send(iphone_np_client_t client, plist_t dict)
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-iphone_error_t iphone_np_new_client ( iphone_device_t device, int src_port, int dst_port, iphone_np_client_t *client )
+iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, iphone_np_client_t *client )
 {
-	int ret = IPHONE_E_SUCCESS;
-
 	//makes sure thread environment is available
 	if (!g_thread_supported())
 		g_thread_init(NULL);
-	iphone_np_client_t client_loc = (iphone_np_client_t) malloc(sizeof(struct iphone_np_client_int));
 
 	if (!device)
 		return IPHONE_E_INVALID_ARG;
 
 	// Attempt connection
-	client_loc->connection = NULL;
-	ret = iphone_mux_new_client(device, src_port, dst_port, &client_loc->connection);
-	if (IPHONE_E_SUCCESS != ret || !client_loc->connection) {
-		free(client_loc);
-		return ret;
+	int sfd = usbmuxd_connect(device->handle, dst_port);
+	if (sfd < 0) {
+		return IPHONE_E_UNKNOWN_ERROR; //ret;
 	}
+
+	iphone_np_client_t client_loc = (iphone_np_client_t) malloc(sizeof(struct iphone_np_client_int));
+	client_loc->sfd = sfd;
 
 	client_loc->mutex = g_mutex_new();
 
@@ -144,13 +143,11 @@ iphone_error_t iphone_np_free_client ( iphone_np_client_t client )
 	if (!client)
 		return IPHONE_E_INVALID_ARG;
 
-	if (client->connection) {
-		iphone_mux_free_client(client->connection);
-		client->connection = NULL;
-		if (client->notifier) {
-			log_debug_msg("joining np callback\n");
-			g_thread_join(client->notifier);
-		}
+	usbmuxd_disconnect(client->sfd);
+	client->sfd = -1;
+	if (client->notifier) {
+		log_debug_msg("joining np callback\n");
+		g_thread_join(client->notifier);
 	}
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
@@ -295,13 +292,13 @@ iphone_error_t iphone_np_get_notification( iphone_np_client_t client, char **not
 	char *XML_content = NULL;
 	plist_t dict = NULL;
 
-	if (!client || !client->connection || *notification) {
+	if (!client || client->sfd < 0 || *notification) {
 		return IPHONE_E_INVALID_ARG;
 	}
 
 	np_lock(client);
 
-	iphone_mux_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, 500);
+	usbmuxd_recv_timeout(client->sfd, (char*)&pktlen, sizeof(pktlen), &bytes, 500);
 	log_debug_msg("NotificationProxy: initial read=%i\n", bytes);
 	if (bytes < 4) {
 		log_debug_msg("NotificationProxy: no notification received!\n");
@@ -313,7 +310,7 @@ iphone_error_t iphone_np_get_notification( iphone_np_client_t client, char **not
 			XML_content = (char*)malloc(pktlen);
 			log_debug_msg("pointer %p\n", XML_content);
 
-			iphone_mux_recv_timeout(client->connection, XML_content, pktlen, &bytes, 1000);
+			usbmuxd_recv_timeout(client->sfd, XML_content, pktlen, &bytes, 1000);
 			if (bytes <= 0) {
 				res = IPHONE_E_UNKNOWN_ERROR;
 			} else {
@@ -393,7 +390,7 @@ gpointer iphone_np_notifier( gpointer arg )
 	if (!npt) return NULL;
 
 	log_debug_msg("%s: starting callback.\n", __func__);
-	while (npt->client->connection) {
+	while (npt->client->sfd >= 0) {
 		iphone_np_get_notification(npt->client, &notification);
 		if (notification) {
 			npt->cbfunc(notification);
@@ -432,11 +429,11 @@ iphone_error_t iphone_np_set_notify_callback( iphone_np_client_t client, iphone_
 	np_lock(client);
 	if (client->notifier) {
 		log_debug_msg("%s: callback already set, removing\n");
-		iphone_umux_client_t conn = client->connection;
-		client->connection = NULL;
+		int conn = client->sfd;
+		client->sfd = -1;
 		g_thread_join(client->notifier);
 		client->notifier = NULL;
-		client->connection = conn;
+		client->sfd = conn;
 	}
 
 	if (notify_cb) {

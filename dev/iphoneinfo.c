@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <usb.h>
 
 #include <libiphone/libiphone.h>
 
@@ -37,7 +36,8 @@ int main(int argc, char *argv[])
 	iphone_device_t phone = NULL;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	int i;
-	int bus_n = -1, dev_n = -1;
+	char uuid[41];
+	uuid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -45,11 +45,13 @@ int main(int argc, char *argv[])
 			iphone_set_debug_mask(DBGMASK_ALL);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--usb")) {
-			if (sscanf(argv[++i], "%d,%d", &bus_n, &dev_n) < 2) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+			i++;
+			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
+			strcpy(uuid, argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -62,10 +64,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (bus_n != -1) {
-		ret = iphone_get_specific_device(bus_n, dev_n, &phone);
+	if (uuid[0] != 0) {
+		ret = iphone_get_device_by_uuid(&phone, uuid);
 		if (ret != IPHONE_E_SUCCESS) {
-			printf("No device found for usb bus %d and dev %d, is it plugged in?\n", bus_n, dev_n);
+			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
 		}
 	}
@@ -108,7 +110,7 @@ void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS]\n", (strrchr(argv[0], '/') + 1));
 	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --usb=BUS,DEV\ttarget specific device by usb bus/dev number\n");
+	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }

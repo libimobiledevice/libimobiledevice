@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
 	if (port) {
 		iphone_msync_client_t msync = NULL;
-		iphone_msync_new_client(phone, 3432, port, &msync);
+		iphone_msync_new_client(phone, port, &msync);
 		if (msync) {
 			iphone_msync_get_all_contacts(msync);
 			iphone_msync_free_client(msync);
