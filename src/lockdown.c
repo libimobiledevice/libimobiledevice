@@ -211,23 +211,27 @@ iphone_error_t iphone_lckd_recv(iphone_lckd_client_t client, plist_t * plist)
 		}
 	}
 	datalen = ntohl(datalen);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: datalen = %d\n", __func__, datalen);
 
 	receive = (char *) malloc(sizeof(char) * datalen);
 
+	/* fill buffer and request more packets if needed */
 	if (!client->in_SSL) {
-		/* fill buffer and request more packets if needed */
 		while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
 			ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
 			received_bytes += bytes;
 		}
 	} else {
-		ssize_t res = gnutls_record_recv(*client->ssl_session, receive, datalen);
-		if (res < 0) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
-			ret = IPHONE_E_SSL_ERROR;
-		} else {
-			received_bytes = res;
-			ret = IPHONE_E_SUCCESS;
+		ssize_t res = 0;
+		while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
+			res = gnutls_record_recv(*client->ssl_session, receive + received_bytes, datalen - received_bytes);
+			if (res < 0) {
+				log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
+				ret = IPHONE_E_SSL_ERROR;
+			} else {
+				received_bytes += res;
+				ret = IPHONE_E_SUCCESS;
+			}
 		}
 	}
 
