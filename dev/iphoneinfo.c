@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include <libiphone/libiphone.h>
 
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			iphone_set_debug_mask(DBGMASK_ALL);
+			iphone_set_debug(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -98,6 +100,7 @@ int main(int argc, char *argv[])
 	print_lckd_request_info(control, "com.apple.mobile.sync_data_class", "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.iTunes", "GetValue", NULL);
 	print_lckd_request_info(control, "com.apple.mobile.iTunes.store", "GetValue", NULL);
+	print_lckd_request_info(control, "com.apple.mobile.iTunes", "GetValue", NULL);
 
 	iphone_lckd_free_client(control);
 	iphone_free_device(phone);
