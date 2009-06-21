@@ -16,7 +16,7 @@
  } Lockdownd;
 
  typedef struct {
-	Lockdownd* lckd;
+	iPhone* dev;
 	iphone_msync_client_t client;
  } MobileSync;
 
@@ -29,6 +29,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd);
  %}
 /* Parse the header file to generate wrappers */
 %include "stdint.i"
+%include "cstring.i"
 %include "plist/swig/plist.i"
 
 #define DBGMASK_ALL        0xFFFF
@@ -47,7 +48,7 @@ typedef struct {
 } Lockdownd;
 
 typedef struct {
-	Lockdownd* lckd;
+	iPhone* dev;
 	iphone_msync_client_t client;
 } MobileSync;
 
@@ -78,7 +79,6 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 
 void my_delete_Lockdownd(Lockdownd* lckd) {
 	if (lckd) {
-		my_delete_iPhone(lckd->dev);
 		iphone_lckd_free_client ( lckd->client );
 		free(lckd);
 	}
@@ -90,7 +90,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	int port = 0;
 	if (IPHONE_E_SUCCESS == iphone_lckd_start_service ( lckd->client, "com.apple.mobilesync", &port )) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
-		client->lckd = lckd;
+		client->dev = lckd->dev;
 		client->client = NULL;
 		iphone_msync_new_client ( lckd->dev->dev, port, &(client->client));
 	}
@@ -115,15 +115,28 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		iphone_set_debug_mask(mask);
 	}
 
+	void set_debug_level(int level) {
+		iphone_set_debug(level);
+	}
+
+	int init_device_by_uuid(char* uuid) {
+		if (IPHONE_E_SUCCESS == iphone_get_device_by_uuid ( &($self->dev), uuid))
+			return 1;
+		return 0;
+	}
+
 	int init_device() {
 		if (IPHONE_E_SUCCESS == iphone_get_device ( &($self->dev)))
 			return 1;
 		return 0;
 	}
 
-    char* serial_number(){
-        return iphone_get_uuid($self->dev);
-    }
+	%newobject get_uuid;
+	char* get_uuid(){
+		char* uuid = NULL;
+		uuid = (char *)iphone_get_uuid($self->dev);
+		return uuid;
+	}
 
 	Lockdownd* get_lockdown_client() {
 		return my_new_Lockdownd($self);
@@ -162,7 +175,6 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	~MobileSync() {
-		my_delete_Lockdownd($self->lckd);
 		iphone_msync_free_client ( $self->client );
 		free($self);
 	}
