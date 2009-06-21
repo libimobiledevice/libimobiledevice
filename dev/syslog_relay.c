@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include <libiphone/libiphone.h>
 #include <usbmuxd.h>
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			iphone_set_debug_mask(DBGMASK_ALL);
+			iphone_set_debug(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -105,6 +107,8 @@ int main(int argc, char *argv[])
 	/* start syslog_relay service and retrieve port */
 	ret = iphone_lckd_start_service(control, "com.apple.syslog_relay", &port);
 	if ((ret == IPHONE_E_SUCCESS) && port) {
+		iphone_lckd_free_client(control);
+		
 		/* connect to socket relay messages */
 		
 		int sfd = usbmuxd_connect(iphone_get_device_handle(phone), port);
@@ -143,7 +147,6 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
 
-	iphone_lckd_free_client(control);
 	iphone_free_device(phone);
 
 	return 0;
