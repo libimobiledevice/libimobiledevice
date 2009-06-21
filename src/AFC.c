@@ -213,7 +213,7 @@ int iphone_afc_get_errno(iphone_afc_client_t client)
  *          reason is that if you set them to different values, it indicates
  *          you want to send the data as two packets.
  */
-static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, int length)
+static int dispatch_AFC_packet(iphone_afc_client_t client, const char *data, uint64_t length)
 {
 	int bytes = 0, offset = 0;
 	char *buffer;
