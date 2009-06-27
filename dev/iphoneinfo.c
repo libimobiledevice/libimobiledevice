@@ -26,8 +26,26 @@
 
 #include <libiphone/libiphone.h>
 
+#define FORMAT_KEY_VALUE 1
+#define FORMAT_XML 2
+
+static const char *domains[] = {
+	"com.apple.disk_usage",
+	"com.apple.mobile.battery",
+/* FIXME: For some reason lockdownd segfaults on this, works sometimes though 
+	"com.apple.mobile.debug",. */
+	"com.apple.xcode.developerdomain",
+	"com.apple.international",
+	"com.apple.mobile.sync_data_class",
+	"com.apple.iTunes",
+	"com.apple.mobile.iTunes.store",
+	"com.apple.mobile.iTunes",
+	NULL
+};
+
+int is_domain_known(char *domain);
 void print_usage(int argc, char **argv);
-void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, const char *request, const char *key);
+void print_lckd_request_result(iphone_lckd_client_t control, const char *domain, const char *request, const char *key, int format);
 void plist_node_to_string(plist_t *node);
 void plist_children_to_string(plist_t *node);
 
@@ -37,7 +55,10 @@ int main(int argc, char *argv[])
 	iphone_device_t phone = NULL;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	int i;
+	int format = FORMAT_KEY_VALUE;
 	char uuid[41];
+	char *domain = NULL;
+	char *key = NULL;
 	uuid[0] = 0;
 
 	/* parse cmdline args */
@@ -54,6 +75,31 @@ int main(int argc, char *argv[])
 				return 0;
 			}
 			strcpy(uuid, argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--domain")) {
+			i++;
+			if (!argv[i] || (strlen(argv[i]) < 4)) {
+				print_usage(argc, argv);
+				return 0;
+			}
+			if (!is_domain_known(argv[i])) {
+				fprintf(stderr, "WARNING: Sending query with unknown domain \"%s\".\n", argv[i]);
+			}
+			domain = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--key")) {
+			i++;
+			if (!argv[i] || (strlen(argv[i]) <= 1)) {
+				print_usage(argc, argv);
+				return 0;
+			}
+			key = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--xml")) {
+			format = FORMAT_XML;
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -87,34 +133,44 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	/* dump all information we can retrieve */
-	printf("# general\n");
-	print_lckd_request_info(control, NULL, "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.disk_usage", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.mobile.battery", "GetValue", NULL);
-	/* FIXME: For some reason lockdownd segfaults on this, works sometimes though
-	print_lckd_request_info(control, "com.apple.mobile.debug", "GetValue", NULL);
-	*/
-	print_lckd_request_info(control, "com.apple.xcode.developerdomain", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.international", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.mobile.sync_data_class", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.iTunes", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.mobile.iTunes.store", "GetValue", NULL);
-	print_lckd_request_info(control, "com.apple.mobile.iTunes", "GetValue", NULL);
+	/* run query and output information */
+	print_lckd_request_result(control, domain, "GetValue", key, format);
 
+	if (domain != NULL)
+		free(domain);
 	iphone_lckd_free_client(control);
 	iphone_free_device(phone);
 
 	return 0;
 }
 
+int is_domain_known(char *domain)
+{
+	int i = 0;
+	while (domains[i] != NULL) {
+		if (strstr(domain, domains[i++])) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void print_usage(int argc, char **argv)
 {
+	int i = 0;
 	printf("Usage: %s [OPTIONS]\n", (strrchr(argv[0], '/') + 1));
 	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
+	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
+	printf("  -x, --xml\t\toutput information as xml plist instead of key/value pairs\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("\n");
+	printf("  Known domains are:\n\n");
+	while (domains[i] != NULL) {
+		printf("  %s\n", domains[i++]);
+	}
 	printf("\n");
 }
 
@@ -189,14 +245,16 @@ void plist_children_to_string(plist_t *node)
 	}
 }
 
-void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, const char *request, const char *key) {
+void print_lckd_request_result(iphone_lckd_client_t control, const char *domain, const char *request, const char *key, int format) {
+	char *xml_doc = NULL;
+	char *s = NULL;
+	uint32_t xml_length = 0;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	
 	plist_t node = plist_new_dict();
 	if (domain) {
 		plist_add_sub_key_el(node, "Domain");
 		plist_add_sub_string_el(node, domain);
-		printf("# %s\n", domain);
 	}
 	if (key) {
 		plist_add_sub_key_el(node, "Key");
@@ -211,15 +269,41 @@ void print_lckd_request_info(iphone_lckd_client_t control, const char *domain, c
 		node = NULL;
 		ret = iphone_lckd_recv(control, &node);
 		if (ret == IPHONE_E_SUCCESS) {
-			/* seek to first dict node */
+			/* seek to value node */
 			for (
 				node = plist_get_first_child(node);
-				node && (plist_get_node_type(node) != PLIST_DICT);
+				node != NULL;
 				node = plist_get_next_sibling(node)
 			) {
+				if(plist_get_node_type(node) == PLIST_KEY)
+				{
+					plist_get_key_val(node, &s);
+
+					if (strcmp("Value", s))
+						continue;
+
+					node = plist_get_next_sibling(node);
+
+					if (plist_get_node_type(node) == PLIST_DICT) {
+						if (plist_get_first_child(node))
+						{
+							switch (format) {
+							case FORMAT_XML:
+								plist_to_xml(node, &xml_doc, &xml_length);
+								printf(xml_doc);
+								free(xml_doc);
+								break;
+							case FORMAT_KEY_VALUE:
+							default:
+								plist_children_to_string(node);
+								break;
+							}
+						}
+					}
+					else if(node && (key != NULL))
+						plist_node_to_string(node);
+				}
 			}
-			if(plist_get_first_child(node))
-				plist_children_to_string(node);
 		}
 	}
 	if (node)
