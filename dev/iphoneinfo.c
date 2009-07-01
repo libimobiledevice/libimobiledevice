@@ -158,7 +158,10 @@ int is_domain_known(char *domain)
 void print_usage(int argc, char **argv)
 {
 	int i = 0;
-	printf("Usage: %s [OPTIONS]\n", (strrchr(argv[0], '/') + 1));
+	char *name = NULL;
+	
+	name = strrchr(argv[0], '/');
+	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
