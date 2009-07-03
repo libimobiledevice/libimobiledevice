@@ -55,16 +55,6 @@ struct iphone_afc_client_int {
 	GMutex *mutex;
 };
 
-struct iphone_afc_file_int {
-	uint32_t filehandle;
-	uint32_t blocks;
-	off_t size;
-	uint32_t mode;
-	uint32_t nlink;
-};
-
-
-
 enum {
 	AFC_ERROR = 0x00000001,
 	AFC_SUCCESS_RESPONSE = 0x00000002,
@@ -96,5 +86,4 @@ enum {
 	AFC_MAKE_LINK = 0x0000001C	// MakeLink
 };
 
-uint32_t iphone_afc_get_file_handle(iphone_afc_file_t file);
 static int afcerror_to_errno(int afcerror);
