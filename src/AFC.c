@@ -1170,3 +1170,55 @@ iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path,
 	}
 	return IPHONE_E_SUCCESS;
 }
+
+/** Creates a hard link or symbolic link on the device. 
+ * 
+ * @param client The client to use for making a link
+ * @param type 1 = hard link, 2 = symlink
+ * @param target The file to be linked.
+ * @param linkname The name of link.
+ * 
+ * @return IPHONE_E_SUCCESS if everything went well, IPHONE_E_INVALID_ARG
+ *         if arguments are NULL or invalid, IPHONE_E_NOT_ENOUGH_DATA otherwise.
+ */
+iphone_error_t iphone_afc_make_link(iphone_afc_client_t client, iphone_afc_link_type_t linktype, const char *target, const char *linkname)
+{
+	char *response = NULL;
+	char *send = (char *) malloc(sizeof(char) * (strlen(target)+1 + strlen(linkname)+1 + 8));
+	int bytes = 0;
+	uint64_t type = linktype;
+
+	if (!client || !target || !linkname || !client->afc_packet || client->sfd < 0)
+		return IPHONE_E_INVALID_ARG;
+
+	afc_lock(client);
+
+	log_debug_msg("link type: %lld\n", type);
+	log_debug_msg("target: %s, length:%d\n", target, strlen(target));
+	log_debug_msg("linkname: %s, length:%d\n", linkname, strlen(linkname));
+
+	// Send command
+	memcpy(send, &type, 8);
+	memcpy(send + 8, target, strlen(target) + 1);
+	memcpy(send + 8 + strlen(target) + 1, linkname, strlen(linkname) + 1);
+	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	client->afc_packet->operation = AFC_MAKE_LINK;
+	bytes = dispatch_AFC_packet(client, send, 8 + strlen(linkname) + 1 + strlen(target) + 1);
+	free(send);
+	if (bytes <= 0) {
+		afc_unlock(client);
+		return IPHONE_E_NOT_ENOUGH_DATA;
+	}
+	// Receive response
+	bytes = receive_AFC_data(client, &response);
+	if (response)
+		free(response);
+
+	afc_unlock(client);
+
+	if (bytes < 0) {
+		return IPHONE_E_NOT_ENOUGH_DATA;
+	} else {
+		return IPHONE_E_SUCCESS;
+	}
+}

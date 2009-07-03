@@ -63,6 +63,11 @@ typedef enum {
 	AFC_FOPEN_RDAPPEND = 0x00000006  // a+  O_RDWR   | O_APPEND | O_CREAT
 } iphone_afc_file_mode_t;
 
+typedef enum {
+	IPHONE_AFC_HARDLINK = 1,
+	IPHONE_AFC_SYMLINK = 2
+} iphone_afc_link_type_t;
+
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
@@ -127,7 +132,7 @@ iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *
 iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
 iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
 iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path, off_t newsize);
-
+iphone_error_t iphone_afc_make_link ( iphone_afc_client_t client, iphone_afc_link_type_t linktype, const char *target, const char *linkname);
 
 
 iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,
