@@ -18,12 +18,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#include "libiphone/libiphone.h"
-#include "iphone.h"
+#include "libiphone/notification_proxy.h"
 
 #include <glib.h>
 
-struct iphone_np_client_int {
+struct np_client_int {
 	int sfd;
 	GMutex *mutex;
 	GThread *notifier;
@@ -42,4 +41,4 @@ static const char *np_default_notifications[10] = {
 	NULL
 };
 
-gpointer iphone_np_notifier( gpointer arg );
+gpointer np_notifier( gpointer arg );

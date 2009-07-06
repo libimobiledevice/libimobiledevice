@@ -25,18 +25,19 @@
 #include <arpa/inet.h>
 #include <plist/plist.h>
 #include "NotificationProxy.h"
+#include "iphone.h"
 #include "utils.h"
 
 struct np_thread {
-	iphone_np_client_t client;
-	iphone_np_notify_cb_t cbfunc;
+	np_client_t client;
+	np_notify_cb_t cbfunc;
 };
 
 /** Locks an NP client, done for thread safety stuff.
  *
  * @param client The NP
  */
-static void np_lock(iphone_np_client_t client)
+static void np_lock(np_client_t client)
 {
 	log_debug_msg("NP: Locked\n");
 	g_mutex_lock(client->mutex);
@@ -46,7 +47,7 @@ static void np_lock(iphone_np_client_t client)
  * 
  * @param client The NP
  */
-static void np_unlock(iphone_np_client_t client)
+static void np_unlock(np_client_t client)
 {
 	log_debug_msg("NP: Unlocked\n");
 	g_mutex_unlock(client->mutex);
@@ -61,7 +62,7 @@ static void np_unlock(iphone_np_client_t client)
  *
  * @return IPHONE_E_SUCCESS or an error code.
  */
-static iphone_error_t np_plist_send(iphone_np_client_t client, plist_t dict)
+static iphone_error_t np_plist_send(np_client_t client, plist_t dict)
 {
 	char *XML_content = NULL;
 	uint32_t length = 0;
@@ -108,7 +109,7 @@ static iphone_error_t np_plist_send(iphone_np_client_t client, plist_t dict)
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, iphone_np_client_t *client )
+iphone_error_t np_new_client ( iphone_device_t device, int dst_port, np_client_t *client )
 {
 	//makes sure thread environment is available
 	if (!g_thread_supported())
@@ -123,7 +124,7 @@ iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, ipho
 		return IPHONE_E_UNKNOWN_ERROR; //ret;
 	}
 
-	iphone_np_client_t client_loc = (iphone_np_client_t) malloc(sizeof(struct iphone_np_client_int));
+	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
 	client_loc->sfd = sfd;
 
 	client_loc->mutex = g_mutex_new();
@@ -138,7 +139,7 @@ iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, ipho
  * 
  * @param client The client to disconnect.
  */
-iphone_error_t iphone_np_free_client ( iphone_np_client_t client )
+iphone_error_t np_free_client ( np_client_t client )
 {
 	if (!client)
 		return IPHONE_E_INVALID_ARG;
@@ -166,7 +167,7 @@ iphone_error_t iphone_np_free_client ( iphone_np_client_t client )
  * @param client The client to send to
  * @param notification The notification message to send
  */
-iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const char *notification )
+iphone_error_t np_post_notification( np_client_t client, const char *notification )
 {
 	if (!client || !notification) {
 		return IPHONE_E_INVALID_ARG;
@@ -202,7 +203,7 @@ iphone_error_t iphone_np_post_notification( iphone_np_client_t client, const cha
  * @param client The client to send to
  * @param notification The notifications that should be observed.
  */
-iphone_error_t iphone_np_observe_notification( iphone_np_client_t client, const char *notification )
+iphone_error_t np_observe_notification( np_client_t client, const char *notification )
 {
 	if (!client || !notification) {
 		return IPHONE_E_INVALID_ARG;
@@ -245,7 +246,7 @@ iphone_error_t iphone_np_observe_notification( iphone_np_client_t client, const 
  *  terminating NULL entry. However this parameter can be NULL; in this case,
  *  the default set of notifications will be used.
  */
-iphone_error_t iphone_np_observe_notifications( iphone_np_client_t client, const char **notification_spec )
+iphone_error_t np_observe_notifications( np_client_t client, const char **notification_spec )
 {
 	int i = 0;
 	iphone_error_t res = IPHONE_E_UNKNOWN_ERROR;
@@ -260,7 +261,7 @@ iphone_error_t iphone_np_observe_notifications( iphone_np_client_t client, const
 	}
 
 	while (notifications[i]) {
-		res = iphone_np_observe_notification(client, notifications[i]);
+		res = np_observe_notification(client, notifications[i]);
 		if (res != IPHONE_E_SUCCESS) {
 			break;
 		}
@@ -281,10 +282,10 @@ iphone_error_t iphone_np_observe_notifications( iphone_np_client_t client, const
  *         IPHONE_E_TIMEOUT if nothing has been received,
  *         or an error value if an error occured.
  *
- * @note You probably want to check out iphone_np_set_notify_callback
- * @see iphone_np_set_notify_callback
+ * @note You probably want to check out np_set_notify_callback
+ * @see np_set_notify_callback
  */
-iphone_error_t iphone_np_get_notification( iphone_np_client_t client, char **notification )
+static iphone_error_t np_get_notification( np_client_t client, char **notification )
 {
 	uint32_t bytes = 0;
 	iphone_error_t res;
@@ -382,7 +383,7 @@ iphone_error_t iphone_np_get_notification( iphone_np_client_t client, char **not
 /**
  * Internally used thread function.
  */
-gpointer iphone_np_notifier( gpointer arg )
+gpointer np_notifier( gpointer arg )
 {
 	char *notification = NULL;
 	struct np_thread *npt = (struct np_thread*)arg;
@@ -391,7 +392,7 @@ gpointer iphone_np_notifier( gpointer arg )
 
 	log_debug_msg("%s: starting callback.\n", __func__);
 	while (npt->client->sfd >= 0) {
-		iphone_np_get_notification(npt->client, &notification);
+		np_get_notification(npt->client, &notification);
 		if (notification) {
 			npt->cbfunc(notification);
 			free(notification);
@@ -419,7 +420,7 @@ gpointer iphone_np_notifier( gpointer arg )
  * @return IPHONE_E_SUCCESS when the callback was successfully registered,
  *         or an error value when an error occured.
  */
-iphone_error_t iphone_np_set_notify_callback( iphone_np_client_t client, iphone_np_notify_cb_t notify_cb )
+iphone_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb )
 {
 	if (!client) {
 		return IPHONE_E_INVALID_ARG;
@@ -442,7 +443,7 @@ iphone_error_t iphone_np_set_notify_callback( iphone_np_client_t client, iphone_
 			npt->client = client;
 			npt->cbfunc = notify_cb;
 
-			client->notifier = g_thread_create(iphone_np_notifier, npt, TRUE, NULL);
+			client->notifier = g_thread_create(np_notifier, npt, TRUE, NULL);
 			if (client->notifier) {
 				res = IPHONE_E_SUCCESS;
 			}

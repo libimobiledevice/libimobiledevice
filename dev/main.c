@@ -26,6 +26,7 @@
 
 #include <libiphone/libiphone.h>
 #include <libiphone/afc.h>
+#include <libiphone/notification_proxy.h>
 #include "../src/utils.h"
 
 void notifier(const char *notification)
@@ -38,16 +39,16 @@ void notifier(const char *notification)
 void perform_notification(iphone_device_t phone, iphone_lckd_client_t control, const char *notification)
 {
 	int nport = 0;
-	iphone_np_client_t np;
+	np_client_t np;
 
 	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
 	if (nport) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
-		iphone_np_new_client(phone, nport, &np);
+		np_new_client(phone, nport, &np);
 		if (np) {
 			printf("::::::::: PostNotification %s\n", notification);
-			iphone_np_post_notification(np, notification);
-			iphone_np_free_client(np);
+			np_post_notification(np, notification);
+			np_free_client(np);
 		}
 	} else {
 		printf("::::::::::::::: np was NOT started ::::::::::::\n");
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
 	uint64_t lockfile = 0;
-	iphone_np_client_t gnp = NULL;
+	np_client_t gnp = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug(1);
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
 			iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &npp);
 			if (npp) {
 				printf("Notification Proxy started.\n");
-				iphone_np_new_client(phone, npp, &gnp);
+				np_new_client(phone, npp, &gnp);
 			} else {
 				printf("ERROR: Notification proxy could not be started.\n");
 			}
@@ -115,8 +116,8 @@ int main(int argc, char *argv[])
 					NP_SYNC_RESUME_REQUEST,
 					NULL
 				};
-				iphone_np_observe_notifications(gnp, nspec);
-				iphone_np_set_notify_callback(gnp, notifier);
+				np_observe_notifications(gnp, nspec);
+				np_set_notify_callback(gnp, notifier);
 			}
 
 			perform_notification(phone, control, NP_SYNC_WILL_START);
@@ -219,28 +220,7 @@ int main(int argc, char *argv[])
 		if (gnp && lockfile) {
 			char *noti;
 
-			/*
-			noti = NULL;
-			iphone_np_get_notification(gnp, &noti);
-			if (noti) {
-				printf("------> received notification '%s'\n", noti);
-				free(noti);
-			}*/
-
 			printf("XXX sleeping\n");
-			/*for (i = 0; i < 5; i++) {
-				noti = NULL;
-				printf("--- getting notification\n");
-				iphone_np_get_notification(gnp, &noti);
-				if (noti) {
-					printf("------> received notification '%s'\n", noti);
-					free(noti);
-				} else {
-					printf("---- no notification\n");
-				}
-				sleep(1);
-			}
-			*/
 			sleep(5);
 
 			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
@@ -253,7 +233,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (gnp) {
-			iphone_np_free_client(gnp);
+			np_free_client(gnp);
 			gnp = NULL;
 		}
 
