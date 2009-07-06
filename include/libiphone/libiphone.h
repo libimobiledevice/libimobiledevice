@@ -63,9 +63,6 @@ typedef struct iphone_lckd_client_int *iphone_lckd_client_t;
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
 
-struct iphone_np_client_int;
-typedef struct iphone_np_client_int *iphone_np_client_t;
-
 //debug related functions
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
@@ -101,36 +98,6 @@ iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
 
 iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
 iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
-
-// NotificationProxy related
-// notifications for use with post_notification (client --> device)
-#define NP_SYNC_WILL_START      "com.apple.itunes-mobdev.syncWillStart"
-#define NP_SYNC_DID_START       "com.apple.itunes-mobdev.syncDidStart"
-#define NP_SYNC_DID_FINISH      "com.apple.itunes-mobdev.syncDidFinish"
-
-// notifications for use with observe_notification (device --> client)
-#define NP_SYNC_CANCEL_REQUEST  "com.apple.itunes-client.syncCancelRequest"
-#define NP_SYNC_SUSPEND_REQUEST "com.apple.itunes-client.syncSuspendRequest"
-#define NP_SYNC_RESUME_REQUEST  "com.apple.itunes-client.syncResumeRequest"
-#define NP_PHONE_NUMBER_CHANGED "com.apple.mobile.lockdown.phone_number_changed"
-#define NP_DEVICE_NAME_CHANGED  "com.apple.mobile.lockdown.device_name_changed"
-#define NP_ATTEMPTACTIVATION    "com.apple.springboard.attemptactivation"
-#define NP_DS_DOMAIN_CHANGED    "com.apple.mobile.data_sync.domain_changed"
-#define NP_APP_INSTALLED        "com.apple.mobile.application_installed"
-#define NP_APP_UNINSTALLED      "com.apple.mobile.application_uninstalled"
-
-iphone_error_t iphone_np_new_client ( iphone_device_t device, int dst_port, iphone_np_client_t *client );
-iphone_error_t iphone_np_free_client ( iphone_np_client_t client );
-
-iphone_error_t iphone_np_post_notification ( iphone_np_client_t client, const char *notification );
-
-iphone_error_t iphone_np_observe_notification ( iphone_np_client_t client, const char *notification );
-iphone_error_t iphone_np_observe_notifications ( iphone_np_client_t client, const char **notification_spec );
-iphone_error_t iphone_np_get_notification ( iphone_np_client_t client, char **notification );
-
-typedef void (*iphone_np_notify_cb_t) ( const char *notification );
-
-iphone_error_t iphone_np_set_notify_callback ( iphone_np_client_t client, iphone_np_notify_cb_t notify_cb );
 
 #ifdef __cplusplus
 }
