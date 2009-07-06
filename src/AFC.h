@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include "libiphone/libiphone.h"
-#include "iphone.h"
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +43,7 @@ typedef struct __AFCToken {
 	char *token;
 } AFCToken;
 
-struct iphone_afc_client_int {
+struct afc_client_int {
 	int sfd;
 	AFCPacket *afc_packet;
 	int file_handle;

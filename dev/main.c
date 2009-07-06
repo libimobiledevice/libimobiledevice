@@ -25,6 +25,7 @@
 #include <usb.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/afc.h>
 #include "../src/utils.h"
 
 void notifier(const char *notification)
@@ -97,8 +98,8 @@ int main(int argc, char *argv[])
 	iphone_lckd_start_service(control, "com.apple.afc", &port);
 
 	if (port) {
-		iphone_afc_client_t afc = NULL;
-		iphone_afc_new_client(phone, port, &afc);
+		afc_client_t afc = NULL;
+		afc_new_client(phone, port, &afc);
 		if (afc) {
 			iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &npp);
 			if (npp) {
@@ -120,18 +121,18 @@ int main(int argc, char *argv[])
 
 			perform_notification(phone, control, NP_SYNC_WILL_START);
 
-			iphone_afc_open_file(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
+			afc_open_file(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 			if (lockfile) {
 				printf("locking file\n");
-				iphone_afc_lock_file(afc, lockfile, 2 | 4);
+				afc_lock_file(afc, lockfile, 2 | 4);
 
 				perform_notification(phone, control, NP_SYNC_DID_START);
 			}
 
 			char **dirs = NULL;
-			iphone_afc_get_dir_list(afc, "/eafaedf", &dirs);
+			afc_get_dir_list(afc, "/eafaedf", &dirs);
 			if (!dirs)
-				iphone_afc_get_dir_list(afc, "/", &dirs);
+				afc_get_dir_list(afc, "/", &dirs);
 			printf("Directory time.\n");
 			for (i = 0; dirs[i]; i++) {
 				printf("/%s\n", dirs[i]);
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
 			g_strfreev(dirs);
 
 			dirs = NULL;
-			iphone_afc_get_devinfo(afc, &dirs);
+			afc_get_devinfo(afc, &dirs);
 			if (dirs) {
 				for (i = 0; dirs[i]; i += 2) {
 					printf("%s: %s\n", dirs[i], dirs[i + 1]);
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
 			uint64_t my_file = 0;
 			char **info = NULL;
 			uint64_t fsize = 0;
-			if (IPHONE_E_SUCCESS == iphone_afc_get_file_info(afc, "/readme.libiphone.fx", &info) && info) {
+			if (IPHONE_E_SUCCESS == afc_get_file_info(afc, "/readme.libiphone.fx", &info) && info) {
 				for (i = 0; info[i]; i += 2) {
 					printf("%s: %s\n", info[i], info[i+1]);
 					if (!strcmp(info[i], "st_size")) {
@@ -161,58 +162,58 @@ int main(int argc, char *argv[])
 			}
 
 			if (IPHONE_E_SUCCESS ==
-				iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
+				afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
 				printf("A file size: %i\n", fsize);
 				char *file_data = (char *) malloc(sizeof(char) * fsize);
-				iphone_afc_read_file(afc, my_file, file_data, fsize, &bytes);
+				afc_read_file(afc, my_file, file_data, fsize, &bytes);
 				if (bytes >= 0) {
 					printf("The file's data:\n");
 					fwrite(file_data, 1, bytes, stdout);
 				}
 				printf("\nClosing my file.\n");
-				iphone_afc_close_file(afc, my_file);
+				afc_close_file(afc, my_file);
 				free(file_data);
 			} else
 				printf("couldn't open a file\n");
 
-			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_WR, &my_file);
+			afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_WR, &my_file);
 			if (my_file) {
 				char *outdatafile = strdup("this is a bitchin text file\n");
-				iphone_afc_write_file(afc, my_file, outdatafile, strlen(outdatafile), &bytes);
+				afc_write_file(afc, my_file, outdatafile, strlen(outdatafile), &bytes);
 				free(outdatafile);
 				if (bytes > 0)
 					printf("Wrote a surprise. ;)\n");
 				else
 					printf("I wanted to write a surprise, but... :(\n");
-				iphone_afc_close_file(afc, my_file);
+				afc_close_file(afc, my_file);
 			}
 			printf("Deleting a file...\n");
-			bytes = iphone_afc_delete_file(afc, "/delme");
+			bytes = afc_delete_file(afc, "/delme");
 			if (bytes)
 				printf("Success.\n");
 			else
 				printf("Failure. (expected unless you have a /delme file on your phone)\n");
 
 			printf("Renaming a file...\n");
-			bytes = iphone_afc_rename_file(afc, "/renme", "/renme2");
+			bytes = afc_rename_file(afc, "/renme", "/renme2");
 			if (bytes > 0)
 				printf("Success.\n");
 			else
 				printf("Failure. (expected unless you have a /renme file on your phone)\n");
 
 			printf("Seek & read\n");
-			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file);
-			if (IPHONE_E_SUCCESS != iphone_afc_seek_file(afc, my_file, 5, SEEK_CUR))
+			afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file);
+			if (IPHONE_E_SUCCESS != afc_seek_file(afc, my_file, 5, SEEK_CUR))
 				printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char *) malloc(sizeof(char) * 5);
-			iphone_afc_read_file(afc, my_file, threeletterword, 3, &bytes);
+			afc_read_file(afc, my_file, threeletterword, 3, &bytes);
 			threeletterword[3] = '\0';
 			if (bytes > 0)
 				printf("Result: %s\n", threeletterword);
 			else
 				printf("Couldn't read!\n");
 			free(threeletterword);
-			iphone_afc_close_file(afc, my_file);
+			afc_close_file(afc, my_file);
 		}
 
 		if (gnp && lockfile) {
@@ -245,10 +246,10 @@ int main(int argc, char *argv[])
 			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
 
 			printf("XXX unlocking file\n");
-			iphone_afc_lock_file(afc, lockfile, 8 | 4);
+			afc_lock_file(afc, lockfile, 8 | 4);
 
 			printf("XXX closing file\n");
-			iphone_afc_close_file(afc, lockfile);
+			afc_close_file(afc, lockfile);
 		}
 
 		if (gnp) {
@@ -256,7 +257,7 @@ int main(int argc, char *argv[])
 			gnp = NULL;
 		}
 
-		iphone_afc_free_client(afc);
+		afc_free_client(afc);
 	} else {
 		printf("Start service failure.\n");
 	}

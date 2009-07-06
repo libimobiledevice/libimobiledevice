@@ -54,28 +54,11 @@ extern "C" {
 
 typedef int16_t iphone_error_t;
 
-typedef enum {
-	AFC_FOPEN_RDONLY   = 0x00000001, // r   O_RDONLY
-	AFC_FOPEN_RW       = 0x00000002, // r+  O_RDWR   | O_CREAT
-	AFC_FOPEN_WRONLY   = 0x00000003, // w   O_WRONLY | O_CREAT  | O_TRUNC
-	AFC_FOPEN_WR       = 0x00000004, // w+  O_RDWR   | O_CREAT  | O_TRUNC
-	AFC_FOPEN_APPEND   = 0x00000005, // a   O_WRONLY | O_APPEND | O_CREAT
-	AFC_FOPEN_RDAPPEND = 0x00000006  // a+  O_RDWR   | O_APPEND | O_CREAT
-} iphone_afc_file_mode_t;
-
-typedef enum {
-	IPHONE_AFC_HARDLINK = 1,
-	IPHONE_AFC_SYMLINK = 2
-} iphone_afc_link_type_t;
-
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
 struct iphone_lckd_client_int;
 typedef struct iphone_lckd_client_int *iphone_lckd_client_t;
-
-struct iphone_afc_client_int;
-typedef struct iphone_afc_client_int *iphone_afc_client_t;
 
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
@@ -110,29 +93,6 @@ iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const ch
 iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, plist_t* plist);
 iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, plist_t plist);
 
-
-//afc related functions
-iphone_error_t iphone_afc_new_client ( iphone_device_t device, int dst_port, iphone_afc_client_t *client );
-iphone_error_t iphone_afc_free_client ( iphone_afc_client_t client );
-int iphone_afc_get_afcerror ( iphone_afc_client_t client );
-int iphone_afc_get_errno ( iphone_afc_client_t client );
-
-iphone_error_t iphone_afc_get_devinfo ( iphone_afc_client_t client, char ***infos );
-iphone_error_t iphone_afc_get_dir_list ( iphone_afc_client_t client, const char *dir, char ***list);
-
-iphone_error_t iphone_afc_get_file_info ( iphone_afc_client_t client, const char *filename, char ***infolist );
-iphone_error_t iphone_afc_open_file ( iphone_afc_client_t client, const char *filename, iphone_afc_file_mode_t file_mode, uint64_t *handle );
-iphone_error_t iphone_afc_close_file ( iphone_afc_client_t client, uint64_t handle);
-iphone_error_t iphone_afc_lock_file ( iphone_afc_client_t client, uint64_t handle, int operation);
-iphone_error_t iphone_afc_read_file ( iphone_afc_client_t client, uint64_t handle, char *data, int length, uint32_t *bytes);
-iphone_error_t iphone_afc_write_file ( iphone_afc_client_t client, uint64_t handle, const char *data, int length, uint32_t *bytes);
-iphone_error_t iphone_afc_seek_file ( iphone_afc_client_t client, uint64_t handle, int64_t offset, int whence);
-iphone_error_t iphone_afc_truncate_file ( iphone_afc_client_t client, uint64_t handle, uint64_t newsize);
-iphone_error_t iphone_afc_delete_file ( iphone_afc_client_t client, const char *path);
-iphone_error_t iphone_afc_rename_file ( iphone_afc_client_t client, const char *from, const char *to);
-iphone_error_t iphone_afc_mkdir ( iphone_afc_client_t client, const char *dir);
-iphone_error_t iphone_afc_truncate(iphone_afc_client_t client, const char *path, off_t newsize);
-iphone_error_t iphone_afc_make_link ( iphone_afc_client_t client, iphone_afc_link_type_t linktype, const char *target, const char *linkname);
 
 
 iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,

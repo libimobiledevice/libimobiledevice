@@ -25,13 +25,14 @@
 #include <glib.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/afc.h>
 
 #define BUFFER_SIZE 20000
 #define NB_THREADS 10
 
 
 typedef struct {
-	iphone_afc_client_t afc;
+	afc_client_t afc;
 	int id;
 } param;
 
@@ -53,18 +54,18 @@ void check_afc(gpointer data)
 	uint64_t file = 0;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
-	iphone_afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
-	iphone_afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
-	iphone_afc_close_file(((param *) data)->afc, file);
+	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
+	afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
+	afc_close_file(((param *) data)->afc, file);
 	file = 0;
 	if (bytes != buffersize)
 		printf("Write operation failed\n");
 
 	//now read it
 	bytes = 0;
-	iphone_afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
-	iphone_afc_read_file(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
-	iphone_afc_close_file(((param *) data)->afc, file);
+	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
+	afc_read_file(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
+	afc_close_file(((param *) data)->afc, file);
 	if (bytes != buffersize)
 		printf("Read operation failed\n");
 
@@ -77,7 +78,7 @@ void check_afc(gpointer data)
 	}
 
 	//cleanup
-	iphone_afc_delete_file(((param *) data)->afc, path);
+	afc_delete_file(((param *) data)->afc, path);
 	g_thread_exit(0);
 }
 
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
 	iphone_device_t phone = NULL;
 	GError *err;
 	int port = 0;
-	iphone_afc_client_t afc = NULL;
+	afc_client_t afc = NULL;
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	iphone_afc_new_client(phone, port, &afc);
+	afc_new_client(phone, port, &afc);
 
 	//makes sure thread environment is available
 	if (!g_thread_supported())
