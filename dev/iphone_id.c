@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <libiphone/libiphone.h>
+#include <libiphone/lockdown.h>
 #include <usbmuxd.h>
 
 static void usage()
@@ -18,7 +19,7 @@ static void usage()
 int main(int argc, char **argv)
 {
 	iphone_device_t phone = NULL;
-	iphone_lckd_client_t control = NULL;
+	lockdownd_client_t client = NULL;
 	usbmuxd_scan_result *dev_list;
 	char *devname = NULL;
 	int ret = 0;
@@ -67,18 +68,18 @@ int main(int argc, char **argv)
 		return -2;
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		fprintf(stderr, "ERROR: Connecting to device failed!\n");
 		return -2;
 	}
 
-	if ((IPHONE_E_SUCCESS != lockdownd_get_device_name(control, &devname)) || !devname) {
+	if ((IPHONE_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
 		fprintf(stderr, "ERROR: Could not get device name!\n");
 		ret = -2;
 	}
 
-	iphone_lckd_free_client(control);
+	lockdownd_free_client(client);
 	iphone_free_device(phone);
 
 	if (ret == 0) {

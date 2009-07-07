@@ -25,6 +25,7 @@
 #include <glib.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/lockdown.h>
 #include <libiphone/afc.h>
 
 #define BUFFER_SIZE 20000
@@ -40,10 +41,10 @@ typedef struct {
 void check_afc(gpointer data)
 {
 	//prepare a buffer
-	int buffersize = BUFFER_SIZE * sizeof(int);
+	unsigned int buffersize = BUFFER_SIZE * sizeof(unsigned int);
 	int *buf = (int *) malloc(buffersize);
 	int *buf2 = (int *) malloc(buffersize);
-	int bytes = 0;
+	unsigned int bytes = 0;
 	//fill buffer
 	int i = 0;
 	for (i = 0; i < BUFFER_SIZE; i++) {
@@ -84,7 +85,7 @@ void check_afc(gpointer data)
 
 int main(int argc, char *argv[])
 {
-	iphone_lckd_client_t control = NULL;
+	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	GError *err;
 	int port = 0;
@@ -95,13 +96,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS == iphone_lckd_start_service(control, "com.apple.afc", &port) && !port) {
-		iphone_lckd_free_client(control);
+	if (IPHONE_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
+		lockdownd_free_client(client);
 		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
@@ -128,7 +129,7 @@ int main(int argc, char *argv[])
 	}
 
 
-	iphone_lckd_free_client(control);
+	lockdownd_free_client(client);
 	iphone_free_device(phone);
 
 	return 0;

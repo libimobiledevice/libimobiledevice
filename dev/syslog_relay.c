@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/lockdown.h>
 #include <usbmuxd.h>
 
 static int quit_flag = 0;
@@ -44,7 +45,7 @@ static void clean_exit(int sig)
 
 int main(int argc, char *argv[])
 {
-	iphone_lckd_client_t control = NULL;
+	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	int i;
@@ -99,15 +100,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
 
 	/* start syslog_relay service and retrieve port */
-	ret = iphone_lckd_start_service(control, "com.apple.syslog_relay", &port);
+	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &port);
 	if ((ret == IPHONE_E_SUCCESS) && port) {
-		iphone_lckd_free_client(control);
+		lockdownd_free_client(client);
 		
 		/* connect to socket relay messages */
 		

@@ -25,6 +25,7 @@
 #include <stdlib.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/lockdown.h>
 
 #define FORMAT_KEY_VALUE 1
 #define FORMAT_XML 2
@@ -45,13 +46,13 @@ static const char *domains[] = {
 
 int is_domain_known(char *domain);
 void print_usage(int argc, char **argv);
-void print_lckd_request_result(iphone_lckd_client_t control, const char *domain, const char *request, const char *key, int format);
+void print_lckd_request_result(lockdownd_client_t client, const char *domain, const char *request, const char *key, int format);
 void plist_node_to_string(plist_t *node);
 void plist_children_to_string(plist_t *node);
 
 int main(int argc, char *argv[])
 {
-	iphone_lckd_client_t control = NULL;
+	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	int i;
@@ -128,17 +129,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
 
 	/* run query and output information */
-	print_lckd_request_result(control, domain, "GetValue", key, format);
+	print_lckd_request_result(client, domain, "GetValue", key, format);
 
 	if (domain != NULL)
 		free(domain);
-	iphone_lckd_free_client(control);
+	lockdownd_free_client(client);
 	iphone_free_device(phone);
 
 	return 0;
@@ -248,7 +249,7 @@ void plist_children_to_string(plist_t *node)
 	}
 }
 
-void print_lckd_request_result(iphone_lckd_client_t control, const char *domain, const char *request, const char *key, int format) {
+void print_lckd_request_result(lockdownd_client_t client, const char *domain, const char *request, const char *key, int format) {
 	char *xml_doc = NULL;
 	char *s = NULL;
 	uint32_t xml_length = 0;
@@ -266,11 +267,11 @@ void print_lckd_request_result(iphone_lckd_client_t control, const char *domain,
 	plist_add_sub_key_el(node, "Request");
 	plist_add_sub_string_el(node, request);
 
-	ret = iphone_lckd_send(control, node);
+	ret = lockdownd_send(client, node);
 	if (ret == IPHONE_E_SUCCESS) {
 		plist_free(node);
 		node = NULL;
-		ret = iphone_lckd_recv(control, &node);
+		ret = lockdownd_recv(client, &node);
 		if (ret == IPHONE_E_SUCCESS) {
 			/* seek to value node */
 			for (

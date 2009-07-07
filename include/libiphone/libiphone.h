@@ -57,9 +57,6 @@ typedef int16_t iphone_error_t;
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
-struct iphone_lckd_client_int;
-typedef struct iphone_lckd_client_int *iphone_lckd_client_t;
-
 struct iphone_msync_client_int;
 typedef struct iphone_msync_client_int *iphone_msync_client_t;
 
@@ -74,29 +71,15 @@ void iphone_set_debug_mask(uint16_t mask);
 void iphone_set_debug(int level);
 
 //device related functions
-iphone_error_t iphone_get_device ( iphone_device_t *device );
-iphone_error_t iphone_get_device_by_uuid ( iphone_device_t *device, const char *uuid );
-iphone_error_t iphone_free_device ( iphone_device_t device );
-
-uint32_t iphone_get_device_handle ( iphone_device_t device );
-
-//lockdownd related functions
-iphone_error_t lockdownd_get_device_uid(iphone_lckd_client_t control, char **uid);
-iphone_error_t lockdownd_get_device_name ( iphone_lckd_client_t client, char **device_name );
-iphone_error_t iphone_lckd_new_client ( iphone_device_t device, iphone_lckd_client_t *client );
-iphone_error_t iphone_lckd_free_client( iphone_lckd_client_t client );
-
-iphone_error_t iphone_lckd_start_service ( iphone_lckd_client_t client, const char *service, int *port );
-iphone_error_t iphone_lckd_recv ( iphone_lckd_client_t client, plist_t* plist);
-iphone_error_t iphone_lckd_send ( iphone_lckd_client_t client, plist_t plist);
-
-
+iphone_error_t iphone_get_device(iphone_device_t *device);
+iphone_error_t iphone_get_device_by_uuid(iphone_device_t *device, const char *uuid);
+iphone_error_t iphone_free_device(iphone_device_t device);
+uint32_t iphone_get_device_handle(iphone_device_t device);
 
 iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,
 									   iphone_msync_client_t * client);
 iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
-
-iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t * plist);
+iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t *plist);
 iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
 
 #ifdef __cplusplus

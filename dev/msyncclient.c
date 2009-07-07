@@ -25,12 +25,12 @@
 #include <usb.h>
 
 #include <libiphone/libiphone.h>
-
+#include <libiphone/lockdown.h>
 
 int main(int argc, char *argv[])
 {
-	int bytes = 0, port = 0, i = 0;
-	iphone_lckd_client_t control = NULL;
+	int port = 0;
+	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
@@ -42,12 +42,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
 
-	iphone_lckd_start_service(control, "com.apple.mobilesync", &port);
+	lockdownd_start_service(client, "com.apple.mobilesync", &port);
 
 	if (port) {
 		iphone_msync_client_t msync = NULL;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
 	printf("All done.\n");
 
-	iphone_lckd_free_client(control);
+	lockdownd_free_client(client);
 	iphone_free_device(phone);
 
 	return 0;
