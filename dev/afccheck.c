@@ -50,13 +50,13 @@ void check_afc(gpointer data)
 	}
 
 	//now  writes buffer on iphone
-	iphone_afc_file_t file = NULL;
+	uint64_t file = 0;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
 	iphone_afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
 	iphone_afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
 	iphone_afc_close_file(((param *) data)->afc, file);
-	file = NULL;
+	file = 0;
 	if (bytes != buffersize)
 		printf("Write operation failed\n");
 

@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	int npp;
 	iphone_lckd_client_t control = NULL;
 	iphone_device_t phone = NULL;
-	iphone_afc_file_t lockfile = NULL;
+	uint64_t lockfile = 0;
 	iphone_np_client_t gnp = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
@@ -148,14 +148,23 @@ int main(int argc, char *argv[])
 			}
 			g_strfreev(dirs);
 
-			iphone_afc_file_t my_file = NULL;
-			struct stat stbuf;
-			iphone_afc_get_file_attr(afc, "/iTunesOnTheGoPlaylist.plist", &stbuf);
+			uint64_t my_file = 0;
+			char **info = NULL;
+			uint64_t fsize = 0;
+			if (IPHONE_E_SUCCESS == iphone_afc_get_file_info(afc, "/readme.libiphone.fx", &info) && info) {
+				for (i = 0; info[i]; i += 2) {
+					printf("%s: %s\n", info[i], info[i+1]);
+					if (!strcmp(info[i], "st_size")) {
+						fsize = atoll(info[i+1]);
+					}
+				}
+			}
+
 			if (IPHONE_E_SUCCESS ==
-				iphone_afc_open_file(afc, "/iTunesOnTheGoPlaylist.plist", AFC_FOPEN_RDONLY, &my_file) && my_file) {
-				printf("A file size: %i\n", (int) stbuf.st_size);
-				char *file_data = (char *) malloc(sizeof(char) * stbuf.st_size);
-				iphone_afc_read_file(afc, my_file, file_data, stbuf.st_size, &bytes);
+				iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
+				printf("A file size: %i\n", fsize);
+				char *file_data = (char *) malloc(sizeof(char) * fsize);
+				iphone_afc_read_file(afc, my_file, file_data, fsize, &bytes);
 				if (bytes >= 0) {
 					printf("The file's data:\n");
 					fwrite(file_data, 1, bytes, stdout);
@@ -193,7 +202,7 @@ int main(int argc, char *argv[])
 
 			printf("Seek & read\n");
 			iphone_afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file);
-			if (IPHONE_E_SUCCESS != iphone_afc_seek_file(afc, my_file, 5))
+			if (IPHONE_E_SUCCESS != iphone_afc_seek_file(afc, my_file, 5, SEEK_CUR))
 				printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char *) malloc(sizeof(char) * 5);
 			iphone_afc_read_file(afc, my_file, threeletterword, 3, &bytes);
