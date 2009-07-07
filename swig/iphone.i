@@ -4,15 +4,16 @@
  %{
  /* Includes the header in the wrapper code */
  #include <libiphone/libiphone.h>
+ #include <libiphone/lockdown.h>
  #include <plist/plist.h>
-#include "../src/utils.h"
+ #include "../src/utils.h"
  typedef struct {
 	iphone_device_t dev;
  } iPhone;
 
  typedef struct {
 	iPhone* dev;
-	iphone_lckd_client_t client;
+	lockdownd_client_t client;
  } Lockdownd;
 
  typedef struct {
@@ -44,7 +45,7 @@ typedef struct {
 
 typedef struct {
 	iPhone* dev;
-	iphone_lckd_client_t client;
+	lockdownd_client_t client;
 } Lockdownd;
 
 typedef struct {
@@ -68,7 +69,7 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
 	client->dev = phone;
 	client->client = NULL;
-	if (IPHONE_E_SUCCESS == iphone_lckd_new_client ( phone->dev , &(client->client))) {
+	if (IPHONE_E_SUCCESS == lockdownd_new_client ( phone->dev , &(client->client))) {
 		return client;
 	}
 	else {
@@ -79,7 +80,7 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 
 void my_delete_Lockdownd(Lockdownd* lckd) {
 	if (lckd) {
-		iphone_lckd_free_client ( lckd->client );
+		lockdownd_free_client ( lckd->client );
 		free(lckd);
 	}
 }
@@ -88,7 +89,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	if (!lckd || !lckd->dev) return NULL;
 	MobileSync* client = NULL;
 	int port = 0;
-	if (IPHONE_E_SUCCESS == iphone_lckd_start_service ( lckd->client, "com.apple.mobilesync", &port )) {
+	if (IPHONE_E_SUCCESS == lockdownd_start_service ( lckd->client, "com.apple.mobilesync", &port )) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->dev = lckd->dev;
 		client->client = NULL;
@@ -154,13 +155,13 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	void send(PListNode* node) {
-		iphone_lckd_send($self->client, node->node);
+		lockdownd_send($self->client, node->node);
 	}
 
 	PListNode* receive() {
 		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
 		node->node = NULL;
-		iphone_lckd_recv($self->client, &(node->node));
+		lockdownd_recv($self->client, &(node->node));
 		return node;
 	}
 

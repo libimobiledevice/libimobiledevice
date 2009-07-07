@@ -23,25 +23,27 @@
 #include <string.h>
 #include <errno.h>
 #include <usb.h>
+#include <glib.h>
 
 #include <libiphone/libiphone.h>
+#include <libiphone/lockdown.h>
 #include <libiphone/afc.h>
 #include <libiphone/notification_proxy.h>
 #include "../src/utils.h"
 
-void notifier(const char *notification)
+static void notifier(const char *notification)
 {
 	printf("---------------------------------------------------------\n");
 	printf("------> Notification received: %s\n", notification);
 	printf("---------------------------------------------------------\n");
 }
 
-void perform_notification(iphone_device_t phone, iphone_lckd_client_t control, const char *notification)
+static void perform_notification(iphone_device_t phone, lockdownd_client_t client, const char *notification)
 {
 	int nport = 0;
 	np_client_t np;
 
-	iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &nport);
+	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &nport);
 	if (nport) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
 		np_new_client(phone, nport, &np);
@@ -57,9 +59,10 @@ void perform_notification(iphone_device_t phone, iphone_lckd_client_t control, c
 
 int main(int argc, char *argv[])
 {
-	int bytes = 0, port = 0, i = 0;
+	unsigned int bytes = 0;
+	int port = 0, i = 0;
 	int npp;
-	iphone_lckd_client_t control = NULL;
+	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	uint64_t lockfile = 0;
 	np_client_t gnp = NULL;
@@ -77,32 +80,32 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_lckd_new_client(phone, &control)) {
+	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		printf("Exiting.\n");
 		return -1;
 	}
 
 	char *uid = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(control, &uid)) {
+	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(client, &uid)) {
 		printf("DeviceUniqueID : %s\n", uid);
 		free(uid);
 	}
 
 
 	char *nnn = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_get_device_name(control, &nnn)) {
+	if (IPHONE_E_SUCCESS == lockdownd_get_device_name(client, &nnn)) {
 		printf("DeviceName : %s\n", nnn);
 		free(nnn);
 	}
 
-	iphone_lckd_start_service(control, "com.apple.afc", &port);
+	lockdownd_start_service(client, "com.apple.afc", &port);
 
 	if (port) {
 		afc_client_t afc = NULL;
 		afc_new_client(phone, port, &afc);
 		if (afc) {
-			iphone_lckd_start_service(control, "com.apple.mobile.notification_proxy", &npp);
+			lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &npp);
 			if (npp) {
 				printf("Notification Proxy started.\n");
 				np_new_client(phone, npp, &gnp);
@@ -120,14 +123,14 @@ int main(int argc, char *argv[])
 				np_set_notify_callback(gnp, notifier);
 			}
 
-			perform_notification(phone, control, NP_SYNC_WILL_START);
+			perform_notification(phone, client, NP_SYNC_WILL_START);
 
 			afc_open_file(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 			if (lockfile) {
 				printf("locking file\n");
 				afc_lock_file(afc, lockfile, 2 | 4);
 
-				perform_notification(phone, control, NP_SYNC_DID_START);
+				perform_notification(phone, client, NP_SYNC_DID_START);
 			}
 
 			char **dirs = NULL;
@@ -164,10 +167,10 @@ int main(int argc, char *argv[])
 
 			if (IPHONE_E_SUCCESS ==
 				afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
-				printf("A file size: %i\n", fsize);
+				printf("A file size: %llu\n", fsize);
 				char *file_data = (char *) malloc(sizeof(char) * fsize);
 				afc_read_file(afc, my_file, file_data, fsize, &bytes);
-				if (bytes >= 0) {
+				if (bytes > 0) {
 					printf("The file's data:\n");
 					fwrite(file_data, 1, bytes, stdout);
 				}
@@ -218,8 +221,6 @@ int main(int argc, char *argv[])
 		}
 
 		if (gnp && lockfile) {
-			char *noti;
-
 			printf("XXX sleeping\n");
 			sleep(5);
 
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
 
 	printf("All done.\n");
 
-	iphone_lckd_free_client(control);
+	lockdownd_free_client(client);
 	iphone_free_device(phone);
 
 	return 0;
