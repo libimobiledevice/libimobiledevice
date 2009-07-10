@@ -445,14 +445,8 @@ iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain
 		plist_get_key_val(value_key_node, &result_key);
 
 		if (!strcmp(result_key, "Value")) {
-			char *buf = NULL;
-			uint32_t length;
 			log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_get_value(): has a value\n");
-
-			/* FIXME: libplist does not offer cloning of nodes, use serialization */
-			plist_to_bin(value_value_node, &buf, &length);
-			plist_from_bin(buf, length, value_node);
-			free(buf);
+			*value_node = plist_copy(value_value_node);
 		}
 		free(result_key);
 	}
@@ -469,7 +463,6 @@ iphone_error_t lockdownd_get_device_uid(lockdownd_client_t client, char **uid)
 {
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	plist_t value = NULL;
-	value = plist_new_dict();
 
 	ret = lockdownd_get_value(client, NULL, "UniqueDeviceID", &value);
 	if (ret != IPHONE_E_SUCCESS) {
@@ -492,7 +485,6 @@ iphone_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls
 	plist_t value = NULL;
 	char *value_value = NULL;
 	uint64_t size = 0;
-	value = plist_new_dict();
 
 	ret = lockdownd_get_value(client, NULL, "DevicePublicKey", &value);
 	if (ret != IPHONE_E_SUCCESS) {
@@ -519,14 +511,12 @@ iphone_error_t lockdownd_get_device_name(lockdownd_client_t client, char **devic
 {
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	plist_t value = NULL;
-	value = plist_new_dict();
 
 	ret = lockdownd_get_value(client, NULL, "DeviceName", &value);
 	if (ret != IPHONE_E_SUCCESS) {
 		return ret;
 	}
 	plist_get_string_val(value, device_name);
-	log_debug_msg("%s: %s\n", __func__, device_name);
 
 	plist_free(value);
 	value = NULL;

@@ -74,19 +74,20 @@ int main(int argc, char *argv[])
 					loop = FALSE;
 
 				if (!strcmp(*args, "get") && len >= 2) {
-					plist_t *value = NULL;
+					plist_t value = NULL;
 					if (IPHONE_E_SUCCESS == lockdownd_get_value(client, len == 3 ? *(args + 1):NULL,  len == 3 ? *(args + 2):*(args + 1), &value))
 					{
 						char *xml = NULL;
 						uint32_t length;
 						plist_to_xml(value, &xml, &length);
 						printf("Success : value = %s\n", xml);
-
 						free(xml);
-						free(value);
 					}
 					else
 						printf("Error\n");
+
+					if (value)
+						plist_free(value);
 				}
 
 				if (!strcmp(*args, "start") && len == 2) {
