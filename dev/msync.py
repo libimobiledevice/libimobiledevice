@@ -12,7 +12,7 @@ def GetMobileSyncClient() :
     if not lckd :
         print "Failed to start lockdown service.\n"
         return None
-    msync = lckd.get_mobile_sync_client()
+    msync = lckd.get_mobilesync_client()
     if not msync :
         print "Failed to start mobilesync service.\n"
         return None
