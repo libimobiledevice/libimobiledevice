@@ -23,16 +23,12 @@
 
 #include "iphone.h"
 #include "utils.h"
+#include "libiphone/mobilesync.h"
 
 #include <plist/plist.h>
 
-
-
-struct iphone_msync_client_int {
+struct mobilesync_client_int {
 	int sfd;
 };
-
-
-iphone_error_t iphone_msync_get_all_contacts(iphone_msync_client_t client);
 
 #endif

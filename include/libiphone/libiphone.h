@@ -57,9 +57,6 @@ typedef int16_t iphone_error_t;
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
-struct iphone_msync_client_int;
-typedef struct iphone_msync_client_int *iphone_msync_client_t;
-
 //debug related functions
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
@@ -75,12 +72,6 @@ iphone_error_t iphone_get_device(iphone_device_t *device);
 iphone_error_t iphone_get_device_by_uuid(iphone_device_t *device, const char *uuid);
 iphone_error_t iphone_free_device(iphone_device_t device);
 uint32_t iphone_get_device_handle(iphone_device_t device);
-
-iphone_error_t iphone_msync_new_client(iphone_device_t device, int dst_port,
-									   iphone_msync_client_t * client);
-iphone_error_t iphone_msync_free_client(iphone_msync_client_t client);
-iphone_error_t iphone_msync_recv(iphone_msync_client_t client, plist_t *plist);
-iphone_error_t iphone_msync_send(iphone_msync_client_t client, plist_t plist);
 
 #ifdef __cplusplus
 }

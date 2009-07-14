@@ -5,6 +5,7 @@
  /* Includes the header in the wrapper code */
  #include <libiphone/libiphone.h>
  #include <libiphone/lockdown.h>
+ #include <libiphone/mobilesync.h>
  #include <plist/plist.h>
  #include "../src/utils.h"
  typedef struct {
@@ -18,7 +19,7 @@
 
  typedef struct {
 	iPhone* dev;
-	iphone_msync_client_t client;
+	mobilesync_client_t client;
  } MobileSync;
 
 //now declare funtions to handle creation and deletion of objects
@@ -50,7 +51,7 @@ typedef struct {
 
 typedef struct {
 	iPhone* dev;
-	iphone_msync_client_t client;
+	mobilesync_client_t client;
 } MobileSync;
 
 %inline %{
@@ -93,7 +94,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->dev = lckd->dev;
 		client->client = NULL;
-		iphone_msync_new_client ( lckd->dev->dev, port, &(client->client));
+		mobilesync_new_client ( lckd->dev->dev, port, &(client->client));
 	}
 	return client;
 }
@@ -165,7 +166,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		return node;
 	}
 
-	MobileSync* get_mobile_sync_client() {
+	MobileSync* get_mobilesync_client() {
 		return my_new_MobileSync($self);
 	}
 };
@@ -176,18 +177,18 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	~MobileSync() {
-		iphone_msync_free_client ( $self->client );
+		mobilesync_free_client ( $self->client );
 		free($self);
 	}
 
 	void send(PListNode* node) {
-		iphone_msync_send($self->client, node->node);
+		mobilesync_send($self->client, node->node);
 	}
 
 	PListNode* receive() {
 		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
 		node->node = NULL;
-		iphone_msync_recv($self->client, &(node->node));
+		mobilesync_recv($self->client, &(node->node));
 		return node;
 	}
 };
