@@ -387,11 +387,11 @@ iphone_error_t lockdownd_query_type(lockdownd_client_t client)
  * @param client an initialized lockdownd client.
  * @param domain the domain to query on or NULL for global domain
  * @param key the key name to request or NULL to query for all keys
- * @param value_node a plist node representing the result value node
+ * @param value a plist node representing the result value node
  *
  * @return an error code (IPHONE_E_SUCCESS on success)
  */
-iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value_node)
+iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value)
 {
 	if (!client)
 		return IPHONE_E_INVALID_ARG;
@@ -427,7 +427,7 @@ iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain
 		return ret;
 
 	if (lockdown_check_result(dict, "GetValue") == RESULT_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_get_value(): success\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
 		ret = IPHONE_E_SUCCESS;
 	}
 	if (ret != IPHONE_E_SUCCESS) {
@@ -446,9 +446,129 @@ iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain
 
 		if (!strcmp(result_key, "Value")) {
 			log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_get_value(): has a value\n");
-			*value_node = plist_copy(value_value_node);
+			*value = plist_copy(value_value_node);
 		}
 		free(result_key);
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+/** Sets a preferences value using a plist and optional domain and/or key name.
+ *
+ * @param client an initialized lockdownd client.
+ * @param domain the domain to query on or NULL for global domain
+ * @param key the key name to set the value or NULL to set a value dict plist
+ * @param value a plist node of any node type representing the value to set
+ *
+ * @return an error code (IPHONE_E_SUCCESS on success)
+ */
+iphone_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value)
+{
+	if (!client || !value)
+		return IPHONE_E_INVALID_ARG;
+
+	plist_t dict = NULL;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	/* setup request plist */
+	dict = plist_new_dict();
+	if (domain) {
+		plist_add_sub_key_el(dict, "Domain");
+		plist_add_sub_string_el(dict, domain);
+	}
+	if (key) {
+		plist_add_sub_key_el(dict, "Key");
+		plist_add_sub_string_el(dict, key);
+	}
+	plist_add_sub_key_el(dict, "Request");
+	plist_add_sub_string_el(dict, "SetValue");
+	
+	plist_add_sub_key_el(dict, "Value");
+	plist_add_sub_node(dict, value);
+
+	/* send to device */
+	ret = lockdownd_send(client, dict);
+
+	plist_free(dict);
+	dict = NULL;
+
+	if (ret != IPHONE_E_SUCCESS)
+		return ret;
+
+	/* Now get device's answer */
+	ret = lockdownd_recv(client, &dict);
+	if (ret != IPHONE_E_SUCCESS)
+		return ret;
+
+	if (lockdown_check_result(dict, "SetValue") == RESULT_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		ret = IPHONE_E_SUCCESS;
+	}
+
+	if (ret != IPHONE_E_SUCCESS) {
+		plist_free(dict);
+		return ret;
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+/** Removes a preference node on the device by domain and/or key name
+ *
+ * @note: Use with caution as this could remove vital information on the device
+ *
+ * @param client an initialized lockdownd client.
+ * @param domain the domain to query on or NULL for global domain
+ * @param key the key name to remove or NULL remove all keys for the current domain
+ *
+ * @return an error code (IPHONE_E_SUCCESS on success)
+ */
+iphone_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key)
+{
+	if (!client)
+		return IPHONE_E_INVALID_ARG;
+
+	plist_t dict = NULL;
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	/* setup request plist */
+	dict = plist_new_dict();
+	if (domain) {
+		plist_add_sub_key_el(dict, "Domain");
+		plist_add_sub_string_el(dict, domain);
+	}
+	if (key) {
+		plist_add_sub_key_el(dict, "Key");
+		plist_add_sub_string_el(dict, key);
+	}
+	plist_add_sub_key_el(dict, "Request");
+	plist_add_sub_string_el(dict, "RemoveValue");
+
+	/* send to device */
+	ret = lockdownd_send(client, dict);
+
+	plist_free(dict);
+	dict = NULL;
+
+	if (ret != IPHONE_E_SUCCESS)
+		return ret;
+
+	/* Now get device's answer */
+	ret = lockdownd_recv(client, &dict);
+	if (ret != IPHONE_E_SUCCESS)
+		return ret;
+
+	if (lockdown_check_result(dict, "RemoveValue") == RESULT_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		ret = IPHONE_E_SUCCESS;
+	}
+
+	if (ret != IPHONE_E_SUCCESS) {
+		plist_free(dict);
+		return ret;
 	}
 
 	plist_free(dict);
@@ -668,6 +788,41 @@ iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_i
 		ret = IPHONE_E_PAIRING_FAILED;
 	}
 	free(public_key.data);
+	return ret;
+}
+
+/**
+ * Tells the device to immediately enter recovery mode.
+ *
+ * @param client The lockdown client
+ *
+ * @return an error code (IPHONE_E_SUCCESS on success)
+ */
+iphone_error_t lockdownd_enter_recovery(lockdownd_client_t client)
+{
+	if (!client)
+		return IPHONE_E_INVALID_ARG;
+
+	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_add_sub_key_el(dict, "Request");
+	plist_add_sub_string_el(dict, "EnterRecovery");
+
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Telling device to enter recovery mode\n", __func__);
+
+	ret = lockdownd_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = lockdownd_recv(client, &dict);
+
+	if (lockdown_check_result(dict, "EnterRecovery") == RESULT_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		ret = IPHONE_E_SUCCESS;
+	}
+	plist_free(dict);
+	dict = NULL;
 	return ret;
 }
 
