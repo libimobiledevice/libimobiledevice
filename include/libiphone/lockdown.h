@@ -34,7 +34,9 @@ typedef struct lockdownd_client_int *lockdownd_client_t;
 iphone_error_t lockdownd_new_client (iphone_device_t device, lockdownd_client_t *client);
 iphone_error_t lockdownd_free_client(lockdownd_client_t client);
 iphone_error_t lockdownd_query_type(lockdownd_client_t client);
-iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value_node);
+iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
+iphone_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
+iphone_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
 iphone_error_t lockdownd_start_service (lockdownd_client_t client, const char *service, int *port);
 iphone_error_t lockdownd_stop_session(lockdownd_client_t client);
 iphone_error_t lockdownd_send (lockdownd_client_t client, plist_t plist);
@@ -42,6 +44,7 @@ iphone_error_t lockdownd_recv (lockdownd_client_t client, plist_t *plist);
 iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_id);
 iphone_error_t lockdownd_get_device_uid (lockdownd_client_t control, char **uid);
 iphone_error_t lockdownd_get_device_name (lockdownd_client_t client, char **device_name);
+iphone_error_t lockdownd_enter_recovery(lockdownd_client_t client);
 iphone_error_t lockdownd_goodbye(lockdownd_client_t client);
 
 #ifdef __cplusplus
