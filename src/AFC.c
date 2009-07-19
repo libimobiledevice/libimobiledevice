@@ -174,6 +174,9 @@ static int afcerror_to_errno(int afcerror)
 		case 10: // occurs if you try to open a file without permission
 			res = EPERM;
 			break;
+		case 19: // occurs if you try to lock an already locked file
+			res = EWOULDBLOCK;
+			break;
 		default: // we'll assume it's an errno value, but report it
 			log_debug_msg("WARNING: unknown AFC error %d, perhaps it's '%s'?\n", afcerror, strerror(afcerror));
 			res = afcerror;
@@ -986,21 +989,16 @@ iphone_error_t afc_close_file(afc_client_t client, uint64_t handle)
 
 /** Locks or unlocks a file on the phone. 
  *
- * makes use of flock, see
+ * makes use of flock on the device, see
  * http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
  *
- * operation (same as in sys/file.h on linux):
- *
- * LOCK_SH   1    // shared lock
- * LOCK_EX   2   // exclusive lock
- * LOCK_NB   4   // don't block when locking
- * LOCK_UN   8   // unlock
- *
- * @param client The client to close the file with.
+ * @param client The client to lock the file with.
  * @param handle File handle of a previously opened file.
- * @operation the lock or unlock operation to perform.
+ * @param operation the lock or unlock operation to perform, this is one of
+ *        AFC_LOCK_SH (shared lock), AFC_LOCK_EX (exclusive lock),
+ *        or AFC_LOCK_UN (unlock).
  */
-iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, int operation)
+iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, afc_lock_op_t operation)
 {
 	if (!client || (handle == 0))
 		return IPHONE_E_INVALID_ARG;
@@ -1024,7 +1022,7 @@ iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, int operation
 
 	if (bytes <= 0) {
 		afc_unlock(client);
-		log_debug_msg("fuck\n");
+		log_debug_msg("Could not send lock command\n");
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
 	// Receive the response

@@ -21,6 +21,12 @@ typedef enum {
 	AFC_SYMLINK = 2
 } afc_link_type_t;
 
+typedef enum {
+	AFC_LOCK_SH = 1 | 4, // shared lock
+	AFC_LOCK_EX = 2 | 4, // exclusive lock
+	AFC_LOCK_UN = 8 | 4  // unlock
+} afc_lock_op_t;
+
 struct afc_client_int;
 typedef struct afc_client_int *afc_client_t;
 
@@ -36,7 +42,7 @@ iphone_error_t afc_get_dir_list ( afc_client_t client, const char *dir, char ***
 iphone_error_t afc_get_file_info ( afc_client_t client, const char *filename, char ***infolist );
 iphone_error_t afc_open_file ( afc_client_t client, const char *filename, afc_file_mode_t file_mode, uint64_t *handle );
 iphone_error_t afc_close_file ( afc_client_t client, uint64_t handle);
-iphone_error_t afc_lock_file ( afc_client_t client, uint64_t handle, int operation);
+iphone_error_t afc_lock_file ( afc_client_t client, uint64_t handle, afc_lock_op_t operation);
 iphone_error_t afc_read_file ( afc_client_t client, uint64_t handle, char *data, int length, uint32_t *bytes);
 iphone_error_t afc_write_file ( afc_client_t client, uint64_t handle, const char *data, int length, uint32_t *bytes);
 iphone_error_t afc_seek_file ( afc_client_t client, uint64_t handle, int64_t offset, int whence);

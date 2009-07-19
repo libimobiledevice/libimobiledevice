@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			afc_open_file(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 			if (lockfile) {
 				printf("locking file\n");
-				afc_lock_file(afc, lockfile, 2 | 4);
+				afc_lock_file(afc, lockfile, AFC_LOCK_EX);
 
 				perform_notification(phone, client, NP_SYNC_DID_START);
 			}
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
 
 			printf("XXX unlocking file\n");
-			afc_lock_file(afc, lockfile, 8 | 4);
+			afc_lock_file(afc, lockfile, AFC_LOCK_UN);
 
 			printf("XXX closing file\n");
 			afc_close_file(afc, lockfile);
