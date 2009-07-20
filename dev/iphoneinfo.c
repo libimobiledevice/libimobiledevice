@@ -37,7 +37,12 @@ static const char *domains[] = {
 	"com.apple.mobile.debug",. */
 	"com.apple.xcode.developerdomain",
 	"com.apple.international",
+	"com.apple.mobile.mobile_application_usage",
+	"com.apple.mobile.backup",
+	"com.apple.mobile.user_preferences",
 	"com.apple.mobile.sync_data_class",
+	"com.apple.mobile.software_behavior",
+	"com.apple.mobile.iTunes.SQLMusicLibraryPostProcessCommands",
 	"com.apple.iTunes",
 	"com.apple.mobile.iTunes.store",
 	"com.apple.mobile.iTunes",
