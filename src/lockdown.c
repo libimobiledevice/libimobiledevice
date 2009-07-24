@@ -19,10 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "utils.h"
-#include "iphone.h"
-#include "lockdown.h"
-#include "userpref.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
@@ -30,8 +26,12 @@
 #include <glib.h>
 #include <libtasn1.h>
 #include <gnutls/x509.h>
-
 #include <plist/plist.h>
+
+#include "lockdown.h"
+#include "iphone.h"
+#include "utils.h"
+#include "userpref.h"
 
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
@@ -680,12 +680,12 @@ iphone_error_t lockdownd_new_client(iphone_device_t device, lockdownd_client_t *
 	}
 	log_debug_msg("%s: device uuid: %s\n", __func__, uuid);
 
-	host_id = get_host_id();
+	userpref_get_host_id(&host_id);
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
 		ret = IPHONE_E_INVALID_CONF;
 	}
 
-	if (IPHONE_E_SUCCESS == ret && !is_device_known(uuid))
+	if (IPHONE_E_SUCCESS == ret && !userpref_has_device_public_key(uuid))
 		ret = lockdownd_pair(client_loc, uuid, host_id);
 
 	if (uuid) {
@@ -780,7 +780,7 @@ iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_i
 	/* store public key in config if pairing succeeded */
 	if (ret == IPHONE_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
-		store_device_public_key(uuid, public_key);
+		userpref_set_device_public_key(uuid, public_key);
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
 		ret = IPHONE_E_PAIRING_FAILED;
@@ -875,6 +875,7 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 	if (!public_key.data || !odevice_cert || !ohost_cert || !oroot_cert)
 		return IPHONE_E_INVALID_ARG;
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	userpref_error_t uret = USERPREF_E_UNKNOWN_ERROR;
 
 	gnutls_datum_t modulus = { NULL, 0 };
 	gnutls_datum_t exponent = { NULL, 0 };
@@ -932,10 +933,9 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 			gnutls_x509_privkey_init(&root_privkey);
 			gnutls_x509_privkey_init(&host_privkey);
 
-			ret = get_keys_and_certs(root_privkey, root_cert, host_privkey, host_cert);
+			uret = userpref_get_keys_and_certs(root_privkey, root_cert, host_privkey, host_cert);
 
-			if (IPHONE_E_SUCCESS == ret) {
-
+			if (USERPREF_E_SUCCESS == uret) {
 				/* generate device certificate */
 				gnutls_x509_crt_set_key(dev_cert, fake_privkey);
 				gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
@@ -955,7 +955,9 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
 
-					if ( IPHONE_E_SUCCESS ==  get_certs_as_pem(&pem_root_cert, &pem_host_cert) ) {
+					uret = userpref_get_certs_as_pem(&pem_root_cert, &pem_host_cert);
+
+					if (USERPREF_E_SUCCESS == uret) {
 						/* copy buffer for output */
 						odevice_cert->data = malloc(dev_pem.size);
 						memcpy(odevice_cert->data, dev_pem.data, dev_pem.size);
@@ -973,6 +975,19 @@ iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t
 						g_free(pem_host_cert.data);
 					}
 				}
+			}
+
+			switch(uret) {
+			case USERPREF_E_INVALID_ARG:
+				ret = IPHONE_E_INVALID_ARG;
+				break;
+			case USERPREF_E_INVALID_CONF:
+				ret = IPHONE_E_INVALID_CONF;
+				break;
+			case USERPREF_E_SSL_ERROR:
+				ret = IPHONE_E_SSL_ERROR;
+			default:
+				break;
 			}
 		}
 	}
@@ -1026,12 +1041,14 @@ iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char
 			plist_get_string_val(error_node, &error);
 
 			if (!strcmp(error, "InvalidHostID")) {
-				//hostid is unknown. Pair and try again
-				char *uid = NULL;
-				char* host_id = get_host_id();
-				if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(client, &uid) ) {
-					if (IPHONE_E_SUCCESS == lockdownd_pair(client, uid, host_id) ) {
-						//start session again
+				/* hostid is unknown. Pair and try again */
+				char *uuid = NULL;
+				char *host_id = NULL;
+				userpref_get_host_id(&host_id);
+
+				if (IPHONE_E_SUCCESS == lockdownd_get_device_uuid(client, &uuid) ) {
+					if (IPHONE_E_SUCCESS == lockdownd_pair(client, uuid, host_id) ) {
+						/* start session again */
 						plist_free(dict);
 						dict = plist_new_dict();
 						plist_add_sub_key_el(dict, "HostID");
@@ -1046,7 +1063,7 @@ iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char
 						ret = lockdownd_recv(client, &dict);
 					}
 				}
-				free(uid);
+				free(uuid);
 				free(host_id);
 			}
 			free(error);
@@ -1220,7 +1237,8 @@ iphone_error_t lockdownd_start_service(lockdownd_client_t client, const char *se
 	if (!client || !service || !port)
 		return IPHONE_E_INVALID_ARG;
 
-	char *host_id = get_host_id();
+	char *host_id = NULL;
+	userpref_get_host_id(&host_id);
 	if (!host_id)
 		return IPHONE_E_INVALID_CONF;
 	if (!client->in_SSL && !lockdownd_start_ssl_session(client, host_id))
