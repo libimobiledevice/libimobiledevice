@@ -20,7 +20,10 @@
  */
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
+
 #include "utils.h"
+#include "libiphone/libiphone.h"
 
 int toto_debug = 0;
 uint16_t dbg_mask = 0;

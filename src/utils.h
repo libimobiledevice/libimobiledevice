@@ -22,13 +22,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "libiphone/libiphone.h"
-
-
-
 inline void log_debug_msg(const char *format, ...);
 inline void log_dbg_msg(uint16_t id, const char *format, ...);
 
 inline void log_debug_buffer(const char *data, const int length);
 inline void dump_debug_buffer(const char *file, const char *data, const int length);
+
 #endif
