@@ -46,6 +46,7 @@ typedef struct np_client_int *np_client_t;
 #define NP_DS_DOMAIN_CHANGED    "com.apple.mobile.data_sync.domain_changed"
 #define NP_APP_INSTALLED        "com.apple.mobile.application_installed"
 #define NP_APP_UNINSTALLED      "com.apple.mobile.application_uninstalled"
+#define NP_ITDBPREP_DID_END     "com.apple.itdbprep.notification.didEnd"
 
 iphone_error_t np_new_client ( iphone_device_t device, int dst_port, np_client_t *client );
 iphone_error_t np_free_client ( np_client_t client );

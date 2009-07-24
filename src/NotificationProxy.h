@@ -28,7 +28,7 @@ struct np_client_int {
 	GThread *notifier;
 };
 
-static const char *np_default_notifications[10] = {
+static const char *np_default_notifications[11] = {
 	NP_SYNC_SUSPEND_REQUEST,
 	NP_SYNC_RESUME_REQUEST,
 	NP_PHONE_NUMBER_CHANGED,
@@ -38,6 +38,7 @@ static const char *np_default_notifications[10] = {
 	NP_DS_DOMAIN_CHANGED,
 	NP_APP_INSTALLED,
 	NP_APP_UNINSTALLED,
+	NP_ITDBPREP_DID_END,
 	NULL
 };
 

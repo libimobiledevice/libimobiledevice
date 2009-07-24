@@ -113,10 +113,11 @@ int main(int argc, char *argv[])
 				printf("ERROR: Notification proxy could not be started.\n");
 			}
 			if (gnp) {
-				const char *nspec[4] = {
+				const char *nspec[5] = {
 					NP_SYNC_CANCEL_REQUEST,
 					NP_SYNC_SUSPEND_REQUEST,
 					NP_SYNC_RESUME_REQUEST,
+					NP_ITDBPREP_DID_END,
 					NULL
 				};
 				np_observe_notifications(gnp, nspec);
