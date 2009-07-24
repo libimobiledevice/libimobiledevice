@@ -91,6 +91,14 @@ int main(int argc, char *argv[])
 	int port = 0;
 	afc_client_t afc = NULL;
 
+	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
+		iphone_set_debug_level(1);
+		iphone_set_debug_mask(DBGMASK_ALL);
+	} else {
+		iphone_set_debug_level(0);
+		iphone_set_debug_mask(DBGMASK_NONE);
+	}
+
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return 1;
