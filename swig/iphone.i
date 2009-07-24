@@ -59,7 +59,7 @@ typedef struct {
 
 void my_delete_iPhone(iPhone* dev) {
 	if (dev) {
-		iphone_free_device ( dev->dev );
+		iphone_device_free(dev->dev);
 		free(dev);
 	}
 }
@@ -69,7 +69,7 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
 	client->dev = phone;
 	client->client = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_new_client ( phone->dev , &(client->client))) {
+	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new(phone->dev , &(client->client))) {
 		return client;
 	}
 	else {
@@ -80,7 +80,7 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 
 void my_delete_Lockdownd(Lockdownd* lckd) {
 	if (lckd) {
-		lockdownd_free_client ( lckd->client );
+		lockdownd_client_free(lckd->client);
 		free(lckd);
 	}
 }
@@ -89,11 +89,11 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	if (!lckd || !lckd->dev) return NULL;
 	MobileSync* client = NULL;
 	int port = 0;
-	if (IPHONE_E_SUCCESS == lockdownd_start_service ( lckd->client, "com.apple.mobilesync", &port )) {
+	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(lckd->client, "com.apple.mobilesync", &port)) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->dev = lckd->dev;
 		client->client = NULL;
-		mobilesync_new_client ( lckd->dev->dev, port, &(client->client));
+		mobilesync_client_new(lckd->dev->dev, port, &(client->client));
 	}
 	return client;
 }
@@ -121,13 +121,13 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	int init_device_by_uuid(char* uuid) {
-		if (IPHONE_E_SUCCESS == iphone_get_device_by_uuid ( &($self->dev), uuid))
+		if (IPHONE_E_SUCCESS == iphone_get_device_by_uuid(&($self->dev), uuid))
 			return 1;
 		return 0;
 	}
 
 	int init_device() {
-		if (IPHONE_E_SUCCESS == iphone_get_device ( &($self->dev)))
+		if (IPHONE_E_SUCCESS == iphone_get_device(&($self->dev)))
 			return 1;
 		return 0;
 	}
@@ -135,7 +135,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	%newobject get_uuid;
 	char* get_uuid(){
 		char* uuid = NULL;
-		uuid = (char *)iphone_device_get_uuid($self->dev);
+		iphone_device_get_uuid($self->dev, &uuid);
 		return uuid;
 	}
 
@@ -176,7 +176,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	~MobileSync() {
-		mobilesync_free_client ( $self->client );
+		mobilesync_client_free($self->client);
 		free($self);
 	}
 
