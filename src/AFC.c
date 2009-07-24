@@ -425,7 +425,7 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 		*dump_here = NULL;
 
 		log_debug_msg("%s: WARNING: Unknown operation code received 0x%llx param1=%lld\n", __func__, header.operation, param1);
-		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld\n", __func__, header.operation, param1);
+		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld\n", __func__, (long long)header.operation, (long long)param1);
 
 		return -1;
 	}

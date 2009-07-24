@@ -38,7 +38,7 @@ typedef struct {
 } param;
 
 
-void check_afc(gpointer data)
+static void check_afc(gpointer data)
 {
 	//prepare a buffer
 	unsigned int buffersize = BUFFER_SIZE * sizeof(unsigned int);

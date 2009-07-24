@@ -206,7 +206,7 @@ void plist_node_to_string(plist_t *node)
 
 	case PLIST_UINT:
 		plist_get_uint_val(node, &u);
-		printf("%llu\n", u);
+		printf("%llu\n", (long long)u);
 		break;
 
 	case PLIST_REAL:

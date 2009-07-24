@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
 			if (IPHONE_E_SUCCESS ==
 				afc_open_file(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
-				printf("A file size: %llu\n", fsize);
+				printf("A file size: %llu\n", (long long)fsize);
 				char *file_data = (char *) malloc(sizeof(char) * fsize);
 				afc_read_file(afc, my_file, file_data, fsize, &bytes);
 				if (bytes > 0) {
