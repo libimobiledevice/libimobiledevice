@@ -51,6 +51,10 @@ AC_ARG_ENABLE([dev-tools],
             [build_dev_tools=false])
 if test "$build_dev_tools" = true; then
             DEV_SUB=dev
+            AC_CHECK_HEADERS([readline/readline.h],
+			     [],
+			     [AC_MSG_ERROR([Please install readline development headers])]
+	    )
 else
             DEV_SUB=
 fi
