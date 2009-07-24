@@ -135,7 +135,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	%newobject get_uuid;
 	char* get_uuid(){
 		char* uuid = NULL;
-		uuid = (char *)iphone_get_uuid($self->dev);
+		uuid = (char *)iphone_device_get_uuid($self->dev);
 		return uuid;
 	}
 

@@ -673,24 +673,24 @@ iphone_error_t lockdownd_new_client(iphone_device_t device, lockdownd_client_t *
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
-	char *uid = NULL;
-	ret = lockdownd_get_device_uid(client_loc, &uid);
+	char *uuid = NULL;
+	ret = iphone_device_get_uuid(device, &uuid);
 	if (IPHONE_E_SUCCESS != ret) {
 		log_debug_msg("%s: failed to get device uuid.\n", __func__);
 	}
-	log_debug_msg("%s: device uuid: %s\n", __func__, uid);
+	log_debug_msg("%s: device uuid: %s\n", __func__, uuid);
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
 		ret = IPHONE_E_INVALID_CONF;
 	}
 
-	if (IPHONE_E_SUCCESS == ret && !is_device_known(uid))
-		ret = lockdownd_pair(client_loc, uid, host_id);
+	if (IPHONE_E_SUCCESS == ret && !is_device_known(uuid))
+		ret = lockdownd_pair(client_loc, uuid, host_id);
 
-	if (uid) {
-		free(uid);
-		uid = NULL;
+	if (uuid) {
+		free(uuid);
+		uuid = NULL;
 	}
 
 	if (IPHONE_E_SUCCESS == ret) {
@@ -779,9 +779,8 @@ iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_i
 
 	/* store public key in config if pairing succeeded */
 	if (ret == IPHONE_E_SUCCESS) {
-               log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
-		store_device_public_key(uid, public_key);
-		ret = IPHONE_E_SUCCESS;
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
+		store_device_public_key(uuid, public_key);
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
 		ret = IPHONE_E_PAIRING_FAILED;

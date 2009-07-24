@@ -80,18 +80,18 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	char *uuid = NULL;
+	if (IPHONE_E_SUCCESS == iphone_device_get_uuid(phone, &uuid)) {
+		printf("DeviceUniqueID : %s\n", uuid);
+	}
+	if (uuid)
+		free(uuid);
+
 	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
 		iphone_free_device(phone);
 		printf("Exiting.\n");
 		return -1;
 	}
-
-	char *uid = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(client, &uid)) {
-		printf("DeviceUniqueID : %s\n", uid);
-		free(uid);
-	}
-
 
 	char *nnn = NULL;
 	if (IPHONE_E_SUCCESS == lockdownd_get_device_name(client, &nnn)) {

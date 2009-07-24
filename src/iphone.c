@@ -104,13 +104,13 @@ uint32_t iphone_get_device_handle(iphone_device_t device)
 	}
 }
 
-char* iphone_get_uuid(iphone_device_t device)
+iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid)
 {
-	if (device) {
-		return device->serial_number;
-	} else {
-		return NULL;
-	}
+	if (!device)
+		return IPHONE_E_INVALID_ARG;
+
+	*uuid = strdup(device->serial_number);
+	return IPHONE_E_SUCCESS;
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  
