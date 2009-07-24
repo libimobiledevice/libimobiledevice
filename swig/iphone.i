@@ -118,7 +118,7 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	void set_debug_level(int level) {
-		iphone_set_debug(level);
+		iphone_set_debug_level(level);
 	}
 
 	int init_device_by_uuid(char* uuid) {

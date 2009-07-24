@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
 	np_client_t gnp = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
-		iphone_set_debug(1);
+		iphone_set_debug_level(1);
 		iphone_set_debug_mask(DBGMASK_ALL);
 	} else {
-		iphone_set_debug(0);
+		iphone_set_debug_level(0);
 		iphone_set_debug_mask(DBGMASK_NONE);
 	}
 

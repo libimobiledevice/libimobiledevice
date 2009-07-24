@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	iphone_set_debug(0);
+	iphone_set_debug_level(0);
 
 	iphone_get_device_by_uuid(&phone, argv[0]);
 	if (!phone) {

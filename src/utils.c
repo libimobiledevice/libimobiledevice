@@ -31,7 +31,7 @@ uint16_t dbg_mask = 0;
  *
  * @param level Set to 0 for no debugging or 1 for debugging.
  */
-void iphone_set_debug(int level)
+void iphone_set_debug_level(int level)
 {
 	toto_debug = level;
 }

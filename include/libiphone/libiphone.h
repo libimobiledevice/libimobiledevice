@@ -57,7 +57,7 @@ typedef int16_t iphone_error_t;
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
-//debug related functions
+/* Debugging */
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
 #define DBGMASK_USBMUX     (1 << 1)
@@ -65,7 +65,7 @@ typedef struct iphone_device_int *iphone_device_t;
 #define DBGMASK_MOBILESYNC (1 << 3)
 
 void iphone_set_debug_mask(uint16_t mask);
-void iphone_set_debug(int level);
+void iphone_set_debug_level(int level);
 
 //device related functions
 iphone_error_t iphone_get_device(iphone_device_t *device);

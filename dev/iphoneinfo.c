@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			iphone_set_debug_mask(DBGMASK_ALL);
-			iphone_set_debug(1);
+			iphone_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {

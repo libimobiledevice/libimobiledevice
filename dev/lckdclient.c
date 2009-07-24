@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 
-	iphone_set_debug(1);
+	iphone_set_debug_level(1);
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
