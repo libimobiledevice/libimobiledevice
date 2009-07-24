@@ -102,7 +102,7 @@ static int write_host_id(char *host_id)
 	key_file = g_key_file_new();
 
 	/* Store in config file */
-	log_debug_msg("init_config_file(): setting hostID to %s\n", host_id);
+	log_debug_msg("%s: setting hostID to %s\n", __func__, host_id);
 	g_key_file_set_value(key_file, "Global", "HostID", host_id);
 
 	/* Write config file on disk */
@@ -152,7 +152,7 @@ char *get_host_id(void)
 		write_host_id(host_id);
 	}
 
-	log_debug_msg("get_host_id(): Using %s as HostID\n", host_id);
+	log_debug_msg("%s: Using %s as HostID\n", __func__, host_id);
 	return host_id;
 }
 
@@ -274,7 +274,6 @@ static iphone_error_t gen_keys_and_cert(void)
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 	gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
-
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
 	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);

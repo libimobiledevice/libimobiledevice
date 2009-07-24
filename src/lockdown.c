@@ -140,7 +140,7 @@ iphone_error_t lockdownd_stop_session(lockdownd_client_t client)
 	plist_add_sub_key_el(dict, "SessionID");
 	plist_add_sub_string_el(dict, client->session_id);
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "iphone_lckd_stop_session() called\n");
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 
 	ret = lockdownd_send(client, dict);
 
@@ -150,13 +150,13 @@ iphone_error_t lockdownd_stop_session(lockdownd_client_t client)
 	ret = lockdownd_recv(client, &dict);
 
 	if (!dict) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_stop_session(): IPHONE_E_PLIST_ERROR\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
 		return IPHONE_E_PLIST_ERROR;
 	}
 
 	ret = IPHONE_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "StopSession") == RESULT_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_stop_session(): success\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
 		ret = IPHONE_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -175,15 +175,15 @@ iphone_error_t lockdownd_stop_session(lockdownd_client_t client)
 static iphone_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 {
 	if (!client) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_stop_ssl_session(): invalid argument!\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: invalid argument!\n", __func__);
 		return IPHONE_E_INVALID_ARG;
 	}
 	iphone_error_t ret = IPHONE_E_SUCCESS;
 
 	if (client->in_SSL) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "Stopping SSL Session\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
 		ret = lockdownd_stop_session(client);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "Sending SSL close notify\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
 		gnutls_bye(*client->ssl_session, GNUTLS_SHUT_RDWR);
 	}
 	if (client->ssl_session) {
@@ -281,7 +281,7 @@ iphone_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "Recv msg :\nsize : %i\nbuffer :\n%s\n", received_bytes, receive);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: received msg size: %i, buffer follows:\n%s", __func__, received_bytes, receive);
 	plist_from_xml(receive, received_bytes, plist);
 	free(receive);
 
@@ -312,14 +312,14 @@ iphone_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 
 	plist_to_xml(plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "Send msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending msg size %i, buffer follows:\n%s", __func__, length, XMLContent);
 
 	real_query = (char *) malloc(sizeof(char) * (length + 4));
 	length = htonl(length);
 	memcpy(real_query, &length, sizeof(length));
 	memcpy(real_query + 4, XMLContent, ntohl(length));
 	free(XMLContent);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): made the query, sending it along\n");
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: made the query, sending it along\n", __func__);
 
 	if (!client->in_SSL)
 		ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
@@ -334,9 +334,9 @@ iphone_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 		}
 	}
 	if (ret == IPHONE_E_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): sent it!\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sent it!\n", __func__);
 	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_send(): sending failed!\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending failed!\n", __func__);
 	}
 	free(real_query);
 
@@ -360,7 +360,7 @@ iphone_error_t lockdownd_query_type(lockdownd_client_t client)
 	plist_add_sub_key_el(dict, "Request");
 	plist_add_sub_string_el(dict, "QueryType");
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_query_type() called\n");
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 	ret = lockdownd_send(client, dict);
 
 	plist_free(dict);
@@ -373,7 +373,7 @@ iphone_error_t lockdownd_query_type(lockdownd_client_t client)
 
 	ret = IPHONE_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "QueryType") == RESULT_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_query_type(): success\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
 		ret = IPHONE_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -445,7 +445,7 @@ iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain
 		plist_get_key_val(value_key_node, &result_key);
 
 		if (!strcmp(result_key, "Value")) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_get_value(): has a value\n");
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: has a value\n", __func__);
 			*value = plist_copy(value_value_node);
 		}
 		free(result_key);
@@ -669,17 +669,16 @@ iphone_error_t lockdownd_new_client(iphone_device_t device, lockdownd_client_t *
 	client_loc->ssl_session = (gnutls_session_t *) malloc(sizeof(gnutls_session_t));
 	client_loc->in_SSL = 0;
 
-	if (IPHONE_E_SUCCESS != lockdownd_query_type(client_loc)) {
-		log_debug_msg("QueryType failed in the lockdownd client.\n");
+		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
 		ret = IPHONE_E_NOT_ENOUGH_DATA;
 	}
 
 	char *uid = NULL;
 	ret = lockdownd_get_device_uid(client_loc, &uid);
 	if (IPHONE_E_SUCCESS != ret) {
-		log_debug_msg("Device refused to send uid.\n");
+		log_debug_msg("%s: failed to get device uuid.\n", __func__);
 	}
-	log_debug_msg("Device uid: %s\n", uid);
+	log_debug_msg("%s: device uuid: %s\n", __func__, uid);
 
 	host_id = get_host_id();
 	if (IPHONE_E_SUCCESS == ret && !host_id) {
@@ -698,7 +697,7 @@ iphone_error_t lockdownd_new_client(iphone_device_t device, lockdownd_client_t *
 		ret = lockdownd_start_ssl_session(client_loc, host_id);
 		if (IPHONE_E_SUCCESS != ret) {
 			ret = IPHONE_E_SSL_ERROR;
-			log_debug_msg("SSL Session opening failed.\n");
+			log_debug_msg("%s: SSL Session opening failed.\n", __func__);
 		}
 
 		if (host_id) {
@@ -731,10 +730,10 @@ iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_i
 
 	ret = lockdownd_get_device_public_key(client, &public_key);
 	if (ret != IPHONE_E_SUCCESS) {
-		log_debug_msg("Device refused to send public key.\n");
+		log_debug_msg("%s: device refused to send public key.\n", __func__);
 		return ret;
 	}
-	log_debug_msg("device public key :\n %s.\n", public_key.data);
+	log_debug_msg("%s: device public key follows:\n%s\n", __func__, public_key.data);
 
 	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != IPHONE_E_SUCCESS) {
@@ -780,11 +779,11 @@ iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_i
 
 	/* store public key in config if pairing succeeded */
 	if (ret == IPHONE_E_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_pair: pair success\n");
+               log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
 		store_device_public_key(uid, public_key);
 		ret = IPHONE_E_SUCCESS;
 	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_pair: pair failure\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
 		ret = IPHONE_E_PAIRING_FAILED;
 	}
 	free(public_key.data);
@@ -809,7 +808,7 @@ iphone_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 	plist_add_sub_key_el(dict, "Request");
 	plist_add_sub_string_el(dict, "EnterRecovery");
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Telling device to enter recovery mode\n", __func__);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: telling device to enter recovery mode\n", __func__);
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
@@ -845,21 +844,20 @@ iphone_error_t lockdownd_goodbye(lockdownd_client_t client)
 	plist_add_sub_key_el(dict, "Request");
 	plist_add_sub_string_el(dict, "Goodbye");
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_goodbye() called\n");
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
 
 	ret = lockdownd_recv(client, &dict);
-
 	if (!dict) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_goodbye(): IPHONE_E_PLIST_ERROR\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: did not get goodbye response back\n", __func__);
 		return IPHONE_E_PLIST_ERROR;
 	}
 
 	if (lockdown_check_result(dict, "Goodbye") == RESULT_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_goodbye(): success\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
 		ret = IPHONE_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -1062,7 +1060,7 @@ iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char
 		//gnutls_anon_client_credentials_t anoncred;
 		gnutls_certificate_credentials_t xcred;
 
-		log_dbg_msg(DBGMASK_LOCKDOWND, "We started the session OK, now trying GnuTLS\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: started the session OK, now trying GnuTLS\n", __func__);
 		errno = 0;
 		gnutls_global_init();
 		//gnutls_anon_allocate_client_credentials(&anoncred);
@@ -1084,23 +1082,22 @@ iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char
 		}
 		gnutls_credentials_set(*client->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
 
-		log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS step 1...\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 1...\n", __func__);
 		gnutls_transport_set_ptr(*client->ssl_session, (gnutls_transport_ptr_t) client);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS step 2...\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 2...\n", __func__);
 		gnutls_transport_set_push_function(*client->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS step 3...\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 3...\n", __func__);
 		gnutls_transport_set_pull_function(*client->ssl_session, (gnutls_pull_func) & lockdownd_securead);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS step 4 -- now handshaking...\n");
-
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 4 -- now handshaking...\n", __func__);
 		if (errno)
-			log_dbg_msg(DBGMASK_LOCKDOWND, "WARN: errno says %s before handshake!\n", strerror(errno));
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: WARN: errno says %s before handshake!\n", __func__, strerror(errno));
 		return_me = gnutls_handshake(*client->ssl_session);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS handshake done...\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS handshake done...\n", __func__);
 
 		if (return_me != GNUTLS_E_SUCCESS) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "GnuTLS reported something wrong.\n");
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS reported something wrong.\n", __func__);
 			gnutls_perror(return_me);
-			log_dbg_msg(DBGMASK_LOCKDOWND, "oh.. errno says %s\n", strerror(errno));
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: oh.. errno says %s\n", __func__, strerror(errno));
 			return IPHONE_E_SSL_ERROR;
 		} else {
 			client->in_SSL = 1;
@@ -1122,20 +1119,20 @@ iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char
 			if (session_node_val_type == PLIST_STRING && session_id) {
 				// we need to store the session ID for StopSession
 				strcpy(client->session_id, session_id);
-				log_dbg_msg(DBGMASK_LOCKDOWND, "SessionID: %s\n", client->session_id);
+				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
 			}
 			if (session_id)
 				free(session_id);
 		}
 	} else
-		log_dbg_msg(DBGMASK_LOCKDOWND, "Failed to get SessionID!\n");
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Failed to get SessionID!\n", __func__);
 	plist_free(dict);
 	dict = NULL;
 
 	if (ret == IPHONE_E_SUCCESS)
 		return ret;
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "Apparently failed negotiating with lockdownd.\n");
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Apparently failed negotiating with lockdownd.\n", __func__);
 	return IPHONE_E_SSL_ERROR;
 }
 
@@ -1152,12 +1149,10 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	uint32_t bytes = 0;
 	lockdownd_client_t client;
 	client = (lockdownd_client_t) transport;
-	log_dbg_msg(DBGMASK_LOCKDOWND, "lockdownd_secuwrite() called\n");
-	log_dbg_msg(DBGMASK_LOCKDOWND, "pre-send\nlength = %zi\n", length);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pre-send length = %zi\n", __func__, length);
 	usbmuxd_send(client->sfd, buffer, length, &bytes);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "post-send\nsent %i bytes\n", bytes);
-
-	dump_debug_buffer("sslpacketwrite.out", buffer, length);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: post-send sent %i bytes\n", __func__, bytes);
 	return bytes;
 }
 
@@ -1179,9 +1174,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 	client = (lockdownd_client_t) transport;
 	char *recv_buffer;
 
-	log_debug_msg("lockdownd_securead() called\nlength = %zi\n", length);
-
-	log_debug_msg("pre-read\nclient wants %zi bytes\n", length);
+	log_debug_msg("%s: pre-read client wants %zi bytes\n", __func__, length);
 
 	recv_buffer = (char *) malloc(sizeof(char) * this_len);
 
@@ -1191,7 +1184,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 			log_debug_msg("%s: ERROR: usbmux_recv returned %d\n", __func__, res);
 			return res;
 		}
-		log_debug_msg("post-read\nwe got %i bytes\n", bytes);
+		log_debug_msg("%s: post-read we got %i bytes\n", __func__, bytes);
 
 		// increase read count
 		tbytes += bytes;
@@ -1205,7 +1198,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 		}
 
 		this_len = length - tbytes;
-		log_debug_msg("re-read\ntrying to read missing %i bytes\n", this_len);
+		log_debug_msg("%s: re-read trying to read missing %i bytes\n", __func__, this_len);
 	} while (tbytes < length);
 
 	if (recv_buffer) {

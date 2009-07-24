@@ -226,7 +226,6 @@ iphone_error_t np_observe_notification( np_client_t client, const char *notifica
 	return res;
 }
 
-
 /** Notifies the iphone to send a notification on specified events.
  *
  * observation messages seen so far:

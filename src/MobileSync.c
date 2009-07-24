@@ -161,7 +161,7 @@ iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(*plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_MOBILESYNC, "Recv msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
 
 	return ret;
@@ -185,7 +185,7 @@ iphone_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_MOBILESYNC, "Send msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
 
 	char *content = NULL;

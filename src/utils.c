@@ -116,13 +116,12 @@ inline void log_debug_buffer(const char *data, const int length)
 inline void dump_debug_buffer(const char *file, const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
-
 	/* run the real fprintf */
 	if (toto_debug) {
 		FILE *my_ssl_packet = fopen(file, "w+");
 		fwrite(data, 1, length, my_ssl_packet);
 		fflush(my_ssl_packet);
-		fprintf(stderr, "Wrote SSL packet to drive, too.\n");
+		fprintf(stderr, "%s: Wrote SSL packet to drive, too.\n", __func__);
 		fclose(my_ssl_packet);
 	}
 #endif

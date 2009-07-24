@@ -39,11 +39,7 @@ const int MAXIMUM_PACKET_SIZE = (2 << 15);
  */
 static void afc_lock(afc_client_t client)
 {
-	log_debug_msg("Locked\n");
-	/*while (client->lock) {
-	   usleep(500);         // they say it's obsolete, but whatever
-	   }
-	   client->lock = 1; */
+	log_debug_msg("%s: Locked\n", __func__);
 	g_mutex_lock(client->mutex);
 }
 
@@ -52,9 +48,8 @@ static void afc_lock(afc_client_t client)
  * @param client The AFC 
  */
 static void afc_unlock(afc_client_t client)
-{								// just to be pretty 
-	log_debug_msg("Unlocked\n");
-	//client->lock = 0;
+{
+	log_debug_msg("%s: Unlocked\n", __func__);
 	g_mutex_unlock(client->mutex);
 }
 
@@ -245,12 +240,12 @@ static int dispatch_AFC_packet(afc_client_t client, const char *data, uint64_t l
 		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
 		offset = client->afc_packet->this_length - sizeof(AFCPacket);
 
-		log_debug_msg("dispatch_AFC_packet: Offset: %i\n", offset);
+		log_debug_msg("%s: Offset: %i\n", __func__, offset);
 		if ((length) < (client->afc_packet->entire_length - client->afc_packet->this_length)) {
-			log_debug_msg("dispatch_AFC_packet: Length did not resemble what it was supposed");
+			log_debug_msg("%s: Length did not resemble what it was supposed", __func__);
 			log_debug_msg("to based on the packet.\n");
-			log_debug_msg("length minus offset: %i\n", length - offset);
-			log_debug_msg("rest of packet: %i\n", client->afc_packet->entire_length - client->afc_packet->this_length);
+			log_debug_msg("%s: length minus offset: %i\n", __func__, length - offset);
+			log_debug_msg("%s: rest of packet: %i\n", __func__, client->afc_packet->entire_length - client->afc_packet->this_length);
 			free(buffer);
 			return -1;
 		}
@@ -261,19 +256,19 @@ static int dispatch_AFC_packet(afc_client_t client, const char *data, uint64_t l
 			return bytes;
 		}
 
-		log_debug_msg("dispatch_AFC_packet: sent the first now go with the second\n");
-		log_debug_msg("Length: %i\n", length - offset);
-		log_debug_msg("Buffer: \n");
+		log_debug_msg("%s: sent the first now go with the second\n", __func__);
+		log_debug_msg("%s: Length: %i\n", __func__, length - offset);
+		log_debug_msg("%s: Buffer: \n", __func__);
 		log_debug_buffer(data + offset, length - offset);
 
 		usbmuxd_send(client->sfd, data + offset, length - offset, (uint32_t*)&bytes);
 		return bytes;
 	} else {
-		log_debug_msg("dispatch_AFC_packet doin things the old way\n");
+		log_debug_msg("%s: doin things the old way\n", __func__);
 		buffer = (char *) malloc(sizeof(char) * client->afc_packet->this_length);
-		log_debug_msg("dispatch_AFC_packet packet length = %i\n", client->afc_packet->this_length);
+		log_debug_msg("%s: packet length = %i\n", __func__, client->afc_packet->this_length);
 		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
-		log_debug_msg("dispatch_AFC_packet packet data follows\n");
+		log_debug_msg("%s: packet data follows\n", __func__);
 		if (length > 0) {
 			memcpy(buffer + sizeof(AFCPacket), data, length);
 		}
@@ -354,7 +349,7 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 		}
 	}
 
-	log_debug_msg("%s: received AFC packet, full len=%lld, this len=%lld, operation=%lld\n", __func__, header.entire_length, header.this_length, header.operation);
+	log_debug_msg("%s: received AFC packet, full len=%lld, this len=%lld, operation=0x%llx\n", __func__, header.entire_length, header.this_length, header.operation);
 
 	entire_len = (uint32_t)header.entire_length - sizeof(AFCPacket);
 	this_len = (uint32_t)header.this_length - sizeof(AFCPacket);
@@ -758,7 +753,7 @@ afc_open_file(afc_client_t client, const char *filename,
 	free(data);
 
 	if (bytes <= 0) {
-		log_debug_msg("afc_open_file: Didn't receive a response to the command\n");
+		log_debug_msg("%s: Didn't receive a response to the command\n", __func__);
 		afc_unlock(client);
 		return IPHONE_E_NOT_ENOUGH_DATA;
 	}
@@ -800,14 +795,14 @@ afc_read_file(afc_client_t client, uint64_t handle, char *data, int length, uint
 
 	if (!client || !client->afc_packet || client->sfd < 0 || handle == 0)
 		return IPHONE_E_INVALID_ARG;
-	log_debug_msg("afc_read_file called for length %i\n", length);
+	log_debug_msg("%s: called for length %i\n", __func__, length);
 
 	afc_lock(client);
 
 	// Looping here to get around the maximum amount of data that
 	// recieve_AFC_data can handle
 	while (current_count < length) {
-		log_debug_msg("afc_read_file: current count is %i but length is %i\n", current_count, length);
+		log_debug_msg("%s: current count is %i but length is %i\n", __func__, current_count, length);
 
 		// Send the read command
 		AFCFilePacket *packet = (AFCFilePacket *) malloc(sizeof(AFCFilePacket));
@@ -824,7 +819,7 @@ afc_read_file(afc_client_t client, uint64_t handle, char *data, int length, uint
 		}
 		// Receive the data
 		bytes_loc = receive_AFC_data(client, &input);
-		log_debug_msg("afc_read_file: bytes returned: %i\n", bytes_loc);
+               log_debug_msg("%s: bytes returned: %i\n", __func__, bytes_loc);
 		if (bytes_loc < 0) {
 			afc_unlock(client);
 			return IPHONE_E_AFC_ERROR;
@@ -837,7 +832,7 @@ afc_read_file(afc_client_t client, uint64_t handle, char *data, int length, uint
 			// success
 		} else {
 			if (input) {
-				log_debug_msg("afc_read_file: %d\n", bytes_loc);
+				log_debug_msg("%s: %d\n", __func__, bytes_loc);
 				memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
 				free(input);
 				input = NULL;
@@ -845,7 +840,7 @@ afc_read_file(afc_client_t client, uint64_t handle, char *data, int length, uint
 			}
 		}
 	}
-	log_debug_msg("afc_read_file: returning current_count as %i\n", current_count);
+	log_debug_msg("%s: returning current_count as %i\n", __func__, current_count);
 
 	afc_unlock(client);
 	*bytes = current_count;
@@ -878,7 +873,7 @@ afc_write_file(afc_client_t client, uint64_t handle,
 
 	afc_lock(client);
 
-	log_debug_msg("afc_write_file: Write length: %i\n", length);
+	log_debug_msg("%s: Write length: %i\n", __func__, length);
 
 	// Divide the file into segments.
 	for (i = 0; i < segments; i++) {
@@ -939,7 +934,7 @@ afc_write_file(afc_client_t client, uint64_t handle,
 	bytes_loc = receive_AFC_data(client, &acknowledgement);
 	afc_unlock(client);
 	if (bytes_loc < 0) {
-		log_debug_msg("afc_write_file: uh oh?\n");
+		log_debug_msg("%s: uh oh?\n", __func__);
 	} else {
 		free(acknowledgement);
 	}
@@ -961,7 +956,7 @@ iphone_error_t afc_close_file(afc_client_t client, uint64_t handle)
 
 	afc_lock(client);
 
-	log_debug_msg("afc_close_file: File handle %i\n", handle);
+	log_debug_msg("%s: File handle %i\n", __func__, handle);
 
 	// Send command
 	memcpy(buffer, &handle, sizeof(uint64_t));
@@ -971,18 +966,16 @@ iphone_error_t afc_close_file(afc_client_t client, uint64_t handle)
 	free(buffer);
 	buffer = NULL;
 
-	// FIXME: Is this necesary?
-	// client->afc_packet->entire_length = client->afc_packet->this_length 
-	// = 0;
-
 	if (bytes <= 0) {
 		afc_unlock(client);
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
+
 	// Receive the response
 	bytes = receive_AFC_data(client, &buffer);
 	if (buffer)
 		free(buffer);
+
 	afc_unlock(client);
 	return IPHONE_E_SUCCESS;
 }
@@ -1008,7 +1001,7 @@ iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, afc_lock_op_t
 
 	afc_lock(client);
 
-	log_debug_msg("afc_lock_file: File handle %i\n", handle);
+	log_debug_msg("%s: file handle %i\n", __func__, handle);
 
 	// Send command
 	memcpy(buffer, &handle, sizeof(uint64_t));
@@ -1022,7 +1015,7 @@ iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, afc_lock_op_t
 
 	if (bytes <= 0) {
 		afc_unlock(client);
-		log_debug_msg("Could not send lock command\n");
+		log_debug_msg("%s: could not send lock command\n", __func__);
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
 	// Receive the response
@@ -1194,9 +1187,9 @@ iphone_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, cons
 
 	afc_lock(client);
 
-	log_debug_msg("link type: %lld\n", type);
-	log_debug_msg("target: %s, length:%d\n", target, strlen(target));
-	log_debug_msg("linkname: %s, length:%d\n", linkname, strlen(linkname));
+	log_debug_msg("%s: link type: %lld\n", __func__, type);
+	log_debug_msg("%s: target: %s, length:%d\n", __func__, target, strlen(target));
+	log_debug_msg("%s: linkname: %s, length:%d\n", __func__, linkname, strlen(linkname));
 
 	// Send command
 	memcpy(send, &type, 8);
