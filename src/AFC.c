@@ -341,7 +341,7 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 			&& header.entire_length == sizeof(AFCPacket)) {
 		log_debug_msg("%s: Empty AFCPacket received!\n", __func__);
 		*dump_here = NULL;
-		if (header.operation == AFC_SUCCESS_RESPONSE) {
+		if (header.operation == AFC_OP_DATA) {
 			return 0;
 		} else {
 			client->afcerror = EIO;
@@ -396,13 +396,13 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 	}
 
 	// check for errors
-	if (header.operation == AFC_SUCCESS_RESPONSE) {
+	if (header.operation == AFC_OP_DATA) {
 		// we got a positive response!
 		log_debug_msg("%s: got a success response\n", __func__);
-	} else if (header.operation == AFC_FILE_HANDLE) {
+	} else if (header.operation == AFC_OP_FILE_OPEN_RES) {
 		// we got a file handle response
 		log_debug_msg("%s: got a file handle response, handle=%lld\n", __func__, param1);
-	} else if (header.operation == AFC_ERROR) {
+	} else if (header.operation == AFC_OP_STATUS) {
 		// error message received
 		if (param1 == 0) {
 			// ERROR_SUCCESS, this is not an error!
@@ -418,7 +418,7 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 			return -1;
 		}
 	} else {
-		// unknown operation code received!
+		/* unknown operation code received */
 		free(*dump_here);
 		*dump_here = NULL;
 
@@ -481,7 +481,7 @@ iphone_error_t afc_get_dir_list(afc_client_t client, const char *dir, char ***li
 	afc_lock(client);
 
 	// Send the command
-	client->afc_packet->operation = AFC_LIST_DIR;
+	client->afc_packet->operation = AFC_OP_READ_DIR;
 	client->afc_packet->entire_length = 0;
 	client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, dir, strlen(dir)+1);
@@ -526,7 +526,7 @@ iphone_error_t afc_get_devinfo(afc_client_t client, char ***infos)
 	afc_lock(client);
 
 	// Send the command
-	client->afc_packet->operation = AFC_GET_DEVINFO;
+	client->afc_packet->operation = AFC_OP_GET_DEVINFO;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, NULL, 0);
 	if (bytes < 0) {
@@ -545,6 +545,7 @@ iphone_error_t afc_get_devinfo(afc_client_t client, char ***infos)
 		free(data);
 
 	afc_unlock(client);
+
 	*infos = list;
 	return IPHONE_E_SUCCESS;
 }
@@ -569,7 +570,7 @@ iphone_error_t afc_delete_file(afc_client_t client, const char *path)
 
 	// Send command
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	client->afc_packet->operation = AFC_DELETE;
+	client->afc_packet->operation = AFC_OP_REMOVE_PATH;
 	bytes = dispatch_AFC_packet(client, path, strlen(path)+1);
 	if (bytes <= 0) {
 		afc_unlock(client);
@@ -612,7 +613,7 @@ iphone_error_t afc_rename_file(afc_client_t client, const char *from, const char
 	memcpy(send, from, strlen(from) + 1);
 	memcpy(send + strlen(from) + 1, to, strlen(to) + 1);
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_RENAME;
+	client->afc_packet->operation = AFC_OP_RENAME_PATH;
 	bytes = dispatch_AFC_packet(client, send, strlen(to)+1 + strlen(from)+1);
 	free(send);
 	if (bytes <= 0) {
@@ -652,7 +653,7 @@ iphone_error_t afc_mkdir(afc_client_t client, const char *dir)
 	afc_lock(client);
 
 	// Send command
-	client->afc_packet->operation = AFC_MAKE_DIR;
+	client->afc_packet->operation = AFC_OP_MAKE_DIR;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
 	bytes = dispatch_AFC_packet(client, dir, strlen(dir)+1);
 	if (bytes <= 0) {
@@ -695,7 +696,7 @@ iphone_error_t afc_get_file_info(afc_client_t client, const char *path, char ***
 	afc_lock(client);
 
 	// Send command
-	client->afc_packet->operation = AFC_GET_INFO;
+	client->afc_packet->operation = AFC_OP_GET_FILE_INFO;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	dispatch_AFC_packet(client, path, strlen(path)+1);
 
@@ -747,7 +748,7 @@ afc_open_file(afc_client_t client, const char *filename,
 	memcpy(data + 4, &ag, 4);
 	memcpy(data + 8, filename, strlen(filename));
 	data[8 + strlen(filename)] = '\0';
-	client->afc_packet->operation = AFC_FILE_OPEN;
+	client->afc_packet->operation = AFC_OP_FILE_OPEN;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, data, 8 + strlen(filename) + 1);
 	free(data);
@@ -808,7 +809,7 @@ afc_read_file(afc_client_t client, uint64_t handle, char *data, int length, uint
 		AFCFilePacket *packet = (AFCFilePacket *) malloc(sizeof(AFCFilePacket));
 		packet->filehandle = handle;
 		packet->size = ((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE;
-		client->afc_packet->operation = AFC_READ;
+		client->afc_packet->operation = AFC_OP_READ;
 		client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 		bytes_loc = dispatch_AFC_packet(client, (char *) packet, sizeof(AFCFilePacket));
 		free(packet);
@@ -880,7 +881,7 @@ afc_write_file(afc_client_t client, uint64_t handle,
 		// Send the segment
 		client->afc_packet->this_length = sizeof(AFCPacket) + 8;
 		client->afc_packet->entire_length = client->afc_packet->this_length + MAXIMUM_WRITE_SIZE;
-		client->afc_packet->operation = AFC_WRITE;
+		client->afc_packet->operation = AFC_OP_WRITE;
 		out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
 		memcpy(out_buffer, (char *)&handle, sizeof(uint64_t));
 		memcpy(out_buffer + 8, data + current_count, MAXIMUM_WRITE_SIZE);
@@ -914,7 +915,7 @@ afc_write_file(afc_client_t client, uint64_t handle,
 
 	client->afc_packet->this_length = sizeof(AFCPacket) + 8;
 	client->afc_packet->entire_length = client->afc_packet->this_length + (length - current_count);
-	client->afc_packet->operation = AFC_WRITE;
+	client->afc_packet->operation = AFC_OP_WRITE;
 	out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
 	memcpy(out_buffer, (char *) &handle, sizeof(uint64_t));
 	memcpy(out_buffer + 8, data + current_count, (length - current_count));
@@ -960,7 +961,7 @@ iphone_error_t afc_close_file(afc_client_t client, uint64_t handle)
 
 	// Send command
 	memcpy(buffer, &handle, sizeof(uint64_t));
-	client->afc_packet->operation = AFC_FILE_CLOSE;
+	client->afc_packet->operation = AFC_OP_FILE_CLOSE;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, 8);
 	free(buffer);
@@ -1007,7 +1008,7 @@ iphone_error_t afc_lock_file(afc_client_t client, uint64_t handle, afc_lock_op_t
 	memcpy(buffer, &handle, sizeof(uint64_t));
 	memcpy(buffer + 8, &op, 8);
 
-	client->afc_packet->operation = AFC_FILE_LOCK;
+	client->afc_packet->operation = AFC_OP_FILE_LOCK;
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, 16);
 	free(buffer);
@@ -1053,7 +1054,7 @@ iphone_error_t afc_seek_file(afc_client_t client, uint64_t handle, int64_t offse
 	memcpy(buffer + 8, &whence, sizeof(int32_t));	// fromwhere
 	memcpy(buffer + 12, &zero, sizeof(uint32_t));	// pad
 	memcpy(buffer + 16, &offset, sizeof(uint64_t));	// offset
-	client->afc_packet->operation = AFC_FILE_SEEK;
+	client->afc_packet->operation = AFC_OP_FILE_SEEK;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, 24);
 	free(buffer);
@@ -1097,7 +1098,7 @@ iphone_error_t afc_truncate_file(afc_client_t client, uint64_t handle, uint64_t 
 	// Send command
 	memcpy(buffer, &handle, sizeof(uint64_t));	// handle
 	memcpy(buffer + 8, &newsize, sizeof(uint64_t));	// newsize
-	client->afc_packet->operation = AFC_FILE_TRUNCATE;
+	client->afc_packet->operation = AFC_OP_FILE_SET_SIZE;
 	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
 	bytes = dispatch_AFC_packet(client, buffer, 16);
 	free(buffer);
@@ -1145,7 +1146,7 @@ iphone_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize
 	memcpy(send, &size_requested, 8);
 	memcpy(send + 8, path, strlen(path) + 1);
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_TRUNCATE;
+	client->afc_packet->operation = AFC_OP_TRUNCATE;
 	bytes = dispatch_AFC_packet(client, send, 8 + strlen(path) + 1);
 	free(send);
 	if (bytes <= 0) {
@@ -1196,7 +1197,7 @@ iphone_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, cons
 	memcpy(send + 8, target, strlen(target) + 1);
 	memcpy(send + 8 + strlen(target) + 1, linkname, strlen(linkname) + 1);
 	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_MAKE_LINK;
+	client->afc_packet->operation = AFC_OP_MAKE_LINK;
 	bytes = dispatch_AFC_packet(client, send, 8 + strlen(linkname) + 1 + strlen(target) + 1);
 	free(send);
 	if (bytes <= 0) {
