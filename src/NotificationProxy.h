@@ -18,9 +18,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#include "libiphone/notification_proxy.h"
+#ifndef INOTIFICATION_PROXY_H
+#define INOTIFICATION_PROXY_H
 
 #include <glib.h>
+
+#include "libiphone/notification_proxy.h"
 
 struct np_client_int {
 	int sfd;
@@ -42,4 +45,6 @@ static const char *np_default_notifications[11] = {
 	NULL
 };
 
-gpointer np_notifier( gpointer arg );
+gpointer np_notifier(gpointer arg);
+
+#endif
