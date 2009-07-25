@@ -27,25 +27,44 @@ extern "C" {
 
 #include <libiphone/libiphone.h>
 
+/* Error Codes */
+#define LOCKDOWN_E_SUCCESS                    0
+#define LOCKDOWN_E_INVALID_ARG               -1
+#define LOCKDOWN_E_INVALID_CONF              -2
+#define LOCKDOWN_E_PLIST_ERROR               -3
+#define LOCKDOWN_E_PAIRING_FAILED            -4
+#define LOCKDOWN_E_SSL_ERROR                 -5
+#define LOCKDOWN_E_DICT_ERROR                -6
+#define LOCKDOWN_E_START_SERVICE_FAILED      -7
+#define LOCKDOWN_E_NOT_ENOUGH_DATA           -8
+#define LOCKDOWN_E_SET_VALUE_PROHIBITED      -9
+#define LOCKDOWN_E_GET_VALUE_PROHIBITED     -10
+#define LOCKDOWN_E_REMOVE_VALUE_PROHIBITED  -11
+#define LOCKDOWN_E_MUX_ERROR                -12
+
+#define LOCKDOWN_E_UNKNOWN_ERROR           -256
+
+typedef int16_t lockdownd_error_t;
+
 struct lockdownd_client_int;
 typedef struct lockdownd_client_int *lockdownd_client_t;
 
-//lockdownd related functions
-iphone_error_t lockdownd_new_client (iphone_device_t device, lockdownd_client_t *client);
-iphone_error_t lockdownd_free_client(lockdownd_client_t client);
-iphone_error_t lockdownd_query_type(lockdownd_client_t client);
-iphone_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
-iphone_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
-iphone_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
-iphone_error_t lockdownd_start_service (lockdownd_client_t client, const char *service, int *port);
-iphone_error_t lockdownd_stop_session(lockdownd_client_t client);
-iphone_error_t lockdownd_send (lockdownd_client_t client, plist_t plist);
-iphone_error_t lockdownd_recv (lockdownd_client_t client, plist_t *plist);
-iphone_error_t lockdownd_pair(lockdownd_client_t client, char *uid, char *host_id);
-iphone_error_t lockdownd_get_device_uid (lockdownd_client_t control, char **uid);
-iphone_error_t lockdownd_get_device_name (lockdownd_client_t client, char **device_name);
-iphone_error_t lockdownd_enter_recovery(lockdownd_client_t client);
-iphone_error_t lockdownd_goodbye(lockdownd_client_t client);
+/* Interface */
+lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client);
+lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
+lockdownd_error_t lockdownd_query_type(lockdownd_client_t client);
+lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
+lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
+lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
+lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, int *port);
+lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client);
+lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
+lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist);
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *host_id);
+lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t control, char **uuid);
+lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
+lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
+lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
 
 #ifdef __cplusplus
 }

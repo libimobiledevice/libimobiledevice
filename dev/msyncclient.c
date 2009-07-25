@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 
 	printf("All done.\n");
 
-	lockdownd_free_client(client);
+	lockdownd_client_free(client);
 	iphone_free_device(phone);
 
 	return 0;

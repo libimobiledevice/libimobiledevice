@@ -136,13 +136,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
 
 	/* run query and output information */
-	if(lockdownd_get_value(client, domain, key, &node) == IPHONE_E_SUCCESS)
+	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS)
 	{
 		if (plist_get_node_type(node) == PLIST_DICT) {
 			if (plist_get_first_child(node))
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 
 	if (domain != NULL)
 		free(domain);
-	lockdownd_free_client(client);
+	lockdownd_client_free(client);
 	iphone_free_device(phone);
 
 	return 0;

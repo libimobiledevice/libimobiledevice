@@ -104,13 +104,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
 		iphone_free_device(phone);
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
-		lockdownd_free_client(client);
+	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
+		lockdownd_client_free(client);
 		iphone_free_device(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
@@ -136,8 +136,7 @@ int main(int argc, char *argv[])
 		g_thread_join(threads[i]);
 	}
 
-
-	lockdownd_free_client(client);
+	lockdownd_client_free(client);
 	iphone_free_device(phone);
 
 	return 0;

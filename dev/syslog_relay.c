@@ -100,15 +100,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
 		iphone_free_device(phone);
 		return -1;
 	}
 
 	/* start syslog_relay service and retrieve port */
 	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &port);
-	if ((ret == IPHONE_E_SUCCESS) && port) {
-		lockdownd_free_client(client);
+	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+		lockdownd_client_free(client);
 		
 		/* connect to socket relay messages */
 		

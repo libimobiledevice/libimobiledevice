@@ -24,6 +24,7 @@
 
 #include <gnutls/gnutls.h>
 #include <string.h>
+
 #include "libiphone/lockdown.h"
 
 struct lockdownd_client_int {
@@ -33,13 +34,14 @@ struct lockdownd_client_int {
 	char session_id[40];
 };
 
-iphone_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key);
-iphone_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * device_cert,
+lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key);
+lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * device_cert,
 									   gnutls_datum_t * host_cert, gnutls_datum_t * root_cert);
 
-// SSL functions
-iphone_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *HostID);
+/* SSL functions */
+lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *HostID);
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length);
+
 
 #endif
