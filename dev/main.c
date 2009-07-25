@@ -46,11 +46,11 @@ static void perform_notification(iphone_device_t phone, lockdownd_client_t clien
 	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &nport);
 	if (nport) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
-		np_new_client(phone, nport, &np);
+		np_client_new(phone, nport, &np);
 		if (np) {
 			printf("::::::::: PostNotification %s\n", notification);
 			np_post_notification(np, notification);
-			np_free_client(np);
+			np_client_free(np);
 		}
 	} else {
 		printf("::::::::::::::: np was NOT started ::::::::::::\n");
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 			lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &npp);
 			if (npp) {
 				printf("Notification Proxy started.\n");
-				np_new_client(phone, npp, &gnp);
+				np_client_new(phone, npp, &gnp);
 			} else {
 				printf("ERROR: Notification proxy could not be started.\n");
 			}
@@ -225,17 +225,19 @@ int main(int argc, char *argv[])
 			printf("XXX sleeping\n");
 			sleep(5);
 
-			//perform_notification(phone, control, NP_SYNC_DID_FINISH);
-
 			printf("XXX unlocking file\n");
 			afc_lock_file(afc, lockfile, AFC_LOCK_UN);
 
 			printf("XXX closing file\n");
 			afc_close_file(afc, lockfile);
+
+			printf("XXX sleeping\n");
+			sleep(5);
+			//perform_notification(phone, client, NP_SYNC_DID_FINISH);
 		}
 
 		if (gnp) {
-			np_free_client(gnp);
+			np_client_free(gnp);
 			gnp = NULL;
 		}
 
