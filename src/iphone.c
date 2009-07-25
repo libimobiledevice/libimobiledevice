@@ -19,13 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include "iphone.h"
-#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <libiphone/libiphone.h>
+
+#include "iphone.h"
+#include "utils.h"
 
 /**
  * Retrieves a list of connected devices from usbmuxd and matches their
@@ -95,13 +94,13 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 	return iphone_get_device_by_uuid(device, NULL);
 }
 
-uint32_t iphone_get_device_handle(iphone_device_t device)
+iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle)
 {
-	if (device) {
-		return device->handle;
-	} else {
-		return 0;
-	}
+	if (!device)
+		return IPHONE_E_INVALID_ARG;
+
+	*handle = device->handle;
+	return IPHONE_E_SUCCESS;
 }
 
 iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid)

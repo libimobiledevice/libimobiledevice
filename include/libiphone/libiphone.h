@@ -62,7 +62,7 @@ void iphone_set_debug_level(int level);
 iphone_error_t iphone_get_device(iphone_device_t *device);
 iphone_error_t iphone_get_device_by_uuid(iphone_device_t *device, const char *uuid);
 iphone_error_t iphone_device_free(iphone_device_t device);
-uint32_t iphone_get_device_handle(iphone_device_t device);
+iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle);
 iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid);
 
 #ifdef __cplusplus
