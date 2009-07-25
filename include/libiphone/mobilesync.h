@@ -1,7 +1,9 @@
-/*
- * mobilesync.h
+/**
+ * @file libiphone/mobilesync.h
+ * @brief MobileSync Implementation
+ * \internal
  *
- * Copyright (c) 2009 Martin S. All Rights Reserved.
+ * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -1,6 +1,7 @@
-/*
- * libiphone.h
- * Main include of libiphone
+/**
+ * @file libiphone/libiphone.h
+ * @brief Common code and device handling
+ * \internal
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *

@@ -1,5 +1,7 @@
-/*
- * afc.h
+/**
+ * @file libiphone/afc.h
+ * @brief AFC Implementation
+ * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.
  *

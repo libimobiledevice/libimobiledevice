@@ -1,6 +1,9 @@
-/*
- * lockdownd.h
+/**
+ * @file libiphone/lockdown.h
+ * @brief Communcation with the lockdown device daemon
+ * \internal
  *
+ * Copyright (c) 2008 Zach C. All Rights Reserved.
  * Copyright (c) 2009 Martin S. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
