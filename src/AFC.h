@@ -26,6 +26,8 @@
 #include <glib.h>
 #include <stdint.h>
 
+#include "libiphone/afc.h"
+
 #define AFC_MAGIC "CFA6LPAA"
 #define AFC_MAGIC_LEN (8)
 

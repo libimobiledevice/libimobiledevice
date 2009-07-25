@@ -55,18 +55,18 @@ void check_afc(gpointer data)
 	uint64_t file = 0;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
-	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
-	afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
-	afc_close_file(((param *) data)->afc, file);
+	afc_file_open(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
+	afc_file_write(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
+	afc_file_close(((param *) data)->afc, file);
 	file = 0;
 	if (bytes != buffersize)
 		printf("Write operation failed\n");
 
 	//now read it
 	bytes = 0;
-	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
-	afc_read_file(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
-	afc_close_file(((param *) data)->afc, file);
+	afc_file_open(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
+	afc_file_read(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
+	afc_file_close(((param *) data)->afc, file);
 	if (bytes != buffersize)
 		printf("Read operation failed\n");
 
@@ -79,7 +79,7 @@ void check_afc(gpointer data)
 	}
 
 	//cleanup
-	afc_delete_file(((param *) data)->afc, path);
+	afc_remove_path(((param *) data)->afc, path);
 	g_thread_exit(0);
 }
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	afc_new_client(phone, port, &afc);
+	afc_client_new(phone, port, &afc);
 
 	//makes sure thread environment is available
 	if (!g_thread_supported())

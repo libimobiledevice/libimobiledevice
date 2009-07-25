@@ -37,12 +37,8 @@ extern "C" {
 #define IPHONE_E_INVALID_ARG           -1
 #define IPHONE_E_UNKNOWN_ERROR         -2
 #define IPHONE_E_NO_DEVICE             -3
-#define IPHONE_E_TIMEOUT               -4
-#define IPHONE_E_NOT_ENOUGH_DATA       -5
-#define IPHONE_E_BAD_HEADER            -6
-
-//afc specific error
-#define IPHONE_E_AFC_ERROR            -13
+#define IPHONE_E_NOT_ENOUGH_DATA       -4
+#define IPHONE_E_BAD_HEADER            -5
 
 typedef int16_t iphone_error_t;
 
