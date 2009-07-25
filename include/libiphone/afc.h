@@ -96,6 +96,7 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, int length, uint32_t *bytes);
 afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, int length, uint32_t *bytes);
 afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, int whence);
+afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position);
 afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize);
 afc_error_t afc_remove_path(afc_client_t client, const char *path);
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to);

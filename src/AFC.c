@@ -329,6 +329,9 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, int *
 	} else if (header.operation == AFC_OP_FILE_OPEN_RES) {
 		/* file handle response */
 		log_debug_msg("%s: got a file handle response, handle=%lld\n", __func__, param1);
+	} else if (header.operation == AFC_OP_FILE_TELL_RES) {
+		/* tell response */
+		log_debug_msg("%s: got a tell response, position=%lld\n", __func__, param1);
 	} else {
 		/* unknown operation code received */
 		free(*dump_here);
@@ -986,8 +989,46 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 
 	afc_unlock(client);
 
-	if (bytes < 0) {
-		return IPHONE_E_AFC_ERROR;
+	return ret;
+}
+
+/** Returns current position in a pre-opened file on the phone.
+ * 
+ * @param client The client to use.
+ * @param handle File handle of a previously opened file.
+ * @param position Position in bytes of indicator
+ * 
+ * @return AFC_E_SUCCESS on success, AFC_E_NOT_ENOUGH_DATA on failure.
+ */
+afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position)
+{
+	char *buffer = (char *) malloc(sizeof(char) * 8);
+	int bytes = 0;
+	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
+
+	if (!client || (handle == 0))
+		return AFC_E_INVALID_ARGUMENT;
+
+	afc_lock(client);
+
+	// Send the command
+	memcpy(buffer, &handle, sizeof(uint64_t));	// handle
+	client->afc_packet->operation = AFC_OP_FILE_TELL;
+	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
+	bytes = afc_dispatch_packet(client, buffer, 8);
+	free(buffer);
+	buffer = NULL;
+
+	if (bytes <= 0) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+
+	// Receive the data
+	ret = afc_receive_data(client, &buffer, &bytes);
+	if (bytes > 0 && buffer) {
+		/* Get the position */
+		memcpy(position, buffer, sizeof(uint64_t));
 	}
 	if (buffer)
 		free(buffer);

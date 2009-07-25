@@ -45,6 +45,8 @@ void check_afc(gpointer data)
 	int *buf = (int *) malloc(buffersize);
 	int *buf2 = (int *) malloc(buffersize);
 	unsigned int bytes = 0;
+	uint64_t position = 0;
+	
 	//fill buffer
 	int i = 0;
 	for (i = 0; i < BUFFER_SIZE; i++) {
@@ -65,9 +67,12 @@ void check_afc(gpointer data)
 	//now read it
 	bytes = 0;
 	afc_file_open(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
-	afc_file_read(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
+	afc_file_read(((param *) data)->afc, file, (char *) buf2, buffersize/2, &bytes);
+	afc_file_read(((param *) data)->afc, file, (char *) buf2 + (buffersize/2), buffersize/2, &bytes);
+	if(AFC_E_SUCCESS != afc_file_tell(((param *) data)->afc, file, &position))
+		printf("Tell operation failed\n");
 	afc_file_close(((param *) data)->afc, file);
-	if (bytes != buffersize)
+	if (position != buffersize)
 		printf("Read operation failed\n");
 
 	//compare buffers
