@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include "AFC.h"
@@ -112,91 +111,7 @@ afc_error_t afc_client_free(afc_client_t client)
 		g_mutex_free(client->mutex);
 	}
 	free(client);
-	return IPHONE_E_SUCCESS;
-}
-
-/**
- * Returns the AFC error code that has been sent by the device if 
- *  an error occured (set inside receive_AFC_data)
- *
- * @param client AFC client for that the error value is to be retrieved.
- *
- * @return AFC error code or -1 on error.
- */
-int afc_get_afcerror(afc_client_t client)
-{
-	int res = -1;
-	if (client) {
-		afc_lock(client);
-		res = client->afcerror;
-		afc_unlock(client);
-	}
-	return res;
-}
-
-/** 
- * Tries to convert the AFC error value into a meaningful errno value.
- * Internally used by afc_get_errno.
- *
- * @param afcerror AFC error value to convert
- *
- * @return errno value or -1 if the errno could not be determined.
- *
- * @see afc_get_errno
- */
-static int afcerror_to_errno(int afcerror)
-{
-	int res = -1;
-	switch (afcerror) {
-		case 0: // ERROR_SUCCESS, this means no error.
-			res = 0;
-			break;
-		case 4: // occurs if you try to open a file as directory
-			res = ENOTDIR;
-			break;
-		case 7: // occurs e.g. if you try to close a file handle that
-			//  does not belong to an open file
-			res = EINVAL;
-			break;
-		case 8: // occurs if you try to open a non-existent file
-			res = ENOENT;
-			break;
-		case 9: // occurs if you try to open a directory as file
-			res = EISDIR;
-			break;
-		case 10: // occurs if you try to open a file without permission
-			res = EPERM;
-			break;
-		case 19: // occurs if you try to lock an already locked file
-			res = EWOULDBLOCK;
-			break;
-		default: // we'll assume it's an errno value, but report it
-			log_debug_msg("WARNING: unknown AFC error %d, perhaps it's '%s'?\n", afcerror, strerror(afcerror));
-			res = afcerror;
-			break;
-	}
-
-	log_debug_msg("Mapped AFC error %d to errno %d: %s\n", afcerror, res, strerror(res));
-
-	return res;
-}
-
-/**
- * Returns the client's AFC error code converted to an errno value.
- *
- * @param client AFC client for that the errno value is to be retrieved.
- *
- * @return errno value or -1 on error.
- */
-int afc_get_errno(afc_client_t client)
-{
-	int res = -1;
-	if (client) {
-		afc_lock(client);
-		res = afcerror_to_errno(client->afcerror);
-		afc_unlock(client);
-	}
-	return res;
+	return AFC_E_SUCCESS;
 }
 
 /** Dispatches an AFC packet over a client.
@@ -294,28 +209,26 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
  *         received raised a non-trivial error condition (i.e. non-zero with
  *         AFC_ERROR operation)
  */
-static int receive_AFC_data(afc_client_t client, char **dump_here)
+static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, int *bytes)
 {
 	AFCPacket header;
-	int bytes = 0;
 	uint32_t entire_len = 0;
 	uint32_t this_len = 0;
 	uint32_t current_count = 0;
 	uint64_t param1 = -1;
 
-	// reset internal afc error value
-	client->afcerror = 0;
+	*bytes = 0;
 
-	// first, read the AFC header
-	usbmuxd_recv(client->sfd, (char*)&header, sizeof(AFCPacket), (uint32_t*)&bytes);
-	if (bytes <= 0) {
+	/* first, read the AFC header */
+	usbmuxd_recv(client->sfd, (char*)&header, sizeof(AFCPacket), (uint32_t*)bytes);
+	if (*bytes <= 0) {
 		log_debug_msg("%s: Just didn't get enough.\n", __func__);
 		*dump_here = NULL;
-		return -1;
-	} else if ((uint32_t)bytes < sizeof(AFCPacket)) {
+		return AFC_E_MUX_ERROR;
+	} else if ((uint32_t)*bytes < sizeof(AFCPacket)) {
 		log_debug_msg("%s: Did not even get the AFCPacket header\n", __func__);
 		*dump_here = NULL;
-		return -1;
+		return AFC_E_MUX_ERROR;
 	}
 
 	/* check if it's a valid AFC header */
@@ -328,23 +241,23 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 		/* otherwise print a warning but do not abort */
 		log_debug_msg("%s: ERROR: Unexpected packet number (%lld != %lld) aborting.\n", __func__, header.packet_num, client->afc_packet->packet_num);
 		*dump_here = NULL;
-		return -1;
+		return AFC_E_OP_HEADER_INVALID;
 	}
 
 	/* then, read the attached packet */
 	if (header.this_length < sizeof(AFCPacket)) {
 		log_debug_msg("%s: Invalid AFCPacket header received!\n", __func__);
 		*dump_here = NULL;
-		return -1;
+		return AFC_E_OP_HEADER_INVALID;
 	} else if ((header.this_length == header.entire_length)
 			&& header.entire_length == sizeof(AFCPacket)) {
 		log_debug_msg("%s: Empty AFCPacket received!\n", __func__);
 		*dump_here = NULL;
+		*bytes = 0;
 		if (header.operation == AFC_OP_DATA) {
-			return 0;
+			return AFC_E_SUCCESS;
 		} else {
-			client->afcerror = EIO;
-			return -1;
+			return AFC_E_IO_ERROR;
 		}
 	}
 
@@ -360,17 +273,17 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 
 	*dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
-		usbmuxd_recv(client->sfd, *dump_here, this_len, (uint32_t*)&bytes);
-		if (bytes <= 0) {
+		usbmuxd_recv(client->sfd, *dump_here, this_len, (uint32_t*)bytes);
+		if (*bytes <= 0) {
 			free(*dump_here);
 			*dump_here = NULL;
 			log_debug_msg("%s: Did not get packet contents!\n", __func__);
-			return -1;
-		} else if ((uint32_t)bytes < this_len) {
+			return AFC_E_NOT_ENOUGH_DATA;
+		} else if ((uint32_t)*bytes < this_len) {
 			free(*dump_here);
 			*dump_here = NULL;
 			log_debug_msg("%s: Could not receive this_len=%d bytes\n", __func__, this_len);
-			return -1;
+			return AFC_E_NOT_ENOUGH_DATA;
 		}
 	}
 
@@ -378,12 +291,12 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			usbmuxd_recv(client->sfd, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)&bytes);
-			if (bytes <= 0) {
-				log_debug_msg("%s: Error receiving data (recv returned %d)\n", __func__, bytes);
+			usbmuxd_recv(client->sfd, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)bytes);
+			if (*bytes <= 0) {
+				log_debug_msg("%s: Error receiving data (recv returned %d)\n", __func__, *bytes);
 				break;
 			}
-			current_count += bytes;
+			current_count += *bytes;
 		}
 		if (current_count < entire_len) {
 			log_debug_msg("%s: WARNING: could not receive full packet (read %s, size %d)\n", __func__, current_count, entire_len);
@@ -394,39 +307,42 @@ static int receive_AFC_data(afc_client_t client, char **dump_here)
 		param1 = *(uint64_t*)(*dump_here);
 	}
 
-	// check for errors
-	if (header.operation == AFC_OP_DATA) {
-		// we got a positive response!
-		log_debug_msg("%s: got a success response\n", __func__);
-	} else if (header.operation == AFC_OP_FILE_OPEN_RES) {
-		// we got a file handle response
-		log_debug_msg("%s: got a file handle response, handle=%lld\n", __func__, param1);
-	} else if (header.operation == AFC_OP_STATUS) {
-		// error message received
-		if (param1 == 0) {
-			// ERROR_SUCCESS, this is not an error!
-			log_debug_msg("%s: ERROR_SUCCESS\n", __func__);
-		} else {
-			// but this is an error!
-			log_debug_msg("%s: ERROR %lld\n", __func__, param1);
+	log_debug_msg("%s: packet data size = %i\n", __func__, current_count);
+	log_debug_msg("%s: packet data follows\n", __func__);
+	log_debug_buffer(*dump_here, current_count);
+
+	/* check operation types */
+	if (header.operation == AFC_OP_STATUS) {
+		/* status response */
+		log_debug_msg("%s: got a status response, code=%lld\n", __func__, param1);
+
+		if (param1 != AFC_E_SUCCESS) {
+			/* error status */
+			/* free buffer */
 			free(*dump_here);
 			*dump_here = NULL;
-			// store error value
-			client->afcerror = (int)param1;
-			afcerror_to_errno(client->afcerror);
-			return -1;
+			return (afc_error_t)param1;
 		}
+	} else if (header.operation == AFC_OP_DATA) {
+		/* data response */
+		log_debug_msg("%s: got a data response\n", __func__);
+	} else if (header.operation == AFC_OP_FILE_OPEN_RES) {
+		/* file handle response */
+		log_debug_msg("%s: got a file handle response, handle=%lld\n", __func__, param1);
 	} else {
 		/* unknown operation code received */
 		free(*dump_here);
 		*dump_here = NULL;
+		*bytes = 0;
 
 		log_debug_msg("%s: WARNING: Unknown operation code received 0x%llx param1=%lld\n", __func__, header.operation, param1);
 		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld\n", __func__, header.operation, param1);
 
-		return -1;
+		return AFC_E_OP_NOT_SUPPORTED;
 	}
-	return current_count;
+
+	*bytes = current_count;
+	return AFC_E_SUCCESS;
 }
 
 static int count_nullspaces(char *string, int number)
@@ -489,15 +405,13 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive the data
-	bytes = receive_AFC_data(client, &data);
-	if (bytes < 0) {
+	ret = afc_receive_data(client, &data, &bytes);
+	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
-		return IPHONE_E_AFC_ERROR;
+		return ret;
 	}
 	// Parse the data
 	list_loc = make_strings_list(data, bytes);
-	if (list_loc)
-		ret = IPHONE_E_SUCCESS;
 	if (data)
 		free(data);
 
@@ -534,10 +448,10 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive the data
-	bytes = receive_AFC_data(client, &data);
-	if (bytes < 0) {
+	ret = afc_receive_data(client, &data, &bytes);
+	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
-		return IPHONE_E_AFC_ERROR;
+		return ret;
 	}
 	// Parse the data
 	list = make_strings_list(data, bytes);
@@ -579,7 +493,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &response);
+	ret = afc_receive_data(client, &response, &bytes);
 	if (response)
 		free(response);
 
@@ -621,7 +535,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &response);
+	ret = afc_receive_data(client, &response, &bytes);
 	if (response)
 		free(response);
 
@@ -659,7 +573,7 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &response);
+	ret = afc_receive_data(client, &response, &bytes);
 	if (response)
 		free(response);
 
@@ -696,13 +610,11 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
 	afc_dispatch_packet(client, path, strlen(path)+1);
 
 	// Receive data
-	length = receive_AFC_data(client, &received);
+	ret = afc_receive_data(client, &received, &bytes);
 	if (received) {
 		*infolist = make_strings_list(received, bytes);
 		free(received);
 	}
-
-	log_debug_msg("%s: Didn't get any further data\n", __func__);
 
 	afc_unlock(client);
 
@@ -754,8 +666,8 @@ afc_file_open(afc_client_t client, const char *filename,
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive the data
-	length = receive_AFC_data(client, &data);
-	if (length > 0 && data) {
+	ret = afc_receive_data(client, &data, &bytes);
+	if ((ret == AFC_E_SUCCESS) && (bytes > 0) && data) {
 		afc_unlock(client);
 
 		// Get the file handle
@@ -763,6 +675,8 @@ afc_file_open(afc_client_t client, const char *filename,
 		free(data);
 		return ret;
 	}
+
+	log_debug_msg("%s: Didn't get any further data\n", __func__);
 
 	afc_unlock(client);
 
@@ -811,9 +725,10 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, int length, uint
 			return AFC_E_NOT_ENOUGH_DATA;
 		}
 		// Receive the data
-		bytes_loc = receive_AFC_data(client, &input);
-               log_debug_msg("%s: bytes returned: %i\n", __func__, bytes_loc);
-		if (bytes_loc < 0) {
+		ret = afc_receive_data(client, &input, &bytes_loc);
+		log_debug_msg("%s: afc_receive_data returned error: %d\n", __func__, ret);
+		log_debug_msg("%s: bytes returned: %i\n", __func__, bytes_loc);
+		if (ret != AFC_E_SUCCESS) {
 			afc_unlock(client);
 			return ret;
 		} else if (bytes_loc == 0) {
@@ -887,8 +802,8 @@ afc_file_write(afc_client_t client, uint64_t handle,
 		out_buffer = NULL;
 
 		current_count += bytes_loc;
-		bytes_loc = receive_AFC_data(client, &acknowledgement);
-		if (bytes_loc < 0) {
+		ret = afc_receive_data(client, &acknowledgement, &bytes_loc);
+		if (ret != AFC_E_SUCCESS) {
 			afc_unlock(client);
 			return ret;
 		} else {
@@ -925,9 +840,9 @@ afc_file_write(afc_client_t client, uint64_t handle,
 	}
 
 	zero = bytes_loc;
-	bytes_loc = receive_AFC_data(client, &acknowledgement);
+	ret = afc_receive_data(client, &acknowledgement, &bytes_loc);
 	afc_unlock(client);
-	if (bytes_loc < 0) {
+	if (ret != AFC_E_SUCCESS) {
 		log_debug_msg("%s: uh oh?\n", __func__);
 	} else {
 		free(acknowledgement);
@@ -968,7 +883,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 	}
 
 	// Receive the response
-	bytes = receive_AFC_data(client, &buffer);
+	ret = afc_receive_data(client, &buffer, &bytes);
 	if (buffer)
 		free(buffer);
 
@@ -1018,7 +933,7 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 		return AFC_E_UNKNOWN_ERROR;
 	}
 	// Receive the response
-	bytes = receive_AFC_data(client, &buffer);
+	ret = afc_receive_data(client, &buffer, &bytes);
 	if (buffer) {
 		log_debug_buffer(buffer, bytes);
 		free(buffer);
@@ -1065,7 +980,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &buffer);
+	ret = afc_receive_data(client, &buffer, &bytes);
 	if (buffer)
 		free(buffer);
 
@@ -1074,7 +989,12 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 	if (bytes < 0) {
 		return IPHONE_E_AFC_ERROR;
 	}
-	return IPHONE_E_SUCCESS;
+	if (buffer)
+		free(buffer);
+
+	afc_unlock(client);
+
+	return ret;
 }
 
 /** Sets the size of a file on the phone.
@@ -1113,7 +1033,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &buffer);
+	ret = afc_receive_data(client, &buffer, &bytes);
 	if (buffer)
 		free(buffer);
 
@@ -1156,7 +1076,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize)
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &response);
+	ret = afc_receive_data(client, &response, &bytes);
 	if (response)
 		free(response);
 
@@ -1205,7 +1125,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	// Receive response
-	bytes = receive_AFC_data(client, &response);
+	ret = afc_receive_data(client, &response, &bytes);
 	if (response)
 		free(response);
 

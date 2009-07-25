@@ -50,7 +50,6 @@ struct afc_client_int {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
-	int afcerror;
 	GMutex *mutex;
 };
 
@@ -86,4 +85,3 @@ enum {
 	AFC_OP_MAKE_LINK       = 0x0000001C	// MakeLink
 };
 
-static int afcerror_to_errno(int afcerror);
