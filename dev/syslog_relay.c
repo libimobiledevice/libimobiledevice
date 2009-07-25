@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
-		iphone_free_device(phone);
+		iphone_device_free(phone);
 		return -1;
 	}
 
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
 
-	iphone_free_device(phone);
+	iphone_device_free(phone);
 
 	return 0;
 }

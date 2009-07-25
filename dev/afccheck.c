@@ -105,13 +105,13 @@ int main(int argc, char *argv[])
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
-		iphone_free_device(phone);
+		iphone_device_free(phone);
 		return 1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
 		lockdownd_client_free(client);
-		iphone_free_device(phone);
+		iphone_device_free(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
 	}
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	}
 
 	lockdownd_client_free(client);
-	iphone_free_device(phone);
+	iphone_device_free(phone);
 
 	return 0;
 }

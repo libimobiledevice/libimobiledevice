@@ -52,11 +52,11 @@ iphone_error_t iphone_get_device_by_uuid(iphone_device_t * device, const char *u
 	}
 	if (dev_list && dev_list[0].handle > 0) {
 		if (!uuid) {
-			// select first device found if no UUID specified
+			/* select first device found if no UUID specified */
 			handle = dev_list[0].handle;
 			strcpy(serial_number, dev_list[0].serial_number);
 		} else {
-			// otherwise walk through the list
+			/* otherwise walk through the list */
 			for (i = 0; dev_list[i].handle > 0; i++) {
 				log_debug_msg("%s: device handle=%d, uuid=%s\n", __func__, dev_list[i].handle, dev_list[i].serial_number);
 				if (strcasecmp(uuid, dev_list[i].serial_number) == 0) {
@@ -119,7 +119,7 @@ iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid)
  * 
  * @param phone A pointer to an iPhone structure.
  */
-iphone_error_t iphone_free_device(iphone_device_t device)
+iphone_error_t iphone_device_free(iphone_device_t device)
 {
 	if (!device)
 		return IPHONE_E_INVALID_ARG;

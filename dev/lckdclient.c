@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 		free(uuid);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
-		iphone_free_device(phone);
+		iphone_device_free(phone);
 		return -1;
 	}
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	}
 	clear_history();
 	lockdownd_client_free(client);
-	iphone_free_device(phone);
+	iphone_device_free(phone);
 
 	return 0;
 }

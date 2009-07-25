@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 		free(uuid);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
-		iphone_free_device(phone);
+		iphone_device_free(phone);
 		printf("Exiting.\n");
 		return -1;
 	}
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 	printf("All done.\n");
 
 	lockdownd_client_free(client);
-	iphone_free_device(phone);
+	iphone_device_free(phone);
 
 	return 0;
 }
