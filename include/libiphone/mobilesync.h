@@ -27,14 +27,24 @@ extern "C" {
 
 #include <libiphone/libiphone.h>
 
+/* Error Codes */
+#define MOBILESYNC_E_SUCCESS                0
+#define MOBILESYNC_E_INVALID_ARG           -1
+#define MOBILESYNC_E_PLIST_ERROR           -2
+#define MOBILESYNC_E_MUX_ERROR             -3
+#define MOBILESYNC_E_BAD_VERSION           -4
+
+#define MOBILESYNC_E_UNKNOWN_ERROR       -256
+
+typedef int16_t mobilesync_error_t;
+
 struct mobilesync_client_int;
 typedef struct mobilesync_client_int *mobilesync_client_t;
 
-iphone_error_t mobilesync_new_client(iphone_device_t device, int dst_port,
-					   mobilesync_client_t * client);
-iphone_error_t mobilesync_free_client(mobilesync_client_t client);
-iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t *plist);
-iphone_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
+mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port, mobilesync_client_t * client);
+mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
+mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t *plist);
+mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
 
 #ifdef __cplusplus
 }

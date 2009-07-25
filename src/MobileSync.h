@@ -21,11 +21,7 @@
 #ifndef MOBILESYNC_H
 #define MOBILESYNC_H
 
-#include "iphone.h"
-#include "utils.h"
 #include "libiphone/mobilesync.h"
-
-#include <plist/plist.h>
 
 struct mobilesync_client_int {
 	int sfd;
