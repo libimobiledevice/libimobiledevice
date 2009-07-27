@@ -91,7 +91,6 @@ afc_error_t afc_client_free(afc_client_t client);
 afc_error_t afc_get_device_info(afc_client_t client, char ***infos);
 afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***list);
 afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char ***infolist);
-afc_error_t afc_get_connection_info(afc_client_t client, char ***infolist);
 afc_error_t afc_file_open(afc_client_t client, const char *filename, afc_file_mode_t file_mode, uint64_t *handle);
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle);
 afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation);
