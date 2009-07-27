@@ -1,0 +1,22 @@
+Release 0.9.2
+-------------
+
+iFuse:
+* Moved some libiphone logic into iFuse and adopted to new API
+* Add hard/symlink support
+
+libiphone:
+* Migrate to use the new usbmuxd daemon
+* Refactor whole API
+* Add iPhone 3GS support
+* Add hard/symlink support for AFC
+* New iphone_id tool to list connected devices and get the device name
+* iphoneinfo now allows plist/xml output and queries by domain/key
+* Fix a lot of bugs/crashes, compiler warnings and comments
+
+usbmuxd:
+* New daemon to allow multiple connections to devices
+* Add iPhone 3GS support and expose new tethering USB interface
+* First public release available
+* Fix race condition using multiple clients simultaneously
+* Fix various usbmux protocol bugs
