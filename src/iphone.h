@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libiphone/libiphone.h"
+
 struct iphone_device_int {
 	char *buffer;
 	uint32_t handle;

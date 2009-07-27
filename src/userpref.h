@@ -23,19 +23,21 @@
 #define USERPREF_H
 
 #include <gnutls/gnutls.h>
-#include "libiphone/libiphone.h"
 
+#define USERPREF_E_SUCCESS             0
+#define USERPREF_E_INVALID_ARG        -1
+#define USERPREF_E_INVALID_CONF       -2
+#define USERPREF_E_SSL_ERROR          -3
 
-iphone_error_t get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
+#define USERPREF_E_UNKNOWN_ERROR    -256
 
-iphone_error_t get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
+typedef int16_t userpref_error_t;
 
-char *get_host_id(void);
+userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
+userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
+userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
+userpref_error_t userpref_set_device_public_key(char *uuid, gnutls_datum_t public_key);
+int userpref_has_device_public_key(char *uuid);
+void userpref_get_host_id(char **host_id);
 
-int is_device_known(char *uid);
-
-int store_device_public_key(char *uid, gnutls_datum_t public_key);
-
-int init_config_file( gnutls_datum_t * root_key, gnutls_datum_t * host_key, gnutls_datum_t * root_cert,
-					 gnutls_datum_t * host_cert);
 #endif

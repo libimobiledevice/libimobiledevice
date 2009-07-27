@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	iphone_set_debug(0);
+	iphone_set_debug_level(0);
 
 	iphone_get_device_by_uuid(&phone, argv[0]);
 	if (!phone) {
@@ -68,19 +68,19 @@ int main(int argc, char **argv)
 		return -2;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
 		fprintf(stderr, "ERROR: Connecting to device failed!\n");
 		return -2;
 	}
 
-	if ((IPHONE_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
+	if ((LOCKDOWN_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
 		fprintf(stderr, "ERROR: Could not get device name!\n");
 		ret = -2;
 	}
 
-	lockdownd_free_client(client);
-	iphone_free_device(phone);
+	lockdownd_client_free(client);
+	iphone_device_free(phone);
 
 	if (ret == 0) {
 		printf("%s\n", devname);

@@ -28,12 +28,12 @@
 #include <libiphone/lockdown.h>
 #include <libiphone/mobilesync.h>
 
-static iphone_error_t mobilesync_get_all_contacts(mobilesync_client_t client)
+static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client)
 {
 	if (!client)
-		return IPHONE_E_INVALID_ARG;
+		return MOBILESYNC_E_INVALID_ARG;
 
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
 	plist_t array = NULL;
 
 	array = plist_new_array();
@@ -124,7 +124,6 @@ static iphone_error_t mobilesync_get_all_contacts(mobilesync_client_t client)
 	plist_free(array);
 	array = NULL;
 
-
 	return ret;
 }
 
@@ -137,14 +136,13 @@ int main(int argc, char *argv[])
 	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
 		iphone_set_debug_mask(DBGMASK_MOBILESYNC);
 
-
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return -1;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
 		return -1;
 	}
 
@@ -152,10 +150,10 @@ int main(int argc, char *argv[])
 
 	if (port) {
 		mobilesync_client_t msync = NULL;
-		mobilesync_new_client(phone, port, &msync);
+		mobilesync_client_new(phone, port, &msync);
 		if (msync) {
 			mobilesync_get_all_contacts(msync);
-			mobilesync_free_client(msync);
+			mobilesync_client_free(msync);
 		}
 	} else {
 		printf("Start service failure.\n");
@@ -163,8 +161,8 @@ int main(int argc, char *argv[])
 
 	printf("All done.\n");
 
-	lockdownd_free_client(client);
-	iphone_free_device(phone);
+	lockdownd_client_free(client);
+	iphone_device_free(phone);
 
 	return 0;
 }

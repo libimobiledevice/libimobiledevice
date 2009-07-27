@@ -34,22 +34,23 @@ int main(int argc, char *argv[])
 	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 
-	iphone_set_debug(1);
+	iphone_set_debug_level(1);
 
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return -1;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
-		return -1;
+	char *uuid = NULL;
+	if (IPHONE_E_SUCCESS == iphone_device_get_uuid(phone, &uuid)) {
+		printf("DeviceUniqueID : %s\n", uuid);
 	}
+	if (uuid)
+		free(uuid);
 
-	char *uid = NULL;
-	if (IPHONE_E_SUCCESS == lockdownd_get_device_uid(client, &uid)) {
-		printf("DeviceUniqueID : %s\n", uid);
-		free(uid);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
+		return -1;
 	}
 
 	using_history();
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
 
 				if (!strcmp(*args, "get") && len >= 2) {
 					plist_t value = NULL;
-					if (IPHONE_E_SUCCESS == lockdownd_get_value(client, len == 3 ? *(args + 1):NULL,  len == 3 ? *(args + 2):*(args + 1), &value))
+					if (LOCKDOWN_E_SUCCESS == lockdownd_get_value(client, len == 3 ? *(args + 1):NULL,  len == 3 ? *(args + 2):*(args + 1), &value))
 					{
 						char *xml = NULL;
 						uint32_t length;
@@ -92,8 +93,13 @@ int main(int argc, char *argv[])
 
 				if (!strcmp(*args, "start") && len == 2) {
 					int port = 0;
-					lockdownd_start_service(client, *(args + 1), &port);
-					printf("%i\n", port);
+					if(LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, *(args + 1), &port)) {
+						printf("started service %s on port %i\n", *(args + 1), port);
+					}
+					else
+					{
+						printf("failed to start service %s on device.\n", *(args + 1));
+					}
 				}
 			}
 			g_strfreev(args);
@@ -102,8 +108,8 @@ int main(int argc, char *argv[])
 		cmd = NULL;
 	}
 	clear_history();
-	lockdownd_free_client(client);
-	iphone_free_device(phone);
+	lockdownd_client_free(client);
+	iphone_device_free(phone);
 
 	return 0;
 }

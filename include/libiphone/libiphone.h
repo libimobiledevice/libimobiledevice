@@ -1,6 +1,7 @@
-/*
- * libiphone.h
- * Main include of libiphone
+/**
+ * @file libiphone/libiphone.h
+ * @brief Common code and device handling
+ * \internal
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *
@@ -32,46 +33,34 @@ extern "C" {
 #include <plist/plist.h>
 #include <usbmuxd.h>
 
-//general errors
+/* Error Codes */
 #define IPHONE_E_SUCCESS                0
 #define IPHONE_E_INVALID_ARG           -1
 #define IPHONE_E_UNKNOWN_ERROR         -2
 #define IPHONE_E_NO_DEVICE             -3
-#define IPHONE_E_TIMEOUT               -4
-#define IPHONE_E_NOT_ENOUGH_DATA       -5
-#define IPHONE_E_BAD_HEADER            -6
-
-//lockdownd specific error
-#define IPHONE_E_INVALID_CONF          -7
-#define IPHONE_E_PAIRING_FAILED        -8
-#define IPHONE_E_SSL_ERROR             -9
-#define IPHONE_E_PLIST_ERROR          -10
-#define IPHONE_E_DICT_ERROR           -11
-#define IPHONE_E_START_SERVICE_FAILED -12
-
-//afc specific error
-#define IPHONE_E_AFC_ERROR            -13
+#define IPHONE_E_NOT_ENOUGH_DATA       -4
+#define IPHONE_E_BAD_HEADER            -5
 
 typedef int16_t iphone_error_t;
 
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
-//debug related functions
+/* Debugging */
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
-#define DBGMASK_USBMUX     (1 << 1)
-#define DBGMASK_LOCKDOWND  (1 << 2)
-#define DBGMASK_MOBILESYNC (1 << 3)
+#define DBGMASK_LOCKDOWND  (1 << 1)
+#define DBGMASK_MOBILESYNC (1 << 2)
 
 void iphone_set_debug_mask(uint16_t mask);
-void iphone_set_debug(int level);
+void iphone_set_debug_level(int level);
 
-//device related functions
+/* Interface */
 iphone_error_t iphone_get_device(iphone_device_t *device);
 iphone_error_t iphone_get_device_by_uuid(iphone_device_t *device, const char *uuid);
-iphone_error_t iphone_free_device(iphone_device_t device);
-uint32_t iphone_get_device_handle(iphone_device_t device);
+iphone_error_t iphone_device_free(iphone_device_t device);
+iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle);
+iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid);
 
 #ifdef __cplusplus
 }

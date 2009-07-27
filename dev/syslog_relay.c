@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
 	char uuid[41];
 	int port = 0;
 	uuid[0] = 0;
+	uint32_t handle = 0;
 
 	signal(SIGINT, clean_exit);
 	signal(SIGQUIT, clean_exit);
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			iphone_set_debug_mask(DBGMASK_ALL);
-			iphone_set_debug(1);
+			iphone_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -100,19 +101,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
 		return -1;
 	}
 
 	/* start syslog_relay service and retrieve port */
 	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &port);
-	if ((ret == IPHONE_E_SUCCESS) && port) {
-		lockdownd_free_client(client);
+	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+		lockdownd_client_free(client);
 		
 		/* connect to socket relay messages */
-		
-		int sfd = usbmuxd_connect(iphone_get_device_handle(phone), port);
+		iphone_device_get_handle(phone, &handle);
+		int sfd = usbmuxd_connect(handle, port);
 		if (sfd < 0) {
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
@@ -148,7 +149,7 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
 
-	iphone_free_device(phone);
+	iphone_device_free(phone);
 
 	return 0;
 }

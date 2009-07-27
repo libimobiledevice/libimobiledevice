@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <plist/plist.h>
+
 #include "NotificationProxy.h"
 #include "iphone.h"
 #include "utils.h"
@@ -61,24 +62,24 @@ static void np_unlock(np_client_t client)
  * @param client NP to send data to
  * @param dict plist to send
  *
- * @return IPHONE_E_SUCCESS or an error code.
+ * @return NP_E_SUCCESS or an error code.
  */
-static iphone_error_t np_plist_send(np_client_t client, plist_t dict)
+static np_error_t np_plist_send(np_client_t client, plist_t dict)
 {
 	char *XML_content = NULL;
 	uint32_t length = 0;
 	uint32_t nlen = 0;
 	int bytes = 0;
-	iphone_error_t res = IPHONE_E_UNKNOWN_ERROR;
+	np_error_t res = NP_E_UNKNOWN_ERROR;
 
 	if (!client || !dict) {
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 	}
 
 	plist_to_xml(dict, &XML_content, &length);
 
 	if (!XML_content || length == 0) {
-		return IPHONE_E_PLIST_ERROR;
+		return NP_E_PLIST_ERROR;
 	}
 
 	nlen = htonl(length);
@@ -87,7 +88,7 @@ static iphone_error_t np_plist_send(np_client_t client, plist_t dict)
 		usbmuxd_send(client->sfd, XML_content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			if ((uint32_t)bytes == length) {
-				res = IPHONE_E_SUCCESS;
+				res = NP_E_SUCCESS;
 			} else {
 				log_debug_msg("%s: ERROR: Could not send all data (%d of %d)!\n", __func__, bytes, length);
 			}
@@ -110,19 +111,19 @@ static iphone_error_t np_plist_send(np_client_t client, plist_t dict)
  * 
  * @return A handle to the newly-connected client or NULL upon error.
  */
-iphone_error_t np_new_client ( iphone_device_t device, int dst_port, np_client_t *client )
+np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *client)
 {
-	//makes sure thread environment is available
+	/* makes sure thread environment is available */
 	if (!g_thread_supported())
 		g_thread_init(NULL);
 
 	if (!device)
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 
-	// Attempt connection
+	/* Attempt connection */
 	int sfd = usbmuxd_connect(device->handle, dst_port);
 	if (sfd < 0) {
-		return IPHONE_E_UNKNOWN_ERROR; //ret;
+		return NP_E_UNKNOWN_ERROR;
 	}
 
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
@@ -133,17 +134,17 @@ iphone_error_t np_new_client ( iphone_device_t device, int dst_port, np_client_t
 	client_loc->notifier = NULL;
 
 	*client = client_loc;
-	return IPHONE_E_SUCCESS;
+	return NP_E_SUCCESS;
 }
 
 /** Disconnects an NP client from the phone.
  * 
  * @param client The client to disconnect.
  */
-iphone_error_t np_free_client ( np_client_t client )
+np_error_t np_client_free(np_client_t client)
 {
 	if (!client)
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 
 	usbmuxd_disconnect(client->sfd);
 	client->sfd = -1;
@@ -156,7 +157,7 @@ iphone_error_t np_free_client ( np_client_t client )
 	}
 	free(client);
 
-	return IPHONE_E_SUCCESS;
+	return NP_E_SUCCESS;
 }
 
 /** Sends a notification to the device's Notification Proxy.
@@ -168,10 +169,10 @@ iphone_error_t np_free_client ( np_client_t client )
  * @param client The client to send to
  * @param notification The notification message to send
  */
-iphone_error_t np_post_notification( np_client_t client, const char *notification )
+np_error_t np_post_notification(np_client_t client, const char *notification)
 {
 	if (!client || !notification) {
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 	}
 	np_lock(client);
 
@@ -181,7 +182,7 @@ iphone_error_t np_post_notification( np_client_t client, const char *notificatio
 	plist_add_sub_key_el(dict, "Name");
 	plist_add_sub_string_el(dict, notification);
 
-	iphone_error_t res = np_plist_send(client, dict);
+	np_error_t res = np_plist_send(client, dict);
 	plist_free(dict);
 
 	dict = plist_new_dict();
@@ -191,7 +192,7 @@ iphone_error_t np_post_notification( np_client_t client, const char *notificatio
 	res = np_plist_send(client, dict);
 	plist_free(dict);
 
-	if (res != IPHONE_E_SUCCESS) {
+	if (res != NP_E_SUCCESS) {
 		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
 	}
 
@@ -204,10 +205,10 @@ iphone_error_t np_post_notification( np_client_t client, const char *notificatio
  * @param client The client to send to
  * @param notification The notifications that should be observed.
  */
-iphone_error_t np_observe_notification( np_client_t client, const char *notification )
+np_error_t np_observe_notification( np_client_t client, const char *notification )
 {
 	if (!client || !notification) {
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 	}
 	np_lock(client);
 
@@ -217,8 +218,8 @@ iphone_error_t np_observe_notification( np_client_t client, const char *notifica
 	plist_add_sub_key_el(dict, "Name");
 	plist_add_sub_string_el(dict, notification);
 
-	iphone_error_t res = np_plist_send(client, dict);
-	if (res != IPHONE_E_SUCCESS) {
+	np_error_t res = np_plist_send(client, dict);
+	if (res != NP_E_SUCCESS) {
 		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
 	}
 	plist_free(dict);
@@ -226,7 +227,6 @@ iphone_error_t np_observe_notification( np_client_t client, const char *notifica
 	np_unlock(client);
 	return res;
 }
-
 
 /** Notifies the iphone to send a notification on specified events.
  *
@@ -247,14 +247,14 @@ iphone_error_t np_observe_notification( np_client_t client, const char *notifica
  *  terminating NULL entry. However this parameter can be NULL; in this case,
  *  the default set of notifications will be used.
  */
-iphone_error_t np_observe_notifications( np_client_t client, const char **notification_spec )
+np_error_t np_observe_notifications(np_client_t client, const char **notification_spec)
 {
 	int i = 0;
-	iphone_error_t res = IPHONE_E_UNKNOWN_ERROR;
+	np_error_t res = NP_E_UNKNOWN_ERROR;
 	const char **notifications = notification_spec;
 
 	if (!client) {
-		return IPHONE_E_INVALID_ARG;
+		return NP_E_INVALID_ARG;
 	}
 
 	if (!notifications) {
@@ -263,7 +263,7 @@ iphone_error_t np_observe_notifications( np_client_t client, const char **notifi
 
 	while (notifications[i]) {
 		res = np_observe_notification(client, notifications[i]);
-		if (res != IPHONE_E_SUCCESS) {
+		if (res != NP_E_SUCCESS) {
 			break;
 		}
 		i++;
@@ -279,24 +279,22 @@ iphone_error_t np_observe_notifications( np_client_t client, const char **notifi
  * @param notification Pointer to a buffer that will be allocated and filled
  *  with the notification that has been received.
  *
- * @return IPHONE_E_SUCCESS if a notification has been received,
- *         IPHONE_E_TIMEOUT if nothing has been received,
+ * @return 0 if a notification has been received or nothing has been received,
  *         or an error value if an error occured.
  *
  * @note You probably want to check out np_set_notify_callback
  * @see np_set_notify_callback
  */
-static iphone_error_t np_get_notification( np_client_t client, char **notification )
+static int np_get_notification(np_client_t client, char **notification)
 {
 	uint32_t bytes = 0;
-	iphone_error_t res;
+	int res = 0;
 	uint32_t pktlen = 0;
 	char *XML_content = NULL;
 	plist_t dict = NULL;
 
-	if (!client || client->sfd < 0 || *notification) {
-		return IPHONE_E_INVALID_ARG;
-	}
+	if (!client || client->sfd < 0 || *notification)
+		return -1;
 
 	np_lock(client);
 
@@ -304,7 +302,7 @@ static iphone_error_t np_get_notification( np_client_t client, char **notificati
 	log_debug_msg("NotificationProxy: initial read=%i\n", bytes);
 	if (bytes < 4) {
 		log_debug_msg("NotificationProxy: no notification received!\n");
-		res = IPHONE_E_TIMEOUT;
+		res = 0;
 	} else {
 		if ((char)pktlen == 0) {
 			pktlen = ntohl(pktlen);
@@ -314,7 +312,7 @@ static iphone_error_t np_get_notification( np_client_t client, char **notificati
 
 			usbmuxd_recv_timeout(client->sfd, XML_content, pktlen, &bytes, 1000);
 			if (bytes <= 0) {
-				res = IPHONE_E_UNKNOWN_ERROR;
+				res = -1;
 			} else {
 				log_debug_msg("NotificationProxy: received data:\n");
 				log_debug_buffer(XML_content, pktlen);
@@ -322,7 +320,7 @@ static iphone_error_t np_get_notification( np_client_t client, char **notificati
 				plist_from_xml(XML_content, bytes, &dict);
 				if (!dict) {
 					np_unlock(client);
-					return IPHONE_E_PLIST_ERROR;
+					return -2;
 				}
 
 				plist_t cmd_key_node = plist_find_node_by_key(dict, "Command");
@@ -347,21 +345,21 @@ static iphone_error_t np_get_notification( np_client_t client, char **notificati
 						plist_get_string_val(name_value_node, &name_value);
 					}
 
-					res = IPHONE_E_PLIST_ERROR;
+					res = -2;
 					if (name_key && name_value && !strcmp(name_key, "Name")) {
 						*notification = name_value;
 						log_debug_msg("%s: got notification %s\n", __func__, name_value);
-						res = IPHONE_E_SUCCESS;
+						res = 0;
 					}
 					free(name_key);
 				} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
 					log_debug_msg("%s: ERROR: NotificationProxy died!\n", __func__);
-					res = IPHONE_E_UNKNOWN_ERROR;
+					res = -1;
 				} else if (cmd_value) {
 					log_debug_msg("%d: unknown NotificationProxy command '%s' received!\n", __func__);
-					res = IPHONE_E_UNKNOWN_ERROR;
+					res = -1;
 				} else {
-					res = IPHONE_E_PLIST_ERROR;
+					res = -2;
 				}
 				if (cmd_value) {
 					free(cmd_value);
@@ -372,7 +370,7 @@ static iphone_error_t np_get_notification( np_client_t client, char **notificati
 				XML_content = NULL;
 			}
 		} else {
-			res = IPHONE_E_UNKNOWN_ERROR;
+			res = -1;
 		}
 	}
 
@@ -418,15 +416,15 @@ gpointer np_notifier( gpointer arg )
  * @param notify_cb pointer to a callback function or NULL to de-register a
  *        previously set callback function
  *
- * @return IPHONE_E_SUCCESS when the callback was successfully registered,
+ * @return NP_E_SUCCESS when the callback was successfully registered,
  *         or an error value when an error occured.
  */
-iphone_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb )
+np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb )
 {
-	if (!client) {
-		return IPHONE_E_INVALID_ARG;
-	}
-	iphone_error_t res = IPHONE_E_UNKNOWN_ERROR;
+	if (!client)
+		return NP_E_INVALID_ARG;
+
+	np_error_t res = NP_E_UNKNOWN_ERROR;
 
 	np_lock(client);
 	if (client->notifier) {
@@ -446,7 +444,7 @@ iphone_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify
 
 			client->notifier = g_thread_create(np_notifier, npt, TRUE, NULL);
 			if (client->notifier) {
-				res = IPHONE_E_SUCCESS;
+				res = NP_E_SUCCESS;
 			}
 		}
 	} else {

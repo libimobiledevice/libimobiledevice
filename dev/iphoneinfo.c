@@ -51,7 +51,6 @@ static const char *domains[] = {
 
 int is_domain_known(char *domain);
 void print_usage(int argc, char **argv);
-void print_lckd_request_result(lockdownd_client_t client, const char *domain, const char *request, const char *key, int format);
 void plist_node_to_string(plist_t *node);
 void plist_children_to_string(plist_t *node);
 
@@ -65,13 +64,16 @@ int main(int argc, char *argv[])
 	char uuid[41];
 	char *domain = NULL;
 	char *key = NULL;
+	char *xml_doc = NULL;
+	uint32_t xml_length;
+	plist_t node = NULL;
 	uuid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			iphone_set_debug_mask(DBGMASK_ALL);
-			iphone_set_debug(1);
+			iphone_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -134,18 +136,41 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
 		return -1;
 	}
 
 	/* run query and output information */
-	print_lckd_request_result(client, domain, "GetValue", key, format);
+	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS)
+	{
+		if (plist_get_node_type(node) == PLIST_DICT) {
+			if (plist_get_first_child(node))
+			{
+				switch (format) {
+				case FORMAT_XML:
+					plist_to_xml(node, &xml_doc, &xml_length);
+					printf(xml_doc);
+					free(xml_doc);
+					break;
+				case FORMAT_KEY_VALUE:
+				default:
+					plist_children_to_string(node);
+					break;
+				}
+			}
+		}
+		else if(node && (key != NULL))
+			plist_node_to_string(node);
+		if (node)
+			plist_free(node);
+		node = NULL;
+	}
 
 	if (domain != NULL)
 		free(domain);
-	lockdownd_free_client(client);
-	iphone_free_device(phone);
+	lockdownd_client_free(client);
+	iphone_device_free(phone);
 
 	return 0;
 }
@@ -252,71 +277,5 @@ void plist_children_to_string(plist_t *node)
 	) {
 		plist_node_to_string(node);
 	}
-}
-
-void print_lckd_request_result(lockdownd_client_t client, const char *domain, const char *request, const char *key, int format) {
-	char *xml_doc = NULL;
-	char *s = NULL;
-	uint32_t xml_length = 0;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
-	
-	plist_t node = plist_new_dict();
-	if (domain) {
-		plist_add_sub_key_el(node, "Domain");
-		plist_add_sub_string_el(node, domain);
-	}
-	if (key) {
-		plist_add_sub_key_el(node, "Key");
-		plist_add_sub_string_el(node, key);
-	}
-	plist_add_sub_key_el(node, "Request");
-	plist_add_sub_string_el(node, request);
-
-	ret = lockdownd_send(client, node);
-	if (ret == IPHONE_E_SUCCESS) {
-		plist_free(node);
-		node = NULL;
-		ret = lockdownd_recv(client, &node);
-		if (ret == IPHONE_E_SUCCESS) {
-			/* seek to value node */
-			for (
-				node = plist_get_first_child(node);
-				node != NULL;
-				node = plist_get_next_sibling(node)
-			) {
-				if(plist_get_node_type(node) == PLIST_KEY)
-				{
-					plist_get_key_val(node, &s);
-
-					if (strcmp("Value", s))
-						continue;
-
-					node = plist_get_next_sibling(node);
-
-					if (plist_get_node_type(node) == PLIST_DICT) {
-						if (plist_get_first_child(node))
-						{
-							switch (format) {
-							case FORMAT_XML:
-								plist_to_xml(node, &xml_doc, &xml_length);
-								printf(xml_doc);
-								free(xml_doc);
-								break;
-							case FORMAT_KEY_VALUE:
-							default:
-								plist_children_to_string(node);
-								break;
-							}
-						}
-					}
-					else if(node && (key != NULL))
-						plist_node_to_string(node);
-				}
-			}
-		}
-	}
-	if (node)
-		plist_free(node);
-	node = NULL;
 }
 

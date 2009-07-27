@@ -18,9 +18,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#include "libiphone/notification_proxy.h"
+#ifndef INOTIFICATION_PROXY_H
+#define INOTIFICATION_PROXY_H
 
 #include <glib.h>
+
+#include "libiphone/notification_proxy.h"
 
 struct np_client_int {
 	int sfd;
@@ -28,7 +31,7 @@ struct np_client_int {
 	GThread *notifier;
 };
 
-static const char *np_default_notifications[10] = {
+static const char *np_default_notifications[11] = {
 	NP_SYNC_SUSPEND_REQUEST,
 	NP_SYNC_RESUME_REQUEST,
 	NP_PHONE_NUMBER_CHANGED,
@@ -38,7 +41,10 @@ static const char *np_default_notifications[10] = {
 	NP_DS_DOMAIN_CHANGED,
 	NP_APP_INSTALLED,
 	NP_APP_UNINSTALLED,
+	NP_ITDBPREP_DID_END,
 	NULL
 };
 
-gpointer np_notifier( gpointer arg );
+gpointer np_notifier(gpointer arg);
+
+#endif

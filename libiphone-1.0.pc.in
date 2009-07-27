@@ -6,7 +6,7 @@ includedir=@includedir@
 Name: libiphone
 Description: A library to communicate with the Lockdown server on the iPhone
 Version: @VERSION@
-Requires: libplist >= 0.12 libusb >= 0.1.12 glib-2.0 >= 2.14.1 gthread-2.0 >= 2.14.1 gnutls >= 1.6.3 libtasn1 >= 1.1
+Requires: libplist >= 0.12 libusbmuxd >= 0.1.0 glib-2.0 >= 2.14.1 gthread-2.0 >= 2.14.1 gnutls >= 1.6.3 libtasn1 >= 1.1
 Libs: -L${libdir} -liphone
 Cflags: -I${includedir}
 

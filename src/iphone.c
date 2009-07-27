@@ -19,13 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include "iphone.h"
-#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <libiphone/libiphone.h>
+
+#include "iphone.h"
+#include "utils.h"
 
 /**
  * Retrieves a list of connected devices from usbmuxd and matches their
@@ -52,11 +51,11 @@ iphone_error_t iphone_get_device_by_uuid(iphone_device_t * device, const char *u
 	}
 	if (dev_list && dev_list[0].handle > 0) {
 		if (!uuid) {
-			// select first device found if no UUID specified
+			/* select first device found if no UUID specified */
 			handle = dev_list[0].handle;
 			strcpy(serial_number, dev_list[0].serial_number);
 		} else {
-			// otherwise walk through the list
+			/* otherwise walk through the list */
 			for (i = 0; dev_list[i].handle > 0; i++) {
 				log_debug_msg("%s: device handle=%d, uuid=%s\n", __func__, dev_list[i].handle, dev_list[i].serial_number);
 				if (strcasecmp(uuid, dev_list[i].serial_number) == 0) {
@@ -95,22 +94,22 @@ iphone_error_t iphone_get_device(iphone_device_t * device)
 	return iphone_get_device_by_uuid(device, NULL);
 }
 
-uint32_t iphone_get_device_handle(iphone_device_t device)
+iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle)
 {
-	if (device) {
-		return device->handle;
-	} else {
-		return 0;
-	}
+	if (!device)
+		return IPHONE_E_INVALID_ARG;
+
+	*handle = device->handle;
+	return IPHONE_E_SUCCESS;
 }
 
-char* iphone_get_uuid(iphone_device_t device)
+iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid)
 {
-	if (device) {
-		return device->serial_number;
-	} else {
-		return NULL;
-	}
+	if (!device)
+		return IPHONE_E_INVALID_ARG;
+
+	*uuid = strdup(device->serial_number);
+	return IPHONE_E_SUCCESS;
 }
 
 /** Cleans up an iPhone structure, then frees the structure itself.  
@@ -119,7 +118,7 @@ char* iphone_get_uuid(iphone_device_t device)
  * 
  * @param phone A pointer to an iPhone structure.
  */
-iphone_error_t iphone_free_device(iphone_device_t device)
+iphone_error_t iphone_device_free(iphone_device_t device)
 {
 	if (!device)
 		return IPHONE_E_INVALID_ARG;

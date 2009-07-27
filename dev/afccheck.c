@@ -45,6 +45,8 @@ static void check_afc(gpointer data)
 	int *buf = (int *) malloc(buffersize);
 	int *buf2 = (int *) malloc(buffersize);
 	unsigned int bytes = 0;
+	uint64_t position = 0;
+	
 	//fill buffer
 	int i = 0;
 	for (i = 0; i < BUFFER_SIZE; i++) {
@@ -55,19 +57,22 @@ static void check_afc(gpointer data)
 	uint64_t file = 0;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
-	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
-	afc_write_file(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
-	afc_close_file(((param *) data)->afc, file);
+	afc_file_open(((param *) data)->afc, path, AFC_FOPEN_RW, &file);
+	afc_file_write(((param *) data)->afc, file, (char *) buf, buffersize, &bytes);
+	afc_file_close(((param *) data)->afc, file);
 	file = 0;
 	if (bytes != buffersize)
 		printf("Write operation failed\n");
 
 	//now read it
 	bytes = 0;
-	afc_open_file(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
-	afc_read_file(((param *) data)->afc, file, (char *) buf2, buffersize, &bytes);
-	afc_close_file(((param *) data)->afc, file);
-	if (bytes != buffersize)
+	afc_file_open(((param *) data)->afc, path, AFC_FOPEN_RDONLY, &file);
+	afc_file_read(((param *) data)->afc, file, (char *) buf2, buffersize/2, &bytes);
+	afc_file_read(((param *) data)->afc, file, (char *) buf2 + (buffersize/2), buffersize/2, &bytes);
+	if(AFC_E_SUCCESS != afc_file_tell(((param *) data)->afc, file, &position))
+		printf("Tell operation failed\n");
+	afc_file_close(((param *) data)->afc, file);
+	if (position != buffersize)
 		printf("Read operation failed\n");
 
 	//compare buffers
@@ -79,7 +84,7 @@ static void check_afc(gpointer data)
 	}
 
 	//cleanup
-	afc_delete_file(((param *) data)->afc, path);
+	afc_remove_path(((param *) data)->afc, path);
 	g_thread_exit(0);
 }
 
@@ -91,24 +96,32 @@ int main(int argc, char *argv[])
 	int port = 0;
 	afc_client_t afc = NULL;
 
+	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
+		iphone_set_debug_level(1);
+		iphone_set_debug_mask(DBGMASK_ALL);
+	} else {
+		iphone_set_debug_level(0);
+		iphone_set_debug_mask(DBGMASK_NONE);
+	}
+
 	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS != lockdownd_new_client(phone, &client)) {
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		iphone_device_free(phone);
 		return 1;
 	}
 
-	if (IPHONE_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
-		lockdownd_free_client(client);
-		iphone_free_device(phone);
+	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
+		lockdownd_client_free(client);
+		iphone_device_free(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
 	}
 
-	afc_new_client(phone, port, &afc);
+	afc_client_new(phone, port, &afc);
 
 	//makes sure thread environment is available
 	if (!g_thread_supported())
@@ -128,9 +141,8 @@ int main(int argc, char *argv[])
 		g_thread_join(threads[i]);
 	}
 
-
-	lockdownd_free_client(client);
-	iphone_free_device(phone);
+	lockdownd_client_free(client);
+	iphone_device_free(phone);
 
 	return 0;
 }

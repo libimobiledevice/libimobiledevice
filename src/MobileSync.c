@@ -19,25 +19,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include "MobileSync.h"
 #include <plist/plist.h>
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
 
+#include "MobileSync.h"
+#include "iphone.h"
+#include "utils.h"
 
 #define MSYNC_VERSION_INT1 100
 #define MSYNC_VERSION_INT2 100
 
-iphone_error_t mobilesync_new_client(iphone_device_t device, int dst_port,
+mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 						   mobilesync_client_t * client)
 {
 	if (!device || dst_port == 0 || !client || *client)
-		return IPHONE_E_INVALID_ARG;
+		return MOBILESYNC_E_INVALID_ARG;
 
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
 
-	// Attempt connection
+	/* Attempt connection */
 	int sfd = usbmuxd_connect(device->handle, dst_port);
 	if (sfd < 0) {
 		return ret;
@@ -46,10 +48,10 @@ iphone_error_t mobilesync_new_client(iphone_device_t device, int dst_port,
 	mobilesync_client_t client_loc = (mobilesync_client_t) malloc(sizeof(struct mobilesync_client_int));
 	client_loc->sfd = sfd;
 
-	//perform handshake
+	/* perform handshake */
 	plist_t array = NULL;
 
-	//first receive version
+	/* first receive version */
 	ret = mobilesync_recv(client_loc, &array);
 
 	plist_t msg_node = plist_find_node_by_string(array, "DLMessageVersionExchange");
@@ -86,17 +88,20 @@ iphone_error_t mobilesync_new_client(iphone_device_t device, int dst_port,
 			plist_t rep_node = plist_find_node_by_string(array, "DLMessageDeviceReady");
 
 			if (rep_node) {
-				ret = IPHONE_E_SUCCESS;
+				ret = MOBILESYNC_E_SUCCESS;
 				*client = client_loc;
+			}
+			else
+			{
+				ret = MOBILESYNC_E_BAD_VERSION;
 			}
 			plist_free(array);
 			array = NULL;
-
 		}
 	}
 
-	if (IPHONE_E_SUCCESS != ret)
-		mobilesync_free_client(client_loc);
+	if (MOBILESYNC_E_SUCCESS != ret)
+		mobilesync_client_free(client_loc);
 
 	return ret;
 }
@@ -115,13 +120,13 @@ static void mobilesync_disconnect(mobilesync_client_t client)
 	array = NULL;
 }
 
-iphone_error_t mobilesync_free_client(mobilesync_client_t client)
+mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
 	if (!client)
 		return IPHONE_E_INVALID_ARG;
 
 	mobilesync_disconnect(client);
-	return usbmuxd_disconnect(client->sfd);
+	return (usbmuxd_disconnect(client->sfd) == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
 }
 
 /** Polls the iPhone for MobileSync data.
@@ -131,11 +136,11 @@ iphone_error_t mobilesync_free_client(mobilesync_client_t client)
  *
  * @return an error code
  */
-iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
+mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 {
 	if (!client || !plist || (plist && *plist))
-		return IPHONE_E_INVALID_ARG;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+		return MOBILESYNC_E_INVALID_ARG;
+	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
 	char *receive = NULL;
 	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
@@ -145,14 +150,14 @@ iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 	receive = (char *) malloc(sizeof(char) * datalen);
 
 	/* fill buffer and request more packets if needed */
-	while ((received_bytes < datalen) && (ret == IPHONE_E_SUCCESS)) {
+	while ((received_bytes < datalen) && (ret == MOBILESYNC_E_SUCCESS)) {
 		ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
 		received_bytes += bytes;
 	}
 
-	if (ret != IPHONE_E_SUCCESS) {
+	if (ret != MOBILESYNC_E_SUCCESS) {
 		free(receive);
-		return ret;
+		return MOBILESYNC_E_MUX_ERROR;
 	}
 
 	plist_from_bin(receive, received_bytes, plist);
@@ -161,7 +166,7 @@ iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(*plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_MOBILESYNC, "Recv msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
 
 	return ret;
@@ -177,15 +182,15 @@ iphone_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
  *
  * @return an error code
  */
-iphone_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
+mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 {
 	if (!client || !plist)
-		return IPHONE_E_INVALID_ARG;
+		return MOBILESYNC_E_INVALID_ARG;
 
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_MOBILESYNC, "Send msg :\nsize : %i\nbuffer :\n%s\n", length, XMLContent);
+	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
 
 	char *content = NULL;
@@ -195,7 +200,7 @@ iphone_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 
 	char *real_query;
 	int bytes;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
 
 	real_query = (char *) malloc(sizeof(char) * (length + 4));
 	length = htonl(length);
@@ -204,6 +209,6 @@ iphone_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 
 	ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	free(real_query);
-	return ret;
+	return (ret == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
 }
 

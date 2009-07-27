@@ -26,6 +26,8 @@
 #include <glib.h>
 #include <stdint.h>
 
+#include "libiphone/afc.h"
+
 #define AFC_MAGIC "CFA6LPAA"
 #define AFC_MAGIC_LEN (8)
 
@@ -48,39 +50,38 @@ struct afc_client_int {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
-	int afcerror;
 	GMutex *mutex;
 };
 
+/* AFC Operations */
 enum {
-	AFC_ERROR = 0x00000001,
-	AFC_SUCCESS_RESPONSE = 0x00000002,
-	AFC_LIST_DIR = 0x00000003,	// ReadDir
-	// 0x00000004                   // ReadFile
-	// 0x00000005                   // WriteFile
-	// 0x00000006                   // WritePart
-	AFC_TRUNCATE = 0x00000007,	// Truncate
-	AFC_DELETE = 0x00000008,	// RemovePath
-	AFC_MAKE_DIR = 0x00000009,	// MakeDir
-	AFC_GET_INFO = 0x0000000a,	// GetFileInfo
-	AFC_GET_DEVINFO = 0x0000000b,	// GetDeviceInfo
-	// 0x0000000c  // same as 5, but writes to temp file, then renames it.
-	AFC_FILE_OPEN = 0x0000000d,	// FileRefOpen
-	AFC_FILE_HANDLE = 0x0000000e,	// _unknownPacket
-	AFC_READ = 0x0000000f,		// FileRefRead
-	AFC_WRITE = 0x00000010,		// FileRefWrite
-	AFC_FILE_SEEK = 0x00000011,	// FileRefSeek
-	AFC_FILE_TELL = 0x00000012,	// FileRefTell
-	// 0x00000013                   // _unknownPacket
-	AFC_FILE_CLOSE = 0x00000014,	// FileRefClose
-	AFC_FILE_TRUNCATE = 0x00000015,	// FileRefSetFileSize (ftruncate)
-	// 0x00000016                   // SetFatalError
-	// 0x00000017                   // SetConnectionOptions
-	AFC_RENAME = 0x00000018,	// RenamePath
-	// 0x00000019                   // SetFSBlockSize (0x800000)
-	// 0x0000001A                   // SetBlockSize (0x800000)
-	AFC_FILE_LOCK = 0x0000001B,	// FileRefLock
-	AFC_MAKE_LINK = 0x0000001C	// MakeLink
+	AFC_OP_STATUS          = 0x00000001,	// Status
+	AFC_OP_DATA            = 0x00000002,	// Data
+	AFC_OP_READ_DIR        = 0x00000003,	// ReadDir
+	AFC_OP_READ_FILE       = 0x00000004,	// ReadFile
+	AFC_OP_WRITE_FILE      = 0x00000005,	// WriteFile
+	AFC_OP_WRITE_PART      = 0x00000006,	// WritePart
+	AFC_OP_TRUNCATE        = 0x00000007,	// TruncateFile
+	AFC_OP_REMOVE_PATH     = 0x00000008,	// RemovePath
+	AFC_OP_MAKE_DIR        = 0x00000009,	// MakeDir
+	AFC_OP_GET_FILE_INFO   = 0x0000000a,	// GetFileInfo
+	AFC_OP_GET_DEVINFO     = 0x0000000b,	// GetDeviceInfo
+	AFC_OP_WRITE_FILE_ATOM = 0x0000000c,	// WriteFileAtomic (tmp file+rename)
+	AFC_OP_FILE_OPEN       = 0x0000000d,	// FileRefOpen
+	AFC_OP_FILE_OPEN_RES   = 0x0000000e,	// FileRefOpenResult
+	AFC_OP_READ            = 0x0000000f,	// FileRefRead
+	AFC_OP_WRITE           = 0x00000010,	// FileRefWrite
+	AFC_OP_FILE_SEEK       = 0x00000011,	// FileRefSeek
+	AFC_OP_FILE_TELL       = 0x00000012,	// FileRefTell
+	AFC_OP_FILE_TELL_RES   = 0x00000013,	// FileRefTellResult
+	AFC_OP_FILE_CLOSE      = 0x00000014,	// FileRefClose
+	AFC_OP_FILE_SET_SIZE   = 0x00000015,	// FileRefSetFileSize (ftruncate)
+	AFC_OP_GET_CON_INFO    = 0x00000016,	// GetConnectionInfo
+	AFC_OP_SET_CON_OPTIONS = 0x00000017,	// SetConnectionOptions
+	AFC_OP_RENAME_PATH     = 0x00000018,	// RenamePath
+	AFC_OP_SET_FS_BS       = 0x00000019,	// SetFSBlockSize (0x800000)
+	AFC_OP_SET_SOCKET_BS   = 0x0000001A,	// SetSocketBlockSize (0x800000)
+	AFC_OP_FILE_LOCK       = 0x0000001B,	// FileRefLock
+	AFC_OP_MAKE_LINK       = 0x0000001C	// MakeLink
 };
 
-static int afcerror_to_errno(int afcerror);

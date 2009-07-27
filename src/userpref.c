@@ -22,6 +22,7 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gnutls/gnutls.h>
@@ -42,7 +43,7 @@
 
 /** Creates a freedesktop compatible configuration directory for libiphone.
  */
-static void create_config_dir(void)
+static void userpref_create_config_dir(void)
 {
 	gchar *config_dir = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
 
@@ -62,9 +63,10 @@ static int get_rand(int min, int max)
  *
  * @return A null terminated string containing a valid HostID.
  */
-static char *lockdownd_generate_hostid()
+static char *userpref_generate_host_id()
 {
-	char *hostid = (char *) malloc(sizeof(char) * 37);	// HostID's are just UUID's, and UUID's are 36 characters long
+	/* HostID's are just UUID's, and UUID's are 36 characters long */
+	char *hostid = (char *) malloc(sizeof(char) * 37);
 	const char *chars = "ABCDEF0123456789";
 	srand(time(NULL));
 	int i = 0;
@@ -77,7 +79,8 @@ static char *lockdownd_generate_hostid()
 			hostid[i] = chars[get_rand(0, 16)];
 		}
 	}
-	hostid[36] = '\0';			// make it a real string
+	/* make it a real string */
+	hostid[36] = '\0';
 	return hostid;
 }
 
@@ -85,7 +88,7 @@ static char *lockdownd_generate_hostid()
  *
  * @param host_id A null terminated string containing a valid HostID.
  */
-static int write_host_id(char *host_id)
+static int userpref_set_host_id(char *host_id)
 {
 	GKeyFile *key_file;
 	gsize length;
@@ -96,13 +99,13 @@ static int write_host_id(char *host_id)
 		return 0;
 
 	/* Make sure config directory exists */
-	create_config_dir();
+	userpref_create_config_dir();
 
 	/* Now parse file to get the HostID */
 	key_file = g_key_file_new();
 
 	/* Store in config file */
-	log_debug_msg("init_config_file(): setting hostID to %s\n", host_id);
+	log_debug_msg("%s: setting hostID to %s\n", __func__, host_id);
 	g_key_file_set_value(key_file, "Global", "HostID", host_id);
 
 	/* Write config file on disk */
@@ -125,9 +128,8 @@ static int write_host_id(char *host_id)
  *
  * @return The string containing the HostID or NULL
  */
-char *get_host_id(void)
+void userpref_get_host_id(char **host_id)
 {
-	char *host_id = NULL;
 	gchar *config_file;
 	GKeyFile *key_file;
 	gchar *loc_host_id;
@@ -140,20 +142,19 @@ char *get_host_id(void)
 	if (g_key_file_load_from_file(key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL)) {
 		loc_host_id = g_key_file_get_value(key_file, "Global", "HostID", NULL);
 		if (loc_host_id)
-			host_id = strdup((char *) loc_host_id);
+			*host_id = strdup((char *) loc_host_id);
 		g_free(loc_host_id);
 	}
 	g_key_file_free(key_file);
 	g_free(config_file);
 
 	if (!host_id) {
-		//no config, generate host_id
-		host_id = lockdownd_generate_hostid();
-		write_host_id(host_id);
+		/* no config, generate host_id */
+		*host_id = userpref_generate_host_id();
+		userpref_set_host_id(*host_id);
 	}
 
-	log_debug_msg("get_host_id(): Using %s as HostID\n", host_id);
-	return host_id;
+	log_debug_msg("%s: Using %s as HostID\n", __func__, *host_id);
 }
 
 /** Determines whether this iPhone has been connected to this system before.
@@ -163,13 +164,13 @@ char *get_host_id(void)
  * @return 1 if the iPhone has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int is_device_known(char *uid)
+int userpref_has_device_public_key(char *uuid)
 {
 	int ret = 0;
 	gchar *config_file;
 
 	/* first get config file */
-	gchar *device_file = g_strconcat(uid, ".pem", NULL);
+	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
 	config_file = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
 	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)))
 		ret = 1;
@@ -186,17 +187,19 @@ int is_device_known(char *uid)
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-int store_device_public_key(char *uid, gnutls_datum_t public_key)
+userpref_error_t userpref_set_device_public_key(char *uuid, gnutls_datum_t public_key)
 {
-
-	if (NULL == public_key.data || is_device_known(uid))
-		return 0;
+	if (NULL == public_key.data)
+		return USERPREF_E_INVALID_ARG;
+	
+	if (userpref_has_device_public_key(uuid))
+		return USERPREF_E_SUCCESS;
 
 	/* ensure config directory exists */
-	create_config_dir();
+	userpref_create_config_dir();
 
 	/* build file path */
-	gchar *device_file = g_strconcat(uid, ".pem", NULL);
+	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
 	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
 
 	/* store file */
@@ -205,7 +208,8 @@ int store_device_public_key(char *uid, gnutls_datum_t public_key)
 	fclose(pFile);
 	g_free(pem);
 	g_free(device_file);
-	return 1;
+
+	return USERPREF_E_SUCCESS;
 }
 
 /** Private function which reads the given file into a gnutls structure.
@@ -215,7 +219,7 @@ int store_device_public_key(char *uid, gnutls_datum_t public_key)
  *
  * @return 1 if the file contents where read successfully and 0 otherwise.
  */
-static int read_file_in_confdir(const char *file, gnutls_datum_t * data)
+static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 {
 	gboolean success;
 	gsize size;
@@ -237,17 +241,17 @@ static int read_file_in_confdir(const char *file, gnutls_datum_t * data)
 	return success;
 }
 
-
 /** Private function which generate private keys and certificates.
  *
- * @return IPHONE_E_SUCCESS if keys were successfully generated.
+ * @return 1 if keys were successfully generated, 0 otherwise
  */
-static iphone_error_t gen_keys_and_cert(void)
+static userpref_error_t userpref_gen_keys_and_cert(void)
 {
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	userpref_error_t ret = USERPREF_E_SSL_ERROR;
+
 	gnutls_x509_privkey_t root_privkey;
-	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t root_cert;
+	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t host_cert;
 
 	gnutls_global_deinit();
@@ -274,7 +278,6 @@ static iphone_error_t gen_keys_and_cert(void)
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 	gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
-
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
 	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
@@ -312,14 +315,14 @@ static iphone_error_t gen_keys_and_cert(void)
 
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
-		ret = IPHONE_E_SUCCESS;
+		ret = USERPREF_E_SUCCESS;
 
 	/* store values in config file */
-	init_config_file( &root_key_pem, &host_key_pem, &root_cert_pem, &host_cert_pem);
+	userpref_set_keys_and_certs( &root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem);
 
 	gnutls_free(root_key_pem.data);
-	gnutls_free(host_key_pem.data);
 	gnutls_free(root_cert_pem.data);
+	gnutls_free(host_key_pem.data);
 	gnutls_free(host_cert_pem.data);
 
 	//restore gnutls env
@@ -334,18 +337,18 @@ static iphone_error_t gen_keys_and_cert(void)
  * @param key_name The filename of the private key to import.
  * @param key the gnutls key structure.
  *
- * @return IPHONE_E_SUCCESS if the key was successfully imported.
+ * @return 1 if the key was successfully imported.
  */
-static iphone_error_t import_key(const char* key_name, gnutls_x509_privkey_t key)
+static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_privkey_t key)
 {
-	iphone_error_t ret = IPHONE_E_INVALID_CONF;
+	userpref_error_t ret = USERPREF_E_INVALID_CONF;
 	gnutls_datum_t pem_key = { NULL, 0 };
 
-	if ( read_file_in_confdir(key_name, &pem_key) ) {
+	if (userpref_get_file_contents(key_name, &pem_key)) {
 			if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem_key, GNUTLS_X509_FMT_PEM))
-				ret = IPHONE_E_SUCCESS;
+				ret = USERPREF_E_SUCCESS;
 			else
-				ret = IPHONE_E_SSL_ERROR;
+				ret = USERPREF_E_SSL_ERROR;
 	}
 	gnutls_free(pem_key.data);
 	return ret;
@@ -358,16 +361,16 @@ static iphone_error_t import_key(const char* key_name, gnutls_x509_privkey_t key
  *
  * @return IPHONE_E_SUCCESS if the certificate was successfully imported.
  */
-static iphone_error_t import_crt(const char* crt_name, gnutls_x509_crt_t cert)
+static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_crt_t cert)
 {
-	iphone_error_t ret = IPHONE_E_INVALID_CONF;
+	userpref_error_t ret = USERPREF_E_INVALID_CONF;
 	gnutls_datum_t pem_cert = { NULL, 0 };
 
-	if ( read_file_in_confdir(crt_name, &pem_cert) ) {
+	if (userpref_get_file_contents(crt_name, &pem_cert)) {
 			if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem_cert, GNUTLS_X509_FMT_PEM))
-				ret = IPHONE_E_SUCCESS;
+				ret = USERPREF_E_SUCCESS;
 			else
-				ret = IPHONE_E_SSL_ERROR;
+				ret = USERPREF_E_SSL_ERROR;
 	}
 	gnutls_free(pem_cert.data);
 	return ret;
@@ -383,41 +386,41 @@ static iphone_error_t import_crt(const char* crt_name, gnutls_x509_crt_t cert)
  * @param host_privkey The host private key.
  * @param host_crt The host certificate.
  *
- * @return IPHONE_E_SUCCESS if the keys and certificates were successfully retrieved.
+ * @return 1 if the keys and certificates were successfully retrieved, 0 otherwise
  */
-iphone_error_t get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
+userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
 {
-  iphone_error_t ret = IPHONE_E_SUCCESS;
+	userpref_error_t ret = USERPREF_E_SUCCESS;
 
-	if (ret == IPHONE_E_SUCCESS)
-		ret = import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
+	if (ret == USERPREF_E_SUCCESS)
+		ret = userpref_import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
 
-	if (ret == IPHONE_E_SUCCESS)
-		ret = import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
+	if (ret == USERPREF_E_SUCCESS)
+		ret = userpref_import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
 
-	if (ret == IPHONE_E_SUCCESS)
-		ret = import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
+	if (ret == USERPREF_E_SUCCESS)
+		ret = userpref_import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
 
-	if (ret == IPHONE_E_SUCCESS)
-		ret = import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
+	if (ret == USERPREF_E_SUCCESS)
+		ret = userpref_import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
 
 
-	if (IPHONE_E_SUCCESS != ret) {
+	if (USERPREF_E_SUCCESS != ret) {
 		//we had problem reading or importing root cert
 		//try with a new ones.
-		ret = gen_keys_and_cert();
+		ret = userpref_gen_keys_and_cert();
 
-		if (ret == IPHONE_E_SUCCESS)
-			ret = import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
+		if (ret == USERPREF_E_SUCCESS)
+			ret = userpref_import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
 
-		if (ret == IPHONE_E_SUCCESS)
-			ret = import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
+		if (ret == USERPREF_E_SUCCESS)
+			ret = userpref_import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
 
-		if (ret == IPHONE_E_SUCCESS)
-			ret = import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
+		if (ret == USERPREF_E_SUCCESS)
+			ret = userpref_import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
 
-		if (ret == IPHONE_E_SUCCESS)
-			ret = import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
+		if (ret == USERPREF_E_SUCCESS)
+			ret = userpref_import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
 	}
 
 	return ret;
@@ -428,46 +431,43 @@ iphone_error_t get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x50
  * @param pem_root_cert The root certificate.
  * @param pem_host_cert The host certificate.
  *
- * @return IPHONE_E_SUCCESS if the certificates were successfully retrieved.
+ * @return 1 if the certificates were successfully retrieved, 0 otherwise
  */
-iphone_error_t get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert)
+userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert)
 {
-	iphone_error_t ret = IPHONE_E_INVALID_CONF;
+	if (!pem_root_cert || !pem_host_cert)
+		return USERPREF_E_INVALID_ARG;
 
-	if ( !pem_root_cert || !pem_host_cert)
-		return IPHONE_E_INVALID_ARG;
-
-	if ( read_file_in_confdir(LIBIPHONE_ROOT_CERTIF, pem_root_cert) && read_file_in_confdir(LIBIPHONE_HOST_CERTIF, pem_host_cert))
-		ret = IPHONE_E_SUCCESS;
+	if (userpref_get_file_contents(LIBIPHONE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIPHONE_HOST_CERTIF, pem_host_cert))
+		return USERPREF_E_SUCCESS;
 	else {
 		g_free(pem_root_cert->data);
 		g_free(pem_host_cert->data);
 	}
-	return ret;
+	return USERPREF_E_INVALID_CONF;
 }
+
 /** Create and save a configuration file containing the given data.
  *
  * @note: All fields must specified and be non-null
  *
- * @param host_id The UUID of the host
  * @param root_key The root key
- * @param host_key The host key
  * @param root_cert The root certificate
+ * @param host_key The host key
  * @param host_cert The host certificate
  *
  * @return 1 on success and 0 otherwise.
  */
-int init_config_file( gnutls_datum_t * root_key, gnutls_datum_t * host_key, gnutls_datum_t * root_cert,
-					 gnutls_datum_t * host_cert)
+userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert)
 {
 	FILE *pFile;
 	gchar *pem;
 
 	if (!root_key || !host_key || !root_cert || !host_cert)
-		return 0;
+		return USERPREF_E_INVALID_ARG;
 
 	/* Make sure config directory exists */
-	create_config_dir();
+	userpref_create_config_dir();
 
 	/* Now write keys and certificates to disk */
 	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_ROOT_PRIVKEY, NULL);
@@ -494,5 +494,5 @@ int init_config_file( gnutls_datum_t * root_key, gnutls_datum_t * host_key, gnut
 	fclose(pFile);
 	g_free(pem);
 
-	return 1;
+	return USERPREF_E_SUCCESS;
 }
