@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libiphone, 0.9.1, nospam@nowhere.com)
+AC_INIT(libiphone, 0.9.2, nospam@nowhere.com)
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADERS([config.h])
