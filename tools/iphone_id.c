@@ -1,19 +1,27 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
 #include <usbmuxd.h>
 
-static void usage()
+#define MODE_NONE 0
+#define MODE_SHOW_ID 1
+#define MODE_LIST_DEVICES 2
+
+static void print_usage(int argc, char **argv)
 {
-	printf("usage: iphone_id <device_uuid>\n"
-		"\tdevice_uuid is the 40-digit hexadecimal UUID of the device\n"
-		"\tfor which the name should be retrieved.\n\n"
-		"usage: iphone_id -l\n"
-		"\tList all attached devices.\n");
-	exit(0);
+	char *name = NULL;
+	
+	name = strrchr(argv[0], '/');
+	printf("Usage: %s [OPTIONS] [UUID]\n", (name ? name + 1: argv[0]));
+	printf("Prints device name or a list of attached iPhone/iPod Touch devices.\n\n");
+	printf("  The UUID is a 40-digit hexadecimal number of the device\n");
+	printf("  for which the name should be retrieved.\n\n");
+	printf("  -l, --list\t\tlist all attached devices\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("\n");
 }
 
 int main(int argc, char **argv)
@@ -23,33 +31,71 @@ int main(int argc, char **argv)
 	usbmuxd_scan_result *dev_list;
 	char *devname = NULL;
 	int ret = 0;
-	int c;
 	int i;
-	int opt_list = 0;
+	int mode = MODE_SHOW_ID;
+	char uuid[41];
+	uuid[0] = 0;
 
-	while ((c = getopt(argc, argv, "lh")) != -1) {
-		switch (c) {
-		    case 'l':
-			opt_list = 1;
-			break;
-		    case 'h':
-		    default:
-			usage();
+	/* parse cmdline args */
+	for (i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+			iphone_set_debug_mask(DBGMASK_ALL);
+			iphone_set_debug_level(1);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
+			mode = MODE_LIST_DEVICES;
+			continue;
+		}
+		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+			print_usage(argc, argv);
+			return 0;
 		}
 	}
 
-	if (argc < 2) {
-		usage();
+	/* check if uuid was passed */
+	if (mode == MODE_SHOW_ID) {
+		i--;
+		if (!argv[i] || (strlen(argv[i]) != 40)) {
+			print_usage(argc, argv);
+			return 0;
+		}
+		strcpy(uuid, argv[i]);
 	}
 
-	argc -= optind;
-	argv += optind;
+	switch (mode) {
+	case MODE_SHOW_ID:
+		iphone_get_device_by_uuid(&phone, uuid);
+		if (!phone) {
+			fprintf(stderr, "ERROR: No device with UUID=%s attached.\n", uuid);
+			return -2;
+		}
 
-	if ((!opt_list) && (strlen(argv[0]) != 40)) {
-		usage();
-	}
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+			iphone_device_free(phone);
+			fprintf(stderr, "ERROR: Connecting to device failed!\n");
+			return -2;
+		}
 
-	if (opt_list) {
+		if ((LOCKDOWN_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
+			fprintf(stderr, "ERROR: Could not get device name!\n");
+			ret = -2;
+		}
+
+		lockdownd_client_free(client);
+		iphone_device_free(phone);
+
+		if (ret == 0) {
+			printf("%s\n", devname);
+		}
+
+		if (devname) {
+			free(devname);
+		}
+
+		return ret;
+	case MODE_LIST_DEVICES:
+	default:
 		if (usbmuxd_scan(&dev_list) < 0) {
 			fprintf(stderr, "ERROR: usbmuxd is not running!\n");
 			return -1;
@@ -59,36 +105,4 @@ int main(int argc, char **argv)
 		}
 		return 0;
 	}
-
-	iphone_set_debug_level(0);
-
-	iphone_get_device_by_uuid(&phone, argv[0]);
-	if (!phone) {
-		fprintf(stderr, "ERROR: No device with UUID=%s attached.\n", argv[0]);
-		return -2;
-	}
-
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
-		iphone_device_free(phone);
-		fprintf(stderr, "ERROR: Connecting to device failed!\n");
-		return -2;
-	}
-
-	if ((LOCKDOWN_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
-		fprintf(stderr, "ERROR: Could not get device name!\n");
-		ret = -2;
-	}
-
-	lockdownd_client_free(client);
-	iphone_device_free(phone);
-
-	if (ret == 0) {
-		printf("%s\n", devname);
-	}
-
-	if (devname) {
-		free(devname);
-	}
-
-	return ret;
 }
