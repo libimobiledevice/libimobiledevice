@@ -289,29 +289,37 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);
 
 	/* export to PEM format */
+	size_t root_key_export_size = 0;
+	size_t host_key_export_size = 0;
 	gnutls_datum_t root_key_pem = { NULL, 0 };
 	gnutls_datum_t host_key_pem = { NULL, 0 };
 
-	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_pem.size);
-	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_pem.size);
+	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_export_size);
+	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_export_size);
 
-	root_key_pem.data = gnutls_malloc(root_key_pem.size);
-	host_key_pem.data = gnutls_malloc(host_key_pem.size);
+	root_key_pem.data = gnutls_malloc(root_key_export_size);
+	host_key_pem.data = gnutls_malloc(host_key_export_size);
 
-	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, root_key_pem.data, &root_key_pem.size);
-	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, host_key_pem.data, &host_key_pem.size);
+	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, root_key_pem.data, &root_key_export_size);
+	root_key_pem.size = root_key_export_size;
+	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, host_key_pem.data, &host_key_export_size);
+	host_key_pem.size = host_key_export_size;
 
+	size_t root_cert_export_size = 0;
+	size_t host_cert_export_size = 0;
 	gnutls_datum_t root_cert_pem = { NULL, 0 };
 	gnutls_datum_t host_cert_pem = { NULL, 0 };
 
-	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_pem.size);
-	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_pem.size);
+	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_export_size);
+	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_export_size);
 
-	root_cert_pem.data = gnutls_malloc(root_cert_pem.size);
-	host_cert_pem.data = gnutls_malloc(host_cert_pem.size);
+	root_cert_pem.data = gnutls_malloc(root_cert_export_size);
+	host_cert_pem.data = gnutls_malloc(host_cert_export_size);
 
-	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, root_cert_pem.data, &root_cert_pem.size);
-	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_pem.size);
+	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, root_cert_pem.data, &root_cert_export_size);
+	root_cert_pem.size = root_cert_export_size;
+	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
+	host_cert_pem.size = host_cert_export_size;
 
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
