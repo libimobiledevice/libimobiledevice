@@ -100,4 +100,4 @@ if test "$enable_largefile" != no; then
 fi
 AC_SUBST(LFS_CFLAGS)
 
-AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile swig/Makefile libiphone-1.0.pc)
+AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile tools/Makefile swig/Makefile libiphone-1.0.pc)
