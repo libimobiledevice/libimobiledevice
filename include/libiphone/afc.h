@@ -58,6 +58,7 @@ extern "C" {
 #define AFC_E_MUX_ERROR              30
 #define AFC_E_NO_MEM                 31
 #define AFC_E_NOT_ENOUGH_DATA        32
+#define AFC_E_DIR_NOT_EMPTY          33
 
 typedef int16_t afc_error_t;
 
