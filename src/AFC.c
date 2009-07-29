@@ -500,6 +500,10 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 	if (response)
 		free(response);
 
+	/* special case; unknown error actually means directory not empty */
+	if (ret == AFC_E_UNKNOWN_ERROR)
+		ret = AFC_E_DIR_NOT_EMPTY;
+
 	afc_unlock(client);
 
 	return ret;
