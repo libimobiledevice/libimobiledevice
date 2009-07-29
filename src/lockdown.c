@@ -954,10 +954,12 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 
 				if (LOCKDOWN_E_SUCCESS == ret) {
 					/* if everything went well, export in PEM format */
+					size_t export_size = 0;
 					gnutls_datum_t dev_pem = { NULL, 0 };
-					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &dev_pem.size);
-					dev_pem.data = gnutls_malloc(dev_pem.size);
-					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &dev_pem.size);
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &export_size);
+					dev_pem.data = gnutls_malloc(export_size);
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &export_size);
+					dev_pem.size = export_size;
 
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
