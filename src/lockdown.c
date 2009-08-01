@@ -659,7 +659,7 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  */
 lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client)
 {
-	if (!device || !client || (client && *client))
+	if (!device || !client)
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	char *host_id = NULL;
