@@ -468,6 +468,35 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 	return ret;
 }
 
+/** Get a specific field of the device info for a client connection to phone.
+ * Known values are: Model, FSTotalBytes, FSFreeBytes and FSBlockSize. This is
+ * a helper function for afc_get_device_info().
+ *
+ * @param client The client to get device info for.
+ * @param field The field to get the information for
+ *
+ * @return A char * or NULL if there was an error.
+ */
+char * afc_get_device_info_field(afc_client_t client, const char *field)
+{
+	char *ret = NULL;
+	char **kvps, **ptr;
+
+	if (field == NULL || afc_get_device_info(client, &kvps) != AFC_E_SUCCESS)
+		return NULL;
+
+	for (ptr = kvps; *ptr; ptr++) {
+		if (!strcmp(*ptr, field)) {
+			ret = strdup(*(ptr+1));
+			break;
+		}
+	}
+
+	g_strfreev(kvps);
+
+	return ret;
+}
+
 /** Deletes a file or directory.
  * 
  * @param client The client to use.

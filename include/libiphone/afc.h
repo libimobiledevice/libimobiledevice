@@ -106,6 +106,9 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir);
 afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize);
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname);
 
+/* Helper functions */
+char *      afc_get_device_info_field(afc_client_t client, const char *field);
+
 #ifdef __cplusplus
 }
 #endif
