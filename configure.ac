@@ -59,6 +59,9 @@ if test "$build_dev_tools" = true; then
 else
             DEV_SUB=
 fi
+
+AM_CONDITIONAL([ENABLE_DEVTOOLS],[test "x$DEV_SUB" = "xdev"])
+
 AC_SUBST([DEV_SUB])
 
 AC_ARG_ENABLE([debug-code],

@@ -3,6 +3,7 @@ INCLUDES = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
+if ENABLE_DEVTOOLS
 noinst_PROGRAMS = iphoneclient lckd-client afccheck msyncclient iphoneenterrecovery
 
 iphoneclient_SOURCES = iphoneclient.c
@@ -27,3 +28,7 @@ iphoneenterrecovery_SOURCES = iphoneenterrecovery.c
 iphoneenterrecovery_CFLAGS = $(AM_CFLAGS)
 iphoneenterrecovery_LDFLAGS = $(AM_LDFLAGS)
 iphoneenterrecovery_LDADD = ../src/libiphone.la
+
+endif # ENABLE_DEVTOOLS
+
+EXTRA_DIST = iphoneclient.c lckdclient.c afccheck.c msyncclient.c iphoneenterrecovery.c
