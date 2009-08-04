@@ -148,7 +148,7 @@ void userpref_get_host_id(char **host_id)
 	g_key_file_free(key_file);
 	g_free(config_file);
 
-	if (!host_id) {
+	if (!*host_id) {
 		/* no config, generate host_id */
 		*host_id = userpref_generate_host_id();
 		userpref_set_host_id(*host_id);
