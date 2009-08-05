@@ -31,4 +31,4 @@ iphoneenterrecovery_LDADD = ../src/libiphone.la
 
 endif # ENABLE_DEVTOOLS
 
-EXTRA_DIST = iphoneclient.c lckdclient.c afccheck.c msyncclient.c
+EXTRA_DIST = iphoneclient.c lckdclient.c afccheck.c msyncclient.c iphoneenterrecovery.c
