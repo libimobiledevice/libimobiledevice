@@ -20,7 +20,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 
 # Checks for libraries.
-PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.3)
+PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.4)
 PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgthread2, gthread-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3 )
