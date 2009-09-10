@@ -28,7 +28,6 @@
 
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
-#include <usbmuxd.h>
 
 static int quit_flag = 0;
 
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (uuid[0] != 0) {
-		ret = iphone_get_device_by_uuid(&phone, uuid);
+		ret = iphone_device_new(&phone, uuid);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		ret = iphone_get_device(&phone);
+		ret = iphone_device_new(&phone, NULL);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
@@ -112,16 +111,15 @@ int main(int argc, char *argv[])
 		lockdownd_client_free(client);
 		
 		/* connect to socket relay messages */
-		iphone_device_get_handle(phone, &handle);
-		int sfd = usbmuxd_connect(handle, port);
-		if (sfd < 0) {
+		iphone_connection_t conn = NULL;
+		if ((iphone_device_connect(phone, port, &conn) != IPHONE_E_SUCCESS) || !conn) {
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
 			while (!quit_flag) {
 				char *receive = NULL;
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
-				ret = usbmuxd_recv(sfd, (char *) &datalen, sizeof(datalen), &bytes);
+				ret = iphone_device_recv(conn, (char *) &datalen, sizeof(datalen), &bytes);
 				datalen = ntohl(datalen);
 
 				if (datalen == 0)
@@ -131,7 +129,7 @@ int main(int argc, char *argv[])
 				receive = (char *) malloc(sizeof(char) * datalen);
 
 				while (!quit_flag && (recv_bytes <= datalen)) {
-					ret = usbmuxd_recv(sfd, receive, datalen, &bytes);
+					ret = iphone_device_recv(conn, receive, datalen, &bytes);
 
 					if (bytes == 0)
 						break;
@@ -144,7 +142,7 @@ int main(int argc, char *argv[])
 				free(receive);
 			}
 		}
-		usbmuxd_disconnect(sfd);
+		iphone_device_disconnect(conn);
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}

@@ -83,9 +83,9 @@ static np_error_t np_plist_send(np_client_t client, plist_t dict)
 	}
 
 	nlen = htonl(length);
-	usbmuxd_send(client->sfd, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		usbmuxd_send(client->sfd, XML_content, length, (uint32_t*)&bytes);
+		iphone_device_send(client->connection, XML_content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			if ((uint32_t)bytes == length) {
 				res = NP_E_SUCCESS;
@@ -121,13 +121,13 @@ np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *clie
 		return NP_E_INVALID_ARG;
 
 	/* Attempt connection */
-	int sfd = usbmuxd_connect(device->handle, dst_port);
-	if (sfd < 0) {
+	iphone_connection_t connection = NULL;
+	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
 		return NP_E_UNKNOWN_ERROR;
 	}
 
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
-	client_loc->sfd = sfd;
+	client_loc->connection = connection;
 
 	client_loc->mutex = g_mutex_new();
 
@@ -146,8 +146,8 @@ np_error_t np_client_free(np_client_t client)
 	if (!client)
 		return NP_E_INVALID_ARG;
 
-	usbmuxd_disconnect(client->sfd);
-	client->sfd = -1;
+	iphone_device_disconnect(client->connection);
+	client->connection = NULL;
 	if (client->notifier) {
 		log_debug_msg("joining np callback\n");
 		g_thread_join(client->notifier);
@@ -293,12 +293,12 @@ static int np_get_notification(np_client_t client, char **notification)
 	char *XML_content = NULL;
 	plist_t dict = NULL;
 
-	if (!client || client->sfd < 0 || *notification)
+	if (!client || !client->connection || *notification)
 		return -1;
 
 	np_lock(client);
 
-	usbmuxd_recv_timeout(client->sfd, (char*)&pktlen, sizeof(pktlen), &bytes, 500);
+	iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, 500);
 	log_debug_msg("NotificationProxy: initial read=%i\n", bytes);
 	if (bytes < 4) {
 		log_debug_msg("NotificationProxy: no notification received!\n");
@@ -310,7 +310,7 @@ static int np_get_notification(np_client_t client, char **notification)
 			XML_content = (char*)malloc(pktlen);
 			log_debug_msg("pointer %p\n", XML_content);
 
-			usbmuxd_recv_timeout(client->sfd, XML_content, pktlen, &bytes, 1000);
+			iphone_device_recv_timeout(client->connection, XML_content, pktlen, &bytes, 1000);
 			if (bytes <= 0) {
 				res = -1;
 			} else {
@@ -390,7 +390,7 @@ gpointer np_notifier( gpointer arg )
 	if (!npt) return NULL;
 
 	log_debug_msg("%s: starting callback.\n", __func__);
-	while (npt->client->sfd >= 0) {
+	while (npt->client->connection) {
 		np_get_notification(npt->client, &notification);
 		if (notification) {
 			npt->cbfunc(notification);
@@ -429,11 +429,11 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb 
 	np_lock(client);
 	if (client->notifier) {
 		log_debug_msg("%s: callback already set, removing\n");
-		int conn = client->sfd;
-		client->sfd = -1;
+		iphone_connection_t conn = client->connection;
+		client->connection = NULL;
 		g_thread_join(client->notifier);
 		client->notifier = NULL;
-		client->sfd = conn;
+		client->connection = conn;
 	}
 
 	if (notify_cb) {

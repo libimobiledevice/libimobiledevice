@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 {
 	iphone_device_t phone = NULL;
 	lockdownd_client_t client = NULL;
-	usbmuxd_scan_result *dev_list;
+	usbmuxd_device_info_t *dev_list;
 	char *devname = NULL;
 	int ret = 0;
 	int i;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
 	switch (mode) {
 	case MODE_SHOW_ID:
-		iphone_get_device_by_uuid(&phone, uuid);
+		iphone_device_new(&phone, uuid);
 		if (!phone) {
 			fprintf(stderr, "ERROR: No device with UUID=%s attached.\n", uuid);
 			return -2;
@@ -96,13 +96,14 @@ int main(int argc, char **argv)
 		return ret;
 	case MODE_LIST_DEVICES:
 	default:
-		if (usbmuxd_scan(&dev_list) < 0) {
+		if (usbmuxd_get_device_list(&dev_list) < 0) {
 			fprintf(stderr, "ERROR: usbmuxd is not running!\n");
 			return -1;
 		}
 		for (i = 0; dev_list[i].handle > 0; i++) {
-			printf("handle=%d product_id=%04x uuid=%s\n", dev_list[i].handle, dev_list[i].product_id, dev_list[i].serial_number);
+			printf("handle=%d product_id=%04x uuid=%s\n", dev_list[i].handle, dev_list[i].product_id, dev_list[i].uuid);
 		}
+		usbmuxd_free_device_list(dev_list);
 		return 0;
 	}
 }

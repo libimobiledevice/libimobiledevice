@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (uuid[0] != 0) {
-		ret = iphone_get_device_by_uuid(&phone, uuid);
+		ret = iphone_device_new(&phone, uuid);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		ret = iphone_get_device(&phone);
+		ret = iphone_device_new(&phone, NULL);
 		if (ret != IPHONE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;

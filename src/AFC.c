@@ -68,18 +68,18 @@ afc_error_t afc_client_new(iphone_device_t device, int dst_port, afc_client_t * 
 		return AFC_E_INVALID_ARGUMENT;
 
 	/* attempt connection */
-	int sfd = usbmuxd_connect(device->handle, dst_port);
-	if (sfd < 0) {
+	iphone_connection_t connection = NULL;
+	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
 		return AFC_E_MUX_ERROR;
 	}
 
 	afc_client_t client_loc = (afc_client_t) malloc(sizeof(struct afc_client_int));
-	client_loc->sfd = sfd;
+	client_loc->connection = connection;
 
 	/* allocate a packet */
 	client_loc->afc_packet = (AFCPacket *) malloc(sizeof(AFCPacket));
 	if (!client_loc->afc_packet) {
-		usbmuxd_disconnect(client_loc->sfd);
+		iphone_device_disconnect(client_loc->connection);
 		free(client_loc);
 		return AFC_E_NO_MEM;
 	}
@@ -102,10 +102,10 @@ afc_error_t afc_client_new(iphone_device_t device, int dst_port, afc_client_t * 
  */
 afc_error_t afc_client_free(afc_client_t client)
 {
-	if (!client || client->sfd < 0 || !client->afc_packet)
+	if (!client || !client->connection || !client->afc_packet)
 		return AFC_E_INVALID_ARGUMENT;
 
-	usbmuxd_disconnect(client->sfd);
+	iphone_device_disconnect(client->connection);
 	free(client->afc_packet);
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
@@ -132,7 +132,7 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 	int bytes = 0, offset = 0;
 	char *buffer;
 
-	if (!client || client->sfd < 0 || !client->afc_packet)
+	if (!client || !client->connection || !client->afc_packet)
 		return 0;
 
 	if (!data || !length)
@@ -164,7 +164,7 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 			return -1;
 		}
 		memcpy(buffer + sizeof(AFCPacket), data, offset);
-		usbmuxd_send(client->sfd, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
+		iphone_device_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
 		free(buffer);
 		if (bytes <= 0) {
 			return bytes;
@@ -175,7 +175,7 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 		log_debug_msg("%s: Buffer: \n", __func__);
 		log_debug_buffer(data + offset, length - offset);
 
-		usbmuxd_send(client->sfd, data + offset, length - offset, (uint32_t*)&bytes);
+		iphone_device_send(client->connection, data + offset, length - offset, (uint32_t*)&bytes);
 		return bytes;
 	} else {
 		log_debug_msg("%s: doin things the old way\n", __func__);
@@ -188,7 +188,7 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 		}
 		log_debug_buffer(buffer, client->afc_packet->this_length);
 		log_debug_msg("\n");
-		usbmuxd_send(client->sfd, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
+		iphone_device_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
 
 		if (buffer) {
 			free(buffer);
@@ -220,7 +220,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, int *
 	*bytes = 0;
 
 	/* first, read the AFC header */
-	usbmuxd_recv(client->sfd, (char*)&header, sizeof(AFCPacket), (uint32_t*)bytes);
+	iphone_device_recv(client->connection, (char*)&header, sizeof(AFCPacket), (uint32_t*)bytes);
 	if (*bytes <= 0) {
 		log_debug_msg("%s: Just didn't get enough.\n", __func__);
 		*dump_here = NULL;
@@ -273,7 +273,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, int *
 
 	*dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
-		usbmuxd_recv(client->sfd, *dump_here, this_len, (uint32_t*)bytes);
+		iphone_device_recv(client->connection, *dump_here, this_len, (uint32_t*)bytes);
 		if (*bytes <= 0) {
 			free(*dump_here);
 			*dump_here = NULL;
@@ -291,7 +291,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, int *
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			usbmuxd_recv(client->sfd, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)bytes);
+			iphone_device_recv(client->connection, (*dump_here)+current_count, entire_len - current_count, (uint32_t*)bytes);
 			if (*bytes <= 0) {
 				log_debug_msg("%s: Error receiving data (recv returned %d)\n", __func__, *bytes);
 				break;
@@ -517,7 +517,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 	int bytes;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !path || !client->afc_packet || client->sfd < 0)
+	if (!client || !path || !client->afc_packet || !client->connection)
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
@@ -560,7 +560,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 	int bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !from || !to || !client->afc_packet || client->sfd < 0)
+	if (!client || !from || !to || !client->afc_packet || !client->connection)
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
@@ -687,7 +687,7 @@ afc_file_open(afc_client_t client, const char *filename,
 	// set handle to 0 so in case an error occurs, the handle is invalid
 	*handle = 0;
 
-	if (!client || client->sfd < 0|| !client->afc_packet)
+	if (!client || !client->connection || !client->afc_packet)
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
@@ -742,7 +742,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, int length, uint
 	const int MAXIMUM_READ_SIZE = 1 << 16;
 	afc_error_t ret = AFC_E_SUCCESS;
 
-	if (!client || !client->afc_packet || client->sfd < 0 || handle == 0)
+	if (!client || !client->afc_packet || !client->connection || handle == 0)
 		return AFC_E_INVALID_ARGUMENT;
 	log_debug_msg("%s: called for length %i\n", __func__, length);
 
@@ -819,7 +819,7 @@ afc_file_write(afc_client_t client, uint64_t handle,
 	char *out_buffer = NULL;
 	afc_error_t ret = AFC_E_SUCCESS;
 
-	if (!client || !client->afc_packet || client->sfd < 0 || !bytes || (handle == 0))
+	if (!client || !client->afc_packet || !client->connection || !bytes || (handle == 0))
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
@@ -1139,7 +1139,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize)
 	uint64_t size_requested = newsize;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !path || !client->afc_packet || client->sfd < 0)
+	if (!client || !path || !client->afc_packet || !client->connection)
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
@@ -1183,7 +1183,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 	uint64_t type = linktype;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !target || !linkname || !client->afc_packet || client->sfd < 0)
+	if (!client || !target || !linkname || !client->afc_packet || !client->connection)
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);

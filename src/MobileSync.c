@@ -40,13 +40,13 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
 
 	/* Attempt connection */
-	int sfd = usbmuxd_connect(device->handle, dst_port);
-	if (sfd < 0) {
+	iphone_connection_t connection = NULL;
+	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
 		return ret;
 	}
 
 	mobilesync_client_t client_loc = (mobilesync_client_t) malloc(sizeof(struct mobilesync_client_int));
-	client_loc->sfd = sfd;
+	client_loc->connection = connection;
 
 	/* perform handshake */
 	plist_t array = NULL;
@@ -126,7 +126,7 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 		return IPHONE_E_INVALID_ARG;
 
 	mobilesync_disconnect(client);
-	return (usbmuxd_disconnect(client->sfd) == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
+	return (iphone_device_disconnect(client->connection) == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
 }
 
 /** Polls the iPhone for MobileSync data.
@@ -144,14 +144,14 @@ mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 	char *receive = NULL;
 	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
-	ret = usbmuxd_recv(client->sfd, (char *) &datalen, sizeof(datalen), &bytes);
+	ret = iphone_device_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
 	datalen = ntohl(datalen);
 
 	receive = (char *) malloc(sizeof(char) * datalen);
 
 	/* fill buffer and request more packets if needed */
 	while ((received_bytes < datalen) && (ret == MOBILESYNC_E_SUCCESS)) {
-		ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
+		ret = iphone_device_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
 		received_bytes += bytes;
 	}
 
@@ -207,7 +207,7 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	memcpy(real_query, &length, sizeof(length));
 	memcpy(real_query + 4, content, ntohl(length));
 
-	ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
+	ret = iphone_device_send(client->connection, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	free(real_query);
 	return (ret == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
 }

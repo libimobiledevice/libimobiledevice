@@ -213,12 +213,14 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 
 	lockdownd_stop_ssl_session(client);
 
-	if (client->sfd > 0) {
+	if (client->connection) {
 		lockdownd_goodbye(client);
 
 		// IMO, read of final "sessionUpcall connection closed" packet
 		//  should come here instead of in iphone_free_device
-		ret = usbmuxd_disconnect(client->sfd);
+		if ((ret = iphone_device_disconnect(client->connection)) != IPHONE_E_SUCCESS) {
+			ret = LOCKDOWN_E_UNKNOWN_ERROR;
+		}
 	}
 
 	free(client);
@@ -241,7 +243,7 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
 	if (!client->in_SSL)
-		ret = usbmuxd_recv(client->sfd, (char *) &datalen, sizeof(datalen), &bytes);
+		ret = iphone_device_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
 	else {
 		ssize_t res = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
 		if (res < 0) {
@@ -260,7 +262,7 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	/* fill buffer and request more packets if needed */
 	if (!client->in_SSL) {
 		while ((received_bytes < datalen) && (ret == LOCKDOWN_E_SUCCESS)) {
-			ret = usbmuxd_recv(client->sfd, receive + received_bytes, datalen - received_bytes, &bytes);
+			ret = iphone_device_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
 			received_bytes += bytes;
 		}
 	} else {
@@ -328,7 +330,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: made the query, sending it along\n", __func__);
 
 	if (!client->in_SSL)
-		ret = usbmuxd_send(client->sfd, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
+		ret = iphone_device_send(client->connection, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	else {
 		ssize_t res = gnutls_record_send(*client->ssl_session, real_query, ntohl(length) + sizeof(length));
 		if (res < 0) {
@@ -659,19 +661,19 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  */
 lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client)
 {
-	if (!device || !client)
+	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	char *host_id = NULL;
 
-	int sfd = usbmuxd_connect(device->handle, 0xf27e);
-	if (sfd < 0) {
-		log_debug_msg("%s: could not connect to lockdownd (device handle %d)\n", __func__, device->handle);
+	iphone_connection_t connection;
+	if (iphone_device_connect(device, 0xf27e, &connection) != IPHONE_E_SUCCESS) {
+		log_debug_msg("%s: could not connect to lockdownd (device %s)\n", __func__, device->uuid);
 		return LOCKDOWN_E_MUX_ERROR;
 	}
 
 	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
-	client_loc->sfd = sfd;
+	client_loc->connection = connection;
 	client_loc->ssl_session = (gnutls_session_t *) malloc(sizeof(gnutls_session_t));
 	client_loc->in_SSL = 0;
 
@@ -1176,7 +1178,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	client = (lockdownd_client_t) transport;
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pre-send length = %zi\n", __func__, length);
-	usbmuxd_send(client->sfd, buffer, length, &bytes);
+	iphone_device_send(client->connection, buffer, length, &bytes);
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: post-send sent %i bytes\n", __func__, bytes);
 	return bytes;
 }
@@ -1205,7 +1207,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 
 	// repeat until we have the full data or an error occurs.
 	do {
-		if ((res = usbmuxd_recv(client->sfd, recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
+		if ((res = iphone_device_recv(client->connection, recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
 			log_debug_msg("%s: ERROR: usbmux_recv returned %d\n", __func__, res);
 			return res;
 		}

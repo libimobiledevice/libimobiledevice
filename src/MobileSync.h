@@ -24,7 +24,7 @@
 #include "libiphone/mobilesync.h"
 
 struct mobilesync_client_int {
-	int sfd;
+	iphone_connection_t connection;
 };
 
 #endif

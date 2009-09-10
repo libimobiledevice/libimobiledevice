@@ -46,7 +46,7 @@ typedef struct __AFCToken {
 } AFCToken;
 
 struct afc_client_int {
-	int sfd;
+	iphone_connection_t connection;
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;

@@ -26,7 +26,7 @@
 #include "libiphone/notification_proxy.h"
 
 struct np_client_int {
-	int sfd;
+	iphone_connection_t connection;
 	GMutex *mutex;
 	GThread *notifier;
 };

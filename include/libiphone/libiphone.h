@@ -31,7 +31,6 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <plist/plist.h>
-#include <usbmuxd.h>
 
 /* Error Codes */
 #define IPHONE_E_SUCCESS                0
@@ -46,19 +45,56 @@ typedef int16_t iphone_error_t;
 struct iphone_device_int;
 typedef struct iphone_device_int *iphone_device_t;
 
+struct iphone_connection_int;
+typedef struct iphone_connection_int *iphone_connection_t;
+
 /* Debugging */
 #define DBGMASK_ALL        0xFFFF
 #define DBGMASK_NONE       0x0000
 #define DBGMASK_LOCKDOWND  (1 << 1)
 #define DBGMASK_MOBILESYNC (1 << 2)
 
+/* generic */
 void iphone_set_debug_mask(uint16_t mask);
 void iphone_set_debug_level(int level);
 
-/* Interface */
-iphone_error_t iphone_get_device(iphone_device_t *device);
-iphone_error_t iphone_get_device_by_uuid(iphone_device_t *device, const char *uuid);
+/* discovery (events/asynchronous) */
+// event type
+enum iphone_event_type {
+	IPHONE_DEVICE_ADD = 1,
+	IPHONE_DEVICE_REMOVE
+};
+
+// event data structure
+typedef struct {
+	enum iphone_event_type event;
+	const char *uuid;
+	int conn_type;
+} iphone_event_t;
+
+// event callback function prototype
+typedef void (*iphone_event_cb_t) (const iphone_event_t *event, void *user_data);
+
+// functions
+iphone_error_t iphone_event_subscribe(iphone_event_cb_t callback, void *user_data);
+iphone_error_t iphone_event_unsubscribe();
+
+/* discovery (synchronous) */
+iphone_error_t iphone_get_device_list(char ***devices, int *count);
+iphone_error_t iphone_free_device_list(char **devices);
+
+/* device structure creation and destruction */
+iphone_error_t iphone_device_new(iphone_device_t *device, const char *uuid);
 iphone_error_t iphone_device_free(iphone_device_t device);
+
+/* connection/disconnection and communication */
+iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t dst_port, iphone_connection_t *connection);
+iphone_error_t iphone_device_disconnect(iphone_connection_t connection);
+iphone_error_t iphone_device_send(iphone_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
+iphone_error_t iphone_device_recv_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
+iphone_error_t iphone_device_recv(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
+
+/* misc */
 iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle);
 iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid);
 

@@ -36,8 +36,8 @@ typedef int16_t userpref_error_t;
 userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
 userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
 userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
-userpref_error_t userpref_set_device_public_key(char *uuid, gnutls_datum_t public_key);
-int userpref_has_device_public_key(char *uuid);
+userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
+int userpref_has_device_public_key(const char *uuid);
 void userpref_get_host_id(char **host_id);
 
 #endif

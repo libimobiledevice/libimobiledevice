@@ -88,7 +88,7 @@ static char *userpref_generate_host_id()
  *
  * @param host_id A null terminated string containing a valid HostID.
  */
-static int userpref_set_host_id(char *host_id)
+static int userpref_set_host_id(const char *host_id)
 {
 	GKeyFile *key_file;
 	gsize length;
@@ -164,7 +164,7 @@ void userpref_get_host_id(char **host_id)
  * @return 1 if the iPhone has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int userpref_has_device_public_key(char *uuid)
+int userpref_has_device_public_key(const char *uuid)
 {
 	int ret = 0;
 	gchar *config_file;
@@ -187,7 +187,7 @@ int userpref_has_device_public_key(char *uuid)
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-userpref_error_t userpref_set_device_public_key(char *uuid, gnutls_datum_t public_key)
+userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key)
 {
 	if (NULL == public_key.data)
 		return USERPREF_E_INVALID_ARG;

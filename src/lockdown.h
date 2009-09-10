@@ -28,7 +28,7 @@
 #include "libiphone/lockdown.h"
 
 struct lockdownd_client_int {
-	int sfd;
+	iphone_connection_t connection;
 	gnutls_session_t *ssl_session;
 	int in_SSL;
 	char session_id[40];
