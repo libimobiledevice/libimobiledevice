@@ -107,7 +107,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize);
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname);
 
 /* Helper functions */
-char *      afc_get_device_info_field(afc_client_t client, const char *field);
+afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value);
 
 #ifdef __cplusplus
 }

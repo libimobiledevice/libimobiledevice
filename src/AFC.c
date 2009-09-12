@@ -468,26 +468,32 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 	return ret;
 }
 
-/** Get a specific field of the device info for a client connection to phone.
- * Known values are: Model, FSTotalBytes, FSFreeBytes and FSBlockSize. This is
- * a helper function for afc_get_device_info().
+/** Get a specific key of the device info list for a client connection.
+ * Known key values are: Model, FSTotalBytes, FSFreeBytes and FSBlockSize.
+ * This is a helper function for afc_get_device_info().
  *
  * @param client The client to get device info for.
- * @param field The field to get the information for
+ * @param key The key to get the value of.
+ * @param value The value for the key if successful or NULL otherwise.
  *
- * @return A char * or NULL if there was an error.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-char * afc_get_device_info_field(afc_client_t client, const char *field)
+afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value)
 {
-	char *ret = NULL;
+	afc_error_t ret = AFC_E_INTERNAL_ERROR;
 	char **kvps, **ptr;
 
-	if (field == NULL || afc_get_device_info(client, &kvps) != AFC_E_SUCCESS)
-		return NULL;
+	*value = NULL;
+	if (key == NULL)
+		return AFC_E_INVALID_ARGUMENT;
+
+	ret = afc_get_device_info(client, &kvps);
+	if (ret != AFC_E_SUCCESS)
+		return ret;
 
 	for (ptr = kvps; *ptr; ptr++) {
-		if (!strcmp(*ptr, field)) {
-			ret = strdup(*(ptr+1));
+		if (!strcmp(*ptr, key)) {
+			*value = strdup(*(ptr+1));
 			break;
 		}
 	}
