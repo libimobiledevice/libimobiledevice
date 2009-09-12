@@ -128,7 +128,7 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
  *
  * @return Always returnes IPHONE_E_SUCCESS.
  */
-iphone_error_t iphone_free_device_list(char **devices)
+iphone_error_t iphone_device_list_free(char **devices)
 {
 	if (devices) {
 		int i = 0;

@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 		for (i = 0; dev_list[i] != NULL; i++) {
 			printf("%s\n", dev_list[i]);
 		}
-		iphone_free_device_list(dev_list);
+		iphone_device_list_free(dev_list);
 		return 0;
 	}
 }

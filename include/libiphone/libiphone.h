@@ -81,7 +81,7 @@ iphone_error_t iphone_event_unsubscribe();
 
 /* discovery (synchronous) */
 iphone_error_t iphone_get_device_list(char ***devices, int *count);
-iphone_error_t iphone_free_device_list(char **devices);
+iphone_error_t iphone_device_list_free(char **devices);
 
 /* device structure creation and destruction */
 iphone_error_t iphone_device_new(iphone_device_t *device, const char *uuid);
