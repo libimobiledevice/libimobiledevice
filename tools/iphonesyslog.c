@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
 	char uuid[41];
 	int port = 0;
 	uuid[0] = 0;
-	uint32_t handle = 0;
 
 	signal(SIGINT, clean_exit);
 	signal(SIGQUIT, clean_exit);

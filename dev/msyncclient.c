@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
 		iphone_set_debug_mask(DBGMASK_MOBILESYNC);
 
-	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
+	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return -1;
 	}

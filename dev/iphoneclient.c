@@ -20,9 +20,9 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <usb.h>
 #include <glib.h>
 
 #include <libiphone/libiphone.h>
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 		iphone_set_debug_mask(DBGMASK_NONE);
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_get_device(&phone)) {
+	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
 		printf("No iPhone found, is it plugged in?\n");
 		return -1;
 	}

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
-#include <usbmuxd.h>
 
 #define MODE_NONE 0
 #define MODE_SHOW_ID 1
@@ -18,7 +17,7 @@ static void print_usage(int argc, char **argv)
 	printf("Prints device name or a list of attached iPhone/iPod Touch devices.\n\n");
 	printf("  The UUID is a 40-digit hexadecimal number of the device\n");
 	printf("  for which the name should be retrieved.\n\n");
-	printf("  -l, --list\t\tlist all attached devices\n");
+	printf("  -l, --list\t\tlist UUID of all attached devices\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
@@ -28,7 +27,7 @@ int main(int argc, char **argv)
 {
 	iphone_device_t phone = NULL;
 	lockdownd_client_t client = NULL;
-	usbmuxd_device_info_t *dev_list;
+	char **dev_list = NULL;
 	char *devname = NULL;
 	int ret = 0;
 	int i;
@@ -96,14 +95,14 @@ int main(int argc, char **argv)
 		return ret;
 	case MODE_LIST_DEVICES:
 	default:
-		if (usbmuxd_get_device_list(&dev_list) < 0) {
-			fprintf(stderr, "ERROR: usbmuxd is not running!\n");
+		if (iphone_get_device_list(&dev_list, &i) < 0) {
+			fprintf(stderr, "ERROR: Unable to retrieve device list!\n");
 			return -1;
 		}
-		for (i = 0; dev_list[i].handle > 0; i++) {
-			printf("handle=%d product_id=%04x uuid=%s\n", dev_list[i].handle, dev_list[i].product_id, dev_list[i].uuid);
+		for (i = 0; dev_list[i] != NULL; i++) {
+			printf("%s\n", dev_list[i]);
 		}
-		usbmuxd_free_device_list(dev_list);
+		iphone_free_device_list(dev_list);
 		return 0;
 	}
 }
