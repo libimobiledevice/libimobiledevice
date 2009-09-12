@@ -310,6 +310,7 @@ iphone_error_t iphone_device_recv_timeout(iphone_connection_t connection, char *
 			log_debug_msg("%s: ERROR: usbmuxd_recv_timeout returned %d (%s)\n", __func__, res, strerror(-res));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
+		return IPHONE_E_SUCCESS;
 	} else {
 		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
 	}
@@ -341,6 +342,8 @@ iphone_error_t iphone_device_recv(iphone_connection_t connection, char *data, ui
 			log_debug_msg("%s: ERROR: usbmuxd_recv returned %d (%s)\n", __func__, res, strerror(-res));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
+
+		return IPHONE_E_SUCCESS;
 	} else {
 		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
 	}
