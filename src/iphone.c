@@ -111,7 +111,7 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
 		newlist[newcount++] = strdup(dev_list[i].uuid);
 		*devices = newlist;
 	}
-	usbmuxd_free_device_list(dev_list);
+	usbmuxd_device_list_free(&dev_list);
 
 	*count = newcount;
 	newlist = realloc(*devices, sizeof(char*) * (newcount+1));
