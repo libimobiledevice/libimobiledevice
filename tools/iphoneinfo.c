@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 				switch (format) {
 				case FORMAT_XML:
 					plist_to_xml(node, &xml_doc, &xml_length);
-					printf(xml_doc);
+					printf("%s", xml_doc);
 					free(xml_doc);
 					break;
 				case FORMAT_KEY_VALUE:
