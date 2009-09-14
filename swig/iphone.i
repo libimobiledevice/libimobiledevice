@@ -121,13 +121,13 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	}
 
 	int init_device_by_uuid(char* uuid) {
-		if (IPHONE_E_SUCCESS == iphone_get_device_by_uuid(&($self->dev), uuid))
+		if (IPHONE_E_SUCCESS == iphone_device_new(&($self->dev), uuid))
 			return 1;
 		return 0;
 	}
 
 	int init_device() {
-		if (IPHONE_E_SUCCESS == iphone_get_device(&($self->dev)))
+		if (IPHONE_E_SUCCESS == iphone_device_new(&($self->dev), NULL))
 			return 1;
 		return 0;
 	}
