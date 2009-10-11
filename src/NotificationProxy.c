@@ -177,17 +177,14 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 	np_lock(client);
 
 	plist_t dict = plist_new_dict();
-	plist_add_sub_key_el(dict, "Command");
-	plist_add_sub_string_el(dict, "PostNotification");
-	plist_add_sub_key_el(dict, "Name");
-	plist_add_sub_string_el(dict, notification);
+	plist_dict_insert_item(dict,"Command", plist_new_string("PostNotification"));
+	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
 	np_error_t res = np_plist_send(client, dict);
 	plist_free(dict);
 
 	dict = plist_new_dict();
-	plist_add_sub_key_el(dict, "Command");
-	plist_add_sub_string_el(dict, "Shutdown");
+	plist_dict_insert_item(dict,"Command", plist_new_string("Shutdown"));
 
 	res = np_plist_send(client, dict);
 	plist_free(dict);
@@ -213,10 +210,8 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 	np_lock(client);
 
 	plist_t dict = plist_new_dict();
-	plist_add_sub_key_el(dict, "Command");
-	plist_add_sub_string_el(dict, "ObserveNotification");
-	plist_add_sub_key_el(dict, "Name");
-	plist_add_sub_string_el(dict, notification);
+	plist_dict_insert_item(dict,"Command", plist_new_string("ObserveNotification"));
+	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
 	np_error_t res = np_plist_send(client, dict);
 	if (res != NP_E_SUCCESS) {

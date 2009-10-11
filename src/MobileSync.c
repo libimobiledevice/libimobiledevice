@@ -76,8 +76,8 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 			&& ver_2_val == MSYNC_VERSION_INT2) {
 
 			array = plist_new_array();
-			plist_add_sub_string_el(array, "DLMessageVersionExchange");
-			plist_add_sub_string_el(array, "DLVersionsOk");
+			plist_array_append_item(array, plist_new_string("DLMessageVersionExchange"));
+			plist_array_append_item(array, plist_new_string("DLVersionsOk"));
 
 			ret = mobilesync_send(client_loc, array);
 
@@ -112,8 +112,8 @@ static void mobilesync_disconnect(mobilesync_client_t client)
 		return;
 
 	plist_t array = plist_new_array();
-	plist_add_sub_string_el(array, "DLMessageDisconnect");
-	plist_add_sub_string_el(array, "All done, thanks for the memories");
+	plist_array_append_item(array, plist_new_string("DLMessageDisconnect"));
+	plist_array_append_item(array, plist_new_string("All done, thanks for the memories"));
 
 	mobilesync_send(client, array);
 	plist_free(array);

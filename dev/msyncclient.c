@@ -37,12 +37,12 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	plist_t array = NULL;
 
 	array = plist_new_array();
-	plist_add_sub_string_el(array, "SDMessageSyncDataClassWithDevice");
-	plist_add_sub_string_el(array, "com.apple.Contacts");
-	plist_add_sub_string_el(array, "---");
-	plist_add_sub_string_el(array, "2009-01-09 18:03:58 +0100");
-	plist_add_sub_uint_el(array, 106);
-	plist_add_sub_string_el(array, "___EmptyParameterString___");
+	plist_array_append_item(array, plist_new_string("SDMessageSyncDataClassWithDevice"));
+	plist_array_append_item(array, plist_new_string("com.apple.Contacts"));
+	plist_array_append_item(array, plist_new_string("---"));
+	plist_array_append_item(array, plist_new_string("2009-01-09 18:03:58 +0100"));
+	plist_array_append_item(array, plist_new_uint(106));
+	plist_array_append_item(array, plist_new_string("___EmptyParameterString___"));
 
 	ret = mobilesync_send(client, array);
 	plist_free(array);
@@ -59,9 +59,8 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	array = NULL;
 
 	array = plist_new_array();
-	plist_add_sub_string_el(array, "SDMessageGetAllRecordsFromDevice");
-	plist_add_sub_string_el(array, "com.apple.Contacts");
-
+	plist_array_append_item(array, plist_new_string("SDMessageGetAllRecordsFromDevice"));
+	plist_array_append_item(array, plist_new_string("com.apple.Contacts"));
 
 	ret = mobilesync_send(client, array);
 	plist_free(array);
@@ -81,8 +80,8 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 		array = NULL;
 
 		array = plist_new_array();
-		plist_add_sub_string_el(array, "SDMessageAcknowledgeChangesFromDevice");
-		plist_add_sub_string_el(array, "com.apple.Contacts");
+		plist_array_append_item(array, plist_new_string("SDMessageAcknowledgeChangesFromDevice"));
+		plist_array_append_item(array, plist_new_string("com.apple.Contacts"));
 
 		ret = mobilesync_send(client, array);
 		plist_free(array);
@@ -95,26 +94,26 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	}
 
 	array = plist_new_array();
-	plist_add_sub_string_el(array, "DLMessagePing");
-	plist_add_sub_string_el(array, "Preparing to get changes for device");
+	plist_array_append_item(array, plist_new_string("DLMessagePing"));
+	plist_array_append_item(array, plist_new_string("Preparing to get changes for device"));
 
 	ret = mobilesync_send(client, array);
 	plist_free(array);
 	array = NULL;
 
 	array = plist_new_array();
-	plist_add_sub_string_el(array, "SDMessageProcessChanges");
-	plist_add_sub_string_el(array, "com.apple.Contacts");
-	plist_add_sub_node(array, plist_new_dict());
-	plist_add_sub_bool_el(array, 0);
+	plist_array_append_item(array, plist_new_string("SDMessageProcessChanges"));
+	plist_array_append_item(array, plist_new_string("com.apple.Contacts"));
+	plist_array_append_item(array, plist_new_dict());
+	plist_array_append_item(array, plist_new_bool(0));
+
 	plist_t dict = plist_new_dict();
-	plist_add_sub_node(array, dict);
-	plist_add_sub_key_el(dict, "SyncDeviceLinkEntityNamesKey");
+	plist_array_append_item(array, dict);
 	plist_t array2 = plist_new_array();
-	plist_add_sub_string_el(array2, "com.apple.contacts.Contact");
-	plist_add_sub_string_el(array2, "com.apple.contacts.Group");
-	plist_add_sub_key_el(dict, "SyncDeviceLinkAllRecordsOfPulledEntityTypeSentKey");
-	plist_add_sub_bool_el(dict, 0);
+	plist_dict_insert_item(dict, "SyncDeviceLinkEntityNamesKey", array2);
+	plist_array_append_item(array2, plist_new_string("com.apple.contacts.Contact"));
+	plist_array_append_item(array2, plist_new_string("com.apple.contacts.Group"));
+	plist_dict_insert_item(dict, "SyncDeviceLinkAllRecordsOfPulledEntityTypeSentKey", plist_new_bool(0));
 
 	ret = mobilesync_send(client, array);
 	plist_free(array);
