@@ -7,6 +7,7 @@
  #include <libiphone/lockdown.h>
  #include <libiphone/mobilesync.h>
  #include <plist/plist.h>
+ #include <plist/plist++.h>
  #include "../src/utils.h"
  typedef struct {
 	iphone_device_t dev;
@@ -27,6 +28,7 @@ void my_delete_iPhone(iPhone* dev);
 Lockdownd* my_new_Lockdownd(iPhone* phone);
 void my_delete_Lockdownd(Lockdownd* lckd);
 MobileSync* my_new_MobileSync(Lockdownd* lckd);
+PList::Node* new_node_from_plist(plist_t node);
 
  %}
 /* Parse the header file to generate wrappers */
@@ -98,6 +100,41 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	return client;
 }
 
+PList::Node* new_node_from_plist(plist_t node)
+{
+	PList::Node* ret = NULL;
+	plist_type subtype = plist_get_node_type(node);
+	switch(subtype)
+	{
+	    case PLIST_DICT:
+		ret = new PList::Dictionary(node);
+		break;
+	    case PLIST_ARRAY:
+		ret = new PList::Array(node);
+		break;
+	    case PLIST_BOOLEAN:
+		ret = new PList::Boolean(node);
+		break;
+	    case PLIST_UINT:
+		ret = new PList::Integer(node);
+		break;
+	    case PLIST_REAL:
+		ret = new PList::Real(node);
+		break;
+	    case PLIST_STRING:
+		ret = new PList::String(node);
+		break;
+	    case PLIST_DATE:
+		ret = new PList::Date(node);
+		break;
+	    case PLIST_DATA:
+		ret = new PList::Data(node);
+		break;
+	    default:
+		break;
+	}
+	return ret;
+}
 %}
 
 
@@ -154,15 +191,14 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		my_delete_Lockdownd($self);
 	}
 
-	void send(PListNode* node) {
-		lockdownd_send($self->client, node->node);
+	void send(PList::Node* node) {
+		lockdownd_send($self->client, node->GetPlist());
 	}
 
-	PListNode* receive() {
-		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
-		node->node = NULL;
-		lockdownd_recv($self->client, &(node->node));
-		return node;
+	PList::Node* receive() {
+		plist_t node = NULL;
+		lockdownd_recv($self->client, &node);
+		return new_node_from_plist(node);
 	}
 
 	MobileSync* get_mobilesync_client() {
@@ -180,15 +216,14 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 		free($self);
 	}
 
-	void send(PListNode* node) {
-		mobilesync_send($self->client, node->node);
+	void send(PList::Node* node) {
+		mobilesync_send($self->client, node->GetPlist());
 	}
 
-	PListNode* receive() {
-		PListNode* node = (PListNode*)malloc(sizeof(PListNode));
-		node->node = NULL;
-		mobilesync_recv($self->client, &(node->node));
-		return node;
+	PList::Node* receive() {
+		plist_t node = NULL;
+		mobilesync_recv($self->client, &node);
+		return new_node_from_plist(node);
 	}
 };
 
