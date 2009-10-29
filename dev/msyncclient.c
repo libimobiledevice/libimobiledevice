@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <usb.h>
 
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
