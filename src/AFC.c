@@ -1213,3 +1213,46 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 
 	return ret;
 }
+
+/** Sets the modification time of a file on the phone.
+ * 
+ * @param client The client to use to set the file size.
+ * @param path Path of the file for which the modification time should be set.
+ * @param mtime The modification time to set in nanoseconds since epoch.
+ * 
+ * @return AFC_E_SUCCESS if everything went well, AFC_E_INVALID_ARGUMENT
+ *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ */
+afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
+{
+	char *response = NULL;
+	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
+	int bytes = 0;
+	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
+
+	if (!client || !path || !client->afc_packet || !client->connection)
+		return AFC_E_INVALID_ARGUMENT;
+
+	afc_lock(client);
+
+	// Send command
+	memcpy(send, &mtime, 8);
+	memcpy(send + 8, path, strlen(path) + 1);
+	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
+	client->afc_packet->operation = AFC_OP_SET_FILE_TIME;
+	bytes = afc_dispatch_packet(client, send, 8 + strlen(path) + 1);
+	free(send);
+	if (bytes <= 0) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+	// Receive response
+	ret = afc_receive_data(client, &response, &bytes);
+	if (response)
+		free(response);
+
+	afc_unlock(client);
+
+	return ret;
+}
+

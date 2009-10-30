@@ -82,6 +82,7 @@ enum {
 	AFC_OP_SET_FS_BS       = 0x00000019,	// SetFSBlockSize (0x800000)
 	AFC_OP_SET_SOCKET_BS   = 0x0000001A,	// SetSocketBlockSize (0x800000)
 	AFC_OP_FILE_LOCK       = 0x0000001B,	// FileRefLock
-	AFC_OP_MAKE_LINK       = 0x0000001C	// MakeLink
+	AFC_OP_MAKE_LINK       = 0x0000001C,	// MakeLink
+	AFC_OP_SET_FILE_TIME   = 0x0000001E	// set st_mtime
 };
 
