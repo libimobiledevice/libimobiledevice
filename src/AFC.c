@@ -130,7 +130,7 @@ afc_error_t afc_client_free(afc_client_t client)
 static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t length)
 {
 	int bytes = 0, offset = 0;
-	char *buffer;
+	uint32_t sent = 0;
 
 	if (!client || !client->connection || !client->afc_packet)
 		return 0;
@@ -150,8 +150,6 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 	// this_length is the parameters
 	// And everything beyond that is the next packet. (for writing)
 	if (client->afc_packet->this_length != client->afc_packet->entire_length) {
-		buffer = (char *) malloc(client->afc_packet->this_length);
-		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
 		offset = client->afc_packet->this_length - sizeof(AFCPacket);
 
 		log_debug_msg("%s: Offset: %i\n", __func__, offset);
@@ -160,39 +158,50 @@ static int afc_dispatch_packet(afc_client_t client, const char *data, uint64_t l
 			log_debug_msg("to based on the packet.\n");
 			log_debug_msg("%s: length minus offset: %i\n", __func__, length - offset);
 			log_debug_msg("%s: rest of packet: %i\n", __func__, client->afc_packet->entire_length - client->afc_packet->this_length);
-			free(buffer);
 			return -1;
 		}
-		memcpy(buffer + sizeof(AFCPacket), data, offset);
-		iphone_device_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
-		free(buffer);
-		if (bytes <= 0) {
+
+		iphone_device_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		if (sent == 0) {
 			return bytes;
 		}
+		bytes += sent;
+
+		iphone_device_send(client->connection, data, offset, &sent);
+		if (sent == 0) {
+			return bytes;
+		}
+		bytes += sent;
 
 		log_debug_msg("%s: sent the first now go with the second\n", __func__);
 		log_debug_msg("%s: Length: %i\n", __func__, length - offset);
 		log_debug_msg("%s: Buffer: \n", __func__);
 		log_debug_buffer(data + offset, length - offset);
 
-		iphone_device_send(client->connection, data + offset, length - offset, (uint32_t*)&bytes);
+		sent = 0;
+		iphone_device_send(client->connection, data + offset, length - offset, &sent);
+
+		bytes = sent;
 		return bytes;
 	} else {
 		log_debug_msg("%s: doin things the old way\n", __func__);
-		buffer = (char *) malloc(sizeof(char) * client->afc_packet->this_length);
 		log_debug_msg("%s: packet length = %i\n", __func__, client->afc_packet->this_length);
-		memcpy(buffer, (char *) client->afc_packet, sizeof(AFCPacket));
-		log_debug_msg("%s: packet data follows\n", __func__);
-		if (length > 0) {
-			memcpy(buffer + sizeof(AFCPacket), data, length);
-		}
-		log_debug_buffer(buffer, client->afc_packet->this_length);
-		log_debug_msg("\n");
-		iphone_device_send(client->connection, buffer, client->afc_packet->this_length, (uint32_t*)&bytes);
 
-		if (buffer) {
-			free(buffer);
-			buffer = NULL;
+		log_debug_buffer((char*)client->afc_packet, sizeof(AFCPacket));
+		log_debug_msg("\n");
+
+		iphone_device_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		if (sent == 0) {
+			return bytes;
+		}
+		bytes += sent;
+		if (length > 0) {
+			log_debug_msg("%s: packet data follows\n", __func__);	
+
+			log_debug_buffer(data, length);
+			log_debug_msg("\n");
+			iphone_device_send(client->connection, data, length, &sent);
+			bytes += sent;
 		}
 		return bytes;
 	}
