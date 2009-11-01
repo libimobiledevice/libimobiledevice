@@ -819,7 +819,7 @@ afc_file_write(afc_client_t client, uint64_t handle,
 	char *out_buffer = NULL;
 	afc_error_t ret = AFC_E_SUCCESS;
 
-	if (!client || !client->afc_packet || !client->connection || !bytes || (handle == 0))
+	if (!client || !client->afc_packet || !client->connection || !bytes || (handle == 0) || (length < 0))
 		return AFC_E_INVALID_ARGUMENT;
 
 	afc_lock(client);
