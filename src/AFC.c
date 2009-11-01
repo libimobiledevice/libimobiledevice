@@ -742,7 +742,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, int length, uint
 	const int MAXIMUM_READ_SIZE = 1 << 16;
 	afc_error_t ret = AFC_E_SUCCESS;
 
-	if (!client || !client->afc_packet || !client->connection || handle == 0)
+	if (!client || !client->afc_packet || !client->connection || handle == 0 || (length < 0))
 		return AFC_E_INVALID_ARGUMENT;
 	log_debug_msg("%s: called for length %i\n", __func__, length);
 
