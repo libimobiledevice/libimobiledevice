@@ -28,7 +28,7 @@
 #include "utils.h"
 
 // This is the maximum size an AFC data packet can be
-const int MAXIMUM_PACKET_SIZE = (2 << 15);
+static const int MAXIMUM_PACKET_SIZE = (2 << 15);
 
 /** Locks an AFC client, done for thread safety stuff
  * 
