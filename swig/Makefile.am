@@ -24,7 +24,7 @@ iPhone_LTLIBRARIES = _iPhone.la
 nodist__iPhone_la_SOURCES = iphone_wrap.cxx $(SWIG_SOURCES)
 _iPhone_la_CFLAGS = $(PYTHON_CPPFLAGS) -I$(top_srcdir)/src
 _iPhone_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS)
-_iPhone_la_LIBADD = $(top_builddir)/src/libiphone.la
+_iPhone_la_LIBADD = $(top_builddir)/src/libiphone.la $(libplistmm_LIBS)
 
 iphone_wrap.cxx : $(SWIG_SOURCES)
 	$(SWIG) $(SWIG_PYTHON_OPT) $(INCLUDES) -I$(top_srcdir)/src -o $@ $<
