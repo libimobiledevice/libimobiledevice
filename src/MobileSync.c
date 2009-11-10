@@ -54,9 +54,21 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 	/* first receive version */
 	ret = mobilesync_recv(client_loc, &array);
 
-	plist_t msg_node = plist_find_node_by_string(array, "DLMessageVersionExchange");
-	plist_t ver_1 = plist_get_next_sibling(msg_node);
-	plist_t ver_2 = plist_get_next_sibling(ver_1);
+	plist_t msg_node = plist_array_get_item(array, 0);
+
+	char* msg = NULL;
+	plist_type type = plist_get_node_type(msg_node);
+	if (PLIST_STRING == type) {
+		plist_get_string_val(msg_node, &msg);
+	}
+	if (PLIST_STRING != type || strcmp(msg, "DLMessageVersionExchange") || plist_array_get_size(array) < 3) {
+		log_debug_msg("%s: ERROR: MobileSync client expected a version exchange !\n", __func__);
+	}
+	free(msg);
+	msg = NULL;
+
+	plist_t ver_1 = plist_array_get_item(array, 1);
+	plist_t ver_2 = plist_array_get_item(array, 2);
 
 	plist_type ver_1_type = plist_get_node_type(ver_1);
 	plist_type ver_2_type = plist_get_node_type(ver_2);
@@ -85,16 +97,24 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 			array = NULL;
 
 			ret = mobilesync_recv(client_loc, &array);
-			plist_t rep_node = plist_find_node_by_string(array, "DLMessageDeviceReady");
+			plist_t rep_node = plist_array_get_item(array, 0);
 
-			if (rep_node) {
-				ret = MOBILESYNC_E_SUCCESS;
-				*client = client_loc;
+			type = plist_get_node_type(rep_node);
+			if (PLIST_STRING == type) {
+				plist_get_string_val(rep_node, &msg);
+			}
+			if (PLIST_STRING != type || strcmp(msg, "DLMessageDeviceReady")) {
+				log_debug_msg("%s: ERROR: MobileSync client failed to start session !\n", __func__);
+				ret = MOBILESYNC_E_BAD_VERSION;
 			}
 			else
 			{
-				ret = MOBILESYNC_E_BAD_VERSION;
+				ret = MOBILESYNC_E_SUCCESS;
+				*client = client_loc;
 			}
+			free(msg);
+			msg = NULL;
+
 			plist_free(array);
 			array = NULL;
 		}

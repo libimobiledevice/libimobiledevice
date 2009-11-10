@@ -318,35 +318,27 @@ static int np_get_notification(np_client_t client, char **notification)
 					return -2;
 				}
 
-				plist_t cmd_key_node = plist_find_node_by_key(dict, "Command");
-				plist_t cmd_value_node = plist_get_next_sibling(cmd_key_node);
 				char *cmd_value = NULL;
+				plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
 
 				if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
 					plist_get_string_val(cmd_value_node, &cmd_value);
 				}
 
 				if (cmd_value && !strcmp(cmd_value, "RelayNotification")) {
-					plist_t name_key_node = plist_get_next_sibling(cmd_value_node);
-					plist_t name_value_node = plist_get_next_sibling(name_key_node);
-
-					char *name_key = NULL;
 					char *name_value = NULL;
+					plist_t name_value_node = plist_dict_get_item(dict, "Name");
 
-					if (plist_get_node_type(name_key_node) == PLIST_KEY) {
-						plist_get_key_val(name_key_node, &name_key);
-					}
 					if (plist_get_node_type(name_value_node) == PLIST_STRING) {
 						plist_get_string_val(name_value_node, &name_value);
 					}
 
 					res = -2;
-					if (name_key && name_value && !strcmp(name_key, "Name")) {
+					if (name_value_node && name_value) {
 						*notification = name_value;
 						log_debug_msg("%s: got notification %s\n", __func__, name_value);
 						res = 0;
 					}
-					free(name_key);
 				} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
 					log_debug_msg("%s: ERROR: NotificationProxy died!\n", __func__);
 					res = -1;

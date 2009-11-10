@@ -27,6 +27,23 @@
 #include <libiphone/lockdown.h>
 #include <libiphone/mobilesync.h>
 
+static char check_string(plist_t node, char* string)
+{
+	char ret = 1;
+	char* msg = NULL;
+	plist_type type = plist_get_node_type(node);
+	if (PLIST_STRING == type) {
+		plist_get_string_val(node, &msg);
+	}
+	if (PLIST_STRING != type || strcmp(msg, string)) {
+		log_debug_msg("%s: ERROR: MobileSync client did not find %s !\n", __func__, string);
+		ret = 0;
+	}
+	free(msg);
+	msg = NULL;
+	return ret;
+}
+
 static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client)
 {
 	if (!client)
@@ -49,11 +66,6 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 
 	ret = mobilesync_recv(client, &array);
 
-	plist_t rep_node = plist_find_node_by_string(array, "SDSyncTypeSlow");
-
-	if (!rep_node)
-		return ret;
-
 	plist_free(array);
 	array = NULL;
 
@@ -70,10 +82,12 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	plist_t contact_node;
 	plist_t switch_node;
 
-	contact_node = plist_find_node_by_string(array, "com.apple.Contacts");
-	switch_node = plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
+	contact_node = plist_array_get_item(array, 0);
+	switch_node = plist_array_get_item(array, 0);
 
-	while (NULL == switch_node) {
+	while (NULL == switch_node
+	    && check_string(contact_node, "com.apple.Contacts")
+	    && check_string(switch_node, "SDMessageDeviceReadyToReceiveChanges")) {
 
 		plist_free(array);
 		array = NULL;
@@ -88,8 +102,8 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 
 		ret = mobilesync_recv(client, &array);
 
-		contact_node = plist_find_node_by_string(array, "com.apple.Contacts");
-		switch_node = plist_find_node_by_string(array, "SDMessageDeviceReadyToReceiveChanges");
+		contact_node = plist_array_get_item(array, 0);
+		switch_node = plist_array_get_item(array, 0);
 	}
 
 	array = plist_new_array();
