@@ -22,10 +22,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-inline void log_debug_msg(const char *format, ...);
-inline void log_dbg_msg(uint16_t id, const char *format, ...);
+#include <glib.h>
 
-inline void log_debug_buffer(const char *data, const int length);
-inline void dump_debug_buffer(const char *file, const char *data, const int length);
+G_GNUC_INTERNAL inline void log_debug_msg(const char *format, ...);
+G_GNUC_INTERNAL inline void log_dbg_msg(uint16_t id, const char *format, ...);
+
+G_GNUC_INTERNAL inline void log_debug_buffer(const char *data, const int length);
+G_GNUC_INTERNAL inline void dump_debug_buffer(const char *file, const char *data, const int length);
 
 #endif

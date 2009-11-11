@@ -51,8 +51,8 @@ static const char *domains[] = {
 
 int is_domain_known(char *domain);
 void print_usage(int argc, char **argv);
-void plist_node_to_string(plist_t *node);
-void plist_children_to_string(plist_t *node);
+void plist_node_to_string(plist_t node);
+void plist_children_to_string(plist_t node);
 
 int main(int argc, char *argv[])
 {
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS)
 	{
 		if (plist_get_node_type(node) == PLIST_DICT) {
-			if (plist_get_first_child(node))
+			if (plist_dict_get_size(node))
 			{
 				switch (format) {
 				case FORMAT_XML:
@@ -208,7 +208,7 @@ void print_usage(int argc, char **argv)
 	printf("\n");
 }
 
-void plist_node_to_string(plist_t *node)
+void plist_node_to_string(plist_t node)
 {
 	char *s = NULL;
 	double d;
@@ -267,15 +267,26 @@ void plist_node_to_string(plist_t *node)
 	}
 }
 
-void plist_children_to_string(plist_t *node)
+void plist_children_to_string(plist_t node)
 {
 	/* iterate over key/value pairs */
-	for (
-		node = plist_get_first_child(node);
-		node != NULL;
-		node = plist_get_next_sibling(node)
-	) {
-		plist_node_to_string(node);
+	plist_dict_iter it = NULL;
+
+	char* key = NULL;
+	plist_t subnode = NULL;
+	plist_dict_new_iter(node, &it);
+	plist_dict_next_item(node, it, &key, &subnode);
+	while (subnode)
+	{
+		subnode = NULL;
+
+		printf("%s: ", key);
+		free(key);
+		key = NULL;
+		plist_node_to_string(subnode);
+
+		plist_dict_next_item(node, it, &key, &subnode);
 	}
+	free(it);
 }
 

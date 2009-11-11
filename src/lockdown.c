@@ -60,11 +60,7 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 {
 	int ret = -1;
 
-	plist_t query_key = plist_find_node_by_key(dict, "Request");
-	if (!query_key) {
-		return ret;
-	}
-	plist_t query_node = plist_get_next_sibling(query_key);
+	plist_t query_node = plist_dict_get_item(dict, "Request");
 	if (!query_node) {
 		return ret;
 	}
@@ -83,40 +79,30 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 		free(query_value);
 	}
 
-	plist_t result_node = plist_get_next_sibling(query_node);
+	plist_t result_node = plist_dict_get_item(dict, "Result");
 	if (!result_node) {
 		return ret;
 	}
 
-	plist_t value_node = plist_get_next_sibling(result_node);
-	if (!value_node) {
-		return ret;
-	}
-
 	plist_type result_type = plist_get_node_type(result_node);
-	plist_type value_type = plist_get_node_type(value_node);
 
-	if (result_type == PLIST_KEY && value_type == PLIST_STRING) {
+	if (result_type == PLIST_STRING) {
 
 		char *result_value = NULL;
-		char *value_value = NULL;
 
-		plist_get_key_val(result_node, &result_value);
-		plist_get_string_val(value_node, &value_value);
+		plist_get_string_val(result_node, &result_value);
 
-		if (result_value && value_value && !strcmp(result_value, "Result")) {
-			if (!strcmp(value_value, "Success")) {
+		if (result_value) {
+			if (!strcmp(result_value, "Success")) {
 				ret = RESULT_SUCCESS;
-			} else if (!strcmp(value_value, "Failure")) {
+			} else if (!strcmp(result_value, "Failure")) {
 				ret = RESULT_FAILURE;
 			} else {
-				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: ERROR: unknown result value '%s'\n", __func__, value_value);
+				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: ERROR: unknown result value '%s'\n", __func__, result_value);
 			}
 		}
 		if (result_value)
 			free(result_value);
-		if (value_value)
-			free(value_value);
 	}
 	return ret;
 }
@@ -437,20 +423,11 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 		return ret;
 	}
 
-	plist_t value_key_node = plist_find_node_by_key(dict, "Value");
-	plist_t value_value_node = plist_get_next_sibling(value_key_node);
+	plist_t value_node = plist_dict_get_item(dict, "Value");
 
-	plist_type value_key_type = plist_get_node_type(value_key_node);
-
-	if (value_key_type == PLIST_KEY) {
-		char *result_key = NULL;
-		plist_get_key_val(value_key_node, &result_key);
-
-		if (!strcmp(result_key, "Value")) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: has a value\n", __func__);
-			*value = plist_copy(value_value_node);
-		}
-		free(result_key);
+	if (value_node) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: has a value\n", __func__);
+		*value = plist_copy(value_node);
 	}
 
 	plist_free(dict);
@@ -1024,7 +1001,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 		return LOCKDOWN_E_PLIST_ERROR;
 
 	if (lockdown_check_result(dict, "StartSession") == RESULT_FAILURE) {
-		plist_t error_node = plist_get_dict_el_from_key(dict, "Error");
+		plist_t error_node = plist_dict_get_item(dict, "Error");
 		if (error_node && PLIST_STRING == plist_get_node_type(error_node)) {
 			char *error = NULL;
 			plist_get_string_val(error_node, &error);
@@ -1108,18 +1085,17 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 		}
 	}
 	/* store session id */
-	plist_t session_node = plist_find_node_by_key(dict, "SessionID");
+	plist_t session_node = plist_dict_get_item(dict, "SessionID");
 	if (session_node) {
 
-		plist_t session_node_val = plist_get_next_sibling(session_node);
-		plist_type session_node_val_type = plist_get_node_type(session_node_val);
+		plist_type session_node_type = plist_get_node_type(session_node);
 
-		if (session_node_val_type == PLIST_STRING) {
+		if (session_node_type == PLIST_STRING) {
 
 			char *session_id = NULL;
-			plist_get_string_val(session_node_val, &session_id);
+			plist_get_string_val(session_node, &session_id);
 
-			if (session_node_val_type == PLIST_STRING && session_id) {
+			if (session_node_type == PLIST_STRING && session_id) {
 				/* we need to store the session ID for StopSession */
 				strcpy(client->session_id, session_id);
 				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
@@ -1260,23 +1236,16 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "StartService") == RESULT_SUCCESS) {
-		plist_t port_key_node = plist_find_node_by_key(dict, "Port");
-		plist_t port_value_node = plist_get_next_sibling(port_key_node);
+		plist_t port_value_node = plist_dict_get_item(dict, "Port");
 
-		if ((plist_get_node_type(port_key_node) == PLIST_KEY)
-			&& (plist_get_node_type(port_value_node) == PLIST_UINT)) {
-			char *port_key = NULL;
+		if (port_value_node && (plist_get_node_type(port_value_node) == PLIST_UINT)) {
 			uint64_t port_value = 0;
-
-			plist_get_key_val(port_key_node, &port_key);
 			plist_get_uint_val(port_value_node, &port_value);
-			if (port_key && !strcmp(port_key, "Port")) {
+
+			if (port_value) {
 				port_loc = port_value;
 				ret = LOCKDOWN_E_SUCCESS;
 			}
-			if (port_key)
-				free(port_key);
-
 			if (port && ret == LOCKDOWN_E_SUCCESS)
 				*port = port_loc;
 		}
