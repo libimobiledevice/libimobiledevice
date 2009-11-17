@@ -29,7 +29,7 @@
 
 struct lockdownd_client_int {
 	iphone_connection_t connection;
-	gnutls_session_t *ssl_session;
+	gnutls_session_t ssl_session;
 	gnutls_certificate_credentials_t ssl_certificate;
 	int in_SSL;
 	char session_id[40];
