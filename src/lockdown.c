@@ -178,6 +178,9 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 		gnutls_deinit(*client->ssl_session);
 		free(client->ssl_session);
 	}
+        if (client->ssl_certificate) {
+		gnutls_certificate_free_credentials(client->ssl_certificate);
+        }
 	client->in_SSL = 0;
 
 	return ret;
@@ -1037,15 +1040,12 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	ret = LOCKDOWN_E_SSL_ERROR;
 	if (lockdown_check_result(dict, "StartSession") == RESULT_SUCCESS) {
 		// Set up GnuTLS...
-		//gnutls_anon_client_credentials_t anoncred;
-		gnutls_certificate_credentials_t xcred;
-
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: started the session OK, now trying GnuTLS\n", __func__);
 		errno = 0;
 		gnutls_global_init();
 		//gnutls_anon_allocate_client_credentials(&anoncred);
-		gnutls_certificate_allocate_credentials(&xcred);
-		gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
+		gnutls_certificate_allocate_credentials(&client->ssl_certificate);
+		gnutls_certificate_set_x509_trust_file(client->ssl_certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
 		gnutls_init(client->ssl_session, GNUTLS_CLIENT);
 		{
 			int protocol_priority[16] = { GNUTLS_SSL3, 0 };
@@ -1060,7 +1060,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 			gnutls_protocol_set_priority(*client->ssl_session, protocol_priority);
 			gnutls_mac_set_priority(*client->ssl_session, mac_priority);
 		}
-		gnutls_credentials_set(*client->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
+		gnutls_credentials_set(*client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
 
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 1...\n", __func__);
 		gnutls_transport_set_ptr(*client->ssl_session, (gnutls_transport_ptr_t) client);
