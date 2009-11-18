@@ -27,5 +27,5 @@ _iphone_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS)
 _iphone_la_LIBADD = $(top_builddir)/src/libiphone.la $(libplistmm_LIBS)
 
 iphone_wrap.cxx : $(SWIG_SOURCES)
-        $(SWIG) $(SWIG_PYTHON_OPT) $(INCLUDES) -I$(top_srcdir)/src -o $@ $<
+	$(SWIG) $(SWIG_PYTHON_OPT) $(INCLUDES) -I$(top_srcdir)/src -o $@ $<
 
