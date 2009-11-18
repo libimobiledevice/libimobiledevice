@@ -1,5 +1,5 @@
  /* swig.i */
- %module(package="libiphone") iPhone
+ %module iphone
  %feature("autodoc", "1");
  %{
  /* Includes the header in the wrapper code */

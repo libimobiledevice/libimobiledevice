@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libiphone, 0.9.4, nospam@nowhere.com)
+AC_INIT(libiphone, 0.9.5, nospam@nowhere.com)
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -103,5 +103,7 @@ if test "$enable_largefile" != no; then
     fi
 fi
 AC_SUBST(LFS_CFLAGS)
+
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile tools/Makefile swig/Makefile libiphone-1.0.pc)

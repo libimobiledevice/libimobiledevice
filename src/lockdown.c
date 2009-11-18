@@ -172,12 +172,14 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
 		ret = lockdownd_stop_session(client, client->session_id);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
-		gnutls_bye(*client->ssl_session, GNUTLS_SHUT_RDWR);
+		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
 	}
 	if (client->ssl_session) {
-		gnutls_deinit(*client->ssl_session);
-		free(client->ssl_session);
-	}
+		gnutls_deinit(client->ssl_session);
+        }
+        if (client->ssl_certificate) {
+		gnutls_certificate_free_credentials(client->ssl_certificate);
+        }
 	client->in_SSL = 0;
 
 	return ret;
@@ -229,7 +231,7 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	if (!client->in_SSL)
 		ret = iphone_device_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
 	else {
-		ssize_t res = gnutls_record_recv(*client->ssl_session, &datalen, sizeof(datalen));
+		ssize_t res = gnutls_record_recv(client->ssl_session, &datalen, sizeof(datalen));
 		if (res < 0) {
 			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
 			return LOCKDOWN_E_SSL_ERROR;
@@ -252,7 +254,7 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	} else {
 		ssize_t res = 0;
 		while ((received_bytes < datalen) && (ret == LOCKDOWN_E_SUCCESS)) {
-			res = gnutls_record_recv(*client->ssl_session, receive + received_bytes, datalen - received_bytes);
+			res = gnutls_record_recv(client->ssl_session, receive + received_bytes, datalen - received_bytes);
 			if (res < 0) {
 				log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
 				ret = LOCKDOWN_E_SSL_ERROR;
@@ -316,7 +318,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	if (!client->in_SSL)
 		ret = iphone_device_send(client->connection, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
 	else {
-		ssize_t res = gnutls_record_send(*client->ssl_session, real_query, ntohl(length) + sizeof(length));
+		ssize_t res = gnutls_record_send(client->ssl_session, real_query, ntohl(length) + sizeof(length));
 		if (res < 0) {
 			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_send: Error occured: %s\n", gnutls_strerror(res));
 			ret = LOCKDOWN_E_SSL_ERROR;
@@ -637,7 +639,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 
 	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
 	client_loc->connection = connection;
-	client_loc->ssl_session = (gnutls_session_t *) malloc(sizeof(gnutls_session_t));
+	client_loc->ssl_session = NULL;
 	client_loc->in_SSL = 0;
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
@@ -1037,16 +1039,13 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	ret = LOCKDOWN_E_SSL_ERROR;
 	if (lockdown_check_result(dict, "StartSession") == RESULT_SUCCESS) {
 		// Set up GnuTLS...
-		//gnutls_anon_client_credentials_t anoncred;
-		gnutls_certificate_credentials_t xcred;
-
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: started the session OK, now trying GnuTLS\n", __func__);
 		errno = 0;
 		gnutls_global_init();
 		//gnutls_anon_allocate_client_credentials(&anoncred);
-		gnutls_certificate_allocate_credentials(&xcred);
-		gnutls_certificate_set_x509_trust_file(xcred, "hostcert.pem", GNUTLS_X509_FMT_PEM);
-		gnutls_init(client->ssl_session, GNUTLS_CLIENT);
+		gnutls_certificate_allocate_credentials(&client->ssl_certificate);
+		gnutls_certificate_set_x509_trust_file(client->ssl_certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
+		gnutls_init(&client->ssl_session, GNUTLS_CLIENT);
 		{
 			int protocol_priority[16] = { GNUTLS_SSL3, 0 };
 			int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
@@ -1054,24 +1053,24 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 			int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
 			int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
 
-			gnutls_cipher_set_priority(*client->ssl_session, cipher_priority);
-			gnutls_compression_set_priority(*client->ssl_session, comp_priority);
-			gnutls_kx_set_priority(*client->ssl_session, kx_priority);
-			gnutls_protocol_set_priority(*client->ssl_session, protocol_priority);
-			gnutls_mac_set_priority(*client->ssl_session, mac_priority);
+			gnutls_cipher_set_priority(client->ssl_session, cipher_priority);
+			gnutls_compression_set_priority(client->ssl_session, comp_priority);
+			gnutls_kx_set_priority(client->ssl_session, kx_priority);
+			gnutls_protocol_set_priority(client->ssl_session, protocol_priority);
+			gnutls_mac_set_priority(client->ssl_session, mac_priority);
 		}
-		gnutls_credentials_set(*client->ssl_session, GNUTLS_CRD_CERTIFICATE, xcred);	// this part is killing me.
+		gnutls_credentials_set(client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
 
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 1...\n", __func__);
-		gnutls_transport_set_ptr(*client->ssl_session, (gnutls_transport_ptr_t) client);
+		gnutls_transport_set_ptr(client->ssl_session, (gnutls_transport_ptr_t) client);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 2...\n", __func__);
-		gnutls_transport_set_push_function(*client->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
+		gnutls_transport_set_push_function(client->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 3...\n", __func__);
-		gnutls_transport_set_pull_function(*client->ssl_session, (gnutls_pull_func) & lockdownd_securead);
+		gnutls_transport_set_pull_function(client->ssl_session, (gnutls_pull_func) & lockdownd_securead);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 4 -- now handshaking...\n", __func__);
 		if (errno)
 			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: WARN: errno says %s before handshake!\n", __func__, strerror(errno));
-		return_me = gnutls_handshake(*client->ssl_session);
+		return_me = gnutls_handshake(client->ssl_session);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS handshake done...\n", __func__);
 
 		if (return_me != GNUTLS_E_SUCCESS) {
