@@ -36,7 +36,7 @@ static char check_string(plist_t node, char* string)
 		plist_get_string_val(node, &msg);
 	}
 	if (PLIST_STRING != type || strcmp(msg, string)) {
-		log_debug_msg("%s: ERROR: MobileSync client did not find %s !\n", __func__, string);
+		printf("%s: ERROR: MobileSync client did not find %s !\n", __func__, string);
 		ret = 0;
 	}
 	free(msg);
