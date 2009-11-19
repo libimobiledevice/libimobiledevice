@@ -640,6 +640,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
 	client_loc->connection = connection;
 	client_loc->ssl_session = NULL;
+	client_loc->ssl_certificate = NULL;
 	client_loc->in_SSL = 0;
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
