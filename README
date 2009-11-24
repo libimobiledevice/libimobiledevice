@@ -17,7 +17,7 @@ Development Packages of:
 	libusbmuxd (within usbmuxd package, see below)
 
 Software:
-	usbmuxd (git clone http://pims.selfip.net/git/usbmuxd)
+	usbmuxd (git clone git://git.marcansoft.com/usbmuxd.git)
 	make
 	autoheader
 	automake
@@ -55,5 +55,5 @@ Mailing List:
 	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
 
 README Updated on:
-	2009-07-24
+	2009-11-24
 
