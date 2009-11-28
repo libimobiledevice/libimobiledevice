@@ -1157,7 +1157,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
  * @return AFC_E_SUCCESS if everything went well, AFC_E_INVALID_ARGUMENT
  *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
  */
-afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize)
+afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
 	char *response = NULL;
 	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));

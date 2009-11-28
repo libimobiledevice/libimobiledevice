@@ -103,7 +103,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 afc_error_t afc_remove_path(afc_client_t client, const char *path);
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to);
 afc_error_t afc_make_directory(afc_client_t client, const char *dir);
-afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize);
+afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize);
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname);
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime);
 
