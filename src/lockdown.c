@@ -971,7 +971,8 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 	return ret;
 }
 
-/** Starts SSL communication with lockdownd after the iPhone has been paired.
+/** Starts communication with lockdownd after the iPhone has been paired,
+ *  and if the device requires it, switches to SSL mode.
  *
  * @param client The lockdownd client
  * @param HostID The HostID used with this phone
@@ -1038,9 +1039,24 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	}
 
 	ret = LOCKDOWN_E_SSL_ERROR;
+
+	int session_ok = 0; 
+	uint8_t UseSSL = 0;
+
 	if (lockdown_check_result(dict, "StartSession") == RESULT_SUCCESS) {
+		plist_t enable_ssl = plist_dict_get_item(dict, "EnableSessionSSL");
+		if (enable_ssl && (plist_get_node_type(enable_ssl) == PLIST_BOOLEAN)) {
+			plist_get_bool_val(enable_ssl, &UseSSL);
+		}
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Session startup OK\n", __func__);
+		session_ok = 1;
+	}
+	if (session_ok && !UseSSL) {
+		client->in_SSL = 0;
+		ret = LOCKDOWN_E_SUCCESS;
+	} else if (session_ok) {
 		// Set up GnuTLS...
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: started the session OK, now trying GnuTLS\n", __func__);
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Switching to SSL mode\n", __func__);
 		errno = 0;
 		gnutls_global_init();
 		//gnutls_anon_allocate_client_credentials(&anoncred);
