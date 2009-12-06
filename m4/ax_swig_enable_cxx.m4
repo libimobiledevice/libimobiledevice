@@ -47,5 +47,7 @@ AU_ALIAS([SWIG_ENABLE_CXX], [AX_SWIG_ENABLE_CXX])
 AC_DEFUN([AX_SWIG_ENABLE_CXX],[
         AC_REQUIRE([AC_PROG_SWIG])
         AC_REQUIRE([AC_PROG_CXX])
-        SWIG="$SWIG -c++"
+        if test "$SWIG" != "false"; then
+                SWIG="$SWIG -c++"
+        fi
 ])

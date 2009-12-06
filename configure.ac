@@ -46,6 +46,24 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
 
+python_bindings=yes
+AC_ARG_WITH([swig],
+            [AS_HELP_STRING([--without-swig],
+            [build Python bindings using swig (default is yes)])],
+            [build_swig=false],
+	    [build_swig=true])
+if test "$build_swig" = "true" -a "$SWIG" != "false" ; then
+            SWIG_SUB=swig
+else
+            SWIG_SUB=
+	    python_bindings=no
+fi
+
+AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG_SUB" = "xswig"])
+
+AC_SUBST([DEV_SUB])
+
+
 AC_ARG_ENABLE([dev-tools],
             [AS_HELP_STRING([--enable-dev-tools],
             [build development helper tools (default is no)])],
@@ -57,8 +75,10 @@ if test "$build_dev_tools" = true; then
 			     [],
 			     [AC_MSG_ERROR([Please install readline development headers])]
 	    )
+	    building_dev_tools=yes
 else
             DEV_SUB=
+	    building_dev_tools=no
 fi
 
 AM_CONDITIONAL([ENABLE_DEVTOOLS],[test "x$DEV_SUB" = "xdev"])
@@ -71,7 +91,10 @@ AC_ARG_ENABLE([debug-code],
             [no_debug_code=false],
             [no_debug_code=true])
 if test "$no_debug_code" = true; then
+	building_debug_code=no
 	AC_DEFINE(STRIP_DEBUG_CODE,1,[Strip debug reporting code])
+else
+	building_debug_code=yes
 fi
 
 AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith  -Wwrite-strings -Wswitch-default -Wno-unused-parameter")
@@ -106,4 +129,26 @@ AC_SUBST(LFS_CFLAGS)
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_OUTPUT(Makefile src/Makefile include/Makefile fdi/Makefile dev/Makefile tools/Makefile swig/Makefile libiphone-1.0.pc)
+AC_OUTPUT([
+Makefile
+src/Makefile
+include/Makefile
+fdi/Makefile
+dev/Makefile
+tools/Makefile
+swig/Makefile
+libiphone-1.0.pc
+])
+
+echo "
+Configuration for $PACKAGE $VERSION:
+-------------------------------------------
+
+  Install prefix: .........: $prefix
+  Debug code ..............: $building_debug_code
+  Dev tools ...............: $building_dev_tools
+  Python bindings .........: $python_bindings
+
+  Now type 'make' to build $PACKAGE $VERSION,
+  and then 'make install' for installation.
+"

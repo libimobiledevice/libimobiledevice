@@ -1,5 +1,6 @@
 INCLUDES = -I$(top_srcdir)/include  $(libplist_CFLAGS) $(SWIG_PYTHON_CPPFLAGS) -I$(oldincludedir)
 
+if HAVE_SWIG
 BUILT_SOURCES = iphone_wrap.cxx
 SWIG_SOURCES = iphone.i
 
@@ -28,4 +29,6 @@ _iphone_la_LIBADD = $(top_builddir)/src/libiphone.la $(libplistmm_LIBS)
 
 iphone_wrap.cxx : $(SWIG_SOURCES)
 	$(SWIG) $(SWIG_PYTHON_OPT) $(INCLUDES) -I$(top_srcdir)/src -o $@ $<
+
+endif # HAVE_SWIG
 
