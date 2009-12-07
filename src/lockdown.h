@@ -33,6 +33,7 @@ struct lockdownd_client_int {
 	gnutls_certificate_credentials_t ssl_certificate;
 	int in_SSL;
 	char *session_id;
+	char *uuid;
 };
 
 lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key);

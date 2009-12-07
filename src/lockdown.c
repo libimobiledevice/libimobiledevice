@@ -220,6 +220,9 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 	if (client->session_id) {
 		free(client->session_id);
 	}
+	if (client->uuid) {
+		free(client->uuid);
+	}
 
 	free(client);
 	return ret;
@@ -655,31 +658,26 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->ssl_certificate = NULL;
 	client_loc->in_SSL = 0;
 	client_loc->session_id = NULL;
+	client_loc->uuid = NULL;
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
 		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
 	}
 
-	char *uuid = NULL;
-	ret = iphone_device_get_uuid(device, &uuid);
+	ret = iphone_device_get_uuid(device, &client_loc->uuid);
 	if (LOCKDOWN_E_SUCCESS != ret) {
 		log_debug_msg("%s: failed to get device uuid.\n", __func__);
 	}
-	log_debug_msg("%s: device uuid: %s\n", __func__, uuid);
+	log_debug_msg("%s: device uuid: %s\n", __func__, client_loc->uuid);
 
 	userpref_get_host_id(&host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
 
-	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(uuid))
-		ret = lockdownd_pair(client_loc, uuid, host_id);
-
-	if (uuid) {
-		free(uuid);
-		uuid = NULL;
-	}
+	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->uuid))
+		ret = lockdownd_pair(client_loc, host_id);
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_ssl_session(client_loc, host_id);
@@ -703,9 +701,14 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 /** Generates the appropriate keys and pairs the device. It's part of the
  *  lockdownd handshake.
  *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *host_id)
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
@@ -764,7 +767,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 	/* store public key in config if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
-		userpref_set_device_public_key(uuid, public_key);
+		userpref_set_device_public_key(client->uuid, public_key);
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
 	}
@@ -1027,26 +1030,22 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 
 			if (!strcmp(error, "InvalidHostID")) {
 				/* hostid is unknown. Pair and try again */
-				char *uuid = NULL;
 				char *host_id = NULL;
 				userpref_get_host_id(&host_id);
 
-				if (LOCKDOWN_E_SUCCESS == lockdownd_get_device_uuid(client, &uuid) ) {
-					if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, uuid, host_id) ) {
-						/* start session again */
-						plist_free(dict);
-						dict = plist_new_dict();
-						plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
-						plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
+				if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, host_id) ) {
+					/* start session again */
+					plist_free(dict);
+					dict = plist_new_dict();
+					plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
+					plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
-						ret = lockdownd_send(client, dict);
-						plist_free(dict);
-						dict = NULL;
+					ret = lockdownd_send(client, dict);
+					plist_free(dict);
+					dict = NULL;
 
-						ret = lockdownd_recv(client, &dict);
-					}
+					ret = lockdownd_recv(client, &dict);
 				}
-				free(uuid);
 				free(host_id);
 			}
 			free(error);
