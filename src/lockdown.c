@@ -755,8 +755,8 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	if (lockdown_check_result(dict, "Pair") == RESULT_SUCCESS) {
-		ret = LOCKDOWN_E_SUCCESS;
+	if (lockdown_check_result(dict, "Pair") != RESULT_SUCCESS) {
+		ret = LOCKDOWN_E_PAIRING_FAILED;
 	}
 	plist_free(dict);
 	dict = NULL;
@@ -767,7 +767,6 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 		userpref_set_device_public_key(uuid, public_key);
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
-		ret = LOCKDOWN_E_PAIRING_FAILED;
 	}
 	free(public_key.data);
 	return ret;
