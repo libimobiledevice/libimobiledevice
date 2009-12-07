@@ -698,17 +698,17 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	return ret;
 }
 
-/** Generates the appropriate keys and pairs the device. It's part of the
- *  lockdownd handshake.
+/** Function used internally by lockdownd_pair() and lockdownd_validate_pair()
  *
  * @param client The lockdown client to pair with.
  * @param host_id The HostID to use for pairing. If NULL is passed, then
  *    the HostID of the current machine is used. A new HostID will be
  *    generated automatically when pairing is done for the first time.
+ * @param verb This is either "Pair" or "ValidatePair".
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host_id, const char *verb)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
@@ -748,7 +748,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id_loc));
 	plist_dict_insert_item(dict_record, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
 
-	plist_dict_insert_item(dict, "Request", plist_new_string("Pair"));
+	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
 
 	/* send to iPhone */
 	ret = lockdownd_send(client, dict);
@@ -768,7 +768,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	if (lockdown_check_result(dict, "Pair") != RESULT_SUCCESS) {
+	if (lockdown_check_result(dict, verb) != RESULT_SUCCESS) {
 		ret = LOCKDOWN_E_PAIRING_FAILED;
 	}
 	plist_free(dict);
@@ -776,13 +776,46 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 
 	/* store public key in config if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s success\n", __func__, verb);
 		userpref_set_device_public_key(client->uuid, public_key);
 	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s failure\n", __func__, verb);
 	}
 	free(public_key.data);
 	return ret;
+}
+
+/** 
+ * Pairs the device with the given HostID.
+ * It's part of the lockdownd handshake.
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
+{
+	return lockdownd_do_pair(client, host_id, "Pair");
+}
+
+/** 
+ * Pairs the device with the given HostID. The difference to lockdownd_pair()
+ * is that the specified host will become trusted host of the device.
+ * It's part of the lockdownd handshake.
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id)
+{
+	return lockdownd_do_pair(client, host_id, "ValidatePair");
 }
 
 /**
