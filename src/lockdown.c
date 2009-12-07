@@ -719,6 +719,8 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 	gnutls_datum_t root_cert = { NULL, 0 };
 	gnutls_datum_t public_key = { NULL, 0 };
 
+	char *host_id_loc = host_id;
+
 	ret = lockdownd_get_device_public_key(client, &public_key);
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		log_debug_msg("%s: device refused to send public key.\n", __func__);
@@ -732,6 +734,10 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 		return ret;
 	}
 
+	if (!host_id) {
+		userpref_get_host_id(&host_id_loc);
+	}
+
 	/* Setup Pair request plist */
 	dict = plist_new_dict();
 	dict_record = plist_new_dict();
@@ -739,7 +745,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 
 	plist_dict_insert_item(dict_record, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
 	plist_dict_insert_item(dict_record, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
-	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id));
+	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id_loc));
 	plist_dict_insert_item(dict_record, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
 
 	plist_dict_insert_item(dict, "Request", plist_new_string("Pair"));
@@ -748,6 +754,10 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
+
+	if (!host_id) {
+		free(host_id_loc);
+	}
 
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
