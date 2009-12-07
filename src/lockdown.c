@@ -120,13 +120,18 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
+	if (!client->session_id) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: no session_id given, cannot stop session\n", __func__);
+		return LOCKDOWN_E_INVALID_ARG;
+	}
+
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
 	plist_dict_insert_item(dict,"SessionID", plist_new_string(client->session_id));
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping session %s\n", __func__, client->session_id);
 
 	ret = lockdownd_send(client, dict);
 
@@ -147,6 +152,9 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 	}
 	plist_free(dict);
 	dict = NULL;
+
+	free(client->session_id);
+	client->session_id = NULL;
 
 	return ret;
 }
@@ -207,6 +215,10 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		if ((ret = iphone_device_disconnect(client->connection)) != IPHONE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
 		}
+	}
+
+	if (client->session_id) {
+		free(client->session_id);
 	}
 
 	free(client);
@@ -642,6 +654,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->ssl_session = NULL;
 	client_loc->ssl_certificate = NULL;
 	client_loc->in_SSL = 0;
+	client_loc->session_id = NULL;
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
@@ -985,7 +998,10 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	uint32_t return_me = 0;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	client->session_id[0] = '\0';
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
+	}
 
 	/* Setup DevicePublicKey request plist */
 	dict = plist_new_dict();
@@ -1100,27 +1116,16 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
-	/* store session id */
+	/* store session id, we need it for StopSession */
 	plist_t session_node = plist_dict_get_item(dict, "SessionID");
-	if (session_node) {
-
-		plist_type session_node_type = plist_get_node_type(session_node);
-
-		if (session_node_type == PLIST_STRING) {
-
-			char *session_id = NULL;
-			plist_get_string_val(session_node, &session_id);
-
-			if (session_node_type == PLIST_STRING && session_id) {
-				/* we need to store the session ID for StopSession */
-				strcpy(client->session_id, session_id);
-				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
-			}
-			if (session_id)
-				free(session_id);
-		}
-	} else
+	if (session_node && (plist_get_node_type(session_node) == PLIST_STRING)) {
+		plist_get_string_val(session_node, &client->session_id);
+	}
+	if (client->session_id) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
+	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Failed to get SessionID!\n", __func__);
+	}
 	plist_free(dict);
 	dict = NULL;
 
