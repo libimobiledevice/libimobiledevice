@@ -115,7 +115,7 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id)
+lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -124,7 +124,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
-	plist_dict_insert_item(dict,"SessionID", plist_new_string(session_id));
+	plist_dict_insert_item(dict,"SessionID", plist_new_string(client->session_id));
 
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 
@@ -170,7 +170,7 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 
 	if (client->in_SSL) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
-		ret = lockdownd_stop_session(client, client->session_id);
+		ret = lockdownd_stop_session(client);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
 		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
 	}
