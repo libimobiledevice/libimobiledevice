@@ -33,6 +33,7 @@ extern "C" {
 #define NP_E_SUCCESS                0
 #define NP_E_INVALID_ARG           -1
 #define NP_E_PLIST_ERROR           -2
+#define NP_E_CONN_FAILED           -3
 
 #define NP_E_UNKNOWN_ERROR       -256
 
