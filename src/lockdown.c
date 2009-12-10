@@ -115,18 +115,23 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id)
+lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
+
+	if (!client->session_id) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: no session_id given, cannot stop session\n", __func__);
+		return LOCKDOWN_E_INVALID_ARG;
+	}
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
-	plist_dict_insert_item(dict,"SessionID", plist_new_string(session_id));
+	plist_dict_insert_item(dict,"SessionID", plist_new_string(client->session_id));
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping session %s\n", __func__, client->session_id);
 
 	ret = lockdownd_send(client, dict);
 
@@ -147,6 +152,9 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	}
 	plist_free(dict);
 	dict = NULL;
+
+	free(client->session_id);
+	client->session_id = NULL;
 
 	return ret;
 }
@@ -170,7 +178,7 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 
 	if (client->in_SSL) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
-		ret = lockdownd_stop_session(client, client->session_id);
+		ret = lockdownd_stop_session(client);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
 		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
 	}
@@ -207,6 +215,13 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		if ((ret = iphone_device_disconnect(client->connection)) != IPHONE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
 		}
+	}
+
+	if (client->session_id) {
+		free(client->session_id);
+	}
+	if (client->uuid) {
+		free(client->uuid);
 	}
 
 	free(client);
@@ -642,31 +657,27 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->ssl_session = NULL;
 	client_loc->ssl_certificate = NULL;
 	client_loc->in_SSL = 0;
+	client_loc->session_id = NULL;
+	client_loc->uuid = NULL;
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
 		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
 	}
 
-	char *uuid = NULL;
-	ret = iphone_device_get_uuid(device, &uuid);
+	ret = iphone_device_get_uuid(device, &client_loc->uuid);
 	if (LOCKDOWN_E_SUCCESS != ret) {
 		log_debug_msg("%s: failed to get device uuid.\n", __func__);
 	}
-	log_debug_msg("%s: device uuid: %s\n", __func__, uuid);
+	log_debug_msg("%s: device uuid: %s\n", __func__, client_loc->uuid);
 
 	userpref_get_host_id(&host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
 
-	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(uuid))
-		ret = lockdownd_pair(client_loc, uuid, host_id);
-
-	if (uuid) {
-		free(uuid);
-		uuid = NULL;
-	}
+	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->uuid))
+		ret = lockdownd_pair(client_loc, host_id);
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_ssl_session(client_loc, host_id);
@@ -687,12 +698,17 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	return ret;
 }
 
-/** Generates the appropriate keys and pairs the device. It's part of the
- *  lockdownd handshake.
+/** Function used internally by lockdownd_pair() and lockdownd_validate_pair()
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ * @param verb This is either "Pair" or "ValidatePair".
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *host_id)
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host_id, const char *verb)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
@@ -702,6 +718,8 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 	gnutls_datum_t host_cert = { NULL, 0 };
 	gnutls_datum_t root_cert = { NULL, 0 };
 	gnutls_datum_t public_key = { NULL, 0 };
+
+	char *host_id_loc = host_id;
 
 	ret = lockdownd_get_device_public_key(client, &public_key);
 	if (ret != LOCKDOWN_E_SUCCESS) {
@@ -716,6 +734,10 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 		return ret;
 	}
 
+	if (!host_id) {
+		userpref_get_host_id(&host_id_loc);
+	}
+
 	/* Setup Pair request plist */
 	dict = plist_new_dict();
 	dict_record = plist_new_dict();
@@ -723,15 +745,19 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 
 	plist_dict_insert_item(dict_record, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
 	plist_dict_insert_item(dict_record, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
-	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id));
+	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id_loc));
 	plist_dict_insert_item(dict_record, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
 
-	plist_dict_insert_item(dict, "Request", plist_new_string("Pair"));
+	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
 
 	/* send to iPhone */
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
+
+	if (!host_id) {
+		free(host_id_loc);
+	}
 
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
@@ -742,22 +768,54 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *uuid, char *ho
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	if (lockdown_check_result(dict, "Pair") == RESULT_SUCCESS) {
-		ret = LOCKDOWN_E_SUCCESS;
+	if (lockdown_check_result(dict, verb) != RESULT_SUCCESS) {
+		ret = LOCKDOWN_E_PAIRING_FAILED;
 	}
 	plist_free(dict);
 	dict = NULL;
 
 	/* store public key in config if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair success\n", __func__);
-		userpref_set_device_public_key(uuid, public_key);
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s success\n", __func__, verb);
+		userpref_set_device_public_key(client->uuid, public_key);
 	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pair failure\n", __func__);
-		ret = LOCKDOWN_E_PAIRING_FAILED;
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s failure\n", __func__, verb);
 	}
 	free(public_key.data);
 	return ret;
+}
+
+/** 
+ * Pairs the device with the given HostID.
+ * It's part of the lockdownd handshake.
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
+{
+	return lockdownd_do_pair(client, host_id, "Pair");
+}
+
+/** 
+ * Pairs the device with the given HostID. The difference to lockdownd_pair()
+ * is that the specified host will become trusted host of the device.
+ * It's part of the lockdownd handshake.
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for pairing. If NULL is passed, then
+ *    the HostID of the current machine is used. A new HostID will be
+ *    generated automatically when pairing is done for the first time.
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id)
+{
+	return lockdownd_do_pair(client, host_id, "ValidatePair");
 }
 
 /**
@@ -985,7 +1043,10 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	uint32_t return_me = 0;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	client->session_id[0] = '\0';
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
+	}
 
 	/* Setup DevicePublicKey request plist */
 	dict = plist_new_dict();
@@ -1012,26 +1073,22 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 
 			if (!strcmp(error, "InvalidHostID")) {
 				/* hostid is unknown. Pair and try again */
-				char *uuid = NULL;
 				char *host_id = NULL;
 				userpref_get_host_id(&host_id);
 
-				if (LOCKDOWN_E_SUCCESS == lockdownd_get_device_uuid(client, &uuid) ) {
-					if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, uuid, host_id) ) {
-						/* start session again */
-						plist_free(dict);
-						dict = plist_new_dict();
-						plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
-						plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
+				if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, host_id) ) {
+					/* start session again */
+					plist_free(dict);
+					dict = plist_new_dict();
+					plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
+					plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
-						ret = lockdownd_send(client, dict);
-						plist_free(dict);
-						dict = NULL;
+					ret = lockdownd_send(client, dict);
+					plist_free(dict);
+					dict = NULL;
 
-						ret = lockdownd_recv(client, &dict);
-					}
+					ret = lockdownd_recv(client, &dict);
 				}
-				free(uuid);
 				free(host_id);
 			}
 			free(error);
@@ -1100,27 +1157,16 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
-	/* store session id */
+	/* store session id, we need it for StopSession */
 	plist_t session_node = plist_dict_get_item(dict, "SessionID");
-	if (session_node) {
-
-		plist_type session_node_type = plist_get_node_type(session_node);
-
-		if (session_node_type == PLIST_STRING) {
-
-			char *session_id = NULL;
-			plist_get_string_val(session_node, &session_id);
-
-			if (session_node_type == PLIST_STRING && session_id) {
-				/* we need to store the session ID for StopSession */
-				strcpy(client->session_id, session_id);
-				log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
-			}
-			if (session_id)
-				free(session_id);
-		}
-	} else
+	if (session_node && (plist_get_node_type(session_node) == PLIST_STRING)) {
+		plist_get_string_val(session_node, &client->session_id);
+	}
+	if (client->session_id) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
+	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Failed to get SessionID!\n", __func__);
+	}
 	plist_free(dict);
 	dict = NULL;
 

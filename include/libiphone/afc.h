@@ -95,15 +95,15 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char **
 afc_error_t afc_file_open(afc_client_t client, const char *filename, afc_file_mode_t file_mode, uint64_t *handle);
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle);
 afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation);
-afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, int length, uint32_t *bytes);
-afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, int length, uint32_t *bytes);
+afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read);
+afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written);
 afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, int whence);
 afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position);
 afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize);
 afc_error_t afc_remove_path(afc_client_t client, const char *path);
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to);
 afc_error_t afc_make_directory(afc_client_t client, const char *dir);
-afc_error_t afc_truncate(afc_client_t client, const char *path, off_t newsize);
+afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize);
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname);
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime);
 
