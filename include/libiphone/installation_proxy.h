@@ -47,6 +47,9 @@ typedef enum {
     INSTPROXY_APPTYPE_USER = 2
 } instproxy_apptype_t;
 
+#define INSTPROXY_ARCHIVE_APP_ONLY (1 << 0)
+#define INSTPROXY_ARCHIVE_SKIP_UNINSTALL (1 << 1)
+
 struct instproxy_client_int;
 typedef struct instproxy_client_int *instproxy_client_t;
 
@@ -62,7 +65,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
 instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb);
 
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *result);
-instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb);
+instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, uint32_t options, instproxy_status_cb_t status_cb);
 instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb);
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb);
 

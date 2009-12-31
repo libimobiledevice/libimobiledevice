@@ -676,6 +676,11 @@ leave_unlock:
  *
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the app to archive.
+ * @param options This is either 0 for default behaviour (make an archive
+ *        including app/user settings etc. AND uninstall the application),
+ *        or one or a combination of the following options:
+ *        INSTPROXY_ARCHIVE_APP_ONLY (1)
+ *        INSTPROXY_ARCHIVE_SKIP_UNINSTALL (2)
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -687,7 +692,7 @@ leave_unlock:
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, uint32_t options, instproxy_status_cb_t status_cb)
 {
 	if (!client || !client->connection || !appid)
 		return INSTPROXY_E_INVALID_ARG;
@@ -700,6 +705,16 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
+	if (options > 0) {
+		plist_t client_opts = plist_new_dict();
+		if (options & INSTPROXY_ARCHIVE_APP_ONLY) {
+			plist_dict_insert_item(client_opts, "ArchiveType", plist_new_string("ApplicationOnly"));
+		}
+		if (options & INSTPROXY_ARCHIVE_SKIP_UNINSTALL) {
+			plist_dict_insert_item(client_opts, "SkipUninstall", plist_new_bool(1));
+		}
+		plist_dict_insert_item(dict, "ClientOptions", client_opts);
+	}
 	plist_dict_insert_item(dict, "Command", plist_new_string("Archive"));
 
 	instproxy_lock(client);
