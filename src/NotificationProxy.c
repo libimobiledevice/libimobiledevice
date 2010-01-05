@@ -62,7 +62,9 @@ static void np_unlock(np_client_t client)
  * @param client NP to send data to
  * @param dict plist to send
  *
- * @return NP_E_SUCCESS or an error code.
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client or dict
+ *      are NULL, NP_E_PLIST_ERROR when dict is not a valid plist,
+ *      or NP_E_UNKNOWN_ERROR when an unspecified error occurs.
  */
 static np_error_t np_plist_send(np_client_t client, plist_t dict)
 {
@@ -105,11 +107,14 @@ static np_error_t np_plist_send(np_client_t client, plist_t dict)
 
 /** Makes a connection to the NP service on the phone. 
  * 
- * @param phone The iPhone to connect on.
- * @param s_port The source port. 
- * @param d_port The destination port. 
+ * @param device The device to connect to.
+ * @param dst_port Destination port (usually given by lockdownd_start_service).
+ * @param client Pointer that will be set to a newly allocated np_client_t
+ *    upon successful return.
  * 
- * @return A handle to the newly-connected client or NULL upon error.
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when device is NULL,
+ *   or NP_E_CONN_FAILED when the connection to the device could not be
+ *   established.
  */
 np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *client)
 {
@@ -123,7 +128,7 @@ np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *clie
 	/* Attempt connection */
 	iphone_connection_t connection = NULL;
 	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
-		return NP_E_UNKNOWN_ERROR;
+		return NP_E_CONN_FAILED;
 	}
 
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
@@ -137,9 +142,11 @@ np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *clie
 	return NP_E_SUCCESS;
 }
 
-/** Disconnects an NP client from the phone.
+/** Disconnects an NP client from the device.
  * 
  * @param client The client to disconnect.
+ *
+ * @return NP_E_SUCCESS on success, or NP_E_INVALID_ARG when client is NULL.
  */
 np_error_t np_client_free(np_client_t client)
 {
@@ -168,6 +175,8 @@ np_error_t np_client_free(np_client_t client)
  *
  * @param client The client to send to
  * @param notification The notification message to send
+ *
+ * @return NP_E_SUCCESS on success, or an error returned by np_plist_send
  */
 np_error_t np_post_notification(np_client_t client, const char *notification)
 {
@@ -201,6 +210,9 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
  *
  * @param client The client to send to
  * @param notification The notifications that should be observed.
+ *
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ *    notification are NULL, or an error returned by np_plist_send.
  */
 np_error_t np_observe_notification( np_client_t client, const char *notification )
 {
@@ -241,6 +253,9 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
  *  observed. This is expected to be an array of const char* that MUST have a
  *  terminating NULL entry. However this parameter can be NULL; in this case,
  *  the default set of notifications will be used.
+ *
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client is null,
+ *   or an error returned by np_observe_notification.
  */
 np_error_t np_observe_notifications(np_client_t client, const char **notification_spec)
 {
@@ -275,7 +290,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  *  with the notification that has been received.
  *
  * @return 0 if a notification has been received or nothing has been received,
- *         or an error value if an error occured.
+ *         or a negative value if an error occured.
  *
  * @note You probably want to check out np_set_notify_callback
  * @see np_set_notify_callback
@@ -401,10 +416,14 @@ gpointer np_notifier( gpointer arg )
  *
  * @param client the NP client
  * @param notify_cb pointer to a callback function or NULL to de-register a
- *        previously set callback function
+ *        previously set callback function.
+ *
+ * @note Only one callback function can be registered at the same time;
+ *       any previously set callback function will be removed automatically.
  *
  * @return NP_E_SUCCESS when the callback was successfully registered,
- *         or an error value when an error occured.
+ *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
+ *         the callback thread could no be created.
  */
 np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb )
 {

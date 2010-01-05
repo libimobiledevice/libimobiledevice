@@ -8,6 +8,8 @@ libiphone_la_SOURCES = iphone.c iphone.h \
 		       lockdown.c lockdown.h\
 		       AFC.c AFC.h\
 		       NotificationProxy.c NotificationProxy.h\
+		       InstallationProxy.c InstallationProxy.h\
+		       SBServices.c SBServices.h\
 		       userpref.c userpref.h\
 		       utils.c utils.h\
 		       MobileSync.c MobileSync.h

@@ -53,6 +53,7 @@ typedef struct iphone_connection_int *iphone_connection_t;
 #define DBGMASK_NONE       0x0000
 #define DBGMASK_LOCKDOWND  (1 << 1)
 #define DBGMASK_MOBILESYNC (1 << 2)
+#define DBGMASK_INSTPROXY  (1 << 3)
 
 /* generic */
 void iphone_set_debug_mask(uint16_t mask);
