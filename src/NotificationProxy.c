@@ -56,53 +56,28 @@ static void np_unlock(np_client_t client)
 }
 
 /**
- * Sends an xml plist to the device using the connection specified in client.
- * This function is only used internally.
+ * Convert an iphone_error_t value to an np_error_t value.
+ * Used internally to get correct error codes when using plist helper
+ * functions.
  *
- * @param client NP to send data to
- * @param dict plist to send
+ * @param err An iphone_error_t error code
  *
- * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client or dict
- *      are NULL, NP_E_PLIST_ERROR when dict is not a valid plist,
- *      or NP_E_UNKNOWN_ERROR when an unspecified error occurs.
+ * @return A matching np_error_t error code,
+ *     NP_E_UNKNOWN_ERROR otherwise.
  */
-static np_error_t np_plist_send(np_client_t client, plist_t dict)
+static np_error_t iphone_to_np_error(iphone_error_t err)
 {
-	char *XML_content = NULL;
-	uint32_t length = 0;
-	uint32_t nlen = 0;
-	int bytes = 0;
-	np_error_t res = NP_E_UNKNOWN_ERROR;
-
-	if (!client || !dict) {
-		return NP_E_INVALID_ARG;
+	switch (err) {
+		case IPHONE_E_SUCCESS:
+			return NP_E_SUCCESS;
+		case IPHONE_E_INVALID_ARG:
+			return NP_E_INVALID_ARG;
+		case IPHONE_E_PLIST_ERROR:
+			return NP_E_PLIST_ERROR;
+		default:
+			break;
 	}
-
-	plist_to_xml(dict, &XML_content, &length);
-
-	if (!XML_content || length == 0) {
-		return NP_E_PLIST_ERROR;
-	}
-
-	nlen = htonl(length);
-	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
-	if (bytes == sizeof(nlen)) {
-		iphone_device_send(client->connection, XML_content, length, (uint32_t*)&bytes);
-		if (bytes > 0) {
-			if ((uint32_t)bytes == length) {
-				res = NP_E_SUCCESS;
-			} else {
-				log_debug_msg("%s: ERROR: Could not send all data (%d of %d)!\n", __func__, bytes, length);
-			}
-		}
-	}
-	if (bytes <= 0) {
-		log_debug_msg("%s: ERROR: sending to device failed.\n", __func__);
-	}
-
-	free(XML_content);
-
-	return res;
+	return NP_E_UNKNOWN_ERROR;
 }
 
 /** Makes a connection to the NP service on the phone. 
@@ -189,13 +164,13 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 	plist_dict_insert_item(dict,"Command", plist_new_string("PostNotification"));
 	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
-	np_error_t res = np_plist_send(client, dict);
+	np_error_t res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
 	plist_free(dict);
 
 	dict = plist_new_dict();
 	plist_dict_insert_item(dict,"Command", plist_new_string("Shutdown"));
 
-	res = np_plist_send(client, dict);
+	res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
 	plist_free(dict);
 
 	if (res != NP_E_SUCCESS) {
@@ -225,7 +200,7 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 	plist_dict_insert_item(dict,"Command", plist_new_string("ObserveNotification"));
 	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
-	np_error_t res = np_plist_send(client, dict);
+	np_error_t res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
 	if (res != NP_E_SUCCESS) {
 		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
 	}
@@ -297,10 +272,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  */
 static int np_get_notification(np_client_t client, char **notification)
 {
-	uint32_t bytes = 0;
 	int res = 0;
-	uint32_t pktlen = 0;
-	char *XML_content = NULL;
 	plist_t dict = NULL;
 
 	if (!client || !client->connection || *notification)
@@ -308,72 +280,46 @@ static int np_get_notification(np_client_t client, char **notification)
 
 	np_lock(client);
 
-	iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, 500);
-	log_debug_msg("NotificationProxy: initial read=%i\n", bytes);
-	if (bytes < 4) {
+	iphone_device_receive_plist_with_timeout(client->connection, &dict, 500);
+	if (!dict) {
 		log_debug_msg("NotificationProxy: no notification received!\n");
 		res = 0;
 	} else {
-		if ((char)pktlen == 0) {
-			pktlen = ntohl(pktlen);
-			log_debug_msg("NotificationProxy: %d bytes following\n", pktlen);
-			XML_content = (char*)malloc(pktlen);
-			log_debug_msg("pointer %p\n", XML_content);
+		char *cmd_value = NULL;
+		plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
 
-			iphone_device_recv_timeout(client->connection, XML_content, pktlen, &bytes, 1000);
-			if (bytes <= 0) {
-				res = -1;
-			} else {
-				log_debug_msg("NotificationProxy: received data:\n");
-				log_debug_buffer(XML_content, pktlen);
-
-				plist_from_xml(XML_content, bytes, &dict);
-				if (!dict) {
-					np_unlock(client);
-					return -2;
-				}
-
-				char *cmd_value = NULL;
-				plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
-
-				if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
-					plist_get_string_val(cmd_value_node, &cmd_value);
-				}
-
-				if (cmd_value && !strcmp(cmd_value, "RelayNotification")) {
-					char *name_value = NULL;
-					plist_t name_value_node = plist_dict_get_item(dict, "Name");
-
-					if (plist_get_node_type(name_value_node) == PLIST_STRING) {
-						plist_get_string_val(name_value_node, &name_value);
-					}
-
-					res = -2;
-					if (name_value_node && name_value) {
-						*notification = name_value;
-						log_debug_msg("%s: got notification %s\n", __func__, name_value);
-						res = 0;
-					}
-				} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
-					log_debug_msg("%s: ERROR: NotificationProxy died!\n", __func__);
-					res = -1;
-				} else if (cmd_value) {
-					log_debug_msg("%d: unknown NotificationProxy command '%s' received!\n", __func__);
-					res = -1;
-				} else {
-					res = -2;
-				}
-				if (cmd_value) {
-					free(cmd_value);
-				}
-				plist_free(dict);
-				dict = NULL;
-				free(XML_content);
-				XML_content = NULL;
-			}
-		} else {
-			res = -1;
+		if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
+			plist_get_string_val(cmd_value_node, &cmd_value);
 		}
+
+		if (cmd_value && !strcmp(cmd_value, "RelayNotification")) {
+			char *name_value = NULL;
+			plist_t name_value_node = plist_dict_get_item(dict, "Name");
+
+			if (plist_get_node_type(name_value_node) == PLIST_STRING) {
+				plist_get_string_val(name_value_node, &name_value);
+			}
+
+			res = -2;
+			if (name_value_node && name_value) {
+				*notification = name_value;
+				log_debug_msg("%s: got notification %s\n", __func__, name_value);
+				res = 0;
+			}
+		} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
+			log_debug_msg("%s: ERROR: NotificationProxy died!\n", __func__);
+			res = -1;
+		} else if (cmd_value) {
+			log_debug_msg("%d: unknown NotificationProxy command '%s' received!\n", __func__);
+			res = -1;
+		} else {
+			res = -2;
+		}
+		if (cmd_value) {
+			free(cmd_value);
+		}
+		plist_free(dict);
+		dict = NULL;
 	}
 
 	np_unlock(client);
