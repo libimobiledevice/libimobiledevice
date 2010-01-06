@@ -56,112 +56,28 @@ static void instproxy_unlock(instproxy_client_t client)
 }
 
 /**
- * Sends an xml plist to the device using the connection specified in client.
- * This function is only used internally.
+ * Convert an iphone_error_t value to an instproxy_error_t value.
+ * Used internally to get correct error codes when using plist helper
+ * functions.
  *
- * @param client The installation_proxy to send data to
- * @param plist plist to send
+ * @param err An iphone_error_t error code
  *
- * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_INVALID_ARG when client
- *      or plist are NULL, INSTPROXY_E_PLIST_ERROR when dict is not a valid
- *      plist, or INSTPROXY_E_UNKNOWN_ERROR when an unspecified error occurs.
+ * @return A matching instproxy_error_t error code,
+ *     INSTPROXY_E_UNKNOWN_ERROR otherwise.
  */
-static instproxy_error_t instproxy_plist_send(instproxy_client_t client, plist_t plist)
+static instproxy_error_t iphone_to_instproxy_error(iphone_error_t err)
 {
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-	char *XML_content = NULL;
-	uint32_t length = 0;
-	uint32_t nlen = 0;
-	int bytes = 0;
-
-	if (!client || !plist) {
-		return INSTPROXY_E_INVALID_ARG;
+	switch (err) {
+		case IPHONE_E_SUCCESS:
+			return INSTPROXY_E_SUCCESS;
+		case IPHONE_E_INVALID_ARG:
+			return INSTPROXY_E_INVALID_ARG;
+		case IPHONE_E_PLIST_ERROR:
+			return INSTPROXY_E_PLIST_ERROR;
+		default:
+			break;
 	}
-
-	plist_to_xml(plist, &XML_content, &length);
-
-	if (!XML_content || length == 0) {
-		return INSTPROXY_E_PLIST_ERROR;
-	}
-
-	nlen = htonl(length);
-	log_debug_msg("%s: sending %d bytes\n", __func__, length);
-	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
-	if (bytes == sizeof(nlen)) {
-		iphone_device_send(client->connection, XML_content, length, (uint32_t*)&bytes);
-		if (bytes > 0) {
-			log_debug_msg("%s: received %d bytes\n", __func__, bytes);
-			log_debug_buffer(XML_content, bytes);
-			if ((uint32_t)bytes == length) {
-				res = INSTPROXY_E_SUCCESS;
-			} else {
-				log_debug_msg("%s: ERROR: Could not send all data (%d of %d)!\n", __func__, bytes, length);
-			}
-		}
-	}
-	if (bytes <= 0) {
-		log_dbg_msg(DBGMASK_INSTPROXY, "%s: ERROR: sending to device failed.\n", __func__);
-	}
-
-	free(XML_content);
-
-	return res;
-}
-
-/**
- * Receives an xml plist from the device using the connection specified in
- *  client.
- * This function is only used internally.
- *
- * @param client The installation_proxy to receive data from
- * @param plist pointer to a plist_t that will point to the received plist
- *              upon successful return
- *
- * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_INVALID_ARG when client
- *      or *plist are NULL, INSTPROXY_E_PLIST_ERROR when dict is not a valid
- *      plist, or INSTPROXY_E_UNKNOWN_ERROR when an unspecified error occurs.
- */
-static instproxy_error_t instproxy_plist_recv(instproxy_client_t client, plist_t *plist)
-{
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-	char *XML_content = NULL;
-	uint32_t pktlen = 0;
-	uint32_t bytes = 0;
-
-	if (!client || !plist) {
-		return INSTPROXY_E_INVALID_ARG;
-	}
-
-	iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, 300000); /* 5 minute timeout should be enough */
-	log_debug_msg("%s: initial read=%i\n", __func__, bytes);
-	if (bytes < 4) {
-		log_dbg_msg(DBGMASK_INSTPROXY, "%s: initial read failed!\n");
-	} else {
-		if ((char)pktlen == 0) {
-			uint32_t curlen = 0;
-			pktlen = ntohl(pktlen);
-			log_debug_msg("%s: %d bytes following\n", __func__, pktlen);
-			XML_content = (char*)malloc(pktlen);
-
-			while (curlen < pktlen) {
-				iphone_device_recv(client->connection, XML_content+curlen, pktlen-curlen, &bytes);
-				if (bytes <= 0) {
-					res = INSTPROXY_E_UNKNOWN_ERROR;
-					break;
-				}
-				log_debug_msg("%s: received %d bytes\n", __func__, bytes);
-				curlen += bytes;
-			}
-			log_debug_buffer(XML_content, pktlen);
-			plist_from_xml(XML_content, pktlen, plist);
-			res = INSTPROXY_E_SUCCESS;
-			free(XML_content);
-			XML_content = NULL;
-		} else {
-			res = INSTPROXY_E_UNKNOWN_ERROR;
-		}
-	}
-	return res;
+	return INSTPROXY_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -268,7 +184,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 	plist_dict_insert_item(dict, "Command", plist_new_string("Browse"));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	plist_free(dict);
 	if (res != INSTPROXY_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not send plist\n", __func__);
@@ -280,7 +196,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 	do {
 		browsing = 0;
 		dict = NULL;
-		res = instproxy_plist_recv(client, &dict);
+		res = iphone_to_instproxy_error(iphone_device_receive_plist(client->connection, &dict));
 		if (res != INSTPROXY_E_SUCCESS) {
 			break;
 		}
@@ -345,7 +261,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 
 	do {
 		instproxy_lock(client);
-		res = instproxy_plist_recv(client, &dict);
+		res = iphone_to_instproxy_error(iphone_device_receive_plist_with_timeout(client->connection, &dict, 30000));
 		instproxy_unlock(client);
 		if (res != INSTPROXY_E_SUCCESS) {
 			log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not receive plist, error %d\n", __func__, res);
@@ -517,7 +433,7 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
 	plist_dict_insert_item(dict, "PackagePath", plist_new_string(pkg_path));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -610,7 +526,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	plist_dict_insert_item(dict, "Command", plist_new_string("Uninstall"));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -647,7 +563,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *
 
 	instproxy_lock(client);
 
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
@@ -655,7 +571,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *
 		goto leave_unlock;
 	}
 
-	res = instproxy_plist_recv(client, result);
+	res = iphone_to_instproxy_error(iphone_device_receive_plist(client->connection, result));
 	if (res != INSTPROXY_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not receive plist, error %d\n", __func__, res);
 		goto leave_unlock;
@@ -718,7 +634,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 	plist_dict_insert_item(dict, "Command", plist_new_string("Archive"));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -764,7 +680,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 	plist_dict_insert_item(dict, "Command", plist_new_string("Restore"));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -810,7 +726,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 	plist_dict_insert_item(dict, "Command", plist_new_string("RemoveArchive"));
 
 	instproxy_lock(client);
-	res = instproxy_plist_send(client, dict);
+	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
