@@ -87,112 +87,39 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 	return SBSERVICES_E_SUCCESS;
 }
 
-/**
- * Sends a binary plist to the device using the connection specified in client.
- * This function is only used internally.
- *
- * @param client InstallationProxy to send data to
- * @param dict plist to send
- *
- * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
- *     client or dict are NULL, SBSERVICES_E_PLIST_ERROR when dict is not a
- *     valid plist, or SBSERVICES_E_UNKNOWN_ERROR when an unspecified error
- *     occurs.
- */
-static sbservices_error_t sbservices_plist_send(sbservices_client_t client, plist_t dict)
-{
-	char *content = NULL;
-	uint32_t length = 0;
-	uint32_t nlen = 0;
-	int bytes = 0;
-	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
-
-	if (!client || !dict) {
-		return SBSERVICES_E_INVALID_ARG;
-	}
-
-	plist_to_bin(dict, &content, &length);
-
-	if (!content || length == 0) {
-		return SBSERVICES_E_PLIST_ERROR;
-	}
-
-	nlen = htonl(length);
-	log_debug_msg("%s: sending %d bytes\n", __func__, length);
-	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
-	if (bytes == sizeof(nlen)) {
-		iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
-		if (bytes > 0) {
-			if ((uint32_t)bytes == length) {
-				res = SBSERVICES_E_SUCCESS;
-			} else {
-				log_debug_msg("%s: ERROR: Could not send all data (%d of %d)!\n", __func__, bytes, length);
-			}
-		}
-	}
-	if (bytes <= 0) {
-		log_debug_msg("%s: ERROR: sending to device failed.\n", __func__);
-	}
-
-	free(content);
-
-	return res;
-}
-
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state)
 {
 	if (!client || !client->connection || !state)
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
-	uint32_t pktlen = 0;
-	uint32_t bytes = 0;
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "command", plist_new_string("getIconState"));
 
 	sbs_lock(client);
 
-	res = sbservices_plist_send(client, dict);
-	plist_free(dict);
-	if (res != SBSERVICES_E_SUCCESS) {
+	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
+	plist_free(dict);
+	dict = NULL;
 
-	iphone_device_recv(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes);
-	log_debug_msg("%s: initial read=%i\n", __func__, bytes);
-	if (bytes < 4) {
-		log_debug_msg("%s: initial read failed!\n");
-		res = 0;
+	if (iphone_device_receive_plist(client->connection, state) == IPHONE_E_SUCCESS) {
+		res = SBSERVICES_E_SUCCESS;
 	} else {
-		if ((char)pktlen == 0) {
-			char *content = NULL;
-			uint32_t curlen = 0;
-			pktlen = ntohl(pktlen);
-			log_debug_msg("%s: %d bytes following\n", __func__, pktlen);
-			content = (char*)malloc(pktlen);
-			log_debug_msg("pointer %p\n", content);
-
-			while (curlen < pktlen) {
-				iphone_device_recv(client->connection, content+curlen, pktlen-curlen, &bytes);
-				if (bytes <= 0) {
-					res = SBSERVICES_E_UNKNOWN_ERROR;
-					break;
-				}
-				log_debug_msg("%s: received %d bytes\n", __func__, bytes);
-				curlen += bytes;
-			}
-			log_debug_buffer(content, pktlen);
-			plist_from_bin(content, pktlen, state);
-			res = SBSERVICES_E_SUCCESS;
-			free(content);
-		} else {
-			res = SBSERVICES_E_UNKNOWN_ERROR;
+		log_debug_msg("%s: could not get icon state!\n", __func__);
+		if (*state) {
+			plist_free(*state);
+			*state = NULL;
 		}
 	}
 
 leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
 	sbs_unlock(client);
 	return res;
 }
@@ -210,15 +137,16 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 
 	sbs_lock(client);
 
-	res = sbservices_plist_send(client, dict);
-	plist_free(dict);
-	if (res != SBSERVICES_E_SUCCESS) {
+	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
 	// NO RESPONSE
 
 leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
 	sbs_unlock(client);
 	return res;
 }
@@ -229,8 +157,6 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
-	uint32_t pktlen = 0;
-	uint32_t bytes = 0;
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "command", plist_new_string("getIconPNGData"));
@@ -238,52 +164,25 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 
 	sbs_lock(client);
 
-	res = sbservices_plist_send(client, dict);
-	plist_free(dict);
-	if (res != SBSERVICES_E_SUCCESS) {
+	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
+	plist_free(dict);
 
-	iphone_device_recv(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes);
-	log_debug_msg("%s: initial read=%i\n", __func__, bytes);
-	if (bytes < 4) {
-		log_debug_msg("%s: initial read failed!\n");
-		res = 0;
-	} else {
-		if ((char)pktlen == 0) {
-			char *content = NULL;
-			uint32_t curlen = 0;
-			pktlen = ntohl(pktlen);
-			log_debug_msg("%s: %d bytes following\n", __func__, pktlen);
-			content = (char*)malloc(pktlen);
-			log_debug_msg("pointer %p\n", content);
-
-			while (curlen < pktlen) {
-				iphone_device_recv(client->connection, content+curlen, pktlen-curlen, &bytes);
-				if (bytes <= 0) {
-					res = SBSERVICES_E_UNKNOWN_ERROR;
-					break;
-				}
-				log_debug_msg("%s: received %d bytes\n", __func__, bytes);
-				curlen += bytes;
-			}
-			log_debug_buffer(content, pktlen);
-			plist_t pngdict = NULL;
-			plist_from_bin(content, pktlen, &pngdict);
-			plist_t node = plist_dict_get_item(pngdict, "pngData");
-			if (node) {
-				plist_get_data_val(node, pngdata, pngsize);
-			}
-			plist_free(pngdict);
-			res = SBSERVICES_E_SUCCESS;
-			free(content);
-		} else {
-			res = SBSERVICES_E_UNKNOWN_ERROR;
+	dict = NULL;
+	if (iphone_device_receive_plist(client->connection, &dict) == IPHONE_E_SUCCESS) {
+		plist_t node = plist_dict_get_item(dict, "pngData");
+		if (node) {
+			plist_get_data_val(node, pngdata, pngsize);
 		}
+		res = SBSERVICES_E_SUCCESS;
 	}
 
 leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
 	sbs_unlock(client);
 	return res;
 
