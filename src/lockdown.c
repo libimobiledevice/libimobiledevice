@@ -239,60 +239,20 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 {
 	if (!client || !plist || (plist && *plist))
 		return LOCKDOWN_E_INVALID_ARG;
-	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	char *receive = NULL;
-	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+	iphone_error_t err;
 
-	if (!client->in_SSL)
-		ret = iphone_device_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
-	else {
-		ssize_t res = gnutls_record_recv(client->ssl_session, &datalen, sizeof(datalen));
-		if (res < 0) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
-			return LOCKDOWN_E_SSL_ERROR;
-		} else {
-			bytes = res;
-			ret = LOCKDOWN_E_SUCCESS;
-		}
-	}
-	datalen = ntohl(datalen);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: datalen = %d\n", __func__, datalen);
-
-	receive = (char *) malloc(sizeof(char) * datalen);
-
-	/* fill buffer and request more packets if needed */
 	if (!client->in_SSL) {
-		while ((received_bytes < datalen) && (ret == LOCKDOWN_E_SUCCESS)) {
-			ret = iphone_device_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
-			received_bytes += bytes;
+		err = iphone_device_receive_plist(client->connection, plist);
+		if (err != IPHONE_E_SUCCESS) {
+			ret = LOCKDOWN_E_UNKNOWN_ERROR;
 		}
 	} else {
-		ssize_t res = 0;
-		while ((received_bytes < datalen) && (ret == LOCKDOWN_E_SUCCESS)) {
-			res = gnutls_record_recv(client->ssl_session, receive + received_bytes, datalen - received_bytes);
-			if (res < 0) {
-				log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_recv: Error occured: %s\n", gnutls_strerror(res));
-				ret = LOCKDOWN_E_SSL_ERROR;
-			} else {
-				received_bytes += res;
-				ret = LOCKDOWN_E_SUCCESS;
-			}
+		err = iphone_device_receive_encrypted_plist(client->ssl_session, plist);
+		if (err != IPHONE_E_SUCCESS) {
+			return LOCKDOWN_E_SSL_ERROR;
 		}
 	}
-
-	if (ret != LOCKDOWN_E_SUCCESS) {
-		free(receive);
-		return ret;
-	}
-
-	if ((ssize_t)received_bytes <= 0) {
-		free(receive);
-		return LOCKDOWN_E_NOT_ENOUGH_DATA;
-	}
-
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: received msg size: %i, buffer follows:\n%s", __func__, received_bytes, receive);
-	plist_from_xml(receive, received_bytes, plist);
-	free(receive);
 
 	if (!*plist)
 		ret = LOCKDOWN_E_PLIST_ERROR;
@@ -314,41 +274,21 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 {
 	if (!client || !plist)
 		return LOCKDOWN_E_INVALID_ARG;
-	char *real_query;
-	int bytes;
-	char *XMLContent = NULL;
-	uint32_t length = 0;
-	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	plist_to_xml(plist, &XMLContent, &length);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending msg size %i, buffer follows:\n%s", __func__, length, XMLContent);
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+	iphone_error_t err;
 
-	real_query = (char *) malloc(sizeof(char) * (length + 4));
-	length = htonl(length);
-	memcpy(real_query, &length, sizeof(length));
-	memcpy(real_query + 4, XMLContent, ntohl(length));
-	free(XMLContent);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: made the query, sending it along\n", __func__);
-
-	if (!client->in_SSL)
-		ret = iphone_device_send(client->connection, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
-	else {
-		ssize_t res = gnutls_record_send(client->ssl_session, real_query, ntohl(length) + sizeof(length));
-		if (res < 0) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "gnutls_record_send: Error occured: %s\n", gnutls_strerror(res));
+	if (!client->in_SSL) {
+		err = iphone_device_send_xml_plist(client->connection, plist);
+		if (err != IPHONE_E_SUCCESS) {
+			ret = LOCKDOWN_E_UNKNOWN_ERROR;
+		}
+	} else {
+		err = iphone_device_send_encrypted_xml_plist(client->ssl_session, plist);
+		if (err != IPHONE_E_SUCCESS) {
 			ret = LOCKDOWN_E_SSL_ERROR;
-		} else {
-			bytes = res;
-			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
-	if (ret == LOCKDOWN_E_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sent it!\n", __func__);
-	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending failed!\n", __func__);
-	}
-	free(real_query);
-
 	return ret;
 }
 
