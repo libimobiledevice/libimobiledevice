@@ -1385,3 +1385,91 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	return ret;
 }
 
+/**
+ * Activates the device. Only works within an open session.
+ * The ActivationRecord plist dictionary must be obtained using the
+ * activation protocol requesting from Apple's https webservice.
+ *
+ * @see http://iphone-docs.org/doku.php?id=docs:protocols:activation
+ *
+ * @param control The lockdown client
+ * @param activation_record The activation record plist dictionary
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record) 
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	if (!activation_record)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
+	plist_dict_insert_item(dict,"Request", plist_new_string("Activate"));
+	plist_dict_insert_item(dict,"ActivationRecord", activation_record);
+
+	ret = lockdownd_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = lockdownd_recv(client, &dict);
+	if (!dict) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
+		return LOCKDOWN_E_PLIST_ERROR;
+	}
+
+	ret = LOCKDOWN_E_ACTIVATION_FAILED;
+	if (lockdown_check_result(dict, "Activate") == RESULT_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		ret = LOCKDOWN_E_SUCCESS;
+	}
+	plist_free(dict);
+	dict = NULL;
+
+	return ret;
+}
+
+/**
+ * Deactivates the device, returning it to the locked
+ * “Activate with iTunes” screen.
+ *
+ * @param control The lockdown client
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
+	plist_dict_insert_item(dict,"Request", plist_new_string("Deactivate"));
+
+	ret = lockdownd_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = lockdownd_recv(client, &dict);
+	if (!dict) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
+		return LOCKDOWN_E_PLIST_ERROR;
+	}
+
+	ret = LOCKDOWN_E_UNKNOWN_ERROR;
+	if (lockdown_check_result(dict, "Deactivate") == RESULT_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		ret = LOCKDOWN_E_SUCCESS;
+	}
+	plist_free(dict);
+	dict = NULL;
+
+	return ret;
+}
+

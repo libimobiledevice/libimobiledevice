@@ -44,6 +44,7 @@ extern "C" {
 #define LOCKDOWN_E_GET_VALUE_PROHIBITED     -10
 #define LOCKDOWN_E_REMOVE_VALUE_PROHIBITED  -11
 #define LOCKDOWN_E_MUX_ERROR                -12
+#define LOCKDOWN_E_ACTIVATION_FAILED        -13
 
 #define LOCKDOWN_E_UNKNOWN_ERROR           -256
 
@@ -67,6 +68,8 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist);
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id);
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id);
 lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, char *host_id);
+lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
+lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
 lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t control, char **uuid);
 lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
 lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
