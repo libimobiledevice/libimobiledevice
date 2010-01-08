@@ -810,8 +810,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 	if (lockdown_check_result(dict, verb) != RESULT_SUCCESS) {
 		ret = LOCKDOWN_E_PAIRING_FAILED;
 	}
-	plist_free(dict);
-	dict = NULL;
 
 	/* if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
@@ -825,7 +823,23 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 		}
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s failure\n", __func__, verb);
+		plist_t error_node = NULL;
+		/* verify error condition */
+		error_node = plist_dict_get_item(dict, "Error");
+		if (error_node) {
+			char *value = NULL;
+			plist_get_string_val(error_node, &value);
+			/* the first pairing fails if the device is password protected */
+			if (value && !strcmp(value, "PasswordProtected")) {
+				ret = LOCKDOWN_E_PASSWORD_PROTECTED;
+				free(value);
+			}
+			plist_free(error_node);
+			error_node = NULL;
+		}
 	}
+	plist_free(dict);
+	dict = NULL;
 	free(public_key.data);
 	return ret;
 }

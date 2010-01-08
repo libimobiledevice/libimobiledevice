@@ -45,6 +45,7 @@ extern "C" {
 #define LOCKDOWN_E_REMOVE_VALUE_PROHIBITED  -11
 #define LOCKDOWN_E_MUX_ERROR                -12
 #define LOCKDOWN_E_ACTIVATION_FAILED        -13
+#define LOCKDOWN_E_PASSWORD_PROTECTED       -14
 
 #define LOCKDOWN_E_UNKNOWN_ERROR           -256
 
