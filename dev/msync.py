@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-from libiphone.iPhone import *
+from iphone import *
+from plist import *
 
 # get msync client
 def GetMobileSyncClient() :
@@ -24,17 +25,18 @@ msync = GetMobileSyncClient()
 if not msync :
     exit(1)
 
-array = PListNode(PLIST_ARRAY)
-array.add_sub_string("SDMessageSyncDataClassWithDevice")
-array.add_sub_string("com.apple.Contacts");
-array.add_sub_string("---");
-array.add_sub_string("2009-01-13 22:25:58 +0100");
-array.add_sub_uint(106);
-array.add_sub_string("___EmptyParameterString___");
+a = Array()
+a.append( String("SDMessageSyncDataClassWithDevice") )
+a.append( String("") )
+a.append( String("com.apple.Contacts") )
+a.append( String("---") )
+a.append( String("2009-01-13 22:25:58 +0100") )
+a.append( Integer(106) )
+a.append( String("___EmptyParameterString___") )
 
-msync.send(array)
-array = msync.receive()
-print array.to_xml()
+msync.send(a)
+a = msync.receive()
+print a.to_xml()
 
 
 
