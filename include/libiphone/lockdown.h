@@ -66,6 +66,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
 lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist);
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id);
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id);
+lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, char *host_id);
 lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t control, char **uuid);
 lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
 lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);

@@ -813,10 +813,16 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 	plist_free(dict);
 	dict = NULL;
 
-	/* store public key in config if pairing succeeded */
+	/* if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s success\n", __func__, verb);
-		userpref_set_device_public_key(client->uuid, public_key);
+		if (!strcmp("Unpair", verb)) {
+			/* remove public key from config */
+			userpref_remove_device_public_key(client->uuid);
+		} else {
+			/* store public key in config */
+			userpref_set_device_public_key(client->uuid, public_key);
+		}
 	} else {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: %s failure\n", __func__, verb);
 	}
@@ -855,6 +861,21 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id)
 {
 	return lockdownd_do_pair(client, host_id, "ValidatePair");
+}
+
+/** 
+ * Unpairs the device with the given HostID and removes the pairing records
+ * from the device and host.
+ *
+ * @param client The lockdown client to pair with.
+ * @param host_id The HostID to use for unpairing. If NULL is passed, then
+ *    the HostID of the current machine is used.
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, char *host_id)
+{
+	return lockdownd_do_pair(client, host_id, "Unpair");
 }
 
 /**
