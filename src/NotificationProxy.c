@@ -169,10 +169,6 @@ np_error_t np_client_free(np_client_t client)
 
 /** Sends a notification to the device's Notification Proxy.
  *
- * notification messages seen so far:
- *   com.apple.itunes-mobdev.syncWillStart
- *   com.apple.itunes-mobdev.syncDidStart
- *
  * @param client The client to send to
  * @param notification The notification message to send
  *
@@ -236,17 +232,6 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 }
 
 /** Notifies the iphone to send a notification on specified events.
- *
- * observation messages seen so far:
- *   com.apple.itunes-client.syncCancelRequest
- *   com.apple.itunes-client.syncSuspendRequest
- *   com.apple.itunes-client.syncResumeRequest
- *   com.apple.mobile.lockdown.phone_number_changed
- *   com.apple.mobile.lockdown.device_name_changed
- *   com.apple.springboard.attemptactivation
- *   com.apple.mobile.data_sync.domain_changed
- *   com.apple.mobile.application_installed
- *   com.apple.mobile.application_uninstalled
  *
  * @param client The client to send to
  * @param notification_spec Specification of the notifications that should be
