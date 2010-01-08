@@ -236,8 +236,7 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
  * @param client The client to send to
  * @param notification_spec Specification of the notifications that should be
  *  observed. This is expected to be an array of const char* that MUST have a
- *  terminating NULL entry. However this parameter can be NULL; in this case,
- *  the default set of notifications will be used.
+ *  terminating NULL entry.
  *
  * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client is null,
  *   or an error returned by np_observe_notification.
@@ -253,7 +252,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
 	}
 
 	if (!notifications) {
-		notifications = np_default_notifications;
+		return NP_E_INVALID_ARG;
 	}
 
 	while (notifications[i]) {
