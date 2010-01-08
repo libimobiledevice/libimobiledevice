@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "iphonesyslog")) {
 		iphone_device_free(phone);
 		return -1;
 	}

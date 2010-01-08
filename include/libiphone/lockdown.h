@@ -53,8 +53,9 @@ struct lockdownd_client_int;
 typedef struct lockdownd_client_int *lockdownd_client_t;
 
 /* Interface */
-lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client);
+lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client, const char *label);
 lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
+void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
 lockdownd_error_t lockdownd_query_type(lockdownd_client_t client);
 lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
 lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);

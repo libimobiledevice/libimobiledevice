@@ -108,6 +108,21 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 }
 
 /**
+ * Adds a label key with the passed value to a plist dict node.
+ *
+ * @param plist The plist to add the key to
+ * @param label The value for the label key
+ *
+ */
+static void plist_dict_add_label(plist_t plist, const char *label)
+{
+	if (plist && label) {
+		if (plist_get_node_type(plist) == PLIST_DICT)
+			plist_dict_insert_item(plist, "Label", plist_new_string(label));
+	}
+}
+
+/**
  * Closes the lockdownd communication session, by sending
  * the StopSession Request to the device.
  *
@@ -128,6 +143,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
 	plist_dict_insert_item(dict,"SessionID", plist_new_string(client->session_id));
 
@@ -223,9 +239,25 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 	if (client->uuid) {
 		free(client->uuid);
 	}
+	if (client->label) {
+		free(client->label);
+	}
 
 	free(client);
 	return ret;
+}
+
+/**
+ * Sets the label to send for requests to lockdownd.
+ *
+ * @param client The lockdown client
+ * @param label The label to set or NULL to disable
+ *
+ */
+void lockdownd_client_set_label(lockdownd_client_t client, const char *label)
+{
+	if (client)
+		client->label = strdup(label);
 }
 
 /** Polls the iPhone for lockdownd data.
@@ -366,6 +398,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client)
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("QueryType"));
 
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
@@ -409,6 +442,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 
 	/* setup request plist */
 	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	if (domain) {
 		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
 	}
@@ -470,6 +504,7 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
 
 	/* setup request plist */
 	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	if (domain) {
 		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
 	}
@@ -527,6 +562,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 
 	/* setup request plist */
 	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	if (domain) {
 		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
 	}
@@ -636,10 +672,11 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  *
  * @param phone The iPhone to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
+ * @param label The label to use for communication. Usually the program name
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client)
+lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client, const char *label)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -659,6 +696,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->in_SSL = 0;
 	client_loc->session_id = NULL;
 	client_loc->uuid = NULL;
+	client_loc->label = strdup(label);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
@@ -741,6 +779,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 	/* Setup Pair request plist */
 	dict = plist_new_dict();
 	dict_record = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"PairRecord", dict_record);
 
 	plist_dict_insert_item(dict_record, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
@@ -833,6 +872,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("EnterRecovery"));
 
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: telling device to enter recovery mode\n", __func__);
@@ -868,6 +908,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("Goodbye"));
 
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
@@ -1050,6 +1091,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 
 	/* Setup DevicePublicKey request plist */
 	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
@@ -1080,6 +1122,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 					/* start session again */
 					plist_free(dict);
 					dict = plist_new_dict();
+					plist_dict_add_label(dict, client->label);
 					plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
 					plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
@@ -1277,6 +1320,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	host_id = NULL;
 
 	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartService"));
 	plist_dict_insert_item(dict,"Service", plist_new_string(service));
 

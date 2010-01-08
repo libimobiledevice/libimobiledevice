@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "msyncclient")) {
 		iphone_device_free(phone);
 		return -1;
 	}

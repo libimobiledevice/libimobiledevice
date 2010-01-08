@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 			return -2;
 		}
 
-		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client)) {
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "iphone_id")) {
 			iphone_device_free(phone);
 			fprintf(stderr, "ERROR: Connecting to device failed!\n");
 			return -2;
