@@ -278,13 +278,10 @@ void plist_children_to_string(plist_t node)
 	plist_dict_next_item(node, it, &key, &subnode);
 	while (subnode)
 	{
-		subnode = NULL;
-
 		printf("%s: ", key);
 		free(key);
 		key = NULL;
 		plist_node_to_string(subnode);
-
 		plist_dict_next_item(node, it, &key, &subnode);
 	}
 	free(it);
