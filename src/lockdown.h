@@ -42,7 +42,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 									   gnutls_datum_t * host_cert, gnutls_datum_t * root_cert);
 
 /* SSL functions */
-lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *HostID);
+lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *host_id);
 ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length);
 

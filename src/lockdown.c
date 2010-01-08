@@ -1078,7 +1078,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *HostID)
+lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *host_id)
 {
 	plist_t dict = NULL;
 	uint32_t return_me = 0;
@@ -1092,7 +1092,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 	/* Setup DevicePublicKey request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
+	plist_dict_insert_item(dict,"HostID", plist_new_string(host_id));
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
 	ret = lockdownd_send(client, dict);
@@ -1115,15 +1115,15 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 
 			if (!strcmp(error, "InvalidHostID")) {
 				/* hostid is unknown. Pair and try again */
-				char *host_id = NULL;
-				userpref_get_host_id(&host_id);
+				char *host_id_new = NULL;
+				userpref_get_host_id(&host_id_new);
 
-				if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, host_id) ) {
+				if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, host_id_new) ) {
 					/* start session again */
 					plist_free(dict);
 					dict = plist_new_dict();
 					plist_dict_add_label(dict, client->label);
-					plist_dict_insert_item(dict,"HostID", plist_new_string(HostID));
+					plist_dict_insert_item(dict,"HostID", plist_new_string(host_id_new));
 					plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
 
 					ret = lockdownd_send(client, dict);
@@ -1132,7 +1132,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 
 					ret = lockdownd_recv(client, &dict);
 				}
-				free(host_id);
+				free(host_id_new);
 			}
 			free(error);
 		}
