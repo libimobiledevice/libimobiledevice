@@ -324,13 +324,15 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	return ret;
 }
 
-/** Initiates the handshake for the lockdown session. Part of the lockdownd handshake.
+/** Query the type of the service daemon. Depending on whether the device is
+ * queried in normal mode or restore mode, different types will be returned.
  *
  * @param client The lockdownd client
+ * @param type The type returned by the service daemon. Can be NULL to ignore.
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_query_type(lockdownd_client_t client)
+lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -354,7 +356,12 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client)
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "QueryType") == RESULT_SUCCESS) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success\n", __func__);
+		/* return the type if requested */
+		if (type != NULL) {
+			plist_t type_node = plist_dict_get_item(dict, "Type");
+			plist_get_string_val(type_node, type);
+		}
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: success with type %s\n", __func__, *type);
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -622,6 +629,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	char *host_id = NULL;
+	char *type = NULL;
 
 	iphone_connection_t connection;
 	if (iphone_device_connect(device, 0xf27e, &connection) != IPHONE_E_SUCCESS) {
@@ -638,9 +646,15 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->uuid = NULL;
 	client_loc->label = strdup(label);
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
 		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
+	} else {
+		if (strcmp("com.apple.mobile.lockdown", type)) {
+			log_debug_msg("%s: Warning QueryType request returned \"%s\".\n", __func__, type);
+		}
+		if (type)
+			free(type);
 	}
 
 	ret = iphone_device_get_uuid(device, &client_loc->uuid);
