@@ -403,7 +403,7 @@ static iphone_error_t internal_plist_send(iphone_connection_t connection, plist_
 			iphone_device_send(connection, content, length, (uint32_t*)&bytes);
 		}
 		if (bytes > 0) {
-			log_debug_msg("%s: received %d bytes\n", __func__, bytes);
+			log_debug_msg("%s: sent %d bytes\n", __func__, bytes);
 			log_debug_buffer(content, bytes);
 			if ((uint32_t)bytes == length) {
 				res = IPHONE_E_SUCCESS;
@@ -508,7 +508,11 @@ static iphone_error_t internal_plist_recv_timeout(iphone_connection_t connection
 		return IPHONE_E_INVALID_ARG;
 	}
 
-	iphone_device_recv_timeout(connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	if (ssl_session) {
+		bytes = gnutls_record_recv(ssl_session, (char*)&pktlen, sizeof(pktlen));
+	} else {
+		iphone_device_recv_timeout(connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	}
 	log_debug_msg("%s: initial read=%i\n", __func__, bytes);
 	if (bytes < 4) {
 		log_debug_msg("%s: initial read failed!\n", __func__);
@@ -522,7 +526,11 @@ static iphone_error_t internal_plist_recv_timeout(iphone_connection_t connection
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
-				iphone_device_recv(connection, content+curlen, pktlen-curlen, &bytes);
+				if (ssl_session) {
+					bytes = gnutls_record_recv(ssl_session, content+curlen, pktlen-curlen);
+				} else {
+					iphone_device_recv(connection, content+curlen, pktlen-curlen, &bytes);
+				}
 				if (bytes <= 0) {
 					res = IPHONE_E_UNKNOWN_ERROR;
 					break;
