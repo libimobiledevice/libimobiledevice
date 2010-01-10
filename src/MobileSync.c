@@ -31,6 +31,31 @@
 #define MSYNC_VERSION_INT1 100
 #define MSYNC_VERSION_INT2 100
 
+/**
+ * Convert an iphone_error_t value to an mobilesync_error_t value.
+ * Used internally to get correct error codes when using plist helper
+ * functions.
+ *
+ * @param err An iphone_error_t error code
+ *
+ * @return A matching mobilesync_error_t error code,
+ *     MOBILESYNC_E_UNKNOWN_ERROR otherwise.
+ */
+static mobilesync_error_t iphone_to_mobilesync_error(iphone_error_t err)
+{
+	switch (err) {
+		case IPHONE_E_SUCCESS:
+			return MOBILESYNC_E_SUCCESS;
+		case IPHONE_E_INVALID_ARG:
+			return MOBILESYNC_E_INVALID_ARG;
+		case IPHONE_E_PLIST_ERROR:
+			return MOBILESYNC_E_PLIST_ERROR;
+		default:
+			break;
+	}
+	return MOBILESYNC_E_UNKNOWN_ERROR;
+}
+
 mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 						   mobilesync_client_t * client)
 {
@@ -160,35 +185,19 @@ mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 {
 	if (!client || !plist || (plist && *plist))
 		return MOBILESYNC_E_INVALID_ARG;
-	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
-	char *receive = NULL;
-	uint32_t datalen = 0, bytes = 0, received_bytes = 0;
 
-	ret = iphone_device_recv(client->connection, (char *) &datalen, sizeof(datalen), &bytes);
-	datalen = ntohl(datalen);
-
-	receive = (char *) malloc(sizeof(char) * datalen);
-
-	/* fill buffer and request more packets if needed */
-	while ((received_bytes < datalen) && (ret == MOBILESYNC_E_SUCCESS)) {
-		ret = iphone_device_recv(client->connection, receive + received_bytes, datalen - received_bytes, &bytes);
-		received_bytes += bytes;
-	}
-
+	mobilesync_error_t ret = iphone_to_mobilesync_error(iphone_device_receive_plist(client->connection, plist));
 	if (ret != MOBILESYNC_E_SUCCESS) {
-		free(receive);
 		return MOBILESYNC_E_MUX_ERROR;
 	}
 
-	plist_from_bin(receive, received_bytes, plist);
-	free(receive);
-
+#ifndef STRIP_DEBUG_CODE
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(*plist, &XMLContent, &length);
 	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
-
+#endif
 	return ret;
 }
 
@@ -207,28 +216,12 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	if (!client || !plist)
 		return MOBILESYNC_E_INVALID_ARG;
 
+#ifndef STRIP_DEBUG_CODE
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(plist, &XMLContent, &length);
 	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
-
-	char *content = NULL;
-	length = 0;
-
-	plist_to_bin(plist, &content, &length);
-
-	char *real_query;
-	int bytes;
-	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
-
-	real_query = (char *) malloc(sizeof(char) * (length + 4));
-	length = htonl(length);
-	memcpy(real_query, &length, sizeof(length));
-	memcpy(real_query + 4, content, ntohl(length));
-
-	ret = iphone_device_send(client->connection, real_query, ntohl(length) + sizeof(length), (uint32_t*)&bytes);
-	free(real_query);
-	return (ret == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
+#endif
+	return (iphone_device_send_binary_plist(client->connection, plist) == IPHONE_E_SUCCESS ? MOBILESYNC_E_SUCCESS : MOBILESYNC_E_MUX_ERROR);
 }
-
