@@ -26,7 +26,7 @@
 #include <plist/plist.h>
 
 #include "InstallationProxy.h"
-#include "iphone.h"
+#include "property_list_service.h"
 #include "utils.h"
 
 struct instproxy_status_data {
@@ -56,24 +56,25 @@ static void instproxy_unlock(instproxy_client_t client)
 }
 
 /**
- * Convert an iphone_error_t value to an instproxy_error_t value.
- * Used internally to get correct error codes when using plist helper
- * functions.
+ * Convert a property_list_service_error_t value to an instproxy_error_t value.
+ * Used internally to get correct error codes.
  *
- * @param err An iphone_error_t error code
+ * @param err A property_list_service_error_t error code
  *
  * @return A matching instproxy_error_t error code,
  *     INSTPROXY_E_UNKNOWN_ERROR otherwise.
  */
-static instproxy_error_t iphone_to_instproxy_error(iphone_error_t err)
+static instproxy_error_t instproxy_error(property_list_service_error_t err)
 {
 	switch (err) {
-		case IPHONE_E_SUCCESS:
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
 			return INSTPROXY_E_SUCCESS;
-		case IPHONE_E_INVALID_ARG:
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
 			return INSTPROXY_E_INVALID_ARG;
-		case IPHONE_E_PLIST_ERROR:
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
 			return INSTPROXY_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return INSTPROXY_E_CONN_FAILED;
 		default:
 			break;
 	}
@@ -100,14 +101,13 @@ instproxy_error_t instproxy_client_new(iphone_device_t device, int dst_port, ins
 	if (!device)
 		return INSTPROXY_E_INVALID_ARG;
 
-	/* Attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
+	property_list_service_client_t plistclient = NULL;
+	if (property_list_service_client_new(device, dst_port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return INSTPROXY_E_CONN_FAILED;
 	}
 
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_int));
-	client_loc->connection = connection;
+	client_loc->parent = plistclient;
 	client_loc->mutex = g_mutex_new();
 	client_loc->status_updater = NULL;
 
@@ -128,8 +128,8 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 	if (!client)
 		return INSTPROXY_E_INVALID_ARG;
 
-	iphone_device_disconnect(client->connection);
-	client->connection = NULL;
+	property_list_service_client_free(client->parent);
+	client->parent = NULL;
 	if (client->status_updater) {
 		log_dbg_msg(DBGMASK_INSTPROXY, "joining status_updater");
 		g_thread_join(client->status_updater);
@@ -155,7 +155,7 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
  */
 instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_t apptype, plist_t *result)
 {
-	if (!client || !client->connection || !result)
+	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
@@ -184,7 +184,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 	plist_dict_insert_item(dict, "Command", plist_new_string("Browse"));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 	if (res != INSTPROXY_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not send plist\n", __func__);
@@ -196,7 +196,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 	do {
 		browsing = 0;
 		dict = NULL;
-		res = iphone_to_instproxy_error(iphone_device_receive_plist(client->connection, &dict));
+		res = instproxy_error(property_list_service_receive_plist(client->parent, &dict));
 		if (res != INSTPROXY_E_SUCCESS) {
 			break;
 		}
@@ -261,7 +261,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 
 	do {
 		instproxy_lock(client);
-		res = iphone_to_instproxy_error(iphone_device_receive_plist_with_timeout(client->connection, &dict, 30000));
+		res = instproxy_error(property_list_service_receive_plist_with_timeout(client->parent, &dict, 30000));
 		instproxy_unlock(client);
 		if (res != INSTPROXY_E_SUCCESS) {
 			log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not receive plist, error %d\n", __func__, res);
@@ -314,7 +314,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 			plist_free(dict);
 			dict = NULL;
 		}
-	} while (ok && client->connection);
+	} while (ok && client->parent);
 
 	return res;
 }
@@ -404,7 +404,7 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
  */
 static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client, const char *pkg_path, plist_t sinf, plist_t metadata, instproxy_status_cb_t status_cb, const char *command)
 {
-	if (!client || !client->connection || !pkg_path) {
+	if (!client || !client->parent || !pkg_path) {
 		return INSTPROXY_E_INVALID_ARG;
 	}
 	if (sinf && (plist_get_node_type(sinf) != PLIST_DATA)) {
@@ -433,7 +433,7 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
 	plist_dict_insert_item(dict, "PackagePath", plist_new_string(pkg_path));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -512,7 +512,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  */
 instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
 {
-	if (!client || !client->connection || !appid) {
+	if (!client || !client->parent || !appid) {
 		return INSTPROXY_E_INVALID_ARG;
 	}
 
@@ -526,7 +526,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	plist_dict_insert_item(dict, "Command", plist_new_string("Uninstall"));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -553,7 +553,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
  */
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *result)
 {
-	if (!client || !client->connection || !result)
+	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
@@ -563,7 +563,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *
 
 	instproxy_lock(client);
 
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
@@ -571,7 +571,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *
 		goto leave_unlock;
 	}
 
-	res = iphone_to_instproxy_error(iphone_device_receive_plist(client->connection, result));
+	res = instproxy_error(property_list_service_receive_plist(client->parent, result));
 	if (res != INSTPROXY_E_SUCCESS) {
 		log_dbg_msg(DBGMASK_INSTPROXY, "%s: could not receive plist, error %d\n", __func__, res);
 		goto leave_unlock;
@@ -610,7 +610,7 @@ leave_unlock:
  */
 instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, uint32_t options, instproxy_status_cb_t status_cb)
 {
-	if (!client || !client->connection || !appid)
+	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
 
 	if (client->status_updater) {
@@ -634,7 +634,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 	plist_dict_insert_item(dict, "Command", plist_new_string("Archive"));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -666,7 +666,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  */
 instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
 {
-	if (!client || !client->connection || !appid)
+	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
 
 	if (client->status_updater) {
@@ -680,7 +680,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 	plist_dict_insert_item(dict, "Command", plist_new_string("Restore"));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -712,7 +712,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  */
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
 {
-	if (!client || !client->connection || !appid)
+	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
 
 	if (client->status_updater) {
@@ -726,7 +726,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 	plist_dict_insert_item(dict, "Command", plist_new_string("RemoveArchive"));
 
 	instproxy_lock(client);
-	res = iphone_to_instproxy_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	instproxy_unlock(client);
 
 	plist_free(dict);
