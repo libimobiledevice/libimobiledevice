@@ -26,9 +26,10 @@
 #include <string.h>
 
 #include "libiphone/lockdown.h"
+#include "property_list_service.h"
 
 struct lockdownd_client_int {
-	iphone_connection_t connection;
+	property_list_service_client_t parent;
 	gnutls_session_t ssl_session;
 	gnutls_certificate_credentials_t ssl_certificate;
 	int in_SSL;

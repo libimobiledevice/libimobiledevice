@@ -28,6 +28,7 @@
 #include <gnutls/x509.h>
 #include <plist/plist.h>
 
+#include "property_list_service.h"
 #include "lockdown.h"
 #include "iphone.h"
 #include "utils.h"
@@ -223,13 +224,11 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 
 	lockdownd_stop_ssl_session(client);
 
-	if (client->connection) {
+	if (client->parent) {
 		lockdownd_goodbye(client);
 
-		// IMO, read of final "sessionUpcall connection closed" packet
-		//  should come here instead of in iphone_free_device
-		if ((ret = iphone_device_disconnect(client->connection)) != IPHONE_E_SUCCESS) {
-			ret = LOCKDOWN_E_UNKNOWN_ERROR;
+		if (property_list_service_client_free(client->parent) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
 
@@ -276,16 +275,16 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	if (!client || !plist || (plist && *plist))
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	iphone_error_t err;
+	property_list_service_error_t err;
 
 	if (!client->in_SSL) {
-		err = iphone_device_receive_plist(client->connection, plist);
-		if (err != IPHONE_E_SUCCESS) {
+		err = property_list_service_receive_plist(client->parent, plist);
+		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
 		}
 	} else {
-		err = iphone_device_receive_encrypted_plist(client->ssl_session, plist);
-		if (err != IPHONE_E_SUCCESS) {
+		err = property_list_service_receive_encrypted_plist(client->ssl_session, plist);
+		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			return LOCKDOWN_E_SSL_ERROR;
 		}
 	}
@@ -315,13 +314,13 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	iphone_error_t err;
 
 	if (!client->in_SSL) {
-		err = iphone_device_send_xml_plist(client->connection, plist);
-		if (err != IPHONE_E_SUCCESS) {
+		err = property_list_service_send_xml_plist(client->parent, plist);
+		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
 		}
 	} else {
-		err = iphone_device_send_encrypted_xml_plist(client->ssl_session, plist);
-		if (err != IPHONE_E_SUCCESS) {
+		err = property_list_service_send_encrypted_xml_plist(client->ssl_session, plist);
+		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			ret = LOCKDOWN_E_SSL_ERROR;
 		}
 	}
@@ -635,14 +634,14 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	char *host_id = NULL;
 	char *type = NULL;
 
-	iphone_connection_t connection;
-	if (iphone_device_connect(device, 0xf27e, &connection) != IPHONE_E_SUCCESS) {
+	property_list_service_client_t plistclient = NULL;
+	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		log_debug_msg("%s: could not connect to lockdownd (device %s)\n", __func__, device->uuid);
 		return LOCKDOWN_E_MUX_ERROR;
 	}
 
 	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
-	client_loc->connection = connection;
+	client_loc->parent = plistclient;
 	client_loc->ssl_session = NULL;
 	client_loc->ssl_certificate = NULL;
 	client_loc->in_SSL = 0;
@@ -691,9 +690,12 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 			free(host_id);
 			host_id = NULL;
 		}
-
-		if (LOCKDOWN_E_SUCCESS == ret)
-			*client = client_loc;
+	}
+	
+	if (LOCKDOWN_E_SUCCESS == ret) {
+		*client = client_loc;
+	} else {
+		lockdownd_client_free(client_loc);
 	}
 
 	return ret;
@@ -1233,7 +1235,7 @@ ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size
 	client = (lockdownd_client_t) transport;
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pre-send length = %zi\n", __func__, length);
-	iphone_device_send(client->connection, buffer, length, &bytes);
+	iphone_device_send(property_list_service_get_connection(client->parent), buffer, length, &bytes);
 	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: post-send sent %i bytes\n", __func__, bytes);
 	return bytes;
 }
@@ -1262,7 +1264,7 @@ ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_
 
 	// repeat until we have the full data or an error occurs.
 	do {
-		if ((res = iphone_device_recv(client->connection, recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
+		if ((res = iphone_device_recv(property_list_service_get_connection(client->parent), recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
 			log_debug_msg("%s: ERROR: usbmux_recv returned %d\n", __func__, res);
 			return res;
 		}
