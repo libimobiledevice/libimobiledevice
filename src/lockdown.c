@@ -251,13 +251,17 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
  * Sets the label to send for requests to lockdownd.
  *
  * @param client The lockdown client
- * @param label The label to set or NULL to disable
+ * @param label The label to set or NULL to disable sending a label
  *
  */
 void lockdownd_client_set_label(lockdownd_client_t client, const char *label)
 {
-	if (client)
-		client->label = strdup(label);
+	if (client) {
+		if (client->label)
+			free(client->label);
+
+		client->label = (label != NULL) ? strdup(label): NULL;
+	}
 }
 
 /** Polls the iPhone for lockdownd data.
@@ -644,7 +648,9 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->in_SSL = 0;
 	client_loc->session_id = NULL;
 	client_loc->uuid = NULL;
-	client_loc->label = strdup(label);
+	client_loc->label = NULL;
+	if (label != NULL)
+		strdup(label);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
