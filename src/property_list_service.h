@@ -1,0 +1,60 @@
+ /* 
+ * property_list_service.h
+ * Definitions for the PropertyList service
+ * 
+ * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ */
+#ifndef PROPERTY_LIST_SERVICE_H
+#define PROPERTY_LIST_SERVICE_H
+
+#include "iphone.h"
+
+/* Error Codes */
+#define PROPERTY_LIST_SERVICE_E_SUCCESS                0
+#define PROPERTY_LIST_SERVICE_E_INVALID_ARG           -1
+#define PROPERTY_LIST_SERVICE_E_PLIST_ERROR           -2
+#define PROPERTY_LIST_SERVICE_E_MUX_ERROR             -3
+
+#define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
+
+struct property_list_service_client_int {
+	iphone_connection_t connection;
+};
+
+typedef struct property_list_service_client_int *property_list_service_client_t;
+
+typedef int16_t property_list_service_error_t;
+
+/* creation and destruction */
+property_list_service_error_t property_list_service_client_new(iphone_device_t device, uint16_t port, property_list_service_client_t *client);
+property_list_service_error_t property_list_service_client_free(property_list_service_client_t client);
+
+/* sending */
+property_list_service_error_t property_list_service_send_xml_plist(property_list_service_client_t client, plist_t plist);
+property_list_service_error_t property_list_service_send_binary_plist(property_list_service_client_t client, plist_t plist);
+property_list_service_error_t property_list_service_send_encrypted_xml_plist(gnutls_session_t ssl_session, plist_t plist);
+property_list_service_error_t property_list_service_send_encrypted_binary_plist(gnutls_session_t ssl_session, plist_t plist);
+
+/* receiving */
+property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout);
+property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist);
+property_list_service_error_t property_list_service_receive_encrypted_plist(gnutls_session_t ssl_session, plist_t *plist);
+
+/* misc */
+iphone_connection_t property_list_service_get_connection(property_list_service_client_t client);
+
+#endif
