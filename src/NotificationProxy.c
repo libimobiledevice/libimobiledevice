@@ -27,7 +27,7 @@
 #include <plist/plist.h>
 
 #include "NotificationProxy.h"
-#include "iphone.h"
+#include "property_list_service.h"
 #include "utils.h"
 
 struct np_thread {
@@ -56,24 +56,25 @@ static void np_unlock(np_client_t client)
 }
 
 /**
- * Convert an iphone_error_t value to an np_error_t value.
- * Used internally to get correct error codes when using plist helper
- * functions.
+ * Convert a property_list_service_error_t value to an np_error_t value.
+ * Used internally to get correct error codes.
  *
- * @param err An iphone_error_t error code
+ * @param err A property_list_service_error_t error code
  *
  * @return A matching np_error_t error code,
  *     NP_E_UNKNOWN_ERROR otherwise.
  */
-static np_error_t iphone_to_np_error(iphone_error_t err)
+static np_error_t np_error(property_list_service_error_t err)
 {
 	switch (err) {
-		case IPHONE_E_SUCCESS:
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
 			return NP_E_SUCCESS;
-		case IPHONE_E_INVALID_ARG:
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
 			return NP_E_INVALID_ARG;
-		case IPHONE_E_PLIST_ERROR:
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
 			return NP_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return NP_E_CONN_FAILED;
 		default:
 			break;
 	}
@@ -100,14 +101,13 @@ np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *clie
 	if (!device)
 		return NP_E_INVALID_ARG;
 
-	/* Attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
+	property_list_service_client_t plistclient = NULL;
+	if (property_list_service_client_new(device, dst_port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return NP_E_CONN_FAILED;
 	}
 
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
-	client_loc->connection = connection;
+	client_loc->parent = plistclient;
 
 	client_loc->mutex = g_mutex_new();
 
@@ -128,8 +128,8 @@ np_error_t np_client_free(np_client_t client)
 	if (!client)
 		return NP_E_INVALID_ARG;
 
-	iphone_device_disconnect(client->connection);
-	client->connection = NULL;
+	property_list_service_client_free(client->parent);
+	client->parent = NULL;
 	if (client->notifier) {
 		log_debug_msg("joining np callback\n");
 		g_thread_join(client->notifier);
@@ -160,13 +160,13 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 	plist_dict_insert_item(dict,"Command", plist_new_string("PostNotification"));
 	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
-	np_error_t res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
+	np_error_t res = np_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 
 	dict = plist_new_dict();
 	plist_dict_insert_item(dict,"Command", plist_new_string("Shutdown"));
 
-	res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
+	res = np_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 
 	if (res != NP_E_SUCCESS) {
@@ -196,7 +196,7 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 	plist_dict_insert_item(dict,"Command", plist_new_string("ObserveNotification"));
 	plist_dict_insert_item(dict,"Name", plist_new_string(notification));
 
-	np_error_t res = iphone_to_np_error(iphone_device_send_xml_plist(client->connection, dict));
+	np_error_t res = np_error(property_list_service_send_xml_plist(client->parent, dict));
 	if (res != NP_E_SUCCESS) {
 		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
 	}
@@ -259,12 +259,12 @@ static int np_get_notification(np_client_t client, char **notification)
 	int res = 0;
 	plist_t dict = NULL;
 
-	if (!client || !client->connection || *notification)
+	if (!client || !client->parent || *notification)
 		return -1;
 
 	np_lock(client);
 
-	iphone_device_receive_plist_with_timeout(client->connection, &dict, 500);
+	property_list_service_receive_plist_with_timeout(client->parent, &dict, 500);
 	if (!dict) {
 		log_debug_msg("NotificationProxy: no notification received!\n");
 		res = 0;
@@ -322,7 +322,7 @@ gpointer np_notifier( gpointer arg )
 	if (!npt) return NULL;
 
 	log_debug_msg("%s: starting callback.\n", __func__);
-	while (npt->client->connection) {
+	while (npt->client->parent) {
 		np_get_notification(npt->client, &notification);
 		if (notification) {
 			npt->cbfunc(notification);
@@ -365,11 +365,11 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb 
 	np_lock(client);
 	if (client->notifier) {
 		log_debug_msg("%s: callback already set, removing\n");
-		iphone_connection_t conn = client->connection;
-		client->connection = NULL;
+		property_list_service_client_t parent = client->parent;
+		client->parent = NULL;
 		g_thread_join(client->notifier);
 		client->notifier = NULL;
-		client->connection = conn;
+		client->parent = parent;
 	}
 
 	if (notify_cb) {
