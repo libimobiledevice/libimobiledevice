@@ -671,6 +671,9 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->uuid))
 		ret = lockdownd_pair(client_loc, host_id);
 
+	/* in any case, we need to validate pairing to receive trusted host status */
+	ret = lockdownd_validate_pair(client_loc, host_id);
+
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_ssl_session(client_loc, host_id);
 		if (LOCKDOWN_E_SUCCESS != ret) {
