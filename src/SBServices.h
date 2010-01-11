@@ -24,9 +24,10 @@
 #include <glib.h>
 
 #include "libiphone/sbservices.h"
+#include "property_list_service.h"
 
 struct sbservices_client_int {
-	iphone_connection_t connection;
+	property_list_service_client_t parent;
 	GMutex *mutex;
 };
 

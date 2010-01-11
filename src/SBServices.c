@@ -26,7 +26,7 @@
 #include <plist/plist.h>
 
 #include "SBServices.h"
-#include "iphone.h"
+#include "property_list_service.h"
 #include "utils.h"
 
 /** Locks an sbservices client, done for thread safety stuff.
@@ -58,14 +58,13 @@ sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, s
 	if (!device)
 		return SBSERVICES_E_INVALID_ARG;
 
-	/* Attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
+	property_list_service_client_t plistclient = NULL;
+	if (property_list_service_client_new(device, dst_port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return SBSERVICES_E_CONN_FAILED;
 	}
 
 	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_int));
-	client_loc->connection = connection;
+	client_loc->parent = plistclient;
 	client_loc->mutex = g_mutex_new();
 
 	*client = client_loc;
@@ -77,8 +76,8 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 	if (!client)
 		return SBSERVICES_E_INVALID_ARG;
 
-	iphone_device_disconnect(client->connection);
-	client->connection = NULL;
+	property_list_service_client_free(client->parent);
+	client->parent = NULL;
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
 	}
@@ -89,7 +88,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state)
 {
-	if (!client || !client->connection || !state)
+	if (!client || !client->parent || !state)
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
@@ -99,14 +98,14 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 
 	sbs_lock(client);
 
-	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
+	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
 	plist_free(dict);
 	dict = NULL;
 
-	if (iphone_device_receive_plist(client->connection, state) == IPHONE_E_SUCCESS) {
+	if (property_list_service_receive_plist(client->parent, state) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		res = SBSERVICES_E_SUCCESS;
 	} else {
 		log_debug_msg("%s: could not get icon state!\n", __func__);
@@ -126,7 +125,7 @@ leave_unlock:
 
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate)
 {
-	if (!client || !client->connection || !newstate)
+	if (!client || !client->parent || !newstate)
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
@@ -137,7 +136,7 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 
 	sbs_lock(client);
 
-	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
+	if (property_list_service_send_binary_plist(client->parent, dict) != IPHONE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
@@ -153,7 +152,7 @@ leave_unlock:
 
 sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize)
 {
-	if (!client || !client->connection || !pngdata)
+	if (!client || !client->parent || !pngdata)
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
@@ -164,14 +163,14 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 
 	sbs_lock(client);
 
-	if (iphone_device_send_binary_plist(client->connection, dict) != IPHONE_E_SUCCESS) {
+	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		log_debug_msg("%s: could not send plist\n", __func__);
 		goto leave_unlock;
 	}
 	plist_free(dict);
 
 	dict = NULL;
-	if (iphone_device_receive_plist(client->connection, &dict) == IPHONE_E_SUCCESS) {
+	if (property_list_service_receive_plist(client->parent, &dict) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		plist_t node = plist_dict_get_item(dict, "pngData");
 		if (node) {
 			plist_get_data_val(node, pngdata, pngsize);
