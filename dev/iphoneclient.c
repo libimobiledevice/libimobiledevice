@@ -68,10 +68,8 @@ int main(int argc, char *argv[])
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
 		iphone_set_debug_level(1);
-		iphone_set_debug_mask(DBGMASK_ALL);
 	} else {
 		iphone_set_debug_level(0);
-		iphone_set_debug_mask(DBGMASK_NONE);
 	}
 
 	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {

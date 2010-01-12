@@ -25,8 +25,6 @@
 #include <glib.h>
 
 G_GNUC_INTERNAL inline void log_debug_msg(const char *format, ...);
-G_GNUC_INTERNAL inline void log_dbg_msg(uint16_t id, const char *format, ...);
-
 G_GNUC_INTERNAL inline void log_debug_buffer(const char *data, const int length);
 G_GNUC_INTERNAL inline void dump_debug_buffer(const char *file, const char *data, const int length);
 

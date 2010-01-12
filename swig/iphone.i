@@ -36,11 +36,6 @@ PList::Node* new_node_from_plist(plist_t node);
 %include "cstring.i"
 %include "plist/swig/plist.i"
 
-#define DBGMASK_ALL        0xFFFF
-#define DBGMASK_NONE       0x0000
-#define DBGMASK_LOCKDOWND  (1 << 1)
-#define DBGMASK_MOBILESYNC (1 << 2)
-
 typedef struct {
 	iphone_device_t dev;
 } iPhone;
@@ -147,10 +142,6 @@ PList::Node* new_node_from_plist(plist_t node)
 
 	~iPhone() {
 		my_delete_iPhone($self);
-	}
-
-	void set_debug_mask(uint16_t mask) {
-		iphone_set_debug_mask(mask);
 	}
 
 	void set_debug_level(int level) {
