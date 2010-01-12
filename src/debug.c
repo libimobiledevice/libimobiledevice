@@ -53,7 +53,7 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
 
 	/* generate header text */
-	asprintf(&header, "%s %s %s:%d", str_time, file, func, line);
+	(void)asprintf(&header, "%s %s %s:%d", str_time, file, func, line);
 	free (str_time);
 
 	/* always in light green */
@@ -79,7 +79,7 @@ inline void debug_info_real(const char *func, const char *file, int line, const 
 
 	/* run the real fprintf */
 	va_start(args, format);
-	vasprintf(&buffer, format, args);
+	(void)vasprintf(&buffer, format, args);
 	va_end(args);
 
 	debug_print_line(func, file, line, buffer);
