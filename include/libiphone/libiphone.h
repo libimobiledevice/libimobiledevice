@@ -39,6 +39,7 @@ extern "C" {
 #define IPHONE_E_NO_DEVICE             -3
 #define IPHONE_E_NOT_ENOUGH_DATA       -4
 #define IPHONE_E_BAD_HEADER            -5
+#define IPHONE_E_SSL_ERROR             -6
 
 typedef int16_t iphone_error_t;
 

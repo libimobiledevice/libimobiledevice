@@ -30,9 +30,16 @@ enum connection_type {
 	CONNECTION_USBMUXD = 1
 };
 
+struct ssl_data_int {
+        gnutls_certificate_credentials_t certificate;
+	gnutls_session_t session;
+};
+typedef struct ssl_data_int *ssl_data_t;
+
 struct iphone_connection_int {
 	enum connection_type type;
 	void *data;
+	ssl_data_t ssl_data;
 };
 
 struct iphone_device_int {
@@ -40,5 +47,8 @@ struct iphone_device_int {
 	enum connection_type conn_type;
 	void *conn_data;
 };
+
+iphone_error_t iphone_connection_enable_ssl(iphone_connection_t connection);
+iphone_error_t iphone_connection_disable_ssl(iphone_connection_t connection);
 
 #endif
