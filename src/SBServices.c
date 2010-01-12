@@ -49,6 +49,32 @@ static void sbs_unlock(sbservices_client_t client)
 	g_mutex_unlock(client->mutex);
 }
 
+/**
+ * Convert a property_list_service_error_t value to a sbservices_error_t value.
+ * Used internally to get correct error codes.
+ *
+ * @param err A property_list_service_error_t error code
+ *
+ * @return A matching sbservices_error_t error code,
+ *     SBSERVICES_E_UNKNOWN_ERROR otherwise.
+ */
+static sbservices_error_t sbservices_error(property_list_service_error_t err)
+{
+       switch (err) {
+                case PROPERTY_LIST_SERVICE_E_SUCCESS:
+                        return SBSERVICES_E_SUCCESS;
+                case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+                        return SBSERVICES_E_INVALID_ARG;
+                case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+                        return SBSERVICES_E_PLIST_ERROR;
+                case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+                        return SBSERVICES_E_CONN_FAILED;
+                default:
+                        break;
+        }
+        return SBSERVICES_E_UNKNOWN_ERROR;
+}
+
 sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, sbservices_client_t *client)
 {
 	/* makes sure thread environment is available */
@@ -59,8 +85,9 @@ sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, s
 		return SBSERVICES_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, dst_port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		return SBSERVICES_E_CONN_FAILED;
+	sbservices_error_t err = sbservices_error(property_list_service_client_new(device, dst_port, &plistclient));
+	if (err != SBSERVICES_E_SUCCESS) {
+		return err;
 	}
 
 	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_int));
@@ -76,14 +103,14 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 	if (!client)
 		return SBSERVICES_E_INVALID_ARG;
 
-	property_list_service_client_free(client->parent);
+	sbservices_error_t err = sbservices_error(property_list_service_client_free(client->parent));
 	client->parent = NULL;
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
 	}
 	free(client);
 
-	return SBSERVICES_E_SUCCESS;
+	return err;
 }
 
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state)
@@ -98,17 +125,17 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 
 	sbs_lock(client);
 
-	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("could not send plist");
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 		goto leave_unlock;
 	}
 	plist_free(dict);
 	dict = NULL;
 
-	if (property_list_service_receive_plist(client->parent, state) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		res = SBSERVICES_E_SUCCESS;
-	} else {
-		debug_info("could not get icon state!");
+	res = sbservices_error(property_list_service_receive_plist(client->parent, state));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not get icon state, error %d", res);
 		if (*state) {
 			plist_free(*state);
 			*state = NULL;
@@ -136,13 +163,12 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 
 	sbs_lock(client);
 
-	if (property_list_service_send_binary_plist(client->parent, dict) != IPHONE_E_SUCCESS) {
-		debug_info("could not send plist");
-		goto leave_unlock;
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 	}
 	// NO RESPONSE
 
-leave_unlock:
 	if (dict) {
 		plist_free(dict);
 	}
@@ -163,19 +189,20 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 
 	sbs_lock(client);
 
-	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("could not send plist");
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 		goto leave_unlock;
 	}
 	plist_free(dict);
 
 	dict = NULL;
-	if (property_list_service_receive_plist(client->parent, &dict) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	res = sbservices_error(property_list_service_receive_plist(client->parent, &dict));
+	if (res	== SBSERVICES_E_SUCCESS) {
 		plist_t node = plist_dict_get_item(dict, "pngData");
 		if (node) {
 			plist_get_data_val(node, pngdata, pngsize);
 		}
-		res = SBSERVICES_E_SUCCESS;
 	}
 
 leave_unlock:
