@@ -22,6 +22,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <plist/plist.h>
 #include <glib.h>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && !defined(STRIP_DEBUG_CODE)
@@ -39,5 +40,6 @@ G_GNUC_INTERNAL inline void debug_info_real(const char *func,
 
 G_GNUC_INTERNAL inline void debug_buffer(const char *data, const int length);
 G_GNUC_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
+G_GNUC_INTERNAL inline void debug_plist(plist_t plist);
 
 #endif

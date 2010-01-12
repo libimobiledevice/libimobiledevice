@@ -134,3 +134,16 @@ inline void debug_buffer_to_file(const char *file, const char *data, const int l
 	}
 #endif
 }
+
+inline void debug_plist(plist_t plist)
+{
+	if (!plist)
+		return;
+
+	char *buffer = NULL;
+	uint32_t length = 0;
+	plist_to_xml(plist, &buffer, &length);
+	debug_info("plist size: %i\nbuffer :\n%s", length, buffer);
+	free(buffer);
+}
+
