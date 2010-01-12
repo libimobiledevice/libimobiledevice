@@ -1341,8 +1341,8 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	userpref_get_host_id(&host_id);
 	if (!host_id)
 		return LOCKDOWN_E_INVALID_CONF;
-	if (!client->ssl_enabled && !lockdownd_start_ssl_session(client, host_id))
-		return LOCKDOWN_E_SSL_ERROR;
+	if (!client->session_id)
+		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	plist_t dict = NULL;
 	uint32_t port_loc = 0;
@@ -1413,6 +1413,9 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
+	if (!client->session_id)
+		return LOCKDOWN_E_NO_RUNNING_SESSION;
+
 	if (!activation_record)
 		return LOCKDOWN_E_INVALID_ARG;
 
@@ -1456,6 +1459,9 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
+
+	if (!client->session_id)
+		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
