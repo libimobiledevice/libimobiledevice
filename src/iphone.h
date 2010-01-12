@@ -41,14 +41,4 @@ struct iphone_device_int {
 	void *conn_data;
 };
 
-iphone_error_t iphone_device_send_xml_plist(iphone_connection_t connection, plist_t plist);
-iphone_error_t iphone_device_send_binary_plist(iphone_connection_t connection, plist_t plist);
-iphone_error_t iphone_device_send_encrypted_xml_plist(gnutls_session_t ssl_session, plist_t plist);
-iphone_error_t iphone_device_send_encrypted_binary_plist(gnutls_session_t ssl_session, plist_t plist);
-
-iphone_error_t iphone_device_receive_plist_with_timeout(iphone_connection_t connection, plist_t *plist, unsigned int timeout);
-iphone_error_t iphone_device_receive_plist(iphone_connection_t connection, plist_t *plist);
-iphone_error_t iphone_device_receive_encrypted_plist_with_timeout(gnutls_session_t ssl_session, plist_t *plist, unsigned int timeout);
-iphone_error_t iphone_device_receive_encrypted_plist(gnutls_session_t ssl_session, plist_t *plist);
-
 #endif
