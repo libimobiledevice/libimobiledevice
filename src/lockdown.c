@@ -1131,6 +1131,9 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 			ret = property_list_service_enable_ssl(client->parent);
 			if (ret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
 				client->ssl_enabled = 1;
+			} else {
+				ret = LOCKDOWN_E_SSL_ERROR;
+				client->ssl_enabled = 0;
 			}
 		} else {
 			client->ssl_enabled = 0;
