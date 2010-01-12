@@ -22,9 +22,10 @@
 #define MOBILESYNC_H
 
 #include "libiphone/mobilesync.h"
+#include "device_link_service.h"
 
 struct mobilesync_client_int {
-	iphone_connection_t connection;
+	device_link_service_client_t parent;
 };
 
 #endif

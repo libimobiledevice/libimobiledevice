@@ -25,31 +25,34 @@
 #include <arpa/inet.h>
 
 #include "MobileSync.h"
-#include "iphone.h"
+#include "device_link_service.h"
 #include "utils.h"
 
 #define MSYNC_VERSION_INT1 100
 #define MSYNC_VERSION_INT2 100
 
 /**
- * Convert an iphone_error_t value to an mobilesync_error_t value.
- * Used internally to get correct error codes when using plist helper
- * functions.
+ * Convert an device_link_service_error_t value to an mobilesync_error_t value.
+ * Used internally to get correct error codes when using device_link_service stuff.
  *
- * @param err An iphone_error_t error code
+ * @param err An device_link_service_error_t error code
  *
  * @return A matching mobilesync_error_t error code,
  *     MOBILESYNC_E_UNKNOWN_ERROR otherwise.
  */
-static mobilesync_error_t iphone_to_mobilesync_error(iphone_error_t err)
+static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 {
 	switch (err) {
-		case IPHONE_E_SUCCESS:
+		case DEVICE_LINK_SERVICE_E_SUCCESS:
 			return MOBILESYNC_E_SUCCESS;
-		case IPHONE_E_INVALID_ARG:
+		case DEVICE_LINK_SERVICE_E_INVALID_ARG:
 			return MOBILESYNC_E_INVALID_ARG;
-		case IPHONE_E_PLIST_ERROR:
+		case DEVICE_LINK_SERVICE_E_PLIST_ERROR:
 			return MOBILESYNC_E_PLIST_ERROR;
+		case DEVICE_LINK_SERVICE_E_MUX_ERROR:
+			return MOBILESYNC_E_MUX_ERROR;
+		case DEVICE_LINK_SERVICE_E_BAD_VERSION:
+			return MOBILESYNC_E_BAD_VERSION;
 		default:
 			break;
 	}
@@ -62,116 +65,36 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 	if (!device || dst_port == 0 || !client || *client)
 		return MOBILESYNC_E_INVALID_ARG;
 
-	mobilesync_error_t ret = MOBILESYNC_E_UNKNOWN_ERROR;
-
-	/* Attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
+	device_link_service_client_t dlclient = NULL;
+	mobilesync_error_t ret = mobilesync_error(device_link_service_client_new(device, dst_port, &dlclient));
+	if (ret != MOBILESYNC_E_SUCCESS) {
 		return ret;
 	}
 
 	mobilesync_client_t client_loc = (mobilesync_client_t) malloc(sizeof(struct mobilesync_client_int));
-	client_loc->connection = connection;
+	client_loc->parent = dlclient;
 
 	/* perform handshake */
-	plist_t array = NULL;
-
-	/* first receive version */
-	ret = mobilesync_recv(client_loc, &array);
-
-	plist_t msg_node = plist_array_get_item(array, 0);
-
-	char* msg = NULL;
-	plist_type type = plist_get_node_type(msg_node);
-	if (PLIST_STRING == type) {
-		plist_get_string_val(msg_node, &msg);
-	}
-	if (PLIST_STRING != type || strcmp(msg, "DLMessageVersionExchange") || plist_array_get_size(array) < 3) {
-		log_debug_msg("%s: ERROR: MobileSync client expected a version exchange !\n", __func__);
-	}
-	free(msg);
-	msg = NULL;
-
-	plist_t ver_1 = plist_array_get_item(array, 1);
-	plist_t ver_2 = plist_array_get_item(array, 2);
-
-	plist_type ver_1_type = plist_get_node_type(ver_1);
-	plist_type ver_2_type = plist_get_node_type(ver_2);
-
-	if (PLIST_UINT == ver_1_type && PLIST_UINT == ver_2_type) {
-
-		uint64_t ver_1_val = 0;
-		uint64_t ver_2_val = 0;
-
-		plist_get_uint_val(ver_1, &ver_1_val);
-		plist_get_uint_val(ver_2, &ver_2_val);
-
-		plist_free(array);
-		array = NULL;
-
-		if (ver_1_type == PLIST_UINT && ver_2_type == PLIST_UINT && ver_1_val == MSYNC_VERSION_INT1
-			&& ver_2_val == MSYNC_VERSION_INT2) {
-
-			array = plist_new_array();
-			plist_array_append_item(array, plist_new_string("DLMessageVersionExchange"));
-			plist_array_append_item(array, plist_new_string("DLVersionsOk"));
-
-			ret = mobilesync_send(client_loc, array);
-
-			plist_free(array);
-			array = NULL;
-
-			ret = mobilesync_recv(client_loc, &array);
-			plist_t rep_node = plist_array_get_item(array, 0);
-
-			type = plist_get_node_type(rep_node);
-			if (PLIST_STRING == type) {
-				plist_get_string_val(rep_node, &msg);
-			}
-			if (PLIST_STRING != type || strcmp(msg, "DLMessageDeviceReady")) {
-				log_debug_msg("%s: ERROR: MobileSync client failed to start session !\n", __func__);
-				ret = MOBILESYNC_E_BAD_VERSION;
-			}
-			else
-			{
-				ret = MOBILESYNC_E_SUCCESS;
-				*client = client_loc;
-			}
-			free(msg);
-			msg = NULL;
-
-			plist_free(array);
-			array = NULL;
-		}
-	}
-
-	if (MOBILESYNC_E_SUCCESS != ret)
+	ret = mobilesync_error(device_link_service_version_exchange(dlclient, MSYNC_VERSION_INT1, MSYNC_VERSION_INT2));
+	if (ret != MOBILESYNC_E_SUCCESS) {
+		log_dbg_msg(DBGMASK_MOBILESYNC, "%s: version exchange failed, error %d\n", __func__, ret);
 		mobilesync_client_free(client_loc);
+		return ret;
+	}
+
+	*client = client_loc;
 
 	return ret;
-}
-
-static void mobilesync_disconnect(mobilesync_client_t client)
-{
-	if (!client)
-		return;
-
-	plist_t array = plist_new_array();
-	plist_array_append_item(array, plist_new_string("DLMessageDisconnect"));
-	plist_array_append_item(array, plist_new_string("All done, thanks for the memories"));
-
-	mobilesync_send(client, array);
-	plist_free(array);
-	array = NULL;
 }
 
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
 	if (!client)
-		return IPHONE_E_INVALID_ARG;
-
-	mobilesync_disconnect(client);
-	return (iphone_device_disconnect(client->connection) == 0 ? MOBILESYNC_E_SUCCESS: MOBILESYNC_E_MUX_ERROR);
+		return MOBILESYNC_E_INVALID_ARG;
+	device_link_service_disconnect(client->parent);
+	mobilesync_error_t err = mobilesync_error(device_link_service_client_free(client->parent));
+	free(client);
+	return err;
 }
 
 /** Polls the iPhone for MobileSync data.
@@ -183,15 +106,13 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
  */
 mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 {
-	if (!client || !plist || (plist && *plist))
+	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
-
-	mobilesync_error_t ret = iphone_to_mobilesync_error(iphone_device_receive_plist(client->connection, plist));
-	if (ret != MOBILESYNC_E_SUCCESS) {
-		return MOBILESYNC_E_MUX_ERROR;
-	}
-
+	mobilesync_error_t ret = mobilesync_error(device_link_service_receive(client->parent, plist));
 #ifndef STRIP_DEBUG_CODE
+	if (ret != MOBILESYNC_E_SUCCESS) {
+		return ret;
+	}
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(*plist, &XMLContent, &length);
@@ -223,5 +144,5 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	log_dbg_msg(DBGMASK_MOBILESYNC, "%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
 	free(XMLContent);
 #endif
-	return (iphone_device_send_binary_plist(client->connection, plist) == IPHONE_E_SUCCESS ? MOBILESYNC_E_SUCCESS : MOBILESYNC_E_MUX_ERROR);
+	return mobilesync_error(device_link_service_send(client->parent, plist));
 }
