@@ -6,6 +6,7 @@ AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_L
 lib_LTLIBRARIES = libiphone.la
 libiphone_la_SOURCES = iphone.c iphone.h \
 		       property_list_service.c property_list_service.h\
+		       device_link_service.c device_link_service.h\
 		       lockdown.c lockdown.h\
 		       AFC.c AFC.h\
 		       NotificationProxy.c NotificationProxy.h\
