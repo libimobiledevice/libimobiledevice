@@ -193,7 +193,7 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
 	}
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 
-	if (client->in_SSL) {
+	if (client->ssl_enabled) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
 		ret = lockdownd_stop_session(client);
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
@@ -205,7 +205,7 @@ static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
         if (client->ssl_certificate) {
 		gnutls_certificate_free_credentials(client->ssl_certificate);
         }
-	client->in_SSL = 0;
+	client->ssl_enabled = 0;
 
 	return ret;
 }
@@ -277,7 +277,7 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	property_list_service_error_t err;
 
-	if (!client->in_SSL) {
+	if (!client->ssl_enabled) {
 		err = property_list_service_receive_plist(client->parent, plist);
 		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
@@ -313,7 +313,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	iphone_error_t err;
 
-	if (!client->in_SSL) {
+	if (!client->ssl_enabled) {
 		err = property_list_service_send_xml_plist(client->parent, plist);
 		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 			ret = LOCKDOWN_E_UNKNOWN_ERROR;
@@ -644,7 +644,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	client_loc->parent = plistclient;
 	client_loc->ssl_session = NULL;
 	client_loc->ssl_certificate = NULL;
-	client_loc->in_SSL = 0;
+	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
 	client_loc->uuid = NULL;
 	client_loc->label = NULL;
@@ -1152,7 +1152,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 		session_ok = 1;
 	}
 	if (session_ok && !UseSSL) {
-		client->in_SSL = 0;
+		client->ssl_enabled = 0;
 		ret = LOCKDOWN_E_SUCCESS;
 	} else if (session_ok) {
 		// Set up GnuTLS...
@@ -1196,7 +1196,7 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: oh.. errno says %s\n", __func__, strerror(errno));
 			return LOCKDOWN_E_SSL_ERROR;
 		} else {
-			client->in_SSL = 1;
+			client->ssl_enabled = 1;
 			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
@@ -1309,7 +1309,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	userpref_get_host_id(&host_id);
 	if (!host_id)
 		return LOCKDOWN_E_INVALID_CONF;
-	if (!client->in_SSL && !lockdownd_start_ssl_session(client, host_id))
+	if (!client->ssl_enabled && !lockdownd_start_ssl_session(client, host_id))
 		return LOCKDOWN_E_SSL_ERROR;
 
 	plist_t dict = NULL;

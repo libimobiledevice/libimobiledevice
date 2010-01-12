@@ -32,7 +32,7 @@ struct lockdownd_client_int {
 	property_list_service_client_t parent;
 	gnutls_session_t ssl_session;
 	gnutls_certificate_credentials_t ssl_certificate;
-	int in_SSL;
+	int ssl_enabled;
 	char *session_id;
 	char *uuid;
 	char *label;
