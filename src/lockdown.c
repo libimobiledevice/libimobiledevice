@@ -123,20 +123,190 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 	}
 }
 
-/**
- * Closes the lockdownd communication session, by sending
- * the StopSession Request to the device.
+/** gnutls callback for writing data to the device.
  *
- * @param control The lockdown client
+ * @param transport It's really the lockdownd client, but the method signature has to match
+ * @param buffer The data to send
+ * @param length The length of data to send in bytes
+ *
+ * @return The number of bytes sent
+ */
+static ssize_t lockdownd_ssl_write(gnutls_transport_ptr_t transport, char *buffer, size_t length)
+{
+	uint32_t bytes = 0;
+	lockdownd_client_t client;
+	client = (lockdownd_client_t) transport;
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pre-send length = %zi\n", __func__, length);
+	iphone_device_send(property_list_service_get_connection(client->parent), buffer, length, &bytes);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: post-send sent %i bytes\n", __func__, bytes);
+	return bytes;
+}
+
+/** gnutls callback for reading data from the device.
+ *
+ * @param transport It's really the lockdownd client, but the method signature has to match
+ * @param buffer The buffer to store data in
+ * @param length The length of data to read in bytes
+ *
+ * @return The number of bytes read
+ */
+static ssize_t lockdownd_ssl_read(gnutls_transport_ptr_t transport, char *buffer, size_t length)
+{
+	int bytes = 0, pos_start_fill = 0;
+	size_t tbytes = 0;
+	int this_len = length;
+	iphone_error_t res;
+	lockdownd_client_t client;
+	client = (lockdownd_client_t) transport;
+	char *recv_buffer;
+
+	log_debug_msg("%s: pre-read client wants %zi bytes\n", __func__, length);
+
+	recv_buffer = (char *) malloc(sizeof(char) * this_len);
+
+	/* repeat until we have the full data or an error occurs */
+	do {
+		if ((res = iphone_device_recv(property_list_service_get_connection(client->parent), recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
+			log_debug_msg("%s: ERROR: iphone_device_recv returned %d\n", __func__, res);
+			return res;
+		}
+		log_debug_msg("%s: post-read we got %i bytes\n", __func__, bytes);
+
+		// increase read count
+		tbytes += bytes;
+
+		// fill the buffer with what we got right now
+		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
+		pos_start_fill += bytes;
+
+		if (tbytes >= length) {
+			break;
+		}
+
+		this_len = length - tbytes;
+		log_debug_msg("%s: re-read trying to read missing %i bytes\n", __func__, this_len);
+	} while (tbytes < length);
+
+	if (recv_buffer) {
+		free(recv_buffer);
+	}
+
+	return tbytes;
+}
+
+/** Starts communication with lockdownd after the iPhone has been paired,
+ *  and if the device requires it, switches to SSL mode.
+ *
+ * @param client The lockdownd client
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
+static lockdownd_error_t lockdownd_ssl_start_session(lockdownd_client_t client)
+{
+	lockdownd_error_t ret = LOCKDOWN_E_SSL_ERROR;
+	uint32_t return_me = 0;
+
+	// Set up GnuTLS...
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: enabling SSL mode\n", __func__);
+	errno = 0;
+	gnutls_global_init();
+	gnutls_certificate_allocate_credentials(&client->ssl_certificate);
+	gnutls_certificate_set_x509_trust_file(client->ssl_certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
+	gnutls_init(&client->ssl_session, GNUTLS_CLIENT);
+	{
+		int protocol_priority[16] = { GNUTLS_SSL3, 0 };
+		int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
+		int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
+		int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
+		int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
+
+		gnutls_cipher_set_priority(client->ssl_session, cipher_priority);
+		gnutls_compression_set_priority(client->ssl_session, comp_priority);
+		gnutls_kx_set_priority(client->ssl_session, kx_priority);
+		gnutls_protocol_set_priority(client->ssl_session, protocol_priority);
+		gnutls_mac_set_priority(client->ssl_session, mac_priority);
+	}
+	gnutls_credentials_set(client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
+
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 1...\n", __func__);
+	gnutls_transport_set_ptr(client->ssl_session, (gnutls_transport_ptr_t) client);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 2...\n", __func__);
+	gnutls_transport_set_push_function(client->ssl_session, (gnutls_push_func) & lockdownd_ssl_write);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 3...\n", __func__);
+	gnutls_transport_set_pull_function(client->ssl_session, (gnutls_pull_func) & lockdownd_ssl_read);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 4 -- now handshaking...\n", __func__);
+	if (errno)
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: WARN: errno says %s before handshake!\n", __func__, strerror(errno));
+	return_me = gnutls_handshake(client->ssl_session);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS handshake done...\n", __func__);
+
+	if (return_me != GNUTLS_E_SUCCESS) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS reported something wrong.\n", __func__);
+		gnutls_perror(return_me);
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: oh.. errno says %s\n", __func__, strerror(errno));
+	} else {
+		client->ssl_enabled = 1;
+		ret = LOCKDOWN_E_SUCCESS;
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SSL mode enabled\n", __func__);
+	}
+
+	return ret;
+}
+
+/**
+ * Shuts down the SSL session by performing a close notify, which is done
+ * by "gnutls_bye".
+ *
+ * @param client The lockdown client
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+static lockdownd_error_t lockdownd_ssl_stop_session(lockdownd_client_t client)
+{
+	if (!client) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: invalid argument!\n", __func__);
+		return LOCKDOWN_E_INVALID_ARG;
+	}
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+
+	if (client->ssl_enabled) {
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
+		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
+	}
+	if (client->ssl_session) {
+		gnutls_deinit(client->ssl_session);
+	}
+	if (client->ssl_certificate) {
+		gnutls_certificate_free_credentials(client->ssl_certificate);
+	}
+	client->ssl_enabled = 0;
+
+	if (client->session_id)
+		free(client->session_id);
+	client->session_id = NULL;
+
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SSL mode disabled\n", __func__);
+
+	return ret;
+}
+
+/**
+ * Closes the lockdownd communication session, by sending the StopSession
+ * Request to the device.
+ *
+ * @see lockdownd_start_session
+ *
+ * @param control The lockdown client
+ * @param session_id The id of a running session
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
-	if (!client->session_id) {
+	if (!session_id) {
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: no session_id given, cannot stop session\n", __func__);
 		return LOCKDOWN_E_INVALID_ARG;
 	}
@@ -146,9 +316,9 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
-	plist_dict_insert_item(dict,"SessionID", plist_new_string(client->session_id));
+	plist_dict_insert_item(dict,"SessionID", plist_new_string(session_id));
 
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping session %s\n", __func__, client->session_id);
+	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping session %s\n", __func__, session_id);
 
 	ret = lockdownd_send(client, dict);
 
@@ -170,42 +340,8 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client)
 	plist_free(dict);
 	dict = NULL;
 
-	free(client->session_id);
-	client->session_id = NULL;
-
-	return ret;
-}
-
-/**
- * Shuts down the SSL session by first calling iphone_lckd_stop_session
- * to cleanly close the lockdownd communication session, and then
- * performing a close notify, which is done by "gnutls_bye".
- *
- * @param client The lockdown client
- *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
- */
-static lockdownd_error_t lockdownd_stop_ssl_session(lockdownd_client_t client)
-{
-	if (!client) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: invalid argument!\n", __func__);
-		return LOCKDOWN_E_INVALID_ARG;
-	}
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-
-	if (client->ssl_enabled) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: stopping SSL session\n", __func__);
-		ret = lockdownd_stop_session(client);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: sending SSL close notify\n", __func__);
-		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
-	}
-	if (client->ssl_session) {
-		gnutls_deinit(client->ssl_session);
-        }
-        if (client->ssl_certificate) {
-		gnutls_certificate_free_credentials(client->ssl_certificate);
-        }
-	client->ssl_enabled = 0;
+	/* stop ssl session */
+	lockdownd_ssl_stop_session(client);
 
 	return ret;
 }
@@ -222,7 +358,8 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	lockdownd_stop_ssl_session(client);
+	if (client->session_id)
+		lockdownd_stop_session(client, client->session_id);
 
 	if (client->parent) {
 		lockdownd_goodbye(client);
@@ -232,9 +369,6 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		}
 	}
 
-	if (client->session_id) {
-		free(client->session_id);
-	}
 	if (client->uuid) {
 		free(client->uuid);
 	}
@@ -712,7 +846,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 	ret = lockdownd_validate_pair(client_loc, host_id);
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
-		ret = lockdownd_start_ssl_session(client_loc, host_id);
+		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
 		if (LOCKDOWN_E_SUCCESS != ret) {
 			ret = LOCKDOWN_E_SSL_ERROR;
 			log_debug_msg("%s: SSL Session opening failed.\n", __func__);
@@ -1012,7 +1146,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 			asn1_delete_structure(&pkcs1);
 	}
 
-	/* now generate certifcates */
+	/* now generate certificates */
 	if (LOCKDOWN_E_SUCCESS == ret && 0 != modulus.size && 0 != exponent.size) {
 
 		gnutls_global_init();
@@ -1106,22 +1240,26 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
  *  and if the device requires it, switches to SSL mode.
  *
  * @param client The lockdownd client
- * @param HostID The HostID used with this phone
+ * @param host_id The HostID of the computer
+ * @param session_id The session_id of the created session
+ * @param ssl_enabled Whether SSL communication is used in the session
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const char *host_id)
+lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled)
 {
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	plist_t dict = NULL;
-	uint32_t return_me = 0;
 
-	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+	if (!client || !host_id)
+		ret = LOCKDOWN_E_INVALID_ARG;
+
+	/* if we have a running session, stop current one first */
 	if (client->session_id) {
-		free(client->session_id);
-		client->session_id = NULL;
+		lockdownd_stop_session(client, client->session_id);
 	}
 
-	/* Setup DevicePublicKey request plist */
+	/* setup request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"HostID", plist_new_string(host_id));
@@ -1144,184 +1282,48 @@ lockdownd_error_t lockdownd_start_ssl_session(lockdownd_client_t client, const c
 		if (error_node && PLIST_STRING == plist_get_node_type(error_node)) {
 			char *error = NULL;
 			plist_get_string_val(error_node, &error);
-
 			if (!strcmp(error, "InvalidHostID")) {
-				/* hostid is unknown. Pair and try again */
-				char *host_id_new = NULL;
-				userpref_get_host_id(&host_id_new);
-
-				if (LOCKDOWN_E_SUCCESS == lockdownd_pair(client, host_id_new) ) {
-					/* start session again */
-					plist_free(dict);
-					dict = plist_new_dict();
-					plist_dict_add_label(dict, client->label);
-					plist_dict_insert_item(dict,"HostID", plist_new_string(host_id_new));
-					plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
-
-					ret = lockdownd_send(client, dict);
-					plist_free(dict);
-					dict = NULL;
-
-					ret = lockdownd_recv(client, &dict);
-				}
-				free(host_id_new);
+				ret = LOCKDOWN_E_INVALID_HOST_ID;
 			}
 			free(error);
 		}
-	}
+	} else {
+		uint8_t use_ssl = 0;
 
-	ret = LOCKDOWN_E_SSL_ERROR;
-
-	int session_ok = 0; 
-	uint8_t UseSSL = 0;
-
-	if (lockdown_check_result(dict, "StartSession") == RESULT_SUCCESS) {
 		plist_t enable_ssl = plist_dict_get_item(dict, "EnableSessionSSL");
 		if (enable_ssl && (plist_get_node_type(enable_ssl) == PLIST_BOOLEAN)) {
-			plist_get_bool_val(enable_ssl, &UseSSL);
+			plist_get_bool_val(enable_ssl, &use_ssl);
 		}
 		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Session startup OK\n", __func__);
-		session_ok = 1;
-	}
-	if (session_ok && !UseSSL) {
-		client->ssl_enabled = 0;
-		ret = LOCKDOWN_E_SUCCESS;
-	} else if (session_ok) {
-		// Set up GnuTLS...
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Switching to SSL mode\n", __func__);
-		errno = 0;
-		gnutls_global_init();
-		//gnutls_anon_allocate_client_credentials(&anoncred);
-		gnutls_certificate_allocate_credentials(&client->ssl_certificate);
-		gnutls_certificate_set_x509_trust_file(client->ssl_certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
-		gnutls_init(&client->ssl_session, GNUTLS_CLIENT);
-		{
-			int protocol_priority[16] = { GNUTLS_SSL3, 0 };
-			int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
-			int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
-			int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
-			int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
 
-			gnutls_cipher_set_priority(client->ssl_session, cipher_priority);
-			gnutls_compression_set_priority(client->ssl_session, comp_priority);
-			gnutls_kx_set_priority(client->ssl_session, kx_priority);
-			gnutls_protocol_set_priority(client->ssl_session, protocol_priority);
-			gnutls_mac_set_priority(client->ssl_session, mac_priority);
+		if (ssl_enabled != NULL)
+			*ssl_enabled = use_ssl;
+
+		/* store session id, we need it for StopSession */
+		plist_t session_node = plist_dict_get_item(dict, "SessionID");
+		if (session_node && (plist_get_node_type(session_node) == PLIST_STRING)) {
+			plist_get_string_val(session_node, &client->session_id);
 		}
-		gnutls_credentials_set(client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
-
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 1...\n", __func__);
-		gnutls_transport_set_ptr(client->ssl_session, (gnutls_transport_ptr_t) client);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 2...\n", __func__);
-		gnutls_transport_set_push_function(client->ssl_session, (gnutls_push_func) & lockdownd_secuwrite);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 3...\n", __func__);
-		gnutls_transport_set_pull_function(client->ssl_session, (gnutls_pull_func) & lockdownd_securead);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS step 4 -- now handshaking...\n", __func__);
-		if (errno)
-			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: WARN: errno says %s before handshake!\n", __func__, strerror(errno));
-		return_me = gnutls_handshake(client->ssl_session);
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS handshake done...\n", __func__);
-
-		if (return_me != GNUTLS_E_SUCCESS) {
-			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: GnuTLS reported something wrong.\n", __func__);
-			gnutls_perror(return_me);
-			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: oh.. errno says %s\n", __func__, strerror(errno));
-			return LOCKDOWN_E_SSL_ERROR;
+		if (client->session_id) {
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
+			if (session_id != NULL)
+				*session_id = strdup(client->session_id);
 		} else {
-			client->ssl_enabled = 1;
+			log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Failed to get SessionID!\n", __func__);
+		}
+		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Enable SSL Session: %s\n", __func__, (use_ssl?"true":"false"));
+		if (use_ssl) {
+			ret = lockdownd_ssl_start_session(client);
+		} else {
+			client->ssl_enabled = 0;
 			ret = LOCKDOWN_E_SUCCESS;
 		}
 	}
-	/* store session id, we need it for StopSession */
-	plist_t session_node = plist_dict_get_item(dict, "SessionID");
-	if (session_node && (plist_get_node_type(session_node) == PLIST_STRING)) {
-		plist_get_string_val(session_node, &client->session_id);
-	}
-	if (client->session_id) {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: SessionID: %s\n", __func__, client->session_id);
-	} else {
-		log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Failed to get SessionID!\n", __func__);
-	}
+
 	plist_free(dict);
 	dict = NULL;
 
-	if (ret == LOCKDOWN_E_SUCCESS)
-		return ret;
-
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: Apparently failed negotiating with lockdownd.\n", __func__);
-	return LOCKDOWN_E_SSL_ERROR;
-}
-
-/** gnutls callback for writing data to the iPhone.
- *
- * @param transport It's really the lockdownd client, but the method signature has to match
- * @param buffer The data to send
- * @param length The length of data to send in bytes
- *
- * @return The number of bytes sent
- */
-ssize_t lockdownd_secuwrite(gnutls_transport_ptr_t transport, char *buffer, size_t length)
-{
-	uint32_t bytes = 0;
-	lockdownd_client_t client;
-	client = (lockdownd_client_t) transport;
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: called\n", __func__);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: pre-send length = %zi\n", __func__, length);
-	iphone_device_send(property_list_service_get_connection(client->parent), buffer, length, &bytes);
-	log_dbg_msg(DBGMASK_LOCKDOWND, "%s: post-send sent %i bytes\n", __func__, bytes);
-	return bytes;
-}
-
-/** gnutls callback for reading data from the iPhone
- *
- * @param transport It's really the lockdownd client, but the method signature has to match
- * @param buffer The buffer to store data in
- * @param length The length of data to read in bytes
- *
- * @return The number of bytes read
- */
-ssize_t lockdownd_securead(gnutls_transport_ptr_t transport, char *buffer, size_t length)
-{
-	int bytes = 0, pos_start_fill = 0;
-	size_t tbytes = 0;
-	int this_len = length;
-	iphone_error_t res;
-	lockdownd_client_t client;
-	client = (lockdownd_client_t) transport;
-	char *recv_buffer;
-
-	log_debug_msg("%s: pre-read client wants %zi bytes\n", __func__, length);
-
-	recv_buffer = (char *) malloc(sizeof(char) * this_len);
-
-	// repeat until we have the full data or an error occurs.
-	do {
-		if ((res = iphone_device_recv(property_list_service_get_connection(client->parent), recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
-			log_debug_msg("%s: ERROR: usbmux_recv returned %d\n", __func__, res);
-			return res;
-		}
-		log_debug_msg("%s: post-read we got %i bytes\n", __func__, bytes);
-
-		// increase read count
-		tbytes += bytes;
-
-		// fill the buffer with what we got right now
-		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
-		pos_start_fill += bytes;
-
-		if (tbytes >= length) {
-			break;
-		}
-
-		this_len = length - tbytes;
-		log_debug_msg("%s: re-read trying to read missing %i bytes\n", __func__, this_len);
-	} while (tbytes < length);
-
-	if (recv_buffer) {
-		free(recv_buffer);
-	}
-
-	return tbytes;
+	return ret;
 }
 
 /** Command to start the desired service
