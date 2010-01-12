@@ -31,7 +31,7 @@
 #include <gcrypt.h>
 
 #include "userpref.h"
-#include "utils.h"
+#include "debug.h"
 
 #define LIBIPHONE_CONF_DIR  "libiphone"
 #define LIBIPHONE_CONF_FILE "libiphonerc"

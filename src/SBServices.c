@@ -27,7 +27,7 @@
 
 #include "SBServices.h"
 #include "property_list_service.h"
-#include "utils.h"
+#include "debug.h"
 
 /** Locks an sbservices client, done for thread safety stuff.
  *

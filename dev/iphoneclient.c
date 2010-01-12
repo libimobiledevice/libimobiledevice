@@ -29,7 +29,6 @@
 #include <libiphone/lockdown.h>
 #include <libiphone/afc.h>
 #include <libiphone/notification_proxy.h>
-#include "../src/utils.h"
 
 static void notifier(const char *notification)
 {

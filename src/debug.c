@@ -1,5 +1,5 @@
 /*
- * utils.c
+ * debug.c
  * contains utilitary methos for logging and debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "utils.h"
+#include "debug.h"
 #include "libiphone/libiphone.h"
 
 int toto_debug = 0;

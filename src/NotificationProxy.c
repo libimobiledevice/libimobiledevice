@@ -28,7 +28,7 @@
 
 #include "NotificationProxy.h"
 #include "property_list_service.h"
-#include "utils.h"
+#include "debug.h"
 
 struct np_thread {
 	np_client_t client;

@@ -31,7 +31,7 @@
 #include "property_list_service.h"
 #include "lockdown.h"
 #include "iphone.h"
-#include "utils.h"
+#include "debug.h"
 #include "userpref.h"
 
 #define RESULT_SUCCESS 0

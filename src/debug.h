@@ -1,5 +1,5 @@
 /*
- * utils.h
+ * debug.h
  * contains utilitary methos for logging and debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef DEBUG_H
+#define DEBUG_H
 
 #include <glib.h>
 

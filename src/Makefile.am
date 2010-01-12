@@ -13,5 +13,5 @@ libiphone_la_SOURCES = iphone.c iphone.h \
 		       InstallationProxy.c InstallationProxy.h\
 		       SBServices.c SBServices.h\
 		       userpref.c userpref.h\
-		       utils.c utils.h\
+		       debug.c debug.h\
 		       MobileSync.c MobileSync.h

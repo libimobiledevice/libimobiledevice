@@ -25,7 +25,7 @@
 
 #include "AFC.h"
 #include "iphone.h"
-#include "utils.h"
+#include "debug.h"
 
 // This is the maximum size an AFC data packet can be
 static const int MAXIMUM_PACKET_SIZE = (2 << 15);

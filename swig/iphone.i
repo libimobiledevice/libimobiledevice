@@ -8,7 +8,7 @@
  #include <libiphone/mobilesync.h>
  #include <plist/plist.h>
  #include <plist/plist++.h>
- #include "../src/utils.h"
+ #include "../src/debug.h"
  typedef struct {
 	iphone_device_t dev;
  } iPhone;

@@ -25,7 +25,7 @@
 
 #include "property_list_service.h"
 #include "iphone.h"
-#include "utils.h"
+#include "debug.h"
 
 /**
  * Convert an iphone_error_t value to an property_list_service_error_t value.

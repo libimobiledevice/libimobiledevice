@@ -27,7 +27,7 @@
 
 #include <usbmuxd.h>
 #include "iphone.h"
-#include "utils.h"
+#include "debug.h"
 
 static iphone_event_cb_t event_cb = NULL;
 
