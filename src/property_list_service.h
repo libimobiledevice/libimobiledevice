@@ -28,6 +28,7 @@
 #define PROPERTY_LIST_SERVICE_E_INVALID_ARG           -1
 #define PROPERTY_LIST_SERVICE_E_PLIST_ERROR           -2
 #define PROPERTY_LIST_SERVICE_E_MUX_ERROR             -3
+#define PROPERTY_LIST_SERVICE_E_SSL_ERROR             -4
 
 #define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
 
@@ -46,15 +47,13 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 /* sending */
 property_list_service_error_t property_list_service_send_xml_plist(property_list_service_client_t client, plist_t plist);
 property_list_service_error_t property_list_service_send_binary_plist(property_list_service_client_t client, plist_t plist);
-property_list_service_error_t property_list_service_send_encrypted_xml_plist(gnutls_session_t ssl_session, plist_t plist);
-property_list_service_error_t property_list_service_send_encrypted_binary_plist(gnutls_session_t ssl_session, plist_t plist);
 
 /* receiving */
 property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout);
 property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist);
-property_list_service_error_t property_list_service_receive_encrypted_plist(gnutls_session_t ssl_session, plist_t *plist);
 
 /* misc */
-iphone_connection_t property_list_service_get_connection(property_list_service_client_t client);
+property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client);
+property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client);
 
 #endif

@@ -43,6 +43,8 @@ static property_list_service_error_t iphone_to_property_list_service_error(iphon
 			return PROPERTY_LIST_SERVICE_E_SUCCESS;
 		case IPHONE_E_INVALID_ARG:
 			return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+		case IPHONE_E_SSL_ERROR:
+			return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
 		default:
 			break;
 	}
@@ -106,12 +108,8 @@ property_list_service_error_t property_list_service_client_free(property_list_se
  * Internally used generic plist send function.
  *
  * @param client The property list service client to use for sending.
- *      Can be NULL if ssl_session is non-NULL.
  * @param plist plist to send
  * @param binary 1 = send binary plist, 0 = send xml plist
- * @param ssl_session If set to NULL, the communication will be unencrypted.
- *      For encrypted communication, pass a valid and properly initialized
- *      gnutls_session_t. client is ignored when ssl_session is non-NULL.
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when one or more parameters are
@@ -119,7 +117,7 @@ property_list_service_error_t property_list_service_client_free(property_list_se
  *      plist, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
-static property_list_service_error_t internal_plist_send(property_list_service_client_t client, plist_t plist, int binary, gnutls_session_t ssl_session)
+static property_list_service_error_t internal_plist_send(property_list_service_client_t client, plist_t plist, int binary)
 {
 	property_list_service_error_t res = PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 	char *content = NULL;
@@ -127,7 +125,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	uint32_t nlen = 0;
 	int bytes = 0;
 
-	if ((!client && !ssl_session) || (client && !client->connection) || !plist) {
+	if (!client || (client && !client->connection) || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
@@ -143,17 +141,9 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 
 	nlen = htonl(length);
 	debug_info("sending %d bytes", length);
-	if (ssl_session) {
-		bytes = gnutls_record_send(ssl_session, (const char*)&nlen, sizeof(nlen));
-	} else {
-		iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
-	}
+	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		if (ssl_session) {
-			bytes = gnutls_record_send(ssl_session, content, length);
-		} else {
-			iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
-		}
+		iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			debug_info("sent %d bytes", bytes);
 			debug_buffer(content, bytes);
@@ -186,7 +176,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
  */
 property_list_service_error_t property_list_service_send_xml_plist(property_list_service_client_t client, plist_t plist)
 {
-	return internal_plist_send(client, plist, 0, NULL);
+	return internal_plist_send(client, plist, 0);
 }
 
 /**
@@ -202,39 +192,7 @@ property_list_service_error_t property_list_service_send_xml_plist(property_list
  */
 property_list_service_error_t property_list_service_send_binary_plist(property_list_service_client_t client, plist_t plist)
 {
-	return internal_plist_send(client, plist, 1, NULL);
-}
-
-/**
- * Sends an encrypted XML plist.
- *
- * @param ssl_session Valid and properly initialized gnutls_session_t.
- * @param plist plist to send
- *
- * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
- *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when ssl_session or plist is NULL
- *      PROPERTY_LIST_SERVICE_E_PLIST_ERROR when dict is not a valid plist,
- *      or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified error occurs.
- */
-property_list_service_error_t property_list_service_send_encrypted_xml_plist(gnutls_session_t ssl_session, plist_t plist)
-{
-	return internal_plist_send(NULL, plist, 0, ssl_session);
-}
-
-/**
- * Sends an encrypted binary plist.
- *
- * @param ssl_session Valid and properly initialized gnutls_session_t.
- * @param plist plist to send
- *
- * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
- *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when ssl_session or plist is NULL,
- *      PROPERTY_LIST_SERVICE_E_PLIST_ERROR when dict is not a valid plist,
- *      or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified error occurs.
- */
-property_list_service_error_t property_list_service_send_encrypted_binary_plist(gnutls_session_t ssl_session, plist_t plist)
-{
-	return internal_plist_send(NULL, plist, 1, ssl_session);
+	return internal_plist_send(client, plist, 1);
 }
 
 /**
@@ -244,36 +202,26 @@ property_list_service_error_t property_list_service_send_encrypted_binary_plist(
  * @param client The property list service client to use for receiving
  * @param plist pointer to a plist_t that will point to the received plist
  *      upon successful return
- * @param timeout Maximum time in milliseconds to wait for data. This parameter
- *      is ignored when ssl_session is not NULL (i.e. encrypted communication is
- *      used). A timeout has to be implemented inside the functions passed to
- *      gnutls_transport_set_push_function / gnutls_transport_set_pull_function.
- * @param ssl_session If set to NULL, the communication will be unencrypted.
- *      For encrypted communication, pass a valid and properly initialized
- *      gnutls_session_t.
+ * @param timeout Maximum time in milliseconds to wait for data.
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when client or *plist is NULL,
  *      PROPERTY_LIST_SERVICE_E_PLIST_ERROR when the received data cannot be
  *      converted to a plist, PROPERTY_LIST_SERVICE_E_MUX_ERROR when a
- *      communication error occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when
- *      an unspecified error occurs.
+ *      communication error occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR
+ *      when an unspecified error occurs.
  */
-static property_list_service_error_t internal_plist_recv_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout, gnutls_session_t ssl_session)
+static property_list_service_error_t internal_plist_recv_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
 {
 	property_list_service_error_t res = PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 	uint32_t pktlen = 0;
 	uint32_t bytes = 0;
 
-	if ((!client && !ssl_session) || (client && !client->connection) || !plist) {
+	if (!client || (client && !client->connection) || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	if (ssl_session) {
-		bytes = gnutls_record_recv(ssl_session, (char*)&pktlen, sizeof(pktlen));
-	} else {
-		iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
-	}
+	iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
 		debug_info("initial read failed!");
@@ -287,11 +235,7 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
-				if (ssl_session) {
-					bytes = gnutls_record_recv(ssl_session, content+curlen, pktlen-curlen);
-				} else {
-					iphone_device_recv(client->connection, content+curlen, pktlen-curlen, &bytes);
-				}
+				iphone_device_recv(client->connection, content+curlen, pktlen-curlen, &bytes);
 				if (bytes <= 0) {
 					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 					break;
@@ -338,7 +282,7 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
  */
 property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
 {
-	return internal_plist_recv_timeout(client, plist, timeout, NULL);
+	return internal_plist_recv_timeout(client, plist, timeout);
 }
 
 /**
@@ -362,41 +306,41 @@ property_list_service_error_t property_list_service_receive_plist_with_timeout(p
  */
 property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
-	return internal_plist_recv_timeout(client, plist, 10000, NULL);
+	return internal_plist_recv_timeout(client, plist, 10000);
 }
 
 /**
- * Receives an encrypted plist.
- * Binary or XML plists are automatically handled.
- * This function is like property_list_service_receive_encrypted_plist_with_timeout
- *   with a timeout value of 10 seconds.
+ * Enable SSL for the given property list service client.
  *
- * @param ssl_session Valid and properly initialized gnutls_session_t.
- * @param plist pointer to a plist_t that will point to the received plist
- *              upon successful return
+ * @param client The connected property list service client for which SSL
+ *     should be enabled.
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
- *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when ssl_session or *plist is NULL,
- *      PROPERTY_LIST_SERVICE_E_PLIST_ERROR when the received data cannot be
- *      converted to a plist, PROPERTY_LIST_SERVICE_E_MUX_ERROR when a
- *      communication error occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when
- *      an unspecified error occurs.
+ *     PROPERTY_LIST_SERVICE_E_INVALID_ARG if client or client->connection is
+ *     NULL, PROPERTY_LIST_SERVICE_E_SSL_ERROR when SSL could not be enabled,
+ *     or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR otherwise.
  */
-property_list_service_error_t property_list_service_receive_encrypted_plist(gnutls_session_t ssl_session, plist_t *plist)
+property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
 {
-	return internal_plist_recv_timeout(NULL, plist, 10000, ssl_session);
+	if (!client || !client->connection)
+		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+	return iphone_to_property_list_service_error(iphone_connection_enable_ssl(client->connection));
 }
 
 /**
- * Getter for the iphone_connection_t used by this client.
+ * Disable SSL for the given property list service client.
  *
- * @param client The property list service client to get the connection for.
+ * @param client The connected property list service client for which SSL
+ *     should be disabled.
  *
- * @return The connection used by client.
+ * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
+ *     PROPERTY_LIST_SERVICE_E_INVALID_ARG if client or client->connection is
+ *     NULL, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR otherwise.
  */
-iphone_connection_t property_list_service_get_connection(property_list_service_client_t client)
+property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client)
 {
-	if (!client)
-		return NULL;
-	return client->connection;
+	if (!client || !client->connection)
+		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+	return iphone_to_property_list_service_error(iphone_connection_disable_ssl(client->connection));
 }
+

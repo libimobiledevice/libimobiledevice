@@ -123,173 +123,6 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 	}
 }
 
-/** gnutls callback for writing data to the device.
- *
- * @param transport It's really the lockdownd client, but the method signature has to match
- * @param buffer The data to send
- * @param length The length of data to send in bytes
- *
- * @return The number of bytes sent
- */
-static ssize_t lockdownd_ssl_write(gnutls_transport_ptr_t transport, char *buffer, size_t length)
-{
-	uint32_t bytes = 0;
-	lockdownd_client_t client;
-	client = (lockdownd_client_t) transport;
-	debug_info("pre-send length = %zi", length);
-	iphone_device_send(property_list_service_get_connection(client->parent), buffer, length, &bytes);
-	debug_info("post-send sent %i bytes", bytes);
-	return bytes;
-}
-
-/** gnutls callback for reading data from the device.
- *
- * @param transport It's really the lockdownd client, but the method signature has to match
- * @param buffer The buffer to store data in
- * @param length The length of data to read in bytes
- *
- * @return The number of bytes read
- */
-static ssize_t lockdownd_ssl_read(gnutls_transport_ptr_t transport, char *buffer, size_t length)
-{
-	int bytes = 0, pos_start_fill = 0;
-	size_t tbytes = 0;
-	int this_len = length;
-	iphone_error_t res;
-	lockdownd_client_t client;
-	client = (lockdownd_client_t) transport;
-	char *recv_buffer;
-
-	debug_info("pre-read client wants %zi bytes", length);
-
-	recv_buffer = (char *) malloc(sizeof(char) * this_len);
-
-	/* repeat until we have the full data or an error occurs */
-	do {
-		if ((res = iphone_device_recv(property_list_service_get_connection(client->parent), recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
-			debug_info("ERROR: iphone_device_recv returned %d", res);
-			return res;
-		}
-		debug_info("post-read we got %i bytes", bytes);
-
-		// increase read count
-		tbytes += bytes;
-
-		// fill the buffer with what we got right now
-		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
-		pos_start_fill += bytes;
-
-		if (tbytes >= length) {
-			break;
-		}
-
-		this_len = length - tbytes;
-		debug_info("re-read trying to read missing %i bytes", this_len);
-	} while (tbytes < length);
-
-	if (recv_buffer) {
-		free(recv_buffer);
-	}
-
-	return tbytes;
-}
-
-/** Starts communication with lockdownd after the iPhone has been paired,
- *  and if the device requires it, switches to SSL mode.
- *
- * @param client The lockdownd client
- *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
- */
-static lockdownd_error_t lockdownd_ssl_start_session(lockdownd_client_t client)
-{
-	lockdownd_error_t ret = LOCKDOWN_E_SSL_ERROR;
-	uint32_t return_me = 0;
-
-	// Set up GnuTLS...
-	debug_info("enabling SSL mode");
-	errno = 0;
-	gnutls_global_init();
-	gnutls_certificate_allocate_credentials(&client->ssl_certificate);
-	gnutls_certificate_set_x509_trust_file(client->ssl_certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
-	gnutls_init(&client->ssl_session, GNUTLS_CLIENT);
-	{
-		int protocol_priority[16] = { GNUTLS_SSL3, 0 };
-		int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
-		int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
-		int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
-		int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
-
-		gnutls_cipher_set_priority(client->ssl_session, cipher_priority);
-		gnutls_compression_set_priority(client->ssl_session, comp_priority);
-		gnutls_kx_set_priority(client->ssl_session, kx_priority);
-		gnutls_protocol_set_priority(client->ssl_session, protocol_priority);
-		gnutls_mac_set_priority(client->ssl_session, mac_priority);
-	}
-	gnutls_credentials_set(client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
-
-	debug_info("GnuTLS step 1...");
-	gnutls_transport_set_ptr(client->ssl_session, (gnutls_transport_ptr_t) client);
-	debug_info("GnuTLS step 2...");
-	gnutls_transport_set_push_function(client->ssl_session, (gnutls_push_func) & lockdownd_ssl_write);
-	debug_info("GnuTLS step 3...");
-	gnutls_transport_set_pull_function(client->ssl_session, (gnutls_pull_func) & lockdownd_ssl_read);
-	debug_info("GnuTLS step 4 -- now handshaking...");
-	if (errno)
-		debug_info("WARN: errno says %s before handshake!", strerror(errno));
-	return_me = gnutls_handshake(client->ssl_session);
-	debug_info("GnuTLS handshake done...");
-
-	if (return_me != GNUTLS_E_SUCCESS) {
-		debug_info("GnuTLS reported something wrong.");
-		gnutls_perror(return_me);
-		debug_info("oh.. errno says %s", strerror(errno));
-	} else {
-		client->ssl_enabled = 1;
-		ret = LOCKDOWN_E_SUCCESS;
-		debug_info("SSL mode enabled");
-	}
-
-	return ret;
-}
-
-/**
- * Shuts down the SSL session by performing a close notify, which is done
- * by "gnutls_bye".
- *
- * @param client The lockdown client
- *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
- */
-static lockdownd_error_t lockdownd_ssl_stop_session(lockdownd_client_t client)
-{
-	if (!client) {
-		debug_info("invalid argument!");
-		return LOCKDOWN_E_INVALID_ARG;
-	}
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-
-	if (client->ssl_enabled) {
-		debug_info("sending SSL close notify");
-		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
-	}
-	if (client->ssl_session) {
-		gnutls_deinit(client->ssl_session);
-	}
-	if (client->ssl_certificate) {
-		gnutls_certificate_free_credentials(client->ssl_certificate);
-	}
-	client->ssl_enabled = 0;
-
-	if (client->session_id)
-		free(client->session_id);
-	client->session_id = NULL;
-
-	debug_info("SSL mode disabled");
-
-	return ret;
-}
-
 /**
  * Closes the lockdownd communication session, by sending the StopSession
  * Request to the device.
@@ -339,10 +172,9 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	}
 	plist_free(dict);
 	dict = NULL;
-
-	/* stop ssl session */
-	lockdownd_ssl_stop_session(client);
-
+	if (client->ssl_enabled) {
+		property_list_service_disable_ssl(client->parent);
+	}
 	return ret;
 }
 
@@ -411,16 +243,9 @@ lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	property_list_service_error_t err;
 
-	if (!client->ssl_enabled) {
-		err = property_list_service_receive_plist(client->parent, plist);
-		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			ret = LOCKDOWN_E_UNKNOWN_ERROR;
-		}
-	} else {
-		err = property_list_service_receive_encrypted_plist(client->ssl_session, plist);
-		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			return LOCKDOWN_E_SSL_ERROR;
-		}
+	err = property_list_service_receive_plist(client->parent, plist);
+	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	}
 
 	if (!*plist)
@@ -447,16 +272,9 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	iphone_error_t err;
 
-	if (!client->ssl_enabled) {
-		err = property_list_service_send_xml_plist(client->parent, plist);
-		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			ret = LOCKDOWN_E_UNKNOWN_ERROR;
-		}
-	} else {
-		err = property_list_service_send_encrypted_xml_plist(client->ssl_session, plist);
-		if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			ret = LOCKDOWN_E_SSL_ERROR;
-		}
+	err = property_list_service_send_xml_plist(client->parent, plist);
+	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	}
 	return ret;
 }
@@ -775,8 +593,6 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 
 	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
 	client_loc->parent = plistclient;
-	client_loc->ssl_session = NULL;
-	client_loc->ssl_certificate = NULL;
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
 	client_loc->uuid = NULL;
@@ -848,8 +664,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
 		if (LOCKDOWN_E_SUCCESS != ret) {
-			ret = LOCKDOWN_E_SSL_ERROR;
-			debug_info("SSL Session opening failed.");
+			debug_info("Session opening failed.");
 		}
 
 		if (host_id) {
@@ -1313,7 +1128,10 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 		}
 		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
 		if (use_ssl) {
-			ret = lockdownd_ssl_start_session(client);
+			ret = property_list_service_enable_ssl(client->parent);
+			if (ret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+				client->ssl_enabled = 1;
+			}
 		} else {
 			client->ssl_enabled = 0;
 			ret = LOCKDOWN_E_SUCCESS;
