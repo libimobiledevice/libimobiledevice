@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "iphoneenterrecovery")) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphoneenterrecovery")) {
 		iphone_device_free(phone);
 		return -1;
 	}

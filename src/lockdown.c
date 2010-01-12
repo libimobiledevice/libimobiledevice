@@ -618,9 +618,9 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
 	return ret;
 }
 
-/** Creates a lockdownd client for the give iPhone
+/** Creates a lockdownd client for the device.
  *
- * @param phone The iPhone to create a lockdownd client for
+ * @param phone The device to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
  * @param label The label to use for communication. Usually the program name
  *
@@ -630,9 +630,8 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
+
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	char *host_id = NULL;
-	char *type = NULL;
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -651,6 +650,39 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 	if (label != NULL)
 		strdup(label);
 
+	if (LOCKDOWN_E_SUCCESS == ret) {
+		*client = client_loc;
+	} else {
+		lockdownd_client_free(client_loc);
+	}
+
+	return ret;
+}
+
+/** Creates a lockdownd client for the device and starts initial handshake.
+ * The handshake consists of query_type, validate_pair, pair and
+ * start_session calls.
+ *
+ * @param phone The device to create a lockdownd client for
+ * @param client The pointer to the location of the new lockdownd_client
+ * @param label The label to use for communication. Usually the program name
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lockdownd_client_t *client, const char *label)
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+	lockdownd_client_t client_loc = NULL;
+	char *host_id = NULL;
+	char *type = NULL;
+
+
+	ret = lockdownd_client_new(device, &client_loc, label);
+
+	/* perform handshake */
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
 		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
 		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;

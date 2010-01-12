@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "afccheck")) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "afccheck")) {
 		iphone_device_free(phone);
 		return 1;
 	}

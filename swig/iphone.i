@@ -71,7 +71,7 @@ Lockdownd* my_new_Lockdownd(iPhone* phone) {
 	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
 	client->dev = phone;
 	client->client = NULL;
-	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new(phone->dev , &(client->client), NULL)) {
+	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new_with_handshake(phone->dev , &(client->client), NULL)) {
 		return client;
 	}
 	else {

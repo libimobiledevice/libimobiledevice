@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	if (uuid)
 		free(uuid);
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "iphoneclient")) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphoneclient")) {
 		iphone_device_free(phone);
 		printf("Exiting.\n");
 		return -1;
