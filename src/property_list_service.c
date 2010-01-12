@@ -142,7 +142,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	}
 
 	nlen = htonl(length);
-	log_debug_msg("%s: sending %d bytes\n", __func__, length);
+	debug_info("sending %d bytes", length);
 	if (ssl_session) {
 		bytes = gnutls_record_send(ssl_session, (const char*)&nlen, sizeof(nlen));
 	} else {
@@ -155,17 +155,17 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 			iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
 		}
 		if (bytes > 0) {
-			log_debug_msg("%s: sent %d bytes\n", __func__, bytes);
-			log_debug_buffer(content, bytes);
+			debug_info("sent %d bytes", bytes);
+			debug_buffer(content, bytes);
 			if ((uint32_t)bytes == length) {
 				res = PROPERTY_LIST_SERVICE_E_SUCCESS;
 			} else {
-				log_debug_msg("%s: ERROR: Could not send all data (%d of %d)!\n", __func__, bytes, length);
+				debug_info("ERROR: Could not send all data (%d of %d)!", bytes, length);
 			}
 		}
 	}
 	if (bytes <= 0) {
-		log_debug_msg("%s: ERROR: sending to device failed.\n", __func__);
+		debug_info("ERROR: sending to device failed.");
 	}
 
 	free(content);
@@ -274,16 +274,16 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 	} else {
 		iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	}
-	log_debug_msg("%s: initial read=%i\n", __func__, bytes);
+	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
-		log_debug_msg("%s: initial read failed!\n", __func__);
+		debug_info("initial read failed!");
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	} else {
 		if ((char)pktlen == 0) { /* prevent huge buffers */
 			uint32_t curlen = 0;
 			char *content = NULL;
 			pktlen = ntohl(pktlen);
-			log_debug_msg("%s: %d bytes following\n", __func__, pktlen);
+			debug_info("%d bytes following", pktlen);
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
@@ -296,10 +296,10 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 					break;
 				}
-				log_debug_msg("%s: received %d bytes\n", __func__, bytes);
+				debug_info("received %d bytes", bytes);
 				curlen += bytes;
 			}
-			log_debug_buffer(content, pktlen);
+			debug_buffer(content, pktlen);
 			if (!memcmp(content, "bplist00", 8)) {
 				plist_from_bin(content, pktlen, plist);
 			} else {

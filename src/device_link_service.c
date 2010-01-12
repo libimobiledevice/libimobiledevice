@@ -149,13 +149,13 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 
 	/* receive DLMessageVersionExchange from device */
 	if (property_list_service_receive_plist(client->parent, &array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: Did not receive initial message from device!\n", __func__);
+		debug_info("Did not receive initial message from device!");
 		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
 		goto leave;
 	}
 	msg = device_link_service_get_message(array);
 	if (!msg || strcmp(msg, "DLMessageVersionExchange")) {
-		log_debug_msg("%s: Did not receive DLMessageVersionExchange from device!\n", __func__);
+		debug_info("Did not receive DLMessageVersionExchange from device!");
 		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
 		goto leave;
 	}
@@ -164,7 +164,7 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 
 	/* get major and minor version number */
 	if (plist_array_get_size(array) < 3) {
-		log_debug_msg("%s: DLMessageVersionExchange has unexpected format!\n", __func__);
+		debug_info("DLMessageVersionExchange has unexpected format!");
 		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
 		goto leave;
 	}
@@ -179,11 +179,11 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 		plist_get_uint_val(min, &vminor);
 	}
 	if (vmajor > version_major) {
-		log_debug_msg("%s: Version mismatch: device=(%lld,%lld) > expected=(%lld,%lld)\n", __func__, vmajor, vminor, version_major, version_minor);
+		debug_info("Version mismatch: device=(%lld,%lld) > expected=(%lld,%lld)", vmajor, vminor, version_major, version_minor);
 		err = DEVICE_LINK_SERVICE_E_BAD_VERSION;
 		goto leave;
 	} else if ((vmajor == version_major) && (vminor > version_minor)) {
-		log_debug_msg("%s: WARNING: Version mismatch: device=(%lld,%lld) > expected=(%lld,%lld)\n", __func__, vmajor, vminor, version_major, version_minor);
+		debug_info("WARNING: Version mismatch: device=(%lld,%lld) > expected=(%lld,%lld)", vmajor, vminor, version_major, version_minor);
 		err = DEVICE_LINK_SERVICE_E_BAD_VERSION;
 		goto leave;
 	}
@@ -194,7 +194,7 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 	plist_array_append_item(array, plist_new_string("DLMessageVersionExchange"));
 	plist_array_append_item(array, plist_new_string("DLVersionsOk"));
 	if (property_list_service_send_binary_plist(client->parent, array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: Error when sending DLVersionsOk", __func__);
+		debug_info("Error when sending DLVersionsOk");
 		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
 		goto leave;
 	}
@@ -203,13 +203,13 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 	/* receive DeviceReady message */
 	array = NULL;
 	if (property_list_service_receive_plist(client->parent, &array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: Error when receiving DLMessageDeviceReady!\n", __func__);
+		debug_info("Error when receiving DLMessageDeviceReady!");
 		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
 		goto leave;
 	}
 	msg = device_link_service_get_message(array);
 	if (!msg || strcmp(msg, "DLMessageDeviceReady")) {
-		log_debug_msg("%s: Did not get DLMessageDeviceReady!\n", __func__);
+		debug_info("Did not get DLMessageDeviceReady!");
 		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
 		goto leave;
 	}

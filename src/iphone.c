@@ -60,7 +60,7 @@ iphone_error_t iphone_event_subscribe(iphone_event_cb_t callback, void *user_dat
 	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
         if (res != 0) {
 		event_cb = NULL;
-		log_debug_msg("%s: Error %d when subscribing usbmux event callback!\n", __func__, res);
+		debug_info("Error %d when subscribing usbmux event callback!", res);
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
 	return IPHONE_E_SUCCESS;
@@ -77,7 +77,7 @@ iphone_error_t iphone_event_unsubscribe()
 	event_cb = NULL;
 	int res = usbmuxd_unsubscribe();
 	if (res != 0) {
-		log_debug_msg("%s: Error %d when unsubscribing usbmux event callback!\n", __func__, res);
+		debug_info("Error %d when unsubscribing usbmux event callback!", res);
 		return IPHONE_E_UNKNOWN_ERROR;
 	}
 	return IPHONE_E_SUCCESS;
@@ -100,7 +100,7 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
 	*count = 0;
 
 	if (usbmuxd_get_device_list(&dev_list) < 0) {
-		log_debug_msg("%s: ERROR: usbmuxd is not running!\n", __func__);
+		debug_info("ERROR: usbmuxd is not running!\n", __func__);
 		return IPHONE_E_NO_DEVICE;
 	}
 
@@ -216,7 +216,7 @@ iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t dst_port, 
 	if (device->conn_type == CONNECTION_USBMUXD) {
 		int sfd = usbmuxd_connect((uint32_t)(device->conn_data), dst_port);
 		if (sfd < 0) {
-			log_debug_msg("%s: ERROR: Connecting to usbmuxd failed: %d (%s)\n", __func__, sfd, strerror(-sfd));
+			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
 		iphone_connection_t new_connection = (iphone_connection_t)malloc(sizeof(struct iphone_connection_int));
@@ -225,7 +225,7 @@ iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t dst_port, 
 		*connection = new_connection;
 		return IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, device->conn_type);
+		debug_info("Unknown connection type %d", device->conn_type);
 	}
 
 	return IPHONE_E_UNKNOWN_ERROR;
@@ -248,7 +248,7 @@ iphone_error_t iphone_device_disconnect(iphone_connection_t connection)
 		usbmuxd_disconnect((int)(connection->data));
 		result = IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
+		debug_info("Unknown connection type %d", connection->type);
 	}
 	free(connection);
 	return result;
@@ -274,12 +274,12 @@ iphone_error_t iphone_device_send(iphone_connection_t connection, const char *da
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_send((int)(connection->data), data, len, sent_bytes);
 		if (res < 0) {
-			log_debug_msg("%s: ERROR: usbmuxd_send returned %d (%s)\n", __func__, res, strerror(-res));
+			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
 		return IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
+		debug_info("Unknown connection type %d", connection->type);
 	}
 	return IPHONE_E_UNKNOWN_ERROR;
 }
@@ -308,12 +308,12 @@ iphone_error_t iphone_device_recv_timeout(iphone_connection_t connection, char *
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv_timeout((int)(connection->data), data, len, recv_bytes, timeout);
 		if (res < 0) {
-			log_debug_msg("%s: ERROR: usbmuxd_recv_timeout returned %d (%s)\n", __func__, res, strerror(-res));
+			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(-res));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
 		return IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
+		debug_info("Unknown connection type %d", connection->type);
 	}
 	return IPHONE_E_UNKNOWN_ERROR;
 }
@@ -340,13 +340,13 @@ iphone_error_t iphone_device_recv(iphone_connection_t connection, char *data, ui
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv((int)(connection->data), data, len, recv_bytes);
 		if (res < 0) {
-			log_debug_msg("%s: ERROR: usbmuxd_recv returned %d (%s)\n", __func__, res, strerror(-res));
+			debug_info("ERROR: usbmuxd_recv returned %d (%s)", res, strerror(-res));
 			return IPHONE_E_UNKNOWN_ERROR;
 		}
 
 		return IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, connection->type);
+		debug_info("Unknown connection type %d", connection->type);
 	}
 	return IPHONE_E_UNKNOWN_ERROR;
 }
@@ -360,7 +360,7 @@ iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle
 		*handle = (uint32_t)device->conn_data;
 		return IPHONE_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: Unknown connection type %d\n", __func__, device->conn_type);
+		debug_info("Unknown connection type %d", device->conn_type);
 	}
 	return IPHONE_E_UNKNOWN_ERROR;
 }

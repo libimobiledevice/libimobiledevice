@@ -99,7 +99,7 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 			} else if (!strcmp(result_value, "Failure")) {
 				ret = RESULT_FAILURE;
 			} else {
-				log_debug_msg("%s: ERROR: unknown result value '%s'\n", __func__, result_value);
+				debug_info("ERROR: unknown result value '%s'", result_value);
 			}
 		}
 		if (result_value)
@@ -136,9 +136,9 @@ static ssize_t lockdownd_ssl_write(gnutls_transport_ptr_t transport, char *buffe
 	uint32_t bytes = 0;
 	lockdownd_client_t client;
 	client = (lockdownd_client_t) transport;
-	log_debug_msg("%s: pre-send length = %zi\n", __func__, length);
+	debug_info("pre-send length = %zi", length);
 	iphone_device_send(property_list_service_get_connection(client->parent), buffer, length, &bytes);
-	log_debug_msg("%s: post-send sent %i bytes\n", __func__, bytes);
+	debug_info("post-send sent %i bytes", bytes);
 	return bytes;
 }
 
@@ -160,17 +160,17 @@ static ssize_t lockdownd_ssl_read(gnutls_transport_ptr_t transport, char *buffer
 	client = (lockdownd_client_t) transport;
 	char *recv_buffer;
 
-	log_debug_msg("%s: pre-read client wants %zi bytes\n", __func__, length);
+	debug_info("pre-read client wants %zi bytes", length);
 
 	recv_buffer = (char *) malloc(sizeof(char) * this_len);
 
 	/* repeat until we have the full data or an error occurs */
 	do {
 		if ((res = iphone_device_recv(property_list_service_get_connection(client->parent), recv_buffer, this_len, (uint32_t*)&bytes)) != LOCKDOWN_E_SUCCESS) {
-			log_debug_msg("%s: ERROR: iphone_device_recv returned %d\n", __func__, res);
+			debug_info("ERROR: iphone_device_recv returned %d", res);
 			return res;
 		}
-		log_debug_msg("%s: post-read we got %i bytes\n", __func__, bytes);
+		debug_info("post-read we got %i bytes", bytes);
 
 		// increase read count
 		tbytes += bytes;
@@ -184,7 +184,7 @@ static ssize_t lockdownd_ssl_read(gnutls_transport_ptr_t transport, char *buffer
 		}
 
 		this_len = length - tbytes;
-		log_debug_msg("%s: re-read trying to read missing %i bytes\n", __func__, this_len);
+		debug_info("re-read trying to read missing %i bytes", this_len);
 	} while (tbytes < length);
 
 	if (recv_buffer) {
@@ -207,7 +207,7 @@ static lockdownd_error_t lockdownd_ssl_start_session(lockdownd_client_t client)
 	uint32_t return_me = 0;
 
 	// Set up GnuTLS...
-	log_debug_msg("%s: enabling SSL mode\n", __func__);
+	debug_info("enabling SSL mode");
 	errno = 0;
 	gnutls_global_init();
 	gnutls_certificate_allocate_credentials(&client->ssl_certificate);
@@ -228,26 +228,26 @@ static lockdownd_error_t lockdownd_ssl_start_session(lockdownd_client_t client)
 	}
 	gnutls_credentials_set(client->ssl_session, GNUTLS_CRD_CERTIFICATE, client->ssl_certificate);	// this part is killing me.
 
-	log_debug_msg("%s: GnuTLS step 1...\n", __func__);
+	debug_info("GnuTLS step 1...");
 	gnutls_transport_set_ptr(client->ssl_session, (gnutls_transport_ptr_t) client);
-	log_debug_msg("%s: GnuTLS step 2...\n", __func__);
+	debug_info("GnuTLS step 2...");
 	gnutls_transport_set_push_function(client->ssl_session, (gnutls_push_func) & lockdownd_ssl_write);
-	log_debug_msg("%s: GnuTLS step 3...\n", __func__);
+	debug_info("GnuTLS step 3...");
 	gnutls_transport_set_pull_function(client->ssl_session, (gnutls_pull_func) & lockdownd_ssl_read);
-	log_debug_msg("%s: GnuTLS step 4 -- now handshaking...\n", __func__);
+	debug_info("GnuTLS step 4 -- now handshaking...");
 	if (errno)
-		log_debug_msg("%s: WARN: errno says %s before handshake!\n", __func__, strerror(errno));
+		debug_info("WARN: errno says %s before handshake!", strerror(errno));
 	return_me = gnutls_handshake(client->ssl_session);
-	log_debug_msg("%s: GnuTLS handshake done...\n", __func__);
+	debug_info("GnuTLS handshake done...");
 
 	if (return_me != GNUTLS_E_SUCCESS) {
-		log_debug_msg("%s: GnuTLS reported something wrong.\n", __func__);
+		debug_info("GnuTLS reported something wrong.");
 		gnutls_perror(return_me);
-		log_debug_msg("%s: oh.. errno says %s\n", __func__, strerror(errno));
+		debug_info("oh.. errno says %s", strerror(errno));
 	} else {
 		client->ssl_enabled = 1;
 		ret = LOCKDOWN_E_SUCCESS;
-		log_debug_msg("%s: SSL mode enabled\n", __func__);
+		debug_info("SSL mode enabled");
 	}
 
 	return ret;
@@ -264,13 +264,13 @@ static lockdownd_error_t lockdownd_ssl_start_session(lockdownd_client_t client)
 static lockdownd_error_t lockdownd_ssl_stop_session(lockdownd_client_t client)
 {
 	if (!client) {
-		log_debug_msg("%s: invalid argument!\n", __func__);
+		debug_info("invalid argument!");
 		return LOCKDOWN_E_INVALID_ARG;
 	}
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 
 	if (client->ssl_enabled) {
-		log_debug_msg("%s: sending SSL close notify\n", __func__);
+		debug_info("sending SSL close notify");
 		gnutls_bye(client->ssl_session, GNUTLS_SHUT_RDWR);
 	}
 	if (client->ssl_session) {
@@ -285,7 +285,7 @@ static lockdownd_error_t lockdownd_ssl_stop_session(lockdownd_client_t client)
 		free(client->session_id);
 	client->session_id = NULL;
 
-	log_debug_msg("%s: SSL mode disabled\n", __func__);
+	debug_info("SSL mode disabled");
 
 	return ret;
 }
@@ -307,7 +307,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 		return LOCKDOWN_E_INVALID_ARG;
 
 	if (!session_id) {
-		log_debug_msg("%s: no session_id given, cannot stop session\n", __func__);
+		debug_info("no session_id given, cannot stop session");
 		return LOCKDOWN_E_INVALID_ARG;
 	}
 
@@ -318,7 +318,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
 	plist_dict_insert_item(dict,"SessionID", plist_new_string(session_id));
 
-	log_debug_msg("%s: stopping session %s\n", __func__, session_id);
+	debug_info("stopping session %s", session_id);
 
 	ret = lockdownd_send(client, dict);
 
@@ -328,13 +328,13 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	ret = lockdownd_recv(client, &dict);
 
 	if (!dict) {
-		log_debug_msg("%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
+		debug_info("LOCKDOWN_E_PLIST_ERROR");
 		return LOCKDOWN_E_PLIST_ERROR;
 	}
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "StopSession") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -480,7 +480,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("QueryType"));
 
-	log_debug_msg("%s: called\n", __func__);
+	debug_info("called");
 	ret = lockdownd_send(client, dict);
 
 	plist_free(dict);
@@ -498,7 +498,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 			plist_t type_node = plist_dict_get_item(dict, "Type");
 			plist_get_string_val(type_node, type);
 		}
-		log_debug_msg("%s: success with type %s\n", __func__, *type);
+		debug_info("success with type %s", *type);
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -550,7 +550,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 		return ret;
 
 	if (lockdown_check_result(dict, "GetValue") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	if (ret != LOCKDOWN_E_SUCCESS) {
@@ -561,7 +561,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 	plist_t value_node = plist_dict_get_item(dict, "Value");
 
 	if (value_node) {
-		log_debug_msg("%s: has a value\n", __func__);
+		debug_info("has a value");
 		*value = plist_copy(value_node);
 	}
 
@@ -613,7 +613,7 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
 		return ret;
 
 	if (lockdown_check_result(dict, "SetValue") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 
@@ -670,7 +670,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 		return ret;
 
 	if (lockdown_check_result(dict, "RemoveValue") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 
@@ -769,7 +769,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: could not connect to lockdownd (device %s)\n", __func__, device->uuid);
+		debug_info("could not connect to lockdownd (device %s)", device->uuid);
 		return LOCKDOWN_E_MUX_ERROR;
 	}
 
@@ -818,11 +818,11 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 
 	/* perform handshake */
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
-		log_debug_msg("%s: QueryType failed in the lockdownd client.\n", __func__);
+		debug_info("QueryType failed in the lockdownd client.");
 		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
 	} else {
 		if (strcmp("com.apple.mobile.lockdown", type)) {
-			log_debug_msg("%s: Warning QueryType request returned \"%s\".\n", __func__, type);
+			debug_info("Warning QueryType request returned \"%s\".", type);
 		}
 		if (type)
 			free(type);
@@ -830,9 +830,9 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 
 	ret = iphone_device_get_uuid(device, &client_loc->uuid);
 	if (LOCKDOWN_E_SUCCESS != ret) {
-		log_debug_msg("%s: failed to get device uuid.\n", __func__);
+		debug_info("failed to get device uuid.");
 	}
-	log_debug_msg("%s: device uuid: %s\n", __func__, client_loc->uuid);
+	debug_info("device uuid: %s", client_loc->uuid);
 
 	userpref_get_host_id(&host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
@@ -849,7 +849,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
 		if (LOCKDOWN_E_SUCCESS != ret) {
 			ret = LOCKDOWN_E_SSL_ERROR;
-			log_debug_msg("%s: SSL Session opening failed.\n", __func__);
+			debug_info("SSL Session opening failed.");
 		}
 
 		if (host_id) {
@@ -892,10 +892,10 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 
 	ret = lockdownd_get_device_public_key(client, &public_key);
 	if (ret != LOCKDOWN_E_SUCCESS) {
-		log_debug_msg("%s: device refused to send public key.\n", __func__);
+		debug_info("device refused to send public key.");
 		return ret;
 	}
-	log_debug_msg("%s: device public key follows:\n%s\n", __func__, public_key.data);
+	debug_info("device public key follows:\n%s", public_key.data);
 
 	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != LOCKDOWN_E_SUCCESS) {
@@ -944,7 +944,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 
 	/* if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
-		log_debug_msg("%s: %s success\n", __func__, verb);
+		debug_info("%s success", verb);
 		if (!strcmp("Unpair", verb)) {
 			/* remove public key from config */
 			userpref_remove_device_public_key(client->uuid);
@@ -953,7 +953,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 			userpref_set_device_public_key(client->uuid, public_key);
 		}
 	} else {
-		log_debug_msg("%s: %s failure\n", __func__, verb);
+		debug_info("%s failure", verb);
 		plist_t error_node = NULL;
 		/* verify error condition */
 		error_node = plist_dict_get_item(dict, "Error");
@@ -1041,7 +1041,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("EnterRecovery"));
 
-	log_debug_msg("%s: telling device to enter recovery mode\n", __func__);
+	debug_info("telling device to enter recovery mode");
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
@@ -1050,7 +1050,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 	ret = lockdownd_recv(client, &dict);
 
 	if (lockdown_check_result(dict, "EnterRecovery") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -1077,7 +1077,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("Goodbye"));
 
-	log_debug_msg("%s: called\n", __func__);
+	debug_info("called");
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
@@ -1085,12 +1085,12 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 
 	ret = lockdownd_recv(client, &dict);
 	if (!dict) {
-		log_debug_msg("%s: did not get goodbye response back\n", __func__);
+		debug_info("did not get goodbye response back");
 		return LOCKDOWN_E_PLIST_ERROR;
 	}
 
 	if (lockdown_check_result(dict, "Goodbye") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -1294,7 +1294,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 		if (enable_ssl && (plist_get_node_type(enable_ssl) == PLIST_BOOLEAN)) {
 			plist_get_bool_val(enable_ssl, &use_ssl);
 		}
-		log_debug_msg("%s: Session startup OK\n", __func__);
+		debug_info("Session startup OK");
 
 		if (ssl_enabled != NULL)
 			*ssl_enabled = use_ssl;
@@ -1305,13 +1305,13 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 			plist_get_string_val(session_node, &client->session_id);
 		}
 		if (client->session_id) {
-			log_debug_msg("%s: SessionID: %s\n", __func__, client->session_id);
+			debug_info("SessionID: %s", client->session_id);
 			if (session_id != NULL)
 				*session_id = strdup(client->session_id);
 		} else {
-			log_debug_msg("%s: Failed to get SessionID!\n", __func__);
+			debug_info("Failed to get SessionID!");
 		}
-		log_debug_msg("%s: Enable SSL Session: %s\n", __func__, (use_ssl?"true":"false"));
+		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
 		if (use_ssl) {
 			ret = lockdownd_ssl_start_session(client);
 		} else {
@@ -1434,13 +1434,13 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 
 	ret = lockdownd_recv(client, &dict);
 	if (!dict) {
-		log_debug_msg("%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
+		debug_info("LOCKDOWN_E_PLIST_ERROR");
 		return LOCKDOWN_E_PLIST_ERROR;
 	}
 
 	ret = LOCKDOWN_E_ACTIVATION_FAILED;
 	if (lockdown_check_result(dict, "Activate") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);
@@ -1477,13 +1477,13 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 
 	ret = lockdownd_recv(client, &dict);
 	if (!dict) {
-		log_debug_msg("%s: LOCKDOWN_E_PLIST_ERROR\n", __func__);
+		debug_info("LOCKDOWN_E_PLIST_ERROR");
 		return LOCKDOWN_E_PLIST_ERROR;
 	}
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "Deactivate") == RESULT_SUCCESS) {
-		log_debug_msg("%s: success\n", __func__);
+		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 	plist_free(dict);

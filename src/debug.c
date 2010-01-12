@@ -1,6 +1,6 @@
 /*
  * debug.c
- * contains utilitary methos for logging and debugging
+ * contains utilitary functions for debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *
@@ -18,14 +18,18 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
+
 #include <stdarg.h>
+#define _GNU_SOURCE 1
+#define __USE_GNU 1
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "debug.h"
 #include "libiphone/libiphone.h"
 
-int toto_debug = 0;
+int debug_level = 0;
 
 /**
  * Sets the level of debugging. Currently the only acceptable values are 0 and
@@ -35,33 +39,63 @@ int toto_debug = 0;
  */
 void iphone_set_debug_level(int level)
 {
-	toto_debug = level;
+	debug_level = level;
 }
 
-void log_debug_msg(const char *format, ...)
+static void debug_print_line(const char *func, const char *file, int line, const char *buffer)
+{
+	char *str_time = NULL;
+	char *header = NULL;
+	time_t the_time;
+
+	time(&the_time);
+	str_time = g_new0 (gchar, 255);
+	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
+
+	/* generate header text */
+	asprintf(&header, "%s %s %s:%d", str_time, file, func, line);
+	free (str_time);
+
+	/* always in light green */
+	printf ("%s\n", header);
+
+	/* different colors according to the severity */
+	printf ("%s\n", buffer);
+
+	/* flush this output, as we need to debug */
+	fflush (stdout);
+
+	free (header);
+}
+
+inline void debug_info_real(const char *func, const char *file, int line, const char *format, ...)
 {
 #ifndef STRIP_DEBUG_CODE
-
 	va_list args;
+	char *buffer = NULL;
+
+	if (!debug_level)
+		return;
+
 	/* run the real fprintf */
 	va_start(args, format);
-
-	if (toto_debug)
-		vfprintf(stderr, format, args);
-
+	vasprintf(&buffer, format, args);
 	va_end(args);
 
+	debug_print_line(func, file, line, buffer);
+
+	free(buffer);
 #endif
 }
 
-inline void log_debug_buffer(const char *data, const int length)
+inline void debug_buffer(const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
 	int i;
 	int j;
 	unsigned char c;
 
-	if (toto_debug) {
+	if (debug_level) {
 		for (i = 0; i < length; i += 16) {
 			fprintf(stderr, "%04x: ", i);
 			for (j = 0; j < 16; j++) {
@@ -89,16 +123,14 @@ inline void log_debug_buffer(const char *data, const int length)
 #endif
 }
 
-inline void dump_debug_buffer(const char *file, const char *data, const int length)
+inline void debug_buffer_to_file(const char *file, const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
-	/* run the real fprintf */
-	if (toto_debug) {
-		FILE *my_ssl_packet = fopen(file, "w+");
-		fwrite(data, 1, length, my_ssl_packet);
-		fflush(my_ssl_packet);
-		fprintf(stderr, "%s: Wrote SSL packet to drive, too.\n", __func__);
-		fclose(my_ssl_packet);
+	if (debug_level) {
+		FILE *f = fopen(file, "w+");
+		fwrite(data, 1, length, f);
+		fflush(f);
+		fclose(f);
 	}
 #endif
 }

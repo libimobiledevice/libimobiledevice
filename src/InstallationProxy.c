@@ -41,7 +41,7 @@ struct instproxy_status_data {
  */
 static void instproxy_lock(instproxy_client_t client)
 {
-	log_debug_msg("InstallationProxy: Locked\n");
+	debug_info("InstallationProxy: Locked");
 	g_mutex_lock(client->mutex);
 }
 
@@ -51,7 +51,7 @@ static void instproxy_lock(instproxy_client_t client)
  */
 static void instproxy_unlock(instproxy_client_t client)
 {
-	log_debug_msg("InstallationProxy: Unlocked\n");
+	debug_info("InstallationProxy: Unlocked");
 	g_mutex_unlock(client->mutex);
 }
 
@@ -131,7 +131,7 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 	property_list_service_client_free(client->parent);
 	client->parent = NULL;
 	if (client->status_updater) {
-		log_debug_msg("joining status_updater");
+		debug_info("joining status_updater");
 		g_thread_join(client->status_updater);
 	}
 	if (client->mutex) {
@@ -174,7 +174,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 				p_apptype = plist_new_string("User");
 				break;
 			default:
-				log_debug_msg("%s: unknown apptype %d given, using INSTPROXY_APPTYPE_USER instead\n", __func__, apptype);
+				debug_info("unknown apptype %d given, using INSTPROXY_APPTYPE_USER instead", apptype);
 				p_apptype = plist_new_string("User");
 				break;
 		}
@@ -187,7 +187,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist\n", __func__);
+		debug_info("could not send plist");
 		goto leave_unlock;
 	}
 
@@ -223,7 +223,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_
 				if (!strcmp(status, "BrowsingApplications")) {
 					browsing = 1;
 				} else if (!strcmp(status, "Complete")) {
-					log_debug_msg("%s: Browsing applications completed\n");
+					debug_info("Browsing applications completed");
 					res = INSTPROXY_E_SUCCESS;
 				}
 				free(status);
@@ -264,7 +264,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 		res = instproxy_error(property_list_service_receive_plist_with_timeout(client->parent, &dict, 30000));
 		instproxy_unlock(client);
 		if (res != INSTPROXY_E_SUCCESS) {
-			log_debug_msg("%s: could not receive plist, error %d\n", __func__, res);
+			debug_info("could not receive plist, error %d", res);
 			break;
 		}
 		if (dict) {
@@ -279,7 +279,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 				char *err_msg = NULL;
 				plist_get_string_val(err, &err_msg);
 				if (err_msg) {
-					log_debug_msg("%s(%s): ERROR: %s\n", __func__, operation, err_msg);
+					debug_info("(%s): ERROR: %s", operation, err_msg);
 					free(err_msg);
 				}
 #endif
@@ -303,9 +303,9 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 						int percent;
 						plist_get_uint_val(npercent, &val);
 						percent = val;
-						log_debug_msg("%s(%s): %s (%d%%)\n", __func__, operation, status_msg, percent);
+						debug_info("(%s): %s (%d%%)", operation, status_msg, percent);
 					} else {
-						log_debug_msg("%s(%s): %s\n", __func__, operation, status_msg);
+						debug_info("(%s): %s", operation, status_msg);
 					}
 #endif
 					free(status_msg);
@@ -338,7 +338,7 @@ static gpointer instproxy_status_updater(gpointer arg)
 
 	/* cleanup */
 	instproxy_lock(data->client);
-	log_debug_msg("%s: done, cleaning up.\n", __func__);
+	debug_info("done, cleaning up.");
 	if (data->operation) {
 	    free(data->operation);
 	}
@@ -408,11 +408,11 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
 		return INSTPROXY_E_INVALID_ARG;
 	}
 	if (sinf && (plist_get_node_type(sinf) != PLIST_DATA)) {
-		log_debug_msg("%s(%s): ERROR: sinf data is not a PLIST_DATA node!\n", __func__, command);
+		debug_info("(%s): ERROR: sinf data is not a PLIST_DATA node!", command);
 		return INSTPROXY_E_INVALID_ARG;
 	}
 	if (metadata && (plist_get_node_type(metadata) != PLIST_DATA)) {
-		log_debug_msg("%s(%s): ERROR: metadata is not a PLIST_DATA node!\n", __func__, command);
+		debug_info("(%s): ERROR: metadata is not a PLIST_DATA node!", command);
 		return INSTPROXY_E_INVALID_ARG;
 	}
 
@@ -439,7 +439,7 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		return res;
 	}
 
@@ -532,7 +532,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		return res;
 	}
 
@@ -567,13 +567,13 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		goto leave_unlock;
 	}
 
 	res = instproxy_error(property_list_service_receive_plist(client->parent, result));
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not receive plist, error %d\n", __func__, res);
+		debug_info("could not receive plist, error %d", res);
 		goto leave_unlock;
 	}
 
@@ -640,7 +640,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		return res;
 	}
 	return instproxy_create_status_updater(client, status_cb, "Archive");
@@ -686,7 +686,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		return res;
 	}
 	return instproxy_create_status_updater(client, status_cb, "Restore");
@@ -732,7 +732,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist, error %d\n", __func__, res);
+		debug_info("could not send plist, error %d", res);
 		return res;
 	}
 	return instproxy_create_status_updater(client, status_cb, "RemoveArchive");

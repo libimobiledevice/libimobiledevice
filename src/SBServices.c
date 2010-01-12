@@ -35,7 +35,7 @@
  */
 static void sbs_lock(sbservices_client_t client)
 {
-	log_debug_msg("SBServices: Locked\n");
+	debug_info("SBServices: Locked");
 	g_mutex_lock(client->mutex);
 }
 
@@ -45,7 +45,7 @@ static void sbs_lock(sbservices_client_t client)
  */
 static void sbs_unlock(sbservices_client_t client)
 {
-	log_debug_msg("SBServices: Unlocked\n");
+	debug_info("SBServices: Unlocked");
 	g_mutex_unlock(client->mutex);
 }
 
@@ -99,7 +99,7 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 	sbs_lock(client);
 
 	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist\n", __func__);
+		debug_info("could not send plist");
 		goto leave_unlock;
 	}
 	plist_free(dict);
@@ -108,7 +108,7 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 	if (property_list_service_receive_plist(client->parent, state) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		res = SBSERVICES_E_SUCCESS;
 	} else {
-		log_debug_msg("%s: could not get icon state!\n", __func__);
+		debug_info("could not get icon state!");
 		if (*state) {
 			plist_free(*state);
 			*state = NULL;
@@ -137,7 +137,7 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 	sbs_lock(client);
 
 	if (property_list_service_send_binary_plist(client->parent, dict) != IPHONE_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist\n", __func__);
+		debug_info("could not send plist");
 		goto leave_unlock;
 	}
 	// NO RESPONSE
@@ -164,7 +164,7 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 	sbs_lock(client);
 
 	if (property_list_service_send_binary_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		log_debug_msg("%s: could not send plist\n", __func__);
+		debug_info("could not send plist");
 		goto leave_unlock;
 	}
 	plist_free(dict);

@@ -77,7 +77,7 @@ mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
 	/* perform handshake */
 	ret = mobilesync_error(device_link_service_version_exchange(dlclient, MSYNC_VERSION_INT1, MSYNC_VERSION_INT2));
 	if (ret != MOBILESYNC_E_SUCCESS) {
-		log_debug_msg("%s: version exchange failed, error %d\n", __func__, ret);
+		debug_info("version exchange failed, error %d", ret);
 		mobilesync_client_free(client_loc);
 		return ret;
 	}
@@ -116,7 +116,7 @@ mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(*plist, &XMLContent, &length);
-	log_debug_msg("%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
+	debug_info("plist size: %i\nbuffer :\n%s", length, XMLContent);
 	free(XMLContent);
 #endif
 	return ret;
@@ -141,7 +141,7 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	char *XMLContent = NULL;
 	uint32_t length = 0;
 	plist_to_xml(plist, &XMLContent, &length);
-	log_debug_msg("%s: plist size: %i\nbuffer :\n%s\n", __func__, length, XMLContent);
+	debug_info("plist size: %i\nbuffer :\n%s", length, XMLContent);
 	free(XMLContent);
 #endif
 	return mobilesync_error(device_link_service_send(client->parent, plist));

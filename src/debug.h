@@ -1,6 +1,6 @@
 /*
  * debug.h
- * contains utilitary methos for logging and debugging
+ * contains utilitary functions for debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *
@@ -24,8 +24,20 @@
 
 #include <glib.h>
 
-G_GNUC_INTERNAL inline void log_debug_msg(const char *format, ...);
-G_GNUC_INTERNAL inline void log_debug_buffer(const char *data, const int length);
-G_GNUC_INTERNAL inline void dump_debug_buffer(const char *file, const char *data, const int length);
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && !defined(STRIP_DEBUG_CODE)
+#define debug_info(...) debug_info_real (__func__, __FILE__, __LINE__, __VA_ARGS__)
+#elif defined(__GNUC__) && __GNUC__ >= 3 && !defined(STRIP_DEBUG_CODE)
+#define debug_info(...) debug_info_real (__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#else
+#define debug_info(...)
+#endif
+
+G_GNUC_INTERNAL inline void debug_info_real(const char *func,
+											const char *file,
+											int	line,
+											const char *format, ...);
+
+G_GNUC_INTERNAL inline void debug_buffer(const char *data, const int length);
+G_GNUC_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
 
 #endif

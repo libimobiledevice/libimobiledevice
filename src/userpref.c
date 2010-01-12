@@ -106,7 +106,7 @@ static int userpref_set_host_id(const char *host_id)
 	key_file = g_key_file_new();
 
 	/* Store in config file */
-	log_debug_msg("%s: setting hostID to %s\n", __func__, host_id);
+	debug_info("setting hostID to %s", host_id);
 	g_key_file_set_value(key_file, "Global", "HostID", host_id);
 
 	/* Write config file on disk */
@@ -155,7 +155,7 @@ void userpref_get_host_id(char **host_id)
 		userpref_set_host_id(*host_id);
 	}
 
-	log_debug_msg("%s: Using %s as HostID\n", __func__, *host_id);
+	debug_info("Using %s as HostID", *host_id);
 }
 
 /** Determines whether this iPhone has been connected to this system before.

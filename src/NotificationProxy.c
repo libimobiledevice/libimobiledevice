@@ -41,7 +41,7 @@ struct np_thread {
  */
 static void np_lock(np_client_t client)
 {
-	log_debug_msg("NP: Locked\n");
+	debug_info("NP: Locked");
 	g_mutex_lock(client->mutex);
 }
 
@@ -51,7 +51,7 @@ static void np_lock(np_client_t client)
  */
 static void np_unlock(np_client_t client)
 {
-	log_debug_msg("NP: Unlocked\n");
+	debug_info("NP: Unlocked");
 	g_mutex_unlock(client->mutex);
 }
 
@@ -131,7 +131,7 @@ np_error_t np_client_free(np_client_t client)
 	property_list_service_client_free(client->parent);
 	client->parent = NULL;
 	if (client->notifier) {
-		log_debug_msg("joining np callback\n");
+		debug_info("joining np callback");
 		g_thread_join(client->notifier);
 	}
 	if (client->mutex) {
@@ -170,7 +170,7 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 	plist_free(dict);
 
 	if (res != NP_E_SUCCESS) {
-		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
+		debug_info("Error sending XML plist to device!");
 	}
 
 	np_unlock(client);
@@ -198,7 +198,7 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 
 	np_error_t res = np_error(property_list_service_send_xml_plist(client->parent, dict));
 	if (res != NP_E_SUCCESS) {
-		log_debug_msg("%s: Error sending XML plist to device!\n", __func__);
+		debug_info("Error sending XML plist to device!");
 	}
 	plist_free(dict);
 
@@ -266,7 +266,7 @@ static int np_get_notification(np_client_t client, char **notification)
 
 	property_list_service_receive_plist_with_timeout(client->parent, &dict, 500);
 	if (!dict) {
-		log_debug_msg("NotificationProxy: no notification received!\n");
+		debug_info("NotificationProxy: no notification received!");
 		res = 0;
 	} else {
 		char *cmd_value = NULL;
@@ -287,14 +287,14 @@ static int np_get_notification(np_client_t client, char **notification)
 			res = -2;
 			if (name_value_node && name_value) {
 				*notification = name_value;
-				log_debug_msg("%s: got notification %s\n", __func__, name_value);
+				debug_info("got notification %s\n", __func__, name_value);
 				res = 0;
 			}
 		} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
-			log_debug_msg("%s: ERROR: NotificationProxy died!\n", __func__);
+			debug_info("ERROR: NotificationProxy died!");
 			res = -1;
 		} else if (cmd_value) {
-			log_debug_msg("%d: unknown NotificationProxy command '%s' received!\n", __func__);
+			debug_info("unknown NotificationProxy command '%s' received!", cmd_value);
 			res = -1;
 		} else {
 			res = -2;
@@ -321,7 +321,7 @@ gpointer np_notifier( gpointer arg )
 
 	if (!npt) return NULL;
 
-	log_debug_msg("%s: starting callback.\n", __func__);
+	debug_info("starting callback.");
 	while (npt->client->parent) {
 		np_get_notification(npt->client, &notification);
 		if (notification) {
@@ -364,7 +364,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb 
 
 	np_lock(client);
 	if (client->notifier) {
-		log_debug_msg("%s: callback already set, removing\n");
+		debug_info("callback already set, removing\n");
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
 		g_thread_join(client->notifier);
@@ -384,7 +384,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb 
 			}
 		}
 	} else {
-		log_debug_msg("%s: no callback set\n", __func__);
+		debug_info("no callback set");
 	}
 	np_unlock(client);
 
