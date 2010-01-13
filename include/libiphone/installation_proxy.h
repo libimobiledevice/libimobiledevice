@@ -56,7 +56,7 @@ typedef struct instproxy_client_int *instproxy_client_t;
 typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status);
 
 /* Interface */
-instproxy_error_t instproxy_client_new(iphone_device_t device, int dst_port, instproxy_client_t *client);
+instproxy_error_t instproxy_client_new(iphone_device_t device, uint16_t port, instproxy_client_t *client);
 instproxy_error_t instproxy_client_free(instproxy_client_t client);
 
 instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_t apptype, plist_t *result);
