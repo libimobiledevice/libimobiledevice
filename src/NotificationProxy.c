@@ -84,7 +84,7 @@ static np_error_t np_error(property_list_service_error_t err)
 /** Makes a connection to the NP service on the phone. 
  * 
  * @param device The device to connect to.
- * @param dst_port Destination port (usually given by lockdownd_start_service).
+ * @param port Destination port (usually given by lockdownd_start_service).
  * @param client Pointer that will be set to a newly allocated np_client_t
  *    upon successful return.
  * 
@@ -92,7 +92,7 @@ static np_error_t np_error(property_list_service_error_t err)
  *   or NP_E_CONN_FAILED when the connection to the device could not be
  *   established.
  */
-np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *client)
+np_error_t np_client_new(iphone_device_t device, uint16_t port, np_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
@@ -102,7 +102,7 @@ np_error_t np_client_new(iphone_device_t device, int dst_port, np_client_t *clie
 		return NP_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, dst_port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return NP_E_CONN_FAILED;
 	}
 
