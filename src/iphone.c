@@ -611,6 +611,8 @@ iphone_error_t iphone_connection_disable_ssl(iphone_connection_t connection)
 	free(connection->ssl_data);
 	connection->ssl_data = NULL;
 
+	debug_info("SSL mode disabled");
+
 	return IPHONE_E_SUCCESS;
 }
 
