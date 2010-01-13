@@ -87,7 +87,7 @@ struct afc_client_int;
 typedef struct afc_client_int *afc_client_t;
 
 /* Interface */
-afc_error_t afc_client_new(iphone_device_t device, int dst_port, afc_client_t *client);
+afc_error_t afc_client_new(iphone_device_t device, uint16_t port, afc_client_t *client);
 afc_error_t afc_client_free(afc_client_t client);
 afc_error_t afc_get_device_info(afc_client_t client, char ***infos);
 afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***list);

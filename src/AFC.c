@@ -52,24 +52,27 @@ static void afc_unlock(afc_client_t client)
 
 /** Makes a connection to the AFC service on the phone. 
  * 
- * @param phone The iPhone to connect on.
- * @param s_port The source port. 
- * @param d_port The destination port. 
+ * @param device The device to connect to.
+ * @param port The destination port.
+ * @param client Pointer that will be set to a newly allocated afc_client_t
+ *     upon successful return.
  * 
- * @return A handle to the newly-connected client or NULL upon error.
+ * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARGUMENT when device or port
+ *     is invalid, AFC_E_MUX_ERROR when the connection failed, or AFC_E_NO_MEM
+ *     when there's a memory allocation problem.
  */
-afc_error_t afc_client_new(iphone_device_t device, int dst_port, afc_client_t * client)
+afc_error_t afc_client_new(iphone_device_t device, uint16_t port, afc_client_t * client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
 		g_thread_init(NULL);
 
-	if (!device)
+	if (!device || port==0)
 		return AFC_E_INVALID_ARGUMENT;
 
 	/* attempt connection */
 	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, dst_port, &connection) != IPHONE_E_SUCCESS) {
+	if (iphone_device_connect(device, port, &connection) != IPHONE_E_SUCCESS) {
 		return AFC_E_MUX_ERROR;
 	}
 
