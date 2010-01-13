@@ -53,11 +53,11 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
 
 	/* generate header text */
-	(void)asprintf(&header, "%s %s %s:%d", str_time, file, func, line);
+	(void)asprintf(&header, "%s %s:%d %s()", str_time, file, line, func);
 	free (str_time);
 
 	/* always in light green */
-	printf ("%s\n", header);
+	printf ("%s: ", header);
 
 	/* different colors according to the severity */
 	printf ("%s\n", buffer);
