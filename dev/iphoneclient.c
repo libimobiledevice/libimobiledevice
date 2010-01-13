@@ -39,7 +39,7 @@ static void notifier(const char *notification)
 
 static void perform_notification(iphone_device_t phone, lockdownd_client_t client, const char *notification)
 {
-	int nport = 0;
+	uint16_t nport = 0;
 	np_client_t np;
 
 	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &nport);
@@ -59,8 +59,8 @@ static void perform_notification(iphone_device_t phone, lockdownd_client_t clien
 int main(int argc, char *argv[])
 {
 	unsigned int bytes = 0;
-	int port = 0, i = 0;
-	int npp;
+	uint16_t port = 0, i = 0;
+	uint16_t npp;
 	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	uint64_t lockfile = 0;

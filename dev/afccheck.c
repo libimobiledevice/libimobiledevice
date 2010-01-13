@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 	GError *err;
-	int port = 0;
+	uint16_t port = 0;
 	afc_client_t afc = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
 	int i;
 	char uuid[41];
-	int port = 0;
+	uint16_t port = 0;
 	uuid[0] = 0;
 
 	signal(SIGINT, clean_exit);

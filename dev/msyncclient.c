@@ -141,7 +141,7 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 
 int main(int argc, char *argv[])
 {
-	int port = 0;
+	uint16_t port = 0;
 	lockdownd_client_t client = NULL;
 	iphone_device_t phone = NULL;
 

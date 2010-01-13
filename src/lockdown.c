@@ -1207,7 +1207,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
  
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, int *port)
+lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, uint16_t *port)
 {
 	if (!client || !service || !port)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -1220,7 +1220,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	plist_t dict = NULL;
-	uint32_t port_loc = 0;
+	uint16_t port_loc = 0;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	free(host_id);

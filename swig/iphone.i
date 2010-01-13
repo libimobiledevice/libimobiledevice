@@ -85,7 +85,7 @@ void my_delete_Lockdownd(Lockdownd* lckd) {
 MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	if (!lckd || !lckd->dev) return NULL;
 	MobileSync* client = NULL;
-	int port = 0;
+	uint16_t port = 0;
 	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(lckd->client, "com.apple.mobilesync", &port)) {
 		client = (MobileSync*) malloc(sizeof(MobileSync));
 		client->dev = lckd->dev;
