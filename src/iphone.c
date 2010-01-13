@@ -202,20 +202,20 @@ iphone_error_t iphone_device_free(iphone_device_t device)
  * Set up a connection to the given device.
  *
  * @param device The device to connect to.
- * @param dst_port The destination port to connect to.
+ * @param port The destination port to connect to.
  * @param connection Pointer to an iphone_connection_t that will be filled
  *   with the necessary data of the connection.
  *
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t dst_port, iphone_connection_t *connection)
+iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t port, iphone_connection_t *connection)
 {
 	if (!device) {
 		return IPHONE_E_INVALID_ARG;
 	}
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
-		int sfd = usbmuxd_connect((uint32_t)(device->conn_data), dst_port);
+		int sfd = usbmuxd_connect((uint32_t)(device->conn_data), port);
 		if (sfd < 0) {
 			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
 			return IPHONE_E_UNKNOWN_ERROR;
