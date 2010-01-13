@@ -146,7 +146,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 		iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			debug_info("sent %d bytes", bytes);
-			debug_buffer(content, bytes);
+			debug_plist(plist);
 			if ((uint32_t)bytes == length) {
 				res = PROPERTY_LIST_SERVICE_E_SUCCESS;
 			} else {
@@ -243,13 +243,13 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 				debug_info("received %d bytes", bytes);
 				curlen += bytes;
 			}
-			debug_buffer(content, pktlen);
 			if (!memcmp(content, "bplist00", 8)) {
 				plist_from_bin(content, pktlen, plist);
 			} else {
 				plist_from_xml(content, pktlen, plist);
 			}
 			if (*plist) {
+				debug_plist(*plist);
 				res = PROPERTY_LIST_SERVICE_E_SUCCESS;
 			} else {
 				res = PROPERTY_LIST_SERVICE_E_PLIST_ERROR;

@@ -137,6 +137,7 @@ inline void debug_buffer_to_file(const char *file, const char *data, const int l
 
 inline void debug_plist(plist_t plist)
 {
+#ifndef STRIP_DEBUG_CODE
 	if (!plist)
 		return;
 
@@ -145,5 +146,6 @@ inline void debug_plist(plist_t plist)
 	plist_to_xml(plist, &buffer, &length);
 	debug_info("plist size: %i\nbuffer :\n%s", length, buffer);
 	free(buffer);
+#endif
 }
 
