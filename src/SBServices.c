@@ -79,14 +79,14 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
  * Creates a new sbservices client.
  *
  * @param device The device to connect to.
- * @param dst_port The port on device to connect to.
+ * @param port The port on device to connect to.
  * @param client Pointer that will point to a newly allocated
  *     sbservices_client_t upon successful return.
  *
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client is NULL, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, sbservices_client_t *client)
+sbservices_error_t sbservices_client_new(iphone_device_t device, uint16_t port, sbservices_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
@@ -96,7 +96,7 @@ sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, s
 		return SBSERVICES_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	sbservices_error_t err = sbservices_error(property_list_service_client_new(device, dst_port, &plistclient));
+	sbservices_error_t err = sbservices_error(property_list_service_client_new(device, port, &plistclient));
 	if (err != SBSERVICES_E_SUCCESS) {
 		return err;
 	}

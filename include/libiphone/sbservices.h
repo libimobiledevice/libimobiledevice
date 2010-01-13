@@ -43,7 +43,7 @@ struct sbservices_client_int;
 typedef struct sbservices_client_int *sbservices_client_t;
 
 /* Interface */
-sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, sbservices_client_t *client);
+sbservices_error_t sbservices_client_new(iphone_device_t device, uint16_t port, sbservices_client_t *client);
 sbservices_error_t sbservices_client_free(sbservices_client_t client);
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state);
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
