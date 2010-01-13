@@ -1,6 +1,6 @@
 /*
- * SBServices.h
- * SpringBoard Services header file.
+ * notification_proxy.h
+ * Notification Proxy header file.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
@@ -18,17 +18,20 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef ISBSERVICES_H
-#define ISBSERVICES_H
+#ifndef INOTIFICATION_PROXY_H
+#define INOTIFICATION_PROXY_H
 
 #include <glib.h>
 
-#include "libiphone/sbservices.h"
+#include "libiphone/notification_proxy.h"
 #include "property_list_service.h"
 
-struct sbservices_client_int {
+struct np_client_int {
 	property_list_service_client_t parent;
 	GMutex *mutex;
+	GThread *notifier;
 };
+
+gpointer np_notifier(gpointer arg);
 
 #endif

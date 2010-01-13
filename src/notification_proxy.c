@@ -1,5 +1,5 @@
 /*
- * NotificationProxy.c
+ * notification_proxy.c
  * Notification Proxy implementation.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
@@ -26,7 +26,7 @@
 #include <arpa/inet.h>
 #include <plist/plist.h>
 
-#include "NotificationProxy.h"
+#include "notification_proxy.h"
 #include "property_list_service.h"
 #include "debug.h"
 

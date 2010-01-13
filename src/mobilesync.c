@@ -1,5 +1,5 @@
 /*
- * MobileSync.c 
+ * mobilesync.c 
  * Contains functions for the built-in MobileSync client.
  * 
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#include "MobileSync.h"
+#include "mobilesync.h"
 #include "device_link_service.h"
 #include "debug.h"
 

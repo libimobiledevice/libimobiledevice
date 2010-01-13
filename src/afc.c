@@ -1,5 +1,5 @@
 /*
- * AFC.c 
+ * afc.c 
  * Contains functions for the built-in AFC client.
  * 
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "AFC.h"
+#include "afc.h"
 #include "iphone.h"
 #include "debug.h"
 

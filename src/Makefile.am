@@ -5,13 +5,13 @@ AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_L
 
 lib_LTLIBRARIES = libiphone.la
 libiphone_la_SOURCES = iphone.c iphone.h \
+		       debug.c debug.h\
+		       userpref.c userpref.h\
 		       property_list_service.c property_list_service.h\
 		       device_link_service.c device_link_service.h\
 		       lockdown.c lockdown.h\
-		       AFC.c AFC.h\
-		       NotificationProxy.c NotificationProxy.h\
-		       InstallationProxy.c InstallationProxy.h\
-		       SBServices.c SBServices.h\
-		       userpref.c userpref.h\
-		       debug.c debug.h\
-		       MobileSync.c MobileSync.h
+		       afc.c afc.h\
+		       notification_proxy.c notification_proxy.h\
+		       installation_proxy.c installation_proxy.h\
+		       sbservices.c sbservices.h\
+		       mobilesync.c mobilesync.h

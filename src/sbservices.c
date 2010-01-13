@@ -1,5 +1,5 @@
 /*
- * SBServices.c
+ * sbservices.c
  * SpringBoard Services implementation.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
@@ -25,7 +25,7 @@
 #include <arpa/inet.h>
 #include <plist/plist.h>
 
-#include "SBServices.h"
+#include "sbservices.h"
 #include "property_list_service.h"
 #include "debug.h"
 

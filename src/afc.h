@@ -1,5 +1,5 @@
 /* 
- * AFC.h
+ * afc.h
  * Defines and structs and the like for the built-in AFC client
  * 
  * Copyright (c) 2008 Zach C. All Rights Reserved.

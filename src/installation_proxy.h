@@ -1,8 +1,8 @@
-/* 
- * MobileSync.h
- * Definitions for the built-in MobileSync client
- * 
- * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
+/*
+ * installation_proxy.h
+ * Installation Proxy header file.
+ *
+ * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,14 +18,18 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef MOBILESYNC_H
-#define MOBILESYNC_H
+#ifndef IINSTALLATION_PROXY_H
+#define IINSTALLATION_PROXY_H
 
-#include "libiphone/mobilesync.h"
-#include "device_link_service.h"
+#include <glib.h>
 
-struct mobilesync_client_int {
-	device_link_service_client_t parent;
+#include "libiphone/installation_proxy.h"
+#include "property_list_service.h"
+
+struct instproxy_client_int {
+	property_list_service_client_t parent;
+	GMutex *mutex;
+	GThread *status_updater;
 };
 
 #endif
