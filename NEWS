@@ -1,22 +1,103 @@
-Release 0.9.2
--------------
+Version 0.9.6
+~~~~~~~~~~~~~
 
-iFuse:
-* Moved some libiphone logic into iFuse and adopted to new API
-* Add hard/symlink support
+* Changes:
+  - Rename some code for consistency
+  - Refactor pairing to allow custom pair records
+  - Move SSL handling out of lockdownd code
+  - Refactor lockdown session handling code
+  - Remove debug mask support
+  - No longer do a full lockdown handshake on client_new
+  - Refactor debug code to be consistent and easier to use
+  - Run validate_pair by default during lockdown handshake
+  - Allow retrieving the type for lockdown query_type request
+  - Add new property_list_service and device_link_service abstractions
+  - Detect pairing failure due to having a password set on the device
+  - Implement lockdown phone activation and deactivation
+  - Fix iphoneinfo not printing values in key/value mode
+  - Implement lockdown_unpair() request
+  - Add more notification ids and lockdown domains
+  - Implement label support for lockdown requests
+  - Add new installation_proxy interface
+  - Add new sbservices interface
+  - Implement lockdownd_validate_pair() request
+  - Add endian safety to AFC
+  - Make lockdown sessions without SSL work
+  - Fix linking on Mandriva Linux
+  - Minor bugfixes and documentation updates
 
-libiphone:
-* Migrate to use the new usbmuxd daemon
-* Refactor whole API
-* Add iPhone 3GS support
-* Add hard/symlink support for AFC
-* New iphone_id tool to list connected devices and get the device name
-* iphoneinfo now allows plist/xml output and queries by domain/key
-* Fix a lot of bugs/crashes, compiler warnings and comments
+Version 0.9.5
+~~~~~~~~~~~~~
 
-usbmuxd:
-* New daemon to allow multiple connections to devices
-* Add iPhone 3GS support and expose new tethering USB interface
-* First public release available
-* Fix race condition using multiple clients simultaneously
-* Fix various usbmux protocol bugs
+* Changes:
+  - Updated to the latest libplist 0.16 API
+  - Fixed various minor leaks and issues
+  - Updated Python bindings and module name
+
+Version 0.9.4
+~~~~~~~~~~~~~
+
+* Changes:
+  - Update to libplist 0.15 API rework
+  - Update Python bindings
+  - Bufixes around usbmuxd daemon usage
+  - Use automake 1.11 silent rules if available
+  - Various bugfixes
+
+Version 0.9.3
+~~~~~~~~~~~~~
+
+* Changes:
+  - Bump libplist requirement to 0.13 and remove deprecated code
+
+Version 0.9.2
+~~~~~~~~~~~~~
+
+* Changes:
+  - Migrate to use the new usbmuxd daemon
+  - Refactor whole API
+  - Add iPhone 3GS support
+  - Add hard/symlink support for AFC
+  - New iphone_id tool to list connected devices and get the device
+    name
+  - iphoneinfo now allows plist/xml output and queries by
+    domain/key
+  - Fix a lot of bugs/crashes, compiler warnings and comments
+
+Version 0.9.1
+~~~~~~~~~~~~~
+
+* Changes:
+  - Fix make distcheck
+  - Bump libplist requirement to 0.12 and remove deprecated code
+  - A bunch of autotools fixes
+
+Version 0.9.0
+~~~~~~~~~~~~~
+
+* Changes:
+  - Fix pkg-config dependancies
+  - Fix Python binding generation
+  - AFC cleanup and improved error handling
+  - Add support for the notification proxy service
+  - Add tools to show device information and relay syslog
+  - More robust pairing implementation
+  - Remove libiphone-initconf, SSL implementation handles it at
+    runtime now
+  - Fix receive of plists larger than a packet
+  - Return an error if failed to start a service on the device
+  - Fix usb enumeration
+  - Fix udev rule to catch usb hubs, too
+  - Add large file support
+  - Move out plist handling into libplist and depend on it
+  - Add Python bindings
+  - Lots of bugfixes
+
+Version 0.1.0
+~~~~~~~~~~~~~
+
+* Changes:
+  - Use udev to set usb configuration; iphone kmod is obsolete now
+  - Remove HAL mounting
+  - Bugfixes
+
