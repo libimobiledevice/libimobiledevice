@@ -75,6 +75,17 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
         return SBSERVICES_E_UNKNOWN_ERROR;
 }
 
+/**
+ * Creates a new sbservices client.
+ *
+ * @param device The device to connect to.
+ * @param dst_port The port on device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     sbservices_client_t upon successful return.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client is NULL, or an SBSERVICES_E_* error code otherwise.
+ */
 sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, sbservices_client_t *client)
 {
 	/* makes sure thread environment is available */
@@ -98,6 +109,14 @@ sbservices_error_t sbservices_client_new(iphone_device_t device, int dst_port, s
 	return SBSERVICES_E_SUCCESS;
 }
 
+/**
+ * Frees an sbservices client.
+ *
+ * @param client The sbservices client to free.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client is NULL, or an SBSERVICES_E_* error code otherwise.
+ */
 sbservices_error_t sbservices_client_free(sbservices_client_t client)
 {
 	if (!client)
@@ -113,6 +132,16 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 	return err;
 }
 
+/**
+ * Gets the icon state of the connected device.
+ *
+ * @param client The connected sbservices client to use.
+ * @param state Pointer that will point to a newly allocated plist containing
+ *     the current icon state. It is up to the caller to free the memory.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client or state is invalid, or an SBSERVICES_E_* error code otherwise.
+ */
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state)
 {
 	if (!client || !client->parent || !state)
@@ -150,6 +179,15 @@ leave_unlock:
 	return res;
 }
 
+/**
+ * Sets the icon state of the connected device.
+ *
+ * @param client The connected sbservices client to use.
+ * @param newstate A plist containing the new iconstate.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client or newstate is NULL, or an SBSERVICES_E_* error code otherwise.
+ */
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate)
 {
 	if (!client || !client->parent || !newstate)
@@ -176,9 +214,24 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 	return res;
 }
 
+/**
+ * Get the icon of the specified app as PNG data.
+ *
+ * @param client The connected sbservices client to use.
+ * @param bundleId The bundle identifier of the app to retrieve the icon for.
+ * @param pngdata Pointer that will point to a newly allocated buffer
+ *     containing the PNG data upon successful return. It is up to the caller
+ *     to free the memory.
+ * @param pngsize Pointer to a uint64_t that will be set to the size of the
+ *     buffer pngdata points to upon successful return.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client, bundleId, or pngdata are invalid, or an SBSERVICES_E_* error
+ *     code otherwise.
+ */
 sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize)
 {
-	if (!client || !client->parent || !pngdata)
+	if (!client || !client->parent || !bundleId || !pngdata)
 		return SBSERVICES_E_INVALID_ARG;
 
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
