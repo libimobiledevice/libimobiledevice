@@ -59,14 +59,14 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 	return MOBILESYNC_E_UNKNOWN_ERROR;
 }
 
-mobilesync_error_t mobilesync_client_new(iphone_device_t device, int dst_port,
+mobilesync_error_t mobilesync_client_new(iphone_device_t device, uint16_t port,
 						   mobilesync_client_t * client)
 {
-	if (!device || dst_port == 0 || !client || *client)
+	if (!device || port == 0 || !client || *client)
 		return MOBILESYNC_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;
-	mobilesync_error_t ret = mobilesync_error(device_link_service_client_new(device, dst_port, &dlclient));
+	mobilesync_error_t ret = mobilesync_error(device_link_service_client_new(device, port, &dlclient));
 	if (ret != MOBILESYNC_E_SUCCESS) {
 		return ret;
 	}
