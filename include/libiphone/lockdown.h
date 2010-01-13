@@ -56,6 +56,14 @@ typedef int16_t lockdownd_error_t;
 struct lockdownd_client_int;
 typedef struct lockdownd_client_int *lockdownd_client_t;
 
+struct lockdownd_pair_record {
+	char *device_certificate;
+	char *host_certificate;
+	char *host_id;
+	char *root_certificate;
+};
+typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
+
 /* Interface */
 lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client, const char *label);
 lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lockdownd_client_t *client, const char *label);
@@ -70,9 +78,9 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
 lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist);
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id);
-lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id);
-lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, char *host_id);
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
 lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
 lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);

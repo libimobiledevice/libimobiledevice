@@ -656,10 +656,10 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 	}
 
 	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->uuid))
-		ret = lockdownd_pair(client_loc, host_id);
+		ret = lockdownd_pair(client_loc, NULL);
 
 	/* in any case, we need to validate pairing to receive trusted host status */
-	ret = lockdownd_validate_pair(client_loc, host_id);
+	ret = lockdownd_validate_pair(client_loc, NULL);
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
@@ -682,67 +682,115 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 	return ret;
 }
 
-/** Function used internally by lockdownd_pair() and lockdownd_validate_pair()
- *
- * @param client The lockdown client to pair with.
- * @param host_id The HostID to use for pairing. If NULL is passed, then
- *    the HostID of the current machine is used. A new HostID will be
- *    generated automatically when pairing is done for the first time.
- * @param verb This is either "Pair" or "ValidatePair".
- *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
- */
-static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host_id, const char *verb)
+static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_record)
+{
+	if (!pair_record)
+		return NULL;
+
+	char *host_id_loc = pair_record->host_id;
+
+	/* setup request plist */
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict, "DeviceCertificate", plist_new_data(pair_record->device_certificate, strlen(pair_record->device_certificate)));
+	plist_dict_insert_item(dict, "HostCertificate", plist_new_data(pair_record->host_certificate, strlen(pair_record->host_certificate)));
+	if (!pair_record->host_id)
+		userpref_get_host_id(&host_id_loc);
+	plist_dict_insert_item(dict, "HostID", plist_new_string(host_id_loc));
+	plist_dict_insert_item(dict, "RootCertificate", plist_new_data(pair_record->root_certificate, strlen(pair_record->root_certificate)));
+
+	if (!pair_record->host_id)
+		free(host_id_loc);
+
+	return dict;
+}
+
+static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, char *host_id, plist_t *pair_record_plist)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	plist_t dict = NULL;
-	plist_t dict_record = NULL;
 
 	gnutls_datum_t device_cert = { NULL, 0 };
 	gnutls_datum_t host_cert = { NULL, 0 };
 	gnutls_datum_t root_cert = { NULL, 0 };
-	gnutls_datum_t public_key = { NULL, 0 };
-
-	char *host_id_loc = host_id;
-
-	ret = lockdownd_get_device_public_key(client, &public_key);
-	if (ret != LOCKDOWN_E_SUCCESS) {
-		debug_info("device refused to send public key.");
-		return ret;
-	}
-	debug_info("device public key follows:\n%s", public_key.data);
 
 	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != LOCKDOWN_E_SUCCESS) {
-		free(public_key.data);
 		return ret;
 	}
 
-	if (!host_id) {
+	char *host_id_loc = host_id;
+
+	if (!host_id)
 		userpref_get_host_id(&host_id_loc);
+
+	/* setup request plist */
+	*pair_record_plist = plist_new_dict();
+	plist_dict_insert_item(*pair_record_plist, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
+	plist_dict_insert_item(*pair_record_plist, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
+	plist_dict_insert_item(*pair_record_plist, "HostID", plist_new_string(host_id_loc));
+	plist_dict_insert_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
+
+	if (!host_id)
+		free(host_id_loc);
+
+	return ret;
+}
+
+/** Function used internally by lockdownd_pair() and lockdownd_validate_pair()
+ *
+ * @param client The lockdown client to pair with.
+ * @param pair_record The pair record to use for pairing. If NULL is passed, then
+ *    the pair records from the current machine are used. New records will be
+ *    generated automatically when pairing is done for the first time.
+ * @param verb This is either "Pair", "ValidatePair" or "Unpair".
+ *
+ * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ */
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb)
+{
+	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+	plist_t dict = NULL;
+	plist_t dict_record = NULL;
+	gnutls_datum_t public_key = { NULL, 0 };
+	int pairing_mode = 0; /* 0 = libiphone, 1 = external */
+
+	if (pair_record && pair_record->host_id) {
+		/* valid pair_record passed? */
+		if (!pair_record->device_certificate || !pair_record->host_certificate || !pair_record->root_certificate) {
+			return LOCKDOWN_E_PLIST_ERROR;
+		}
+
+		/* use passed pair_record */
+		dict_record = lockdownd_pair_record_to_plist(pair_record);
+
+		pairing_mode = 1;
+	} else {
+		ret = lockdownd_get_device_public_key(client, &public_key);
+		if (ret != LOCKDOWN_E_SUCCESS) {
+			if (public_key.data)
+				free(public_key.data);
+			debug_info("device refused to send public key.");
+			return ret;
+		}
+		debug_info("device public key follows:\n%s", public_key.data);
+		/* get libiphone pair_record */
+		ret = generate_pair_record_plist(public_key, NULL, &dict_record);
+		if (ret != LOCKDOWN_E_SUCCESS) {
+			if (dict_record)
+				plist_free(dict_record);
+			return ret;
+		}
 	}
 
 	/* Setup Pair request plist */
 	dict = plist_new_dict();
-	dict_record = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"PairRecord", dict_record);
-
-	plist_dict_insert_item(dict_record, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
-	plist_dict_insert_item(dict_record, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
-	plist_dict_insert_item(dict_record, "HostID", plist_new_string(host_id_loc));
-	plist_dict_insert_item(dict_record, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
-
 	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
 
 	/* send to iPhone */
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
-
-	if (!host_id) {
-		free(host_id_loc);
-	}
 
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
@@ -760,12 +808,14 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 	/* if pairing succeeded */
 	if (ret == LOCKDOWN_E_SUCCESS) {
 		debug_info("%s success", verb);
-		if (!strcmp("Unpair", verb)) {
-			/* remove public key from config */
-			userpref_remove_device_public_key(client->uuid);
-		} else {
-			/* store public key in config */
-			userpref_set_device_public_key(client->uuid, public_key);
+		if (!pairing_mode) {
+			if (!strcmp("Unpair", verb)) {
+				/* remove public key from config */
+				userpref_remove_device_public_key(client->uuid);
+			} else {
+				/* store public key in config */
+				userpref_set_device_public_key(client->uuid, public_key);
+			}
 		}
 	} else {
 		debug_info("%s failure", verb);
@@ -786,7 +836,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
 	}
 	plist_free(dict);
 	dict = NULL;
-	free(public_key.data);
+	if (public_key.data)
+		free(public_key.data);
 	return ret;
 }
 
@@ -795,15 +846,15 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, char *host
  * It's part of the lockdownd handshake.
  *
  * @param client The lockdown client to pair with.
- * @param host_id The HostID to use for pairing. If NULL is passed, then
- *    the HostID of the current machine is used. A new HostID will be
+ * @param pair_record The pair record to use for pairing. If NULL is passed, then
+ *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
+lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, host_id, "Pair");
+	return lockdownd_do_pair(client, pair_record, "Pair");
 }
 
 /** 
@@ -812,15 +863,16 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, char *host_id)
  * It's part of the lockdownd handshake.
  *
  * @param client The lockdown client to pair with.
- * @param host_id The HostID to use for pairing. If NULL is passed, then
- *    the HostID of the current machine is used. A new HostID will be
- *    generated automatically when pairing is done for the first time.
+ * @param pair_record The pair record to validate pairing with. If NULL is
+ *    passed, then the pair records from the current machine are used.
+ *    New records will be generated automatically when pairing is done
+ *    for the first time.
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_id)
+lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, host_id, "ValidatePair");
+	return lockdownd_do_pair(client, pair_record, "ValidatePair");
 }
 
 /** 
@@ -828,14 +880,14 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, char *host_
  * from the device and host.
  *
  * @param client The lockdown client to pair with.
- * @param host_id The HostID to use for unpairing. If NULL is passed, then
- *    the HostID of the current machine is used.
+ * @param pair_record The pair record to use for unpair. If NULL is passed, then
+ *    the pair records from the current machine are used.
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, char *host_id)
+lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, host_id, "Unpair");
+	return lockdownd_do_pair(client, pair_record, "Unpair");
 }
 
 /**
