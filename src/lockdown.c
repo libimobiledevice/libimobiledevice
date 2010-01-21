@@ -1262,9 +1262,18 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 			if (port && ret == LOCKDOWN_E_SUCCESS)
 				*port = port_loc;
 		}
-	}
-	else
+	} else {
 		ret = LOCKDOWN_E_START_SERVICE_FAILED;
+		plist_t error_node = plist_dict_get_item(dict, "Error");
+		if (error_node && PLIST_STRING == plist_get_node_type(error_node)) {
+			char *error = NULL;
+			plist_get_string_val(error_node, &error);
+			if (!strcmp(error, "InvalidService")) {
+				ret = LOCKDOWN_E_INVALID_SERVICE;
+			}
+			free(error);
+		}
+	}
 
 	plist_free(dict);
 	dict = NULL;

@@ -48,6 +48,7 @@ extern "C" {
 #define LOCKDOWN_E_PASSWORD_PROTECTED       -14
 #define LOCKDOWN_E_NO_RUNNING_SESSION       -15
 #define LOCKDOWN_E_INVALID_HOST_ID          -16
+#define LOCKDOWN_E_INVALID_SERVICE          -17
 
 #define LOCKDOWN_E_UNKNOWN_ERROR           -256
 
