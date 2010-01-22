@@ -58,10 +58,133 @@ static const char *domains[] = {
 
 static int indent_level = 0;
 
-int is_domain_known(char *domain);
-void print_usage(int argc, char **argv);
-void plist_node_to_string(plist_t node);
-void plist_children_to_string(plist_t node);
+static int is_domain_known(char *domain)
+{
+	int i = 0;
+	while (domains[i] != NULL) {
+		if (strstr(domain, domains[i++])) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void plist_node_to_string(plist_t node);
+
+static void plist_children_to_string(plist_t node)
+{
+	/* iterate over key/value pairs */
+	plist_dict_iter it = NULL;
+
+	char* key = NULL;
+	plist_t subnode = NULL;
+	plist_dict_new_iter(node, &it);
+	plist_dict_next_item(node, it, &key, &subnode);
+	while (subnode)
+	{
+		printf("%*s", indent_level, "");
+		printf("%s: ", key);
+		free(key);
+		key = NULL;
+		plist_node_to_string(subnode);
+		plist_dict_next_item(node, it, &key, &subnode);
+	}
+	free(it);
+}
+
+static void plist_node_to_string(plist_t node)
+{
+	char *s = NULL;
+	char *data = NULL;
+	double d;
+	uint8_t b;
+	uint64_t u = 0;
+	GTimeVal tv = { 0, 0 };
+
+	plist_type t;
+
+	if (!node)
+		return;
+
+	t = plist_get_node_type(node);
+
+	switch (t) {
+	case PLIST_BOOLEAN:
+		plist_get_bool_val(node, &b);
+		printf("%s\n", (b ? "true" : "false"));
+		break;
+
+	case PLIST_UINT:
+		plist_get_uint_val(node, &u);
+		printf("%llu\n", (long long)u);
+		break;
+
+	case PLIST_REAL:
+		plist_get_real_val(node, &d);
+		printf("%f\n", d);
+		break;
+
+	case PLIST_STRING:
+		plist_get_string_val(node, &s);
+		printf("%s\n", s);
+		free(s);
+		break;
+
+	case PLIST_KEY:
+		plist_get_key_val(node, &s);
+		printf("%s: ", s);
+		free(s);
+		break;
+
+	case PLIST_DATA:
+		plist_get_data_val(node, &data, &u);
+		s = g_base64_encode((guchar *)data, u);
+		free(data);
+		printf("%s\n", s);
+		g_free(s);
+		break;
+
+	case PLIST_DATE:
+		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
+		s = g_time_val_to_iso8601(&tv);
+		printf("%s\n", s);
+		free(s);
+		break;
+
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+		printf("\n");
+		indent_level++;
+		plist_children_to_string(node);
+		indent_level--;
+		break;
+
+	default:
+		break;
+	}
+}
+
+static void print_usage(int argc, char **argv)
+{
+	int i = 0;
+	char *name = NULL;
+	
+	name = strrchr(argv[0], '/');
+	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
+	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
+	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
+	printf("  -x, --xml\t\toutput information as xml plist instead of key/value pairs\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("\n");
+	printf("  Known domains are:\n\n");
+	while (domains[i] != NULL) {
+		printf("  %s\n", domains[i++]);
+	}
+	printf("\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -181,131 +304,5 @@ int main(int argc, char *argv[])
 	iphone_device_free(phone);
 
 	return 0;
-}
-
-int is_domain_known(char *domain)
-{
-	int i = 0;
-	while (domains[i] != NULL) {
-		if (strstr(domain, domains[i++])) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-void print_usage(int argc, char **argv)
-{
-	int i = 0;
-	char *name = NULL;
-	
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
-	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
-	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
-	printf("  -x, --xml\t\toutput information as xml plist instead of key/value pairs\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("\n");
-	printf("  Known domains are:\n\n");
-	while (domains[i] != NULL) {
-		printf("  %s\n", domains[i++]);
-	}
-	printf("\n");
-}
-
-void plist_node_to_string(plist_t node)
-{
-	char *s = NULL;
-	char *data = NULL;
-	double d;
-	uint8_t b;
-	uint64_t u = 0;
-	GTimeVal tv = { 0, 0 };
-
-	plist_type t;
-
-	if (!node)
-		return;
-
-	t = plist_get_node_type(node);
-
-	switch (t) {
-	case PLIST_BOOLEAN:
-		plist_get_bool_val(node, &b);
-		printf("%s\n", (b ? "true" : "false"));
-		break;
-
-	case PLIST_UINT:
-		plist_get_uint_val(node, &u);
-		printf("%llu\n", (long long)u);
-		break;
-
-	case PLIST_REAL:
-		plist_get_real_val(node, &d);
-		printf("%f\n", d);
-		break;
-
-	case PLIST_STRING:
-		plist_get_string_val(node, &s);
-		printf("%s\n", s);
-		free(s);
-		break;
-
-	case PLIST_KEY:
-		plist_get_key_val(node, &s);
-		printf("%s: ", s);
-		free(s);
-		break;
-
-	case PLIST_DATA:
-		plist_get_data_val(node, &data, &u);
-		s = g_base64_encode((guchar *)data, u);
-		free(data);
-		printf("%s\n", s);
-		g_free(s);
-		break;
-
-	case PLIST_DATE:
-		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
-		s = g_time_val_to_iso8601(&tv);
-		printf("%s\n", s);
-		free(s);
-		break;
-
-	case PLIST_ARRAY:
-	case PLIST_DICT:
-		printf("\n");
-		indent_level++;
-		plist_children_to_string(node);
-		indent_level--;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void plist_children_to_string(plist_t node)
-{
-	/* iterate over key/value pairs */
-	plist_dict_iter it = NULL;
-
-	char* key = NULL;
-	plist_t subnode = NULL;
-	plist_dict_new_iter(node, &it);
-	plist_dict_next_item(node, it, &key, &subnode);
-	while (subnode)
-	{
-		printf("%*s", indent_level, "");
-		printf("%s: ", key);
-		free(key);
-		key = NULL;
-		plist_node_to_string(subnode);
-		plist_dict_next_item(node, it, &key, &subnode);
-	}
-	free(it);
 }
 
