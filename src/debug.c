@@ -3,6 +3,7 @@
  * contains utilitary functions for debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
+ * Copyright (c) 2010 Martin S. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,10 +57,12 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	(void)asprintf(&header, "%s %s:%d %s()", str_time, file, line, func);
 	free (str_time);
 
-	/* always in light green */
+	/* trim ending newlines */
+
+	/* print header */
 	printf ("%s: ", header);
 
-	/* different colors according to the severity */
+	/* print actual debug content */
 	printf ("%s\n", buffer);
 
 	/* flush this output, as we need to debug */
@@ -135,7 +138,7 @@ inline void debug_buffer_to_file(const char *file, const char *data, const int l
 #endif
 }
 
-inline void debug_plist(plist_t plist)
+inline void debug_plist_real(const char *func, const char *file, int line, plist_t plist)
 {
 #ifndef STRIP_DEBUG_CODE
 	if (!plist)
@@ -144,7 +147,12 @@ inline void debug_plist(plist_t plist)
 	char *buffer = NULL;
 	uint32_t length = 0;
 	plist_to_xml(plist, &buffer, &length);
-	debug_info("plist size: %i\nbuffer :\n%s", length, buffer);
+
+	/* get rid of ending newline as one is already added in the debug line */
+	if (buffer[length-1] == '\n')
+		buffer[length-1] = '\0';
+
+	debug_info_real(func, file, line, "printing %i bytes plist:\n%s", length, buffer);
 	free(buffer);
 #endif
 }

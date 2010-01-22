@@ -3,6 +3,7 @@
  * contains utilitary functions for debugging
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
+ * Copyright (c) 2010 Martin S. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,10 +28,13 @@
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && !defined(STRIP_DEBUG_CODE)
 #define debug_info(...) debug_info_real (__func__, __FILE__, __LINE__, __VA_ARGS__)
+#define debug_plist(a) debug_plist_real (__func__, __FILE__, __LINE__, a)
 #elif defined(__GNUC__) && __GNUC__ >= 3 && !defined(STRIP_DEBUG_CODE)
 #define debug_info(...) debug_info_real (__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#define debug_plist(a) debug_plist_real (__FUNCTION__, __FILE__, __LINE__, a)
 #else
 #define debug_info(...)
+#define debug_plist(a)
 #endif
 
 G_GNUC_INTERNAL inline void debug_info_real(const char *func,
@@ -40,6 +44,9 @@ G_GNUC_INTERNAL inline void debug_info_real(const char *func,
 
 G_GNUC_INTERNAL inline void debug_buffer(const char *data, const int length);
 G_GNUC_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
-G_GNUC_INTERNAL inline void debug_plist(plist_t plist);
+G_GNUC_INTERNAL inline void debug_plist_real(const char *func,
+											const char *file,
+											int	line,
+											plist_t plist);
 
 #endif
