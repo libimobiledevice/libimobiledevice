@@ -2,6 +2,10 @@ Version 0.9.6
 ~~~~~~~~~~~~~
 
 * Changes:
+  - Minor public API changes to prepare for 1.0 release:
+    * lockdownd_client_new -> lockdownd_client_new_with_handshake
+    * fooservice_recv -> fooservice_receive
+    * iphone_device_send/_recv -> iphone_connection_send/_receive
   - Rename some code for consistency
   - Refactor pairing to allow custom pair records
   - Move SSL handling out of lockdownd code
@@ -15,7 +19,7 @@ Version 0.9.6
   - Detect pairing failure due to having a password set on the device
   - Implement lockdown phone activation and deactivation
   - Fix iphoneinfo not printing values in key/value mode
-  - Implement lockdown_unpair() request
+  - Implement lockdownd_unpair() request
   - Add more notification ids and lockdown domains
   - Implement label support for lockdown requests
   - Add new installation_proxy interface
