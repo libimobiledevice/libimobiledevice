@@ -143,55 +143,71 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 }
 
 /**
+ * Send a command with specified options to the device.
+ * Internally used only.
+ *
+ * @param client The connected installation_proxy client.
+ * @param command The command to execute. Required.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ * @param appid The ApplicationIdentifier to add or NULL if not required.
+ * @param package_path The installation package path or NULL if not required.
+ *
+ * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
+ *     an error occured.
+ */
+static instproxy_error_t instproxy_send_command(instproxy_client_t client, const char *command, plist_t client_options, const char *appid, const char *package_path)
+{
+	if (!client || !command || (client_options && (plist_get_node_type(client_options) != PLIST_DICT)))
+		return INSTPROXY_E_INVALID_ARG;
+
+	plist_t dict = plist_new_dict();
+	if (appid) {
+		plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
+	}
+	if (client_options && (plist_dict_get_size(client_options) > 0)) {
+		plist_dict_insert_item(dict, "ClientOptions", plist_copy(client_options));
+	}
+	plist_dict_insert_item(dict, "Command", plist_new_string(command));
+	if (package_path) {
+		plist_dict_insert_item(dict, "PackagePath", plist_new_string(package_path));
+	}
+
+	instproxy_error_t err = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+	return err;
+}
+
+/**
  * List installed applications. This function runs synchronously.
  *
  * @param client The connected installation_proxy client
- * @param apptype The type of applications to list.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Valid client options include:
+ *          "ApplicationType" -> "User"
+ *          "ApplicationType" -> "System"
  * @param result Pointer that will be set to a plist that will hold an array
  *        of PLIST_DICT holding information about the applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
  */
-instproxy_error_t instproxy_browse(instproxy_client_t client, instproxy_apptype_t apptype, plist_t *result)
+instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-	int browsing = 0;
-	plist_t apps_array = NULL;
-
-	plist_t dict = plist_new_dict();
-	if (apptype != INSTPROXY_APPTYPE_ALL) {
-		plist_t client_opts = plist_new_dict();
-		plist_t p_apptype = NULL;
-		switch (apptype) {
-			case INSTPROXY_APPTYPE_SYSTEM:
-				p_apptype = plist_new_string("System");
-				break;
-			case INSTPROXY_APPTYPE_USER:
-				p_apptype = plist_new_string("User");
-				break;
-			default:
-				debug_info("unknown apptype %d given, using INSTPROXY_APPTYPE_USER instead", apptype);
-				p_apptype = plist_new_string("User");
-				break;
-		}
-		plist_dict_insert_item(client_opts, "ApplicationType", p_apptype);
-		plist_dict_insert_item(dict, "ClientOptions", client_opts);
-	}
-	plist_dict_insert_item(dict, "Command", plist_new_string("Browse"));
 
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
-	plist_free(dict);
+	res = instproxy_send_command(client, "Browse", client_options, NULL, NULL);
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist");
 		goto leave_unlock;
 	}
 
-	apps_array = plist_new_array();
+	int browsing = 0;
+	plist_t apps_array = plist_new_array();
+	plist_t dict = NULL;
 
 	do {
 		browsing = 0;
@@ -393,8 +409,7 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
  *
  * @param client The connected installation_proxy client
  * @param pkg_path Path of the installation package (inside the AFC jail)
- * @param sinf PLIST_DATA node holding the package's SINF data or NULL.
- * @param metadata PLIST_DATA node holding the packages's Metadata or NULL.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  * @param command The command to execute.
@@ -402,41 +417,18 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured. 
  */
-static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client, const char *pkg_path, plist_t sinf, plist_t metadata, instproxy_status_cb_t status_cb, const char *command)
+static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, const char *command)
 {
 	if (!client || !client->parent || !pkg_path) {
 		return INSTPROXY_E_INVALID_ARG;
 	}
-	if (sinf && (plist_get_node_type(sinf) != PLIST_DATA)) {
-		debug_info("(%s): ERROR: sinf data is not a PLIST_DATA node!", command);
-		return INSTPROXY_E_INVALID_ARG;
-	}
-	if (metadata && (plist_get_node_type(metadata) != PLIST_DATA)) {
-		debug_info("(%s): ERROR: metadata is not a PLIST_DATA node!", command);
-		return INSTPROXY_E_INVALID_ARG;
-	}
-
 	if (client->status_updater) {
 		return INSTPROXY_E_OP_IN_PROGRESS;
 	}
 
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t dict = plist_new_dict();
-	if (sinf && metadata) {
-		plist_t client_opts = plist_new_dict();
-		plist_dict_insert_item(client_opts, "ApplicationSINF", plist_copy(sinf));
-		plist_dict_insert_item(client_opts, "iTunesMetadata", plist_copy(metadata));
-		plist_dict_insert_item(dict, "ClientOptions", client_opts);
-	}
-	plist_dict_insert_item(dict, "Command", plist_new_string(command));
-	plist_dict_insert_item(dict, "PackagePath", plist_new_string(pkg_path));
-
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	instproxy_error_t res = instproxy_send_command(client, command, client_options, NULL, pkg_path);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
@@ -451,8 +443,13 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
  *
  * @param client The connected installation_proxy client
  * @param pkg_path Path of the installation package (inside the AFC jail)
- * @param sinf PLIST_DATA node holding the package's SINF data or NULL.
- * @param metadata PLIST_DATA node holding the packages's Metadata or NULL.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Valid options include:
+ *          "iTunesMetadata" -> PLIST_DATA
+ *          "ApplicationSINF" -> PLIST_DATA
+ *          "PackageType" -> "Developer"
+ *        If PackageType -> Developer is specified, then pkg_path points to
+ *        an .app directory instead of an install package.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -464,9 +461,9 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t sinf, plist_t metadata, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb)
 {
-	return instproxy_install_or_upgrade(client, pkg_path, sinf, metadata, status_cb, "Install");
+	return instproxy_install_or_upgrade(client, pkg_path, client_options, status_cb, "Install");
 }
 
 /**
@@ -476,8 +473,13 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  *
  * @param client The connected installation_proxy client
  * @param pkg_path Path of the installation package (inside the AFC jail)
- * @param sinf PLIST_DATA node holding the package's SINF data or NULL.
- * @param metadata PLIST_DATA node holding the packages's Metadata or NULL.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Valid options include:
+ *          "iTunesMetadata" -> PLIST_DATA
+ *          "ApplicationSINF" -> PLIST_DATA
+ *          "PackageType" -> "Developer"
+ *        If PackageType -> Developer is specified, then pkg_path points to
+ *        an .app directory instead of an install package.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -489,9 +491,9 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t sinf, plist_t metadata, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb)
 {
-	return instproxy_install_or_upgrade(client, pkg_path, sinf, metadata, status_cb, "Upgrade");
+	return instproxy_install_or_upgrade(client, pkg_path, client_options, status_cb, "Upgrade");
 }
 
 /**
@@ -499,6 +501,8 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  *
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the app to uninstall
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Currently there are no known client options, so pass NULL here.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -510,7 +514,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb)
 {
 	if (!client || !client->parent || !appid) {
 		return INSTPROXY_E_INVALID_ARG;
@@ -526,7 +530,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	plist_dict_insert_item(dict, "Command", plist_new_string("Uninstall"));
 
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	res = instproxy_send_command(client, "Uninstall", client_options, appid, NULL);
 	instproxy_unlock(client);
 
 	plist_free(dict);
@@ -545,26 +549,21 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
  * @see instproxy_archive
  *
  * @param client The connected installation_proxy client
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Currently there are no known client options, so pass NULL here.
  * @param result Pointer that will be set to a plist containing a PLIST_DICT
  *        holding information about the archived applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
  */
-instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t *result)
+instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Command", plist_new_string("LookupArchives"));
-
 	instproxy_lock(client);
-
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
-	plist_free(dict);
+	instproxy_error_t res = instproxy_send_command(client, "LookupArchives", client_options, NULL, NULL);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
@@ -592,11 +591,10 @@ leave_unlock:
  *
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the app to archive.
- * @param options This is either 0 for default behaviour (make an archive
- *        including app/user settings etc. AND uninstall the application),
- *        or one or a combination of the following options:
- *        INSTPROXY_ARCHIVE_APP_ONLY (1)
- *        INSTPROXY_ARCHIVE_SKIP_UNINSTALL (2)
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Valid options include:
+ *          "SkipUninstall" -> Boolean
+ *          "ArchiveType" -> "ApplicationOnly" 
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -608,7 +606,7 @@ leave_unlock:
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, uint32_t options, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb)
 {
 	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
@@ -617,27 +615,9 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 		return INSTPROXY_E_OP_IN_PROGRESS;
 	}
 
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
-	if (options > 0) {
-		plist_t client_opts = plist_new_dict();
-		if (options & INSTPROXY_ARCHIVE_APP_ONLY) {
-			plist_dict_insert_item(client_opts, "ArchiveType", plist_new_string("ApplicationOnly"));
-		}
-		if (options & INSTPROXY_ARCHIVE_SKIP_UNINSTALL) {
-			plist_dict_insert_item(client_opts, "SkipUninstall", plist_new_bool(1));
-		}
-		plist_dict_insert_item(dict, "ClientOptions", client_opts);
-	}
-	plist_dict_insert_item(dict, "Command", plist_new_string("Archive"));
-
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	instproxy_error_t res = instproxy_send_command(client, "Archive", client_options, appid, NULL);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
@@ -653,6 +633,8 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  *
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the app to restore.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Currently there are no known client options, so pass NULL here.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -664,7 +646,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb)
 {
 	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
@@ -673,17 +655,9 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 		return INSTPROXY_E_OP_IN_PROGRESS;
 	}
 
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
-	plist_dict_insert_item(dict, "Command", plist_new_string("Restore"));
-
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	instproxy_error_t res = instproxy_send_command(client, "Restore", client_options, appid, NULL);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
@@ -699,6 +673,8 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  *
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the archived app to remove.
+ * @param client_options The client options to use, as PLIST_DICT, or NULL.
+ *        Currently there are no known client options, so passing NULL is fine.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  *
@@ -710,7 +686,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  *     created successfully; any error occuring during the operation has to be
  *     handled inside the specified callback function.
  */
-instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, instproxy_status_cb_t status_cb)
+instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb)
 {
 	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;
@@ -719,17 +695,9 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 		return INSTPROXY_E_OP_IN_PROGRESS;
 	}
 
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
-	plist_dict_insert_item(dict, "Command", plist_new_string("RemoveArchive"));
-
 	instproxy_lock(client);
-	res = instproxy_error(property_list_service_send_xml_plist(client->parent, dict));
+	instproxy_error_t res = instproxy_send_command(client, "RemoveArchive", client_options, appid, NULL);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
@@ -738,3 +706,68 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 	return instproxy_create_status_updater(client, status_cb, "RemoveArchive");
 }
 
+/**
+ * Create a new client_options plist.
+ *
+ * @return A new plist_t of type PLIST_DICT. 
+ */
+plist_t instproxy_client_options_new()
+{
+	return plist_new_dict();
+}
+
+/**
+ * Add one or more new key:value pairs to the given client_options.
+ *
+ * @param client_options The client options to modify.
+ * @param ... KEY, VALUE, [KEY, VALUE], NULL
+ *
+ * @note The keys and values passed are expected to be strings, except for
+ *       "ApplicationSINF" and "iTunesMetadata" expecting a plist node of type
+ *       PLIST_DATA as value, or "SkipUninstall" needing int as value.
+ */
+void instproxy_client_options_add(plist_t client_options, ...)
+{
+	if (!client_options)
+		return;
+	va_list args;
+	va_start(args, client_options);
+	char *arg = va_arg(args, char*);
+	while (arg) {
+		char *key = strdup(arg);
+		if (!strcmp(key, "SkipUninstall")) {
+			int intval = va_arg(args, int);
+			plist_dict_set_item(client_options, key, plist_new_bool(intval));
+		} else if (!strcmp(key, "ApplicationSINF") || !strcmp(key, "iTunesMetadata")) {
+			plist_t plistval = va_arg(args, plist_t);
+			if (!plistval) {
+				free(key);
+				break;
+			}
+			plist_dict_set_item(client_options, key, plist_copy(plistval));
+		} else {
+			char *strval = va_arg(args, char*);
+			if (!strval) {
+				free(key);
+				break;
+			}
+			plist_dict_set_item(client_options, key, plist_new_string(strval));
+		}
+		free(key);
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+}
+
+/**
+ * Free client_options plist.
+ *
+ * @param client_options The client options plist to free. Does nothing if NULL
+ *        is passed.
+ */
+void instproxy_client_options_free(plist_t client_options)
+{
+	if (client_options) {
+		plist_free(client_options);
+	}
+}
