@@ -71,7 +71,23 @@ static int is_domain_known(char *domain)
 
 static void plist_node_to_string(plist_t node);
 
-static void plist_children_to_string(plist_t node)
+static void plist_array_to_string(plist_t node)
+{
+	/* iterate over items */
+	int i, count;
+	plist_t subnode = NULL;
+
+	count = plist_array_get_size(node);
+
+	for (i = 0; i < count; i++) {
+		subnode = plist_array_get_item(node, i);
+		printf("%*s", indent_level, "");
+		printf("%d: ", i);
+		plist_node_to_string(subnode);
+	}
+}
+
+static void plist_dict_to_string(plist_t node)
 {
 	/* iterate over key/value pairs */
 	plist_dict_iter it = NULL;
@@ -83,7 +99,11 @@ static void plist_children_to_string(plist_t node)
 	while (subnode)
 	{
 		printf("%*s", indent_level, "");
-		printf("%s: ", key);
+		printf("%s", key);
+		if (plist_get_node_type(subnode) == PLIST_ARRAY)
+			printf("[%d]: ", plist_array_get_size(subnode));
+		else
+			printf(": ");
 		free(key);
 		key = NULL;
 		plist_node_to_string(subnode);
@@ -152,10 +172,16 @@ static void plist_node_to_string(plist_t node)
 		break;
 
 	case PLIST_ARRAY:
+		printf("\n");
+		indent_level++;
+		plist_array_to_string(node);
+		indent_level--;
+		break;
+
 	case PLIST_DICT:
 		printf("\n");
 		indent_level++;
-		plist_children_to_string(node);
+		plist_dict_to_string(node);
 		indent_level--;
 		break;
 
@@ -199,6 +225,7 @@ int main(int argc, char *argv[])
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
+	plist_type node_type;
 	uuid[0] = 0;
 
 	/* parse cmdline args */
@@ -273,29 +300,30 @@ int main(int argc, char *argv[])
 	}
 
 	/* run query and output information */
-	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS)
-	{
-		if (plist_get_node_type(node) == PLIST_DICT) {
-			if (plist_dict_get_size(node))
-			{
-				switch (format) {
-				case FORMAT_XML:
-					plist_to_xml(node, &xml_doc, &xml_length);
-					printf("%s", xml_doc);
-					free(xml_doc);
-					break;
-				case FORMAT_KEY_VALUE:
-				default:
-					plist_children_to_string(node);
+	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
+		if (node) {
+			switch (format) {
+			case FORMAT_XML:
+				plist_to_xml(node, &xml_doc, &xml_length);
+				printf("%s", xml_doc);
+				free(xml_doc);
+				break;
+			case FORMAT_KEY_VALUE:
+				node_type = plist_get_node_type(node);
+				if (node_type == PLIST_DICT) {
+					plist_dict_to_string(node);
+				} else if (node_type == PLIST_ARRAY) {
+					plist_array_to_string(node);
 					break;
 				}
+			default:
+				if (key != NULL)
+					plist_node_to_string(node);
+			break;
 			}
-		}
-		else if(node && (key != NULL))
-			plist_node_to_string(node);
-		if (node)
 			plist_free(node);
-		node = NULL;
+			node = NULL;
+		}
 	}
 
 	if (domain != NULL)
