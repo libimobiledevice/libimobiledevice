@@ -104,7 +104,7 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
  *
  * @return an error code
  */
-mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t * plist)
+mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plist)
 {
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;

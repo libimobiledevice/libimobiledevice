@@ -211,7 +211,7 @@ property_list_service_error_t property_list_service_send_binary_plist(property_l
  *      communication error occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR
  *      when an unspecified error occurs.
  */
-static property_list_service_error_t internal_plist_recv_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
+static property_list_service_error_t internal_plist_receive_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
 {
 	property_list_service_error_t res = PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 	uint32_t pktlen = 0;
@@ -282,7 +282,7 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
  */
 property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
 {
-	return internal_plist_recv_timeout(client, plist, timeout);
+	return internal_plist_receive_timeout(client, plist, timeout);
 }
 
 /**
@@ -306,7 +306,7 @@ property_list_service_error_t property_list_service_receive_plist_with_timeout(p
  */
 property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
-	return internal_plist_recv_timeout(client, plist, 10000);
+	return internal_plist_receive_timeout(client, plist, 10000);
 }
 
 /**

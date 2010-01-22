@@ -78,7 +78,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
-lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist);
+lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);

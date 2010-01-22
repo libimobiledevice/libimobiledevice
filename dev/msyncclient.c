@@ -64,7 +64,7 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	plist_free(array);
 	array = NULL;
 
-	ret = mobilesync_recv(client, &array);
+	ret = mobilesync_receive(client, &array);
 
 	plist_free(array);
 	array = NULL;
@@ -77,7 +77,7 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	plist_free(array);
 	array = NULL;
 
-	ret = mobilesync_recv(client, &array);
+	ret = mobilesync_receive(client, &array);
 
 	plist_t contact_node;
 	plist_t switch_node;
@@ -100,7 +100,7 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 		plist_free(array);
 		array = NULL;
 
-		ret = mobilesync_recv(client, &array);
+		ret = mobilesync_receive(client, &array);
 
 		contact_node = plist_array_get_item(array, 0);
 		switch_node = plist_array_get_item(array, 0);
@@ -132,7 +132,7 @@ static mobilesync_error_t mobilesync_get_all_contacts(mobilesync_client_t client
 	plist_free(array);
 	array = NULL;
 
-	ret = mobilesync_recv(client, &array);
+	ret = mobilesync_receive(client, &array);
 	plist_free(array);
 	array = NULL;
 

@@ -316,7 +316,7 @@ iphone_error_t iphone_connection_send(iphone_connection_t connection, const char
  * Internally used function for receiving raw data over the given connection
  * using a timeout.
  */
-static iphone_error_t internal_connection_recv_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+static iphone_error_t internal_connection_receive_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection) {
 		return IPHONE_E_INVALID_ARG;
@@ -365,13 +365,13 @@ iphone_error_t iphone_connection_receive_timeout(iphone_connection_t connection,
 		*recv_bytes = 0;
 		return IPHONE_E_SSL_ERROR;
 	}
-	return internal_connection_recv_timeout(connection, data, len, recv_bytes, timeout);
+	return internal_connection_receive_timeout(connection, data, len, recv_bytes, timeout);
 }
 
 /**
  * Internally used function for receiving raw data over the given connection.
  */
-static iphone_error_t internal_connection_recv(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
+static iphone_error_t internal_connection_receive(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection) {
 		return IPHONE_E_INVALID_ARG;
@@ -419,7 +419,7 @@ iphone_error_t iphone_connection_receive(iphone_connection_t connection, char *d
 		*recv_bytes = 0;
 		return IPHONE_E_SSL_ERROR;
 	}
-	return internal_connection_recv(connection, data, len, recv_bytes);
+	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
 iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle)
@@ -463,7 +463,7 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 
 	/* repeat until we have the full data or an error occurs */
 	do {
-		if ((res = internal_connection_recv(connection, recv_buffer, this_len, (uint32_t*)&bytes)) != IPHONE_E_SUCCESS) {
+		if ((res = internal_connection_receive(connection, recv_buffer, this_len, (uint32_t*)&bytes)) != IPHONE_E_SUCCESS) {
 			debug_info("ERROR: iphone_connection_receive returned %d", res);
 			return res;
 		}

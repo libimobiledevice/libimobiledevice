@@ -188,7 +188,7 @@ PList::Node* new_node_from_plist(plist_t node)
 
 	PList::Node* receive() {
 		plist_t node = NULL;
-		lockdownd_recv($self->client, &node);
+		lockdownd_receive($self->client, &node);
 		return new_node_from_plist(node);
 	}
 
@@ -213,7 +213,7 @@ PList::Node* new_node_from_plist(plist_t node)
 
 	PList::Node* receive() {
 		plist_t node = NULL;
-		mobilesync_recv($self->client, &node);
+		mobilesync_receive($self->client, &node);
 		return new_node_from_plist(node);
 	}
 };

@@ -45,7 +45,7 @@ typedef struct mobilesync_client_int *mobilesync_client_t;
 
 mobilesync_error_t mobilesync_client_new(iphone_device_t device, uint16_t port, mobilesync_client_t * client);
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
-mobilesync_error_t mobilesync_recv(mobilesync_client_t client, plist_t *plist);
+mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
 mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
 
 #ifdef __cplusplus

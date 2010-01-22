@@ -158,7 +158,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (!dict) {
 		debug_info("LOCKDOWN_E_PLIST_ERROR");
@@ -236,7 +236,7 @@ void lockdownd_client_set_label(lockdownd_client_t client, const char *label)
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_recv(lockdownd_client_t client, plist_t *plist)
+lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist)
 {
 	if (!client || !plist || (plist && *plist))
 		return LOCKDOWN_E_INVALID_ARG;
@@ -304,7 +304,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (LOCKDOWN_E_SUCCESS != ret)
 		return ret;
@@ -363,7 +363,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 		return ret;
 
 	/* Now get device's answer */
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
@@ -426,7 +426,7 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
 		return ret;
 
 	/* Now get device's answer */
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
@@ -483,7 +483,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 		return ret;
 
 	/* Now get device's answer */
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
@@ -796,7 +796,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		return ret;
 
 	/* Now get iPhone's answer */
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
@@ -914,7 +914,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (lockdown_check_result(dict, "EnterRecovery") == RESULT_SUCCESS) {
 		debug_info("success");
@@ -950,7 +950,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (!dict) {
 		debug_info("did not get goodbye response back");
 		return LOCKDOWN_E_PLIST_ERROR;
@@ -1139,7 +1139,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (!dict)
 		return LOCKDOWN_E_PLIST_ERROR;
@@ -1239,7 +1239,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	if (LOCKDOWN_E_SUCCESS != ret)
 		return ret;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 
 	if (LOCKDOWN_E_SUCCESS != ret)
 		return ret;
@@ -1314,7 +1314,7 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (!dict) {
 		debug_info("LOCKDOWN_E_PLIST_ERROR");
 		return LOCKDOWN_E_PLIST_ERROR;
@@ -1357,7 +1357,7 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 	plist_free(dict);
 	dict = NULL;
 
-	ret = lockdownd_recv(client, &dict);
+	ret = lockdownd_receive(client, &dict);
 	if (!dict) {
 		debug_info("LOCKDOWN_E_PLIST_ERROR");
 		return LOCKDOWN_E_PLIST_ERROR;
