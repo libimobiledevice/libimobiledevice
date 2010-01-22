@@ -55,6 +55,8 @@ static const char *domains[] = {
 	NULL
 };
 
+static int indent_level = 0;
+
 int is_domain_known(char *domain);
 void print_usage(int argc, char **argv);
 void plist_node_to_string(plist_t node);
@@ -265,7 +267,9 @@ void plist_node_to_string(plist_t node)
 	case PLIST_ARRAY:
 	case PLIST_DICT:
 		printf("\n");
+		indent_level++;
 		plist_children_to_string(node);
+		indent_level--;
 		break;
 	default:
 		break;
@@ -283,6 +287,7 @@ void plist_children_to_string(plist_t node)
 	plist_dict_next_item(node, it, &key, &subnode);
 	while (subnode)
 	{
+		printf("%*s", indent_level, "");
 		printf("%s: ", key);
 		free(key);
 		key = NULL;
