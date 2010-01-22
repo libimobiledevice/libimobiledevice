@@ -23,6 +23,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <glib.h>
 
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
@@ -218,10 +219,11 @@ void print_usage(int argc, char **argv)
 void plist_node_to_string(plist_t node)
 {
 	char *s = NULL;
+	char *data = NULL;
 	double d;
 	uint8_t b;
-
 	uint64_t u = 0;
+	GTimeVal tv = { 0, 0 };
 
 	plist_type t;
 
@@ -259,11 +261,20 @@ void plist_node_to_string(plist_t node)
 		break;
 
 	case PLIST_DATA:
-		printf("\n");
+		plist_get_data_val(node, &data, &u);
+		s = g_base64_encode((guchar *)data, u);
+		free(data);
+		printf("%s\n", s);
+		g_free(s);
 		break;
+
 	case PLIST_DATE:
-		printf("\n");
+		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
+		s = g_time_val_to_iso8601(&tv);
+		printf("%s\n", s);
+		free(s);
 		break;
+
 	case PLIST_ARRAY:
 	case PLIST_DICT:
 		printf("\n");
@@ -271,6 +282,7 @@ void plist_node_to_string(plist_t node)
 		plist_children_to_string(node);
 		indent_level--;
 		break;
+
 	default:
 		break;
 	}
