@@ -294,7 +294,7 @@ static iphone_error_t internal_connection_send(iphone_connection_t connection, c
  *
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_send(iphone_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
+iphone_error_t iphone_connection_send(iphone_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IPHONE_E_INVALID_ARG;
@@ -350,7 +350,7 @@ static iphone_error_t internal_connection_recv_timeout(iphone_connection_t conne
  *
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_recv_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+iphone_error_t iphone_connection_receive_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IPHONE_E_INVALID_ARG;
@@ -393,7 +393,7 @@ static iphone_error_t internal_connection_recv(iphone_connection_t connection, c
 
 /**
  * Receive data from a device via the given connection.
- * This function is like iphone_device_recv_timeout, but with a predefined
+ * This function is like iphone_connection_receive_timeout, but with a predefined
  *  reasonable timeout.
  *
  * @param connection The connection to receive data from.
@@ -404,7 +404,7 @@ static iphone_error_t internal_connection_recv(iphone_connection_t connection, c
  *
  * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_recv(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
+iphone_error_t iphone_connection_receive(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IPHONE_E_INVALID_ARG;
@@ -464,7 +464,7 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 	/* repeat until we have the full data or an error occurs */
 	do {
 		if ((res = internal_connection_recv(connection, recv_buffer, this_len, (uint32_t*)&bytes)) != IPHONE_E_SUCCESS) {
-			debug_info("ERROR: iphone_device_recv returned %d", res);
+			debug_info("ERROR: iphone_connection_receive returned %d", res);
 			return res;
 		}
 		debug_info("post-read we got %i bytes", bytes);

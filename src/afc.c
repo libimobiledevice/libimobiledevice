@@ -169,7 +169,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		iphone_device_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		iphone_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
 		if (sent == 0) {
 			/* FIXME: should this be handled as success?! */
 			return AFC_E_SUCCESS;
@@ -178,7 +178,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 
 		/* send AFC packet data */
 		sent = 0;
-		iphone_device_send(client->connection, data, offset, &sent);
+		iphone_connection_send(client->connection, data, offset, &sent);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
 		}
@@ -190,7 +190,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		debug_buffer(data + offset, length - offset);
 
 		sent = 0;
-		iphone_device_send(client->connection, data + offset, length - offset, &sent);
+		iphone_connection_send(client->connection, data + offset, length - offset, &sent);
 
 		*bytes_sent = sent;
 		return AFC_E_SUCCESS;
@@ -203,7 +203,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		iphone_device_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		iphone_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
 		}
@@ -213,7 +213,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 			debug_info("packet data follows");
 
 			debug_buffer(data, length);
-			iphone_device_send(client->connection, data, length, &sent);
+			iphone_connection_send(client->connection, data, length, &sent);
 			*bytes_sent += sent;
 		}
 		return AFC_E_SUCCESS;
@@ -241,7 +241,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 	*bytes_recv = 0;
 
 	/* first, read the AFC header */
-	iphone_device_recv(client->connection, (char*)&header, sizeof(AFCPacket), bytes_recv);
+	iphone_connection_receive(client->connection, (char*)&header, sizeof(AFCPacket), bytes_recv);
 	AFCPacket_from_LE(&header);
 	if (*bytes_recv == 0) {
 		debug_info("Just didn't get enough.");
@@ -295,7 +295,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 
 	*dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
-		iphone_device_recv(client->connection, *dump_here, this_len, bytes_recv);
+		iphone_connection_receive(client->connection, *dump_here, this_len, bytes_recv);
 		if (*bytes_recv <= 0) {
 			free(*dump_here);
 			*dump_here = NULL;
@@ -313,7 +313,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			iphone_device_recv(client->connection, (*dump_here)+current_count, entire_len - current_count, bytes_recv);
+			iphone_connection_receive(client->connection, (*dump_here)+current_count, entire_len - current_count, bytes_recv);
 			if (*bytes_recv <= 0) {
 				debug_info("Error receiving data (recv returned %d)", *bytes_recv);
 				break;

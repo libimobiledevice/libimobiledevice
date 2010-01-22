@@ -141,9 +141,9 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 
 	nlen = htonl(length);
 	debug_info("sending %d bytes", length);
-	iphone_device_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	iphone_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		iphone_device_send(client->connection, content, length, (uint32_t*)&bytes);
+		iphone_connection_send(client->connection, content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			debug_info("sent %d bytes", bytes);
 			debug_plist(plist);
@@ -221,7 +221,7 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	iphone_device_recv_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	iphone_connection_receive_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
 		debug_info("initial read failed!");
@@ -235,7 +235,7 @@ static property_list_service_error_t internal_plist_recv_timeout(property_list_s
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
-				iphone_device_recv(client->connection, content+curlen, pktlen-curlen, &bytes);
+				iphone_connection_receive(client->connection, content+curlen, pktlen-curlen, &bytes);
 				if (bytes <= 0) {
 					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 					break;

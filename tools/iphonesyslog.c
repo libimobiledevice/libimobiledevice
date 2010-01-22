@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 				char *receive = NULL;
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
-				ret = iphone_device_recv(conn, (char *) &datalen, sizeof(datalen), &bytes);
+				ret = iphone_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
 				datalen = ntohl(datalen);
 
 				if (datalen == 0)
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 				receive = (char *) malloc(sizeof(char) * datalen);
 
 				while (!quit_flag && (recv_bytes <= datalen)) {
-					ret = iphone_device_recv(conn, receive, datalen, &bytes);
+					ret = iphone_connection_receive(conn, receive, datalen, &bytes);
 
 					if (bytes == 0)
 						break;
