@@ -252,6 +252,26 @@ device_link_service_error_t device_link_service_disconnect(device_link_service_c
 	return err;
 }
 
+device_link_service_error_t device_link_service_process_message(device_link_service_client_t client, plist_t message)
+{
+	if (!client || !message)
+		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
+
+	if (plist_get_node_type(message) != PLIST_DICT)
+		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
+
+	plist_t array = plist_new_array();
+	plist_array_append_item(array, plist_new_string("DLMessageProcessMessage"));
+	plist_array_append_item(array, message);
+
+	device_link_service_error_t err = DEVICE_LINK_SERVICE_E_SUCCESS;
+	if (property_list_service_send_binary_plist(client->parent, array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
+	}
+	plist_free(array);
+	return err;
+}
+
 /**
  * Generic device link service send function.
  *
