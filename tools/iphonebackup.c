@@ -189,20 +189,6 @@ static void mobilebackup_write_status(char *path, int status)
 	plist_free(status_plist);
 }
 
-static void debug_plist(plist_t a)
-{
-	char *buffer = NULL;
-	uint32_t length = 0;
-
-	if (a == NULL)
-		return;
-
-	plist_to_xml(a, &buffer, &length);
-
-	printf("Printing %i bytes plist:\n%s\n", length, buffer);
-	free(buffer);
-}
-
 /**
  * signal handler function for cleaning up properly
  */
@@ -409,8 +395,7 @@ int main(int argc, char *argv[])
 					mobilebackup_send(mobilebackup, message);
 				}
 			} else {
-				printf("Unhandled message received!\n");
-				debug_plist(message);
+				printf("ERROR: Unhandled message received!\n");
 			}
 			plist_free(message);
 			message = NULL;
