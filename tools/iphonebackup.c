@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
 	plist_t node_tmp = NULL;
 	char *buffer = NULL;
 	uint64_t length = 0;
+	uint64_t backup_total_size = 0;
+	uint64_t c = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -352,8 +354,6 @@ int main(int argc, char *argv[])
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */
 
-			/* ????: create target directory: MobileSync/Backup/<uuid>-YYYYMMDD-HHMMSS/ */
-
 			/* create Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 			printf("Creating \"%s/Info.plist\".\n", backup_directory);
 			plist_t info_plist = mobilebackup_factory_info_plist();
@@ -370,6 +370,7 @@ int main(int argc, char *argv[])
 			/* create Manifest.plist (backup manifest (backup state)) */
 			printf("Creating \"%s/Manifest.plist\".\n", backup_directory);
 			char *manifest_path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, "Manifest.plist", NULL);
+			/* FIXME: We should read the last Manifest.plist and send it to the device */
 			plist_t manifest_plist = NULL;
 			if (stat(manifest_path, &st) == 0)
 				remove(manifest_path);
@@ -406,6 +407,7 @@ int main(int argc, char *argv[])
 					printf("Device accepts manifest and will send backup data now...\n");
 					backup_ok = 1;
 					printf("Acknowledging...\n");
+					printf("Please wait. Device prepares backup data...\n");
 					/* send it back for ACK */
 					mobilebackup_send(mobilebackup, message);
 				}
@@ -423,23 +425,51 @@ int main(int argc, char *argv[])
 
 			/* receive and save DLSendFile files and metadata, ACK each */
 			int file_index = 0;
+			uint64_t backup_real_size = 0;
 			char *file_path = NULL;
 			char *file_ext = NULL;
 			char *filename_mdinfo = NULL;
 			char *filename_mddata = NULL;
 			char *filename_source = NULL;
+			char *format_size = NULL;
 			do {
 				mobilebackup_receive(mobilebackup, &message);
 				node = plist_array_get_item(message, 0);
 				if (plist_strcmp(node, "DLSendFile"))
 					break;
 
-				/* get source filename and print it */
 				node_tmp = plist_array_get_item(message, 2);
-				node = plist_dict_get_item(node_tmp, "DLFileSource");
-				plist_get_string_val(node, &filename_source);
-				printf("Received file %s...", filename_source);
-				free(filename_source);
+
+				/* first message contains total backup size */
+				if (file_index == 0) {
+					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
+					plist_get_uint_val(node, &backup_total_size);
+					format_size = g_format_size_for_display(backup_total_size);
+					printf("Backup will need %s on disk.\n", format_size);
+					g_free(format_size);
+				}
+
+				/* print out "received" if DLFileStatusKey is 2 (last file piece) */
+				node = plist_dict_get_item(node_tmp, "DLFileStatusKey");
+				plist_get_uint_val(node, &c);
+				if (c == 2) {
+					node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
+					node = plist_dict_get_item(node, "FileSize");
+					plist_get_uint_val(node, &length);
+					backup_real_size += length;
+					format_size = g_format_size_for_display(backup_real_size);
+					printf("(%s", format_size);
+					g_free(format_size);
+					format_size = g_format_size_for_display(backup_total_size);
+					printf("/%s): ", format_size);
+					g_free(format_size);
+
+					/* get source filename and print it */
+					node = plist_dict_get_item(node_tmp, "DLFileSource");
+					plist_get_string_val(node, &filename_source);
+					printf("Received file %s... ", filename_source);
+					free(filename_source);
+				}
 
 				/* save <hash>.mdinfo */
 				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
@@ -469,7 +499,8 @@ int main(int argc, char *argv[])
 					g_free(filename_mddata);
 				}
 
-				printf("DONE\n");
+				if (c == 2)
+					printf("DONE\n");
 
 				if (file_ext)
 					free(file_ext);
