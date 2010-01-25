@@ -603,8 +603,7 @@ int main(int argc, char *argv[])
 					node_tmp = plist_array_get_item(message, 1);
 					manifest_plist = plist_dict_get_item(node_tmp, "BackupManifestKey");
 					if (manifest_plist) {
-						if (stat(manifest_path, &st) != 0)
-							remove(manifest_path);
+						remove(manifest_path);
 						printf("Storing Manifest.plist...\n");
 						plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
 					}
