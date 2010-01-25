@@ -176,6 +176,13 @@ static void mobilebackup_cancel_backup_with_error(const char *reason)
 	message = NULL;
 }
 
+static plist_t mobilebackup_factory_backup_file_received_new()
+{
+	plist_t node = plist_new_dict();
+	plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("kBackupMessageBackupFileReceived"));
+	return device_link_message_factory_process_message_new(node);
+}
+
 static void mobilebackup_write_status(char *path, int status)
 {
 	struct stat st;
@@ -515,36 +522,31 @@ int main(int argc, char *argv[])
 					g_free(filename_mddata);
 				}
 
-				if ((c == 2) && (!is_manifest)) {
-					printf("DONE\n");
-				}
-
 				hunk_index++;
 
 				if (file_ext)
 					free(file_ext);
 
-				plist_free(message);
+				if (message)
+					plist_free(message);
 				message = NULL;
+
+				if (c == 2) {
+					if (!is_manifest)
+						printf("DONE\n");
+
+					/* acknowlegdge that we received the file */
+					message = mobilebackup_factory_backup_file_received_new();
+					mobilebackup_send(mobilebackup, message);
+					plist_free(message);
+					message = NULL;
+				}
 
 				if (quit_flag > 0) {
 					/* need to cancel the backup here */
 					mobilebackup_cancel_backup_with_error("Cancelling DLSendFile");
-
-					plist_free(message);
-					message = NULL;
 					break;
 				}
-
-				/* acknowlegdge that we received the file */
-				node = plist_new_dict();
-				plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("kBackupMessageBackupFileReceived"));
-
-				message = device_link_message_factory_process_message_new(node);
-				mobilebackup_send(mobilebackup, message);
-
-				plist_free(message);
-				message = NULL;
 			} while (1);
 
 			printf("Received %d files from device.\n", file_index);
