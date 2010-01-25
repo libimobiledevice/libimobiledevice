@@ -193,6 +193,7 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 	array = plist_new_array();
 	plist_array_append_item(array, plist_new_string("DLMessageVersionExchange"));
 	plist_array_append_item(array, plist_new_string("DLVersionsOk"));
+	plist_array_append_item(array, plist_new_uint(version_major));
 	if (property_list_service_send_binary_plist(client->parent, array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		debug_info("Error when sending DLVersionsOk");
 		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
