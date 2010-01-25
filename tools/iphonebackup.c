@@ -40,7 +40,8 @@ static int quit_flag = 0;
 
 enum cmd_mode {
 	CMD_BACKUP,
-	CMD_RESTORE
+	CMD_RESTORE,
+	CMD_LEAVE
 };
 
 static plist_t mobilebackup_factory_info_plist()
@@ -102,150 +103,24 @@ static plist_t mobilebackup_factory_info_plist()
 	return ret;
 }
 
-static plist_t mobilebackup_factory_metadata_plist()
-{
-	plist_t ret = NULL;
-/*
-Metadata key is:
-<dict>
-	<key>Path</key>
-	<string>Library/SMS/sms.db</string>
-	<key>Version</key>
-	<string>3.0</string>
-	<key>Greylist</key>
-	<false/>
-	<key>Domain</key>
-	<string>HomeDomain</string>
-</dict>
-*/
-/*
-<dict>
-	<key>Metadata</key>
-	<data><!-- binary plist -->
-	YnBsaXN0MDDUAQIDBAUGBwhUUGF0aFdWZXJzaW9uWEdyZXlsaXN0VkRvbWFp
-	bl8QEkxpYnJhcnkvU01TL3Ntcy5kYlMzLjAIWkhvbWVEb21haW4IERYeJy5D
-	R0gAAAAAAAABAQAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAUw==
-	</data>
-	<key>StorageVersion</key>
-	<string>1.0</string>
-	<key>Version</key>
-	<string>3.0</string>
-	<key>AuthVersion</key>
-	<string>1.0</string>
-	<key>IsEncrypted</key>
-	<false/>
-</dict>
-*/
-	return ret;
-}
-
-/**
- * Generates a manifest data plist with all files and corresponding hashes
- */
-static plist_t mobilebackup_factory_manifest_data_plist()
-{
-	plist_t ret = NULL;
-	plist_t value_node = NULL;
-	char *uuid = NULL;
-	GTimeVal tv = {0, 0};
-
-	ret = plist_new_dict();
-
-	/* get basic device information in one go */
-	lockdownd_get_value(client, NULL, "IntegratedCircuitCardIdentity", &value_node);
-
-	iphone_device_get_uuid(phone, &uuid);
-	plist_dict_insert_item(ret, "DeviceId", plist_new_string(uuid));
-	free(uuid);
-
-	plist_dict_insert_item(ret, "Version", plist_new_string("6.2"));
-
-	/* TODO: add all Applications */
-
-	/* TODO: add all Files */
-	plist_t files = plist_new_dict();
-
-	/* single file entry */
-	plist_t info_node = plist_new_dict();
-	g_get_current_time(&tv);
-	plist_dict_insert_item(info_node, "ModificationTime", plist_new_date(tv.tv_sec, tv.tv_usec));
-	plist_dict_insert_item(info_node, "FileLength", plist_new_uint(131072));
-	plist_dict_insert_item(info_node, "Domain", plist_new_string("HomeDomain"));
-
-	/* FIXME: calculate correct data hash */
-	/* Data hash is: sha1(<file>) */
-	plist_dict_insert_item(info_node, "DataHash", plist_new_data(NULL, 0));
-	plist_dict_insert_item(info_node, "Group ID", plist_new_uint(501));
-	plist_dict_insert_item(info_node, "User ID", plist_new_uint(501));
-	plist_dict_insert_item(info_node, "Mode ID", plist_new_uint(420));
-
-	/* FIXME: calculate correct file hash */
-	/* File hash is: sha1(<Domain>-<Relative File Path>) */
-	plist_dict_insert_item(files, "3d0d7e5fb2ce288813306e4d4636395e047a3d28", info_node);
-	plist_dict_insert_item(ret, "Files", files);
-
-	/* last node with ICCID */
-	if (value_node)
-		plist_dict_insert_item(ret, "DeviceICCID", &value_node);
-
-	return ret;
-}
-
-/**
- * Generates a manifest plist with all needed information and hashes
- */
-static plist_t mobilebackup_factory_manifest_plist(plist_t manifest_data)
-{
-	char *buffer = NULL;
-	char *s = NULL;
-	uint32_t length;
-	unsigned char sha1[20];
-	gsize sha1_len;
-	GChecksum *checksum;
-	plist_t ret = NULL;
-
-	if (!manifest_data)
-		return ret;
-
-	ret = plist_new_dict();
-	plist_dict_insert_item(ret, "AuthVersion", plist_new_string("2.0"));
-
-	/* AuthSignature Hash is: sha1(<manifest_data>) */
-	plist_to_bin(manifest_data, &buffer, &length);
-
-	sha1_len = g_checksum_type_get_length(G_CHECKSUM_SHA1);
-	checksum = g_checksum_new(G_CHECKSUM_SHA1);
-	g_checksum_update(checksum, (guchar *)buffer, length);
-	g_checksum_get_digest(checksum, sha1, &sha1_len);
-	s = (char *)g_checksum_get_string(checksum);
-	printf("SHA1 AuthSignature: %s\n", s);
-	plist_dict_insert_item(ret, "AuthSignature", plist_new_data((char*)sha1, sha1_len));
-	g_checksum_free(checksum);
-
-
-	plist_dict_insert_item(ret, "IsEncrypted", plist_new_uint(0));
-	plist_dict_insert_item(ret, "Data", plist_new_data(buffer, length));
-
-	free(buffer);
-
-	return ret;
-}
-
 enum plist_format_t {
 	PLIST_FORMAT_XML,
 	PLIST_FORMAT_BINARY
 };
 
-static int plist_read_from_filename(char *filename, plist_t *plist)
+static void buffer_to_filename(char *filename, char *buffer, uint32_t length)
 {
-	return 1;
+	FILE *f;
+
+	f = fopen(filename, "ab");
+	fwrite(buffer, sizeof(char), length, f);
+	fclose(f);
 }
 
 static int plist_write_to_filename(plist_t plist, char *filename, enum plist_format_t format)
 {
 	char *buffer = NULL;
 	uint32_t length;
-	FILE *f;
 
 	if (!plist || !filename)
 		return 0;
@@ -257,9 +132,7 @@ static int plist_write_to_filename(plist_t plist, char *filename, enum plist_for
 	else
 		return 0;
 
-	f = fopen(filename, "wb");
-	fwrite(buffer, sizeof(char), length, f);
-	fclose(f);
+	buffer_to_filename(filename, buffer, length);
 
 	free(buffer);
 
@@ -281,25 +154,50 @@ static int plist_strcmp(plist_t node, const char *str)
 	return ret;
 }
 
+static plist_t device_link_message_factory_process_message_new(plist_t content)
+{
+	plist_t ret = plist_new_array();
+	plist_array_append_item(ret, plist_new_string("DLMessageProcessMessage"));
+	plist_array_append_item(ret, content);
+	return ret;
+}
+
+static void mobilebackup_cancel_backup_with_error(const char *reason)
+{
+	plist_t node = plist_new_dict();
+	plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("BackupMessageError"));
+	plist_dict_insert_item(node, "BackupErrorReasonKey", plist_new_string(reason));
+
+	plist_t message = device_link_message_factory_process_message_new(node);
+
+	mobilebackup_send(mobilebackup, message);
+
+	plist_free(message);
+	message = NULL;
+}
+
 static void mobilebackup_write_status(char *path, int status)
 {
+	struct stat st;
 	plist_t status_plist = plist_new_dict();
 	plist_dict_insert_item(status_plist, "Backup Success", plist_new_bool(status));
 	char *file_path = g_build_path(G_DIR_SEPARATOR_S, path, "Status.plist", NULL);
+	if (stat(file_path, &st) == 0)
+		remove(file_path);
 	plist_write_to_filename(status_plist, file_path, PLIST_FORMAT_XML);
 	g_free(file_path);
 	plist_free(status_plist);
 }
 
-static void debug_plist(plist_t plist)
+static void debug_plist(plist_t a)
 {
 	char *buffer = NULL;
 	uint32_t length = 0;
 
-	if (!plist)
+	if (a == NULL)
 		return;
 
-	plist_to_xml(plist, &buffer, &length);
+	plist_to_xml(a, &buffer, &length);
 
 	printf("Printing %i bytes plist:\n%s\n", length, buffer);
 	free(buffer);
@@ -341,6 +239,9 @@ int main(int argc, char *argv[])
 	char *backup_directory = NULL;
 	struct stat st;
 	plist_t node = NULL;
+	plist_t node_tmp = NULL;
+	char *buffer = NULL;
+	uint64_t length = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -440,6 +341,11 @@ int main(int argc, char *argv[])
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, port);
 		mobilebackup_client_new(phone, port, &mobilebackup);
 
+		if (quit_flag > 0) {
+			printf("Aborting backup. Cancelled by user.\n");
+			cmd = CMD_LEAVE;
+		}
+
 		switch(cmd) {
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
@@ -451,29 +357,32 @@ int main(int argc, char *argv[])
 			/* create Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 			printf("Creating \"%s/Info.plist\".\n", backup_directory);
 			plist_t info_plist = mobilebackup_factory_info_plist();
+			if (stat(info_path, &st) == 0)
+				remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			g_free(info_path);
+
+			if (client) {
+				lockdownd_client_free(client);
+				client = NULL;
+			}
 
 			/* create Manifest.plist (backup manifest (backup state)) */
 			printf("Creating \"%s/Manifest.plist\".\n", backup_directory);
 			char *manifest_path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, "Manifest.plist", NULL);
-			plist_t manifest_data = mobilebackup_factory_manifest_data_plist();
-			plist_t manifest_plist = mobilebackup_factory_manifest_plist(manifest_data);
-			plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
-			g_free(manifest_path);
+			plist_t manifest_plist = NULL;
+			if (stat(manifest_path, &st) == 0)
+				remove(manifest_path);
 
 			/* create Status.plist with failed status for now */
 			mobilebackup_write_status(backup_directory, 0);
 
-			/* close down lockdown connection as it is no longer needed */
-			lockdownd_client_free(client);
-			client = NULL;
-
-			/* request backup from device with manifest */
+			/* request backup from device with manifest from last backup */
 			printf("Sending manifest and requesting backup.\n");
 
 			node = plist_new_dict();
-			plist_dict_insert_item(node, "BackupManifestKey", manifest_plist);
+			if (manifest_plist)
+				plist_dict_insert_item(node, "BackupManifestKey", manifest_plist);
 			plist_dict_insert_item(node, "BackupComputerBasePathKey", plist_new_string("/"));
 			plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
 			plist_dict_insert_item(node, "BackupProtocolVersion", plist_new_string("1.6"));
@@ -514,21 +423,66 @@ int main(int argc, char *argv[])
 
 			/* receive and save DLSendFile files and metadata, ACK each */
 			int file_index = 0;
+			char *file_path = NULL;
+			char *file_ext = NULL;
+			char *filename_mdinfo = NULL;
+			char *filename_mddata = NULL;
+			char *filename_source = NULL;
 			do {
 				mobilebackup_receive(mobilebackup, &message);
 				node = plist_array_get_item(message, 0);
 				if (plist_strcmp(node, "DLSendFile"))
 					break;
 
-				printf("Receiving file %d...\n", file_index);
-				/* TODO: save <hash>.mdinfo */
-				/* TODO: save <hash>.mddata */
-				debug_plist(message);
+				/* get source filename and print it */
+				node_tmp = plist_array_get_item(message, 2);
+				node = plist_dict_get_item(node_tmp, "DLFileSource");
+				plist_get_string_val(node, &filename_source);
+				printf("Received file %s...", filename_source);
+				free(filename_source);
+
+				/* save <hash>.mdinfo */
+				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
+				if (node) {
+					node = plist_dict_get_item(node_tmp, "DLFileDest");
+					plist_get_string_val(node, &file_path);
+					file_ext = (char *)g_strconcat(file_path, ".mdinfo", NULL);
+					filename_mdinfo = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+					node = plist_dict_get_item(node_tmp, "BackupFileInfo");
+					plist_write_to_filename(node, filename_mdinfo, PLIST_FORMAT_BINARY);
+					g_free(file_ext);
+					g_free(filename_mdinfo);
+				}
+
+				/* save <hash>.mddata */
+				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
+				if (node_tmp && file_path) {
+					node = plist_dict_get_item(node_tmp, "DLFileDest");
+					plist_get_string_val(node, &file_path);
+					file_ext = (char *)g_strconcat(file_path, ".mddata", NULL);
+					filename_mddata = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+					node_tmp = plist_array_get_item(message, 1);
+					plist_get_data_val(node_tmp, &buffer, &length);
+					buffer_to_filename(filename_mddata, buffer, length);
+					free(buffer);
+					buffer = NULL;
+					g_free(filename_mddata);
+				}
+
+				printf("DONE\n");
+
+				if (file_ext)
+					free(file_ext);
+
 				plist_free(message);
 				message = NULL;
 
-				if (quit_flag) {
-					/* FIXME: need to cancel the backup here */
+				if (quit_flag > 0) {
+					/* need to cancel the backup here */
+					mobilebackup_cancel_backup_with_error("Cancelling DLSendFile");
+
+					plist_free(message);
+					message = NULL;
 					break;
 				}
 
@@ -550,16 +504,57 @@ int main(int argc, char *argv[])
 			printf("Received %d files from device.\n", file_index);
 
 			if (!plist_strcmp(node, "DLMessageProcessMessage")) {
-				node = plist_array_get_item(message, 1);
-				node = plist_dict_get_item(node, "BackupMessageTypeKey");
+				node_tmp = plist_array_get_item(message, 1);
+				node = plist_dict_get_item(node_tmp, "BackupMessageTypeKey");
 				/* wait until received final backup finished message */
 				if (node && !plist_strcmp(node, "BackupMessageBackupFinished")) {
 					/* backup finished */
+
+					/* process BackupFilesToDeleteKey */
+					node = plist_dict_get_item(node_tmp, "BackupFilesToDeleteKey");
+					if (node) {
+						length = plist_array_get_size(node);
+						i = 0;
+						while ((node_tmp = plist_array_get_item(node, i++)) != NULL) {
+							plist_get_string_val(node_tmp, &file_path);
+
+							file_ext = (char *)g_strconcat(file_path, ".mddata", NULL);
+							filename_mddata = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+							g_free(file_ext);
+							printf("Removing \"%s\"... ", filename_mddata);
+							if (!remove( filename_mddata )) {
+								printf("DONE\n");
+							} else
+								printf("FAILED\n");
+
+							file_ext = (char *)g_strconcat(file_path, ".mdinfo", NULL);
+							filename_mdinfo = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+							g_free(file_ext);
+							printf("Removing \"%s\"... ", filename_mdinfo);
+							if (!remove( filename_mdinfo )) {
+								printf("DONE\n");
+							} else
+								printf("FAILED\n");
+						}
+					}
+
+					/* save new Manifest.plist */
+					node_tmp = plist_array_get_item(message, 1);
+					manifest_plist = plist_dict_get_item(node_tmp, "BackupManifestKey");
+					if (manifest_plist) {
+						if (stat(manifest_path, &st) != 0)
+							remove(manifest_path);
+						plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
+					}
+					
 					/* create: Status.plist (Info on how the backup process turned out) */
 					printf("Backup Successful.\n");
 					mobilebackup_write_status(backup_directory, 1);
 				}
 			}
+
+			if (manifest_path)
+				g_free(manifest_path);
 
 			if (node)
 				plist_free(node);
@@ -575,6 +570,7 @@ int main(int argc, char *argv[])
 			lockdownd_client_free(client);
 			client = NULL;
 			break;
+			case CMD_LEAVE:
 			default:
 			break;
 		}
@@ -584,11 +580,14 @@ int main(int argc, char *argv[])
 		client = NULL;
 	}
 
-	if (client)
+	if (client) {
 		lockdownd_client_free(client);
+		client = NULL;
+	}
 
 	if (mobilebackup)
 		mobilebackup_client_free(mobilebackup);
+
 	iphone_device_free(phone);
 
 	return 0;
