@@ -420,6 +420,9 @@ int main(int argc, char *argv[])
 				break;
 			}
 
+			/* reset backup status */
+			backup_ok = 0;
+
 			/* receive and save DLSendFile files and metadata, ACK each */
 			int file_index = 0;
 			uint64_t backup_real_size = 0;
@@ -600,11 +603,17 @@ int main(int argc, char *argv[])
 						printf("Storing Manifest.plist...\n");
 						plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
 					}
-					
-					/* create: Status.plist (Info on how the backup process turned out) */
-					printf("Backup Successful.\n");
-					mobilebackup_write_status(backup_directory, 1);
+
+					backup_ok = 1;
 				}
+			}
+
+			if (backup_ok) {
+				/* create: Status.plist (Info on how the backup process turned out) */
+				printf("Backup Successful.\n");
+				mobilebackup_write_status(backup_directory, 1);
+			} else {
+				printf("Backup Failed.\n");
 			}
 
 			if (manifest_path)
