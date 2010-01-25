@@ -388,10 +388,7 @@ int main(int argc, char *argv[])
 			plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
 			plist_dict_insert_item(node, "BackupProtocolVersion", plist_new_string("1.6"));
 
-			plist_t message = plist_new_array();
-			plist_array_append_item(message, plist_new_string("DLMessageProcessMessage"));
-			plist_array_append_item(message, node);
-
+			plist_t message = device_link_message_factory_process_message_new(node);
 			mobilebackup_send(mobilebackup, message);
 			plist_free(message);
 			message = NULL;
@@ -537,9 +534,7 @@ int main(int argc, char *argv[])
 				node = plist_new_dict();
 				plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("kBackupMessageBackupFileReceived"));
 
-				message = plist_new_array();
-				plist_array_append_item(message, plist_new_string("DLMessageProcessMessage"));
-				plist_array_append_item(message, node);
+				message = device_link_message_factory_process_message_new(node);
 				mobilebackup_send(mobilebackup, message);
 
 				plist_free(message);
