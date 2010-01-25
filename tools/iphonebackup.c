@@ -432,6 +432,7 @@ int main(int argc, char *argv[])
 			char *filename_mddata = NULL;
 			char *filename_source = NULL;
 			char *format_size = NULL;
+			gboolean is_manifest = FALSE;
 			do {
 				mobilebackup_receive(mobilebackup, &message);
 				node = plist_array_get_item(message, 0);
@@ -452,23 +453,33 @@ int main(int argc, char *argv[])
 				/* print out "received" if DLFileStatusKey is 2 (last file piece) */
 				node = plist_dict_get_item(node_tmp, "DLFileStatusKey");
 				plist_get_uint_val(node, &c);
+
+				/* get source filename */
+				node = plist_dict_get_item(node_tmp, "DLFileSource");
+				plist_get_string_val(node, &filename_source);
+
+				if (!strcmp(filename_source, "/tmp/Manifest.plist"))
+					is_manifest = TRUE;
+				else
+					is_manifest = FALSE;
+
 				if (c == 2) {
 					node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
 					node = plist_dict_get_item(node, "FileSize");
 					plist_get_uint_val(node, &length);
-					backup_real_size += length;
-					format_size = g_format_size_for_display(backup_real_size);
-					printf("(%s", format_size);
-					g_free(format_size);
-					format_size = g_format_size_for_display(backup_total_size);
-					printf("/%s): ", format_size);
-					g_free(format_size);
 
-					/* get source filename and print it */
-					node = plist_dict_get_item(node_tmp, "DLFileSource");
-					plist_get_string_val(node, &filename_source);
-					printf("Received file %s... ", filename_source);
-					free(filename_source);
+					/* increased received size for each completed file */
+					backup_real_size += length;
+
+					if (!is_manifest) {
+						format_size = g_format_size_for_display(backup_real_size);
+						printf("(%s", format_size);
+						g_free(format_size);
+						format_size = g_format_size_for_display(backup_total_size);
+						printf("/%s): ", format_size);
+						g_free(format_size);
+						printf("Received file %s... ", filename_source);
+					}
 				}
 
 				/* save <hash>.mdinfo */
@@ -499,8 +510,12 @@ int main(int argc, char *argv[])
 					g_free(filename_mddata);
 				}
 
-				if (c == 2)
+				if ((c == 2) && (!is_manifest)) {
 					printf("DONE\n");
+				}
+
+				if (filename_source)
+					free(filename_source);
 
 				if (file_ext)
 					free(file_ext);
