@@ -355,20 +355,20 @@ int main(int argc, char *argv[])
 			/* TODO: verify battery on AC enough battery remaining */
 
 			/* create Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
-			printf("Creating \"%s/Info.plist\".\n", backup_directory);
+			printf("Creating Info.plist.\n");
 			plist_t info_plist = mobilebackup_factory_info_plist_new();
 			if (stat(info_path, &st) == 0)
 				remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			g_free(info_path);
 
+			/* close down the lockdown connection as it is no longer needed */
 			if (client) {
 				lockdownd_client_free(client);
 				client = NULL;
 			}
 
 			/* create Manifest.plist (backup manifest (backup state)) */
-			printf("Creating \"%s/Manifest.plist\".\n", backup_directory);
 			char *manifest_path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, "Manifest.plist", NULL);
 			/* FIXME: We should read the last Manifest.plist and send it to the device */
 			plist_t manifest_plist = NULL;
@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
 			mobilebackup_write_status(backup_directory, 0);
 
 			/* request backup from device with manifest from last backup */
-			printf("Sending manifest and requesting backup.\n");
+			printf("Requesting backup from device...\n");
 
 			node = plist_new_dict();
 			if (manifest_plist)
@@ -513,8 +513,9 @@ int main(int argc, char *argv[])
 					node_tmp = plist_array_get_item(message, 1);
 					plist_get_data_val(node_tmp, &buffer, &length);
 
-					/* activate currently sent manifest */
 					buffer_to_filename(filename_mddata, buffer, length);
+
+					/* activate currently sent manifest */
 					if ((c == 2) && (is_manifest)) {
 						rename(filename_mddata, manifest_path);
 					}
@@ -558,7 +559,7 @@ int main(int argc, char *argv[])
 			if (!plist_strcmp(node, "DLMessageProcessMessage")) {
 				node_tmp = plist_array_get_item(message, 1);
 				node = plist_dict_get_item(node_tmp, "BackupMessageTypeKey");
-				/* wait until received final backup finished message */
+				/* check if we received the final "backup finished" message */
 				if (node && !plist_strcmp(node, "BackupMessageBackupFinished")) {
 					/* backup finished */
 
@@ -590,12 +591,13 @@ int main(int argc, char *argv[])
 						}
 					}
 
-					/* save new Manifest.plist */
+					/* save last valid Manifest.plist */
 					node_tmp = plist_array_get_item(message, 1);
 					manifest_plist = plist_dict_get_item(node_tmp, "BackupManifestKey");
 					if (manifest_plist) {
 						if (stat(manifest_path, &st) != 0)
 							remove(manifest_path);
+						printf("Storing Manifest.plist...\n");
 						plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
 					}
 					
