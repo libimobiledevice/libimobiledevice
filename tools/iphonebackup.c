@@ -430,6 +430,7 @@ int main(int argc, char *argv[])
 			char *filename_source = NULL;
 			char *format_size = NULL;
 			gboolean is_manifest = FALSE;
+			uint8_t b = 0;
 			do {
 				mobilebackup_receive(mobilebackup, &message);
 				node = plist_array_get_item(message, 0);
@@ -452,32 +453,36 @@ int main(int argc, char *argv[])
 				plist_get_uint_val(node, &c);
 
 				/* get source filename */
-				node = plist_dict_get_item(node_tmp, "DLFileSource");
-				plist_get_string_val(node, &filename_source);
+				node = plist_dict_get_item(node_tmp, "BackupManifestKey");
+				b = 0;
+				if (node) {
+					plist_get_bool_val(node, &b);
+				}
+				is_manifest = (b == 1) ? TRUE: FALSE;
 
-				if (!strcmp(filename_source, "/tmp/Manifest.plist"))
-					is_manifest = TRUE;
-				else
-					is_manifest = FALSE;
+				/* increased received size for each completed file */
+				if ((c == 2) && (!is_manifest)) {
+					/* get source filename */
+					node = plist_dict_get_item(node_tmp, "DLFileSource");
+					plist_get_string_val(node, &filename_source);
 
-				if (c == 2) {
-					/* increased received size for each completed file */
-					if (!is_manifest) {
-						node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
-						node = plist_dict_get_item(node, "FileSize");
-						plist_get_uint_val(node, &length);
+					node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
+					node = plist_dict_get_item(node, "FileSize");
+					plist_get_uint_val(node, &length);
 
-						backup_real_size += length;
-						file_index++;
+					backup_real_size += length;
+					file_index++;
 
-						format_size = g_format_size_for_display(backup_real_size);
-						printf("(%s", format_size);
-						g_free(format_size);
-						format_size = g_format_size_for_display(backup_total_size);
-						printf("/%s): ", format_size);
-						g_free(format_size);
-						printf("Received file %s... ", filename_source);
-					}
+					format_size = g_format_size_for_display(backup_real_size);
+					printf("(%s", format_size);
+					g_free(format_size);
+					format_size = g_format_size_for_display(backup_total_size);
+					printf("/%s): ", format_size);
+					g_free(format_size);
+					printf("Received file %s... ", filename_source);
+
+					if (filename_source)
+						free(filename_source);
 				}
 
 				/* save <hash>.mdinfo */
@@ -498,11 +503,21 @@ int main(int argc, char *argv[])
 				if (node_tmp && file_path) {
 					node = plist_dict_get_item(node_tmp, "DLFileDest");
 					plist_get_string_val(node, &file_path);
-					file_ext = (char *)g_strconcat(file_path, ".mddata", NULL);
+
+					if (!is_manifest)
+						file_ext = (char *)g_strconcat(file_path, ".mddata", NULL);
+					else
+						file_ext = g_strdup(file_path);
+
 					filename_mddata = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
 					node_tmp = plist_array_get_item(message, 1);
 					plist_get_data_val(node_tmp, &buffer, &length);
+
+					/* activate currently sent manifest */
 					buffer_to_filename(filename_mddata, buffer, length);
+					if ((c == 2) && (is_manifest)) {
+						rename(filename_mddata, manifest_path);
+					}
 					free(buffer);
 					buffer = NULL;
 					g_free(filename_mddata);
@@ -511,9 +526,6 @@ int main(int argc, char *argv[])
 				if ((c == 2) && (!is_manifest)) {
 					printf("DONE\n");
 				}
-
-				if (filename_source)
-					free(filename_source);
 
 				if (file_ext)
 					free(file_ext);
