@@ -425,6 +425,7 @@ int main(int argc, char *argv[])
 
 			/* receive and save DLSendFile files and metadata, ACK each */
 			int file_index = 0;
+			int hunk_index = 0;
 			uint64_t backup_real_size = 0;
 			char *file_path = NULL;
 			char *file_ext = NULL;
@@ -442,8 +443,8 @@ int main(int argc, char *argv[])
 
 				node_tmp = plist_array_get_item(message, 2);
 
-				/* first message contains total backup size */
-				if (file_index == 0) {
+				/* first message hunk contains total backup size */
+				if (hunk_index == 0) {
 					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
 					if (node) {
 						plist_get_uint_val(node, &backup_total_size);
@@ -532,6 +533,8 @@ int main(int argc, char *argv[])
 				if ((c == 2) && (!is_manifest)) {
 					printf("DONE\n");
 				}
+
+				hunk_index++;
 
 				if (file_ext)
 					free(file_ext);
