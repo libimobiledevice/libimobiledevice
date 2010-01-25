@@ -11,6 +11,7 @@ libiphone_la_SOURCES = iphone.c iphone.h \
 		       device_link_service.c device_link_service.h\
 		       lockdown.c lockdown.h\
 		       afc.c afc.h\
+		       file_relay.c file_relay.h\
 		       notification_proxy.c notification_proxy.h\
 		       installation_proxy.c installation_proxy.h\
 		       sbservices.c sbservices.h\
