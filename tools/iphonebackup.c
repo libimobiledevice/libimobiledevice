@@ -445,10 +445,12 @@ int main(int argc, char *argv[])
 				/* first message contains total backup size */
 				if (file_index == 0) {
 					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
-					plist_get_uint_val(node, &backup_total_size);
-					format_size = g_format_size_for_display(backup_total_size);
-					printf("Backup will need %s on disk.\n", format_size);
-					g_free(format_size);
+					if (node) {
+						plist_get_uint_val(node, &backup_total_size);
+						format_size = g_format_size_for_display(backup_total_size);
+						printf("Backup data requires %s on the disk.\n", format_size);
+						g_free(format_size);
+					}
 				}
 
 				/* print out "received" if DLFileStatusKey is 2 (last file piece) */
