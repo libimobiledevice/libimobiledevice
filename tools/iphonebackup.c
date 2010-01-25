@@ -44,7 +44,7 @@ enum cmd_mode {
 	CMD_LEAVE
 };
 
-static plist_t mobilebackup_factory_info_plist()
+static plist_t mobilebackup_factory_info_plist_new()
 {
 	/* gather data from lockdown */
 	GTimeVal tv = {0, 0};
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 
 			/* create Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 			printf("Creating \"%s/Info.plist\".\n", backup_directory);
-			plist_t info_plist = mobilebackup_factory_info_plist();
+			plist_t info_plist = mobilebackup_factory_info_plist_new();
 			if (stat(info_path, &st) == 0)
 				remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
