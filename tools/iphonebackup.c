@@ -613,10 +613,10 @@ int main(int argc, char *argv[])
 
 			break;
 			case CMD_RESTORE:
-			printf("Restoring backup...\n");
+			printf("Restoring backup is NOT IMPLEMENTED.\n");
 			/* verify battery on AC enough battery remaining */
-			/* request restore from device (BackupMessageRestoreMigrate) */
-			/* read mddata files and send to devices using DLSendFile */
+			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
+			/* read mddata/mdinfo files and send to devices using DLSendFile */
 			/* signal restore finished message to device */
 			/* close down lockdown connection as it is no longer needed */
 			lockdownd_client_free(client);
