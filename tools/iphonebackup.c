@@ -488,19 +488,19 @@ int main(int argc, char *argv[])
 
 					if (filename_source)
 						free(filename_source);
-				}
 
-				/* save <hash>.mdinfo */
-				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
-				if (node) {
-					node = plist_dict_get_item(node_tmp, "DLFileDest");
-					plist_get_string_val(node, &file_path);
-					file_ext = (char *)g_strconcat(file_path, ".mdinfo", NULL);
-					filename_mdinfo = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+					/* save <hash>.mdinfo */
 					node = plist_dict_get_item(node_tmp, "BackupFileInfo");
-					plist_write_to_filename(node, filename_mdinfo, PLIST_FORMAT_BINARY);
-					g_free(file_ext);
-					g_free(filename_mdinfo);
+					if (node) {
+						node = plist_dict_get_item(node_tmp, "DLFileDest");
+						plist_get_string_val(node, &file_path);
+						file_ext = (char *)g_strconcat(file_path, ".mdinfo", NULL);
+						filename_mdinfo = g_build_path(G_DIR_SEPARATOR_S, backup_directory, file_ext, NULL);
+						node = plist_dict_get_item(node_tmp, "BackupFileInfo");
+						plist_write_to_filename(node, filename_mdinfo, PLIST_FORMAT_BINARY);
+						g_free(file_ext);
+						g_free(filename_mdinfo);
+					}
 				}
 
 				/* save <hash>.mddata */
