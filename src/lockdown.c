@@ -661,6 +661,14 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 	/* in any case, we need to validate pairing to receive trusted host status */
 	ret = lockdownd_validate_pair(client_loc, NULL);
 
+	/* if not paired yet, let's do it now */
+	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
+		ret = lockdownd_pair(client_loc, NULL);
+		if (LOCKDOWN_E_SUCCESS == ret) {
+			ret = lockdownd_validate_pair(client_loc, NULL);
+		}
+	}
+
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
 		if (LOCKDOWN_E_SUCCESS != ret) {
@@ -825,11 +833,16 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		if (error_node) {
 			char *value = NULL;
 			plist_get_string_val(error_node, &value);
-			/* the first pairing fails if the device is password protected */
-			if (value && !strcmp(value, "PasswordProtected")) {
-				ret = LOCKDOWN_E_PASSWORD_PROTECTED;
+			if (value) {
+				/* the first pairing fails if the device is password protected */
+				if (!strcmp(value, "PasswordProtected")) {
+					ret = LOCKDOWN_E_PASSWORD_PROTECTED;
+				} else if (!strcmp(value, "InvalidHostID")) {
+					ret = LOCKDOWN_E_INVALID_HOST_ID;
+				}
 				free(value);
 			}
+
 			plist_free(error_node);
 			error_node = NULL;
 		}
