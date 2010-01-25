@@ -464,14 +464,15 @@ int main(int argc, char *argv[])
 					is_manifest = FALSE;
 
 				if (c == 2) {
-					node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
-					node = plist_dict_get_item(node, "FileSize");
-					plist_get_uint_val(node, &length);
-
 					/* increased received size for each completed file */
-					backup_real_size += length;
-
 					if (!is_manifest) {
+						node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
+						node = plist_dict_get_item(node, "FileSize");
+						plist_get_uint_val(node, &length);
+
+						backup_real_size += length;
+						file_index++;
+
 						format_size = g_format_size_for_display(backup_real_size);
 						printf("(%s", format_size);
 						g_free(format_size);
@@ -543,8 +544,6 @@ int main(int argc, char *argv[])
 
 				plist_free(message);
 				message = NULL;
-
-				file_index++;
 			} while (!plist_strcmp(node, "DLSendFile"));
 
 			printf("Received %d files from device.\n", file_index);
