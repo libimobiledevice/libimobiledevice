@@ -545,7 +545,7 @@ int main(int argc, char *argv[])
 
 				plist_free(message);
 				message = NULL;
-			} while (!plist_strcmp(node, "DLSendFile"));
+			} while (1);
 
 			printf("Received %d files from device.\n", file_index);
 
