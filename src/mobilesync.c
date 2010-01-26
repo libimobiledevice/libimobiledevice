@@ -109,16 +109,6 @@ mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plis
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
 	mobilesync_error_t ret = mobilesync_error(device_link_service_receive(client->parent, plist));
-#ifndef STRIP_DEBUG_CODE
-	if (ret != MOBILESYNC_E_SUCCESS) {
-		return ret;
-	}
-	char *XMLContent = NULL;
-	uint32_t length = 0;
-	plist_to_xml(*plist, &XMLContent, &length);
-	debug_info("plist size: %i\nbuffer :\n%s", length, XMLContent);
-	free(XMLContent);
-#endif
 	return ret;
 }
 
@@ -136,13 +126,5 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 {
 	if (!client || !plist)
 		return MOBILESYNC_E_INVALID_ARG;
-
-#ifndef STRIP_DEBUG_CODE
-	char *XMLContent = NULL;
-	uint32_t length = 0;
-	plist_to_xml(plist, &XMLContent, &length);
-	debug_info("plist size: %i\nbuffer :\n%s", length, XMLContent);
-	free(XMLContent);
-#endif
 	return mobilesync_error(device_link_service_send(client->parent, plist));
 }

@@ -15,4 +15,5 @@ libiphone_la_SOURCES = iphone.c iphone.h \
 		       notification_proxy.c notification_proxy.h\
 		       installation_proxy.c installation_proxy.h\
 		       sbservices.c sbservices.h\
-		       mobilesync.c mobilesync.h
+		       mobilesync.c mobilesync.h\
+		       mobilebackup.c mobilebackup.h
