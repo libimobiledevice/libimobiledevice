@@ -558,6 +558,7 @@ int main(int argc, char *argv[])
 			mobilebackup_send(mobilebackup, message);
 			plist_free(message);
 			message = NULL;
+			node = NULL;
 
 			/* get response */
 			int backup_ok = 0;
@@ -739,13 +740,21 @@ int main(int argc, char *argv[])
 				if (quit_flag > 0) {
 					/* need to cancel the backup here */
 					mobilebackup_cancel_backup_with_error("Cancelling DLSendFile");
+
+					/* remove any atomic Manifest.plist.tmp */
+					if (manifest_path)
+						g_free(manifest_path);
+
+					manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist.tmp");
+					if (stat(manifest_path, &st) == 0)
+						remove(manifest_path);
 					break;
 				}
 			} while (1);
 
 			printf("Received %d files from device.\n", file_index);
 
-			if (!plist_strcmp(node, "DLMessageProcessMessage")) {
+			if (!quit_flag && !plist_strcmp(node, "DLMessageProcessMessage")) {
 				node_tmp = plist_array_get_item(message, 1);
 				node = plist_dict_get_item(node_tmp, "BackupMessageTypeKey");
 				/* check if we received the final "backup finished" message */
@@ -790,9 +799,6 @@ int main(int argc, char *argv[])
 
 			if (manifest_path)
 				g_free(manifest_path);
-
-			if (node)
-				plist_free(node);
 
 			break;
 			case CMD_RESTORE:
