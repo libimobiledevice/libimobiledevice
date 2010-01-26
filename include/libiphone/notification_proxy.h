@@ -43,6 +43,7 @@ typedef int16_t np_error_t;
 #define NP_SYNC_WILL_START           "com.apple.itunes-mobdev.syncWillStart"
 #define NP_SYNC_DID_START            "com.apple.itunes-mobdev.syncDidStart"
 #define NP_SYNC_DID_FINISH           "com.apple.itunes-mobdev.syncDidFinish"
+#define NP_SYNC_LOCK_REQUEST         "com.apple.itunes-mobdev.syncLockRequest"
 
 /* Notification IDs for use with observe_notification (device --> client) */
 #define NP_SYNC_CANCEL_REQUEST       "com.apple.itunes-client.syncCancelRequest"
