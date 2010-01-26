@@ -311,6 +311,9 @@ static int mobilebackup_info_is_current_device(plist_t info)
 
 	if(plist_compare_node_value(value_node, node))
 		ret = 1;
+	else {
+		printf("Info.plist: UniqueDeviceID does not match.\n");
+	}
 
 	/* verify SerialNumber */
 	if (ret == 1) {
@@ -319,8 +322,23 @@ static int mobilebackup_info_is_current_device(plist_t info)
 
 		if(plist_compare_node_value(value_node, node))
 			ret = 1;
-		else
+		else {
+			printf("Info.plist: SerialNumber does not match.\n");
 			ret = 0;
+		}
+	}
+
+	/* verify ProductVersion to prevent using backup with different OS version */
+	if (ret == 1) {
+		value_node = plist_dict_get_item(root_node, "ProductVersion");
+		node = plist_dict_get_item(info, "Product Version");
+
+		if(plist_compare_node_value(value_node, node))
+			ret = 1;
+		else {
+			printf("Info.plist: ProductVersion does not match.\n");
+			ret = 0;
+		}
 	}
 
 	plist_free(root_node);
@@ -553,9 +571,30 @@ int main(int argc, char *argv[])
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, port);
 		mobilebackup_client_new(phone, port, &mobilebackup);
 
+		/* check abort conditions */
 		if (quit_flag > 0) {
 			printf("Aborting backup. Cancelled by user.\n");
 			cmd = CMD_LEAVE;
+		}
+
+		/* verify existing Info.plist */
+		if (stat(info_path, &st) == 0) {
+			printf("Reading Info.plist from backup.\n");
+			plist_read_from_filename(&info_plist, info_path);
+
+			if (cmd == CMD_BACKUP) {
+				if (mobilebackup_info_is_current_device(info_plist)) {
+					/* update the last backup time within Info.plist */
+					mobilebackup_info_update_last_backup_date(info_plist);
+					remove(info_path);
+					plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+				} else {
+					printf("Aborting backup. Backup is not compatible with the current device.\n");
+					cmd = CMD_LEAVE;
+				}
+			}
+		} else {
+			is_full_backup = 1;
 		}
 
 		do_post_notification(NP_SYNC_WILL_START);
@@ -570,6 +609,7 @@ int main(int argc, char *argv[])
 				lockfile = 0;
 			}
 		}
+
 		switch(cmd) {
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
@@ -577,31 +617,20 @@ int main(int argc, char *argv[])
 			/* TODO: verify battery on AC enough battery remaining */	
 
 			/* Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
-
-			/* read existing Info.plist or create new one */
-			if (stat(info_path, &st) == 0) {
-				printf("Reading Info.plist from existing backup.\n");
-				plist_read_from_filename(&info_plist, info_path);
-
-				if(!is_full_backup) {
-					/* update the last backup time within Info.plist */
-					mobilebackup_info_update_last_backup_date(info_plist);
-					remove(info_path);
-					plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
-				}
-			} else {
+			/* create new Info.plist on new backups */
+			if (is_full_backup) {
 				printf("Creating Info.plist for new backup.\n");
 				info_plist = mobilebackup_factory_info_plist_new();
 				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
-				is_full_backup = 1;
 			}
 
 			g_free(info_path);
 
 			/* Manifest.plist (backup manifest (backup state)) */
 			char *manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist");
-			/* read the last Manifest.plist if the current backup is for this device */
-			if (!is_full_backup && mobilebackup_info_is_current_device(info_plist)) {
+
+			/* read the last Manifest.plist */
+			if (!is_full_backup) {
 				printf("Reading existing Manifest.\n");
 				plist_read_from_filename(&manifest_plist, manifest_path);
 			}
