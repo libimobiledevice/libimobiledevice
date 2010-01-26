@@ -2,7 +2,8 @@
  * iphonebackup.c
  * Command line interface to use the device's backup and restore service
  *
- * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2009-2010 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2010      Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +30,11 @@
 #include <libiphone/libiphone.h>
 #include <libiphone/lockdown.h>
 #include <libiphone/mobilebackup.h>
+#include <libiphone/notification_proxy.h>
+#include <libiphone/afc.h>
 
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
+#define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
 static mobilebackup_client_t mobilebackup = NULL;
 static lockdownd_client_t client = NULL;
@@ -54,6 +58,16 @@ enum device_link_file_status_t {
 	DEVICE_LINK_FILE_STATUS_HUNK,
 	DEVICE_LINK_FILE_STATUS_LAST_HUNK
 };
+
+static void notify_cb(const char *notification)
+{
+	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
+		printf("User has aborted on-device\n");
+		quit_flag++;
+	} else {
+		printf("unhandled notification '%s' (TODO: implement)\n", notification);
+	}
+}
 
 static plist_t mobilebackup_factory_info_plist_new()
 {
@@ -345,6 +359,29 @@ static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory,
 	return ret;
 }
 
+static void do_post_notification(const char *notification)
+{
+	uint16_t nport = 0;
+	np_client_t np;
+
+	if (!client) {
+		if (lockdownd_client_new_with_handshake(phone, &client, "iphonebackup") != LOCKDOWN_E_SUCCESS) {
+			return;
+		}
+	}
+
+	lockdownd_start_service(client, NP_SERVICE_NAME, &nport);
+	if (nport) {
+		np_client_new(phone, nport, &np);
+		if (np) {
+			np_post_notification(np, notification);
+			np_client_free(np);
+		}
+	} else {
+		printf("Could not start %s\n", NP_SERVICE_NAME);
+	}
+}
+
 /**
  * signal handler function for cleaning up properly
  */
@@ -483,7 +520,34 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	/* start notification_proxy */
+	np_client_t np = NULL;
+	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &port);
+	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+		np_client_new(phone, port, &np);
+		np_set_notify_callback(np, notify_cb);
+		const char *noties[5] = {
+			NP_SYNC_CANCEL_REQUEST,
+			NP_SYNC_SUSPEND_REQUEST,
+			NP_SYNC_RESUME_REQUEST,
+			NP_BACKUP_DOMAIN_CHANGED,
+			NULL
+		};
+		np_observe_notifications(np, noties);
+	} else {
+		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
+	}
+
+	/* start AFC, we need this for the lock file */
+	afc_client_t afc = NULL;
+	port = 0;
+	ret = lockdownd_start_service(client, "com.apple.afc", &port);
+	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+		afc_client_new(phone, port, &afc);
+	}
+
 	/* start syslog_relay service and retrieve port */
+	port = 0;
 	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, port);
@@ -494,11 +558,23 @@ int main(int argc, char *argv[])
 			cmd = CMD_LEAVE;
 		}
 
+		do_post_notification(NP_SYNC_WILL_START);
+		uint64_t lockfile = 0;
+		afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
+		if (lockfile) {
+			do_post_notification(NP_SYNC_LOCK_REQUEST);
+			if (afc_file_lock(afc, lockfile, AFC_LOCK_EX) == AFC_E_SUCCESS) {
+				do_post_notification(NP_SYNC_DID_START);
+			} else {
+				afc_file_close(afc, lockfile);
+				lockfile = 0;
+			}
+		}
 		switch(cmd) {
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
-			/* TODO: verify battery on AC enough battery remaining */
+			/* TODO: verify battery on AC enough battery remaining */	
 
 			/* Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 
@@ -815,6 +891,12 @@ int main(int argc, char *argv[])
 			default:
 			break;
 		}
+		if (lockfile) {
+			afc_file_lock(afc, lockfile, AFC_LOCK_UN);
+			afc_file_close(afc, lockfile);
+			lockfile = 0;
+			do_post_notification(NP_SYNC_DID_FINISH);
+		}
 	} else {
 		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP_SERVICE_NAME);
 		lockdownd_client_free(client);
@@ -825,6 +907,12 @@ int main(int argc, char *argv[])
 		lockdownd_client_free(client);
 		client = NULL;
 	}
+
+	if (afc)
+		afc_client_free(afc);
+
+	if (np)
+		np_client_free(np);
 
 	if (mobilebackup)
 		mobilebackup_client_free(mobilebackup);
