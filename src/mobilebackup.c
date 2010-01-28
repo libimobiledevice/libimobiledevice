@@ -59,7 +59,7 @@ static mobilebackup_error_t mobilebackup_error(device_link_service_error_t err)
 	return MOBILEBACKUP_E_UNKNOWN_ERROR;
 }
 
-mobilebackup_error_t mobilebackup_client_new(iphone_device_t device, uint16_t port,
+mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port,
 						   mobilebackup_client_t * client)
 {
 	if (!device || port == 0 || !client || *client)
@@ -97,7 +97,7 @@ mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
 	return err;
 }
 
-/** Polls the iPhone for MobileBackup data.
+/** Polls the device for MobileBackup data.
  *
  * @param client The MobileBackup client
  * @param plist A pointer to the location where the plist should be stored
@@ -112,7 +112,7 @@ mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t 
 	return ret;
 }
 
-/** Sends MobileBackup data to the iPhone
+/** Sends MobileBackup data to the device
  * 
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.

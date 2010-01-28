@@ -33,20 +33,20 @@
 #include "userpref.h"
 #include "debug.h"
 
-#define LIBIPHONE_CONF_DIR  "libiphone"
-#define LIBIPHONE_CONF_FILE "libiphonerc"
+#define LIBIMOBILEDEVICE_CONF_DIR  "libimobiledevice"
+#define LIBIMOBILEDEVICE_CONF_FILE "libimobiledevicerc"
 
-#define LIBIPHONE_ROOT_PRIVKEY "RootPrivateKey.pem"
-#define LIBIPHONE_HOST_PRIVKEY "HostPrivateKey.pem"
-#define LIBIPHONE_ROOT_CERTIF "RootCertificate.pem"
-#define LIBIPHONE_HOST_CERTIF "HostCertificate.pem"
+#define LIBIMOBILEDEVICE_ROOT_PRIVKEY "RootPrivateKey.pem"
+#define LIBIMOBILEDEVICE_HOST_PRIVKEY "HostPrivateKey.pem"
+#define LIBIMOBILEDEVICE_ROOT_CERTIF "RootCertificate.pem"
+#define LIBIMOBILEDEVICE_HOST_CERTIF "HostCertificate.pem"
 
 
-/** Creates a freedesktop compatible configuration directory for libiphone.
+/** Creates a freedesktop compatible configuration directory.
  */
 static void userpref_create_config_dir(void)
 {
-	gchar *config_dir = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, NULL);
+	gchar *config_dir = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, NULL);
 
 	if (!g_file_test(config_dir, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
 		g_mkdir_with_parents(config_dir, 0755);
@@ -112,7 +112,7 @@ static int userpref_set_host_id(const char *host_id)
 	/* Write config file on disk */
 	buf = g_key_file_to_data(key_file, &length, NULL);
 	config_file =
-		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_CONF_FILE, NULL);
+		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_CONF_FILE, NULL);
 	file = g_io_channel_new_file(config_file, "w", NULL);
 	g_free(config_file);
 	g_io_channel_write_chars(file, buf, length, NULL, NULL);
@@ -136,7 +136,7 @@ void userpref_get_host_id(char **host_id)
 	gchar *loc_host_id;
 
 	config_file =
-		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_CONF_FILE, NULL);
+		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_CONF_FILE, NULL);
 
 	/* now parse file to get the HostID */
 	key_file = g_key_file_new();
@@ -158,11 +158,11 @@ void userpref_get_host_id(char **host_id)
 	debug_info("Using %s as HostID", *host_id);
 }
 
-/** Determines whether this iPhone has been connected to this system before.
+/** Determines whether this device has been connected to this system before.
  *
- * @param uid The device uid as given by the iPhone.
+ * @param uid The device uid as given by the device.
  *
- * @return 1 if the iPhone has been connected previously to this configuration
+ * @return 1 if the device has been connected previously to this configuration
  *         or 0 otherwise.
  */
 int userpref_has_device_public_key(const char *uuid)
@@ -172,7 +172,7 @@ int userpref_has_device_public_key(const char *uuid)
 
 	/* first get config file */
 	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	config_file = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
+	config_file = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
 	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)))
 		ret = 1;
 	g_free(config_file);
@@ -180,10 +180,10 @@ int userpref_has_device_public_key(const char *uuid)
 	return ret;
 }
 
-/** Mark the iPhone (as represented by the key) as having connected to this
+/** Mark the device (as represented by the key) as having connected to this
  *  configuration.
  *
- * @param public_key The public key given by the iPhone
+ * @param public_key The public key given by the device
  *
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
@@ -201,7 +201,7 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t
 
 	/* build file path */
 	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
+	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
 
 	/* store file */
 	FILE *pFile = fopen(pem, "wb");
@@ -226,7 +226,7 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
 
 	/* build file path */
 	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, device_file, NULL);
+	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
 
 	/* remove file */
 	g_remove(pem);
@@ -255,7 +255,7 @@ static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 		return 0;
 
 	/* Read file */
-	filepath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, file, NULL);
+	filepath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, file, NULL);
 	success = g_file_get_contents(filepath, &content, &size, NULL);
 	g_free(filepath);
 
@@ -392,7 +392,7 @@ static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_pr
  * @param crt_name The filename of the certificate to import.
  * @param cert the gnutls certificate structure.
  *
- * @return IPHONE_E_SUCCESS if the certificate was successfully imported.
+ * @return IDEVICE_E_SUCCESS if the certificate was successfully imported.
  */
 static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_crt_t cert)
 {
@@ -426,16 +426,16 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
 	userpref_error_t ret = USERPREF_E_SUCCESS;
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
+		ret = userpref_import_key(LIBIMOBILEDEVICE_ROOT_PRIVKEY, root_privkey);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
+		ret = userpref_import_key(LIBIMOBILEDEVICE_HOST_PRIVKEY, host_privkey);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
+		ret = userpref_import_crt(LIBIMOBILEDEVICE_ROOT_CERTIF, root_crt);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
+		ret = userpref_import_crt(LIBIMOBILEDEVICE_HOST_CERTIF, host_crt);
 
 
 	if (USERPREF_E_SUCCESS != ret) {
@@ -444,16 +444,16 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
 		ret = userpref_gen_keys_and_cert();
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_key(LIBIPHONE_ROOT_PRIVKEY, root_privkey);
+			ret = userpref_import_key(LIBIMOBILEDEVICE_ROOT_PRIVKEY, root_privkey);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_key(LIBIPHONE_HOST_PRIVKEY, host_privkey);
+			ret = userpref_import_key(LIBIMOBILEDEVICE_HOST_PRIVKEY, host_privkey);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_crt(LIBIPHONE_ROOT_CERTIF, root_crt);
+			ret = userpref_import_crt(LIBIMOBILEDEVICE_ROOT_CERTIF, root_crt);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_crt(LIBIPHONE_HOST_CERTIF, host_crt);
+			ret = userpref_import_crt(LIBIMOBILEDEVICE_HOST_CERTIF, host_crt);
 	}
 
 	return ret;
@@ -471,7 +471,7 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
 	if (!pem_root_cert || !pem_host_cert)
 		return USERPREF_E_INVALID_ARG;
 
-	if (userpref_get_file_contents(LIBIPHONE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIPHONE_HOST_CERTIF, pem_host_cert))
+	if (userpref_get_file_contents(LIBIMOBILEDEVICE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIMOBILEDEVICE_HOST_CERTIF, pem_host_cert))
 		return USERPREF_E_SUCCESS;
 	else {
 		g_free(pem_root_cert->data);
@@ -503,25 +503,25 @@ userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_d
 	userpref_create_config_dir();
 
 	/* Now write keys and certificates to disk */
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_ROOT_PRIVKEY, NULL);
+	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_ROOT_PRIVKEY, NULL);
 	pFile = fopen(pem, "wb");
 	fwrite(root_key->data, 1, root_key->size, pFile);
 	fclose(pFile);
 	g_free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_HOST_PRIVKEY, NULL);
+	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_HOST_PRIVKEY, NULL);
 	pFile = fopen(pem, "wb");
 	fwrite(host_key->data, 1, host_key->size, pFile);
 	fclose(pFile);
 	g_free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_ROOT_CERTIF, NULL);
+	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_ROOT_CERTIF, NULL);
 	pFile = fopen(pem, "wb");
 	fwrite(root_cert->data, 1, root_cert->size, pFile);
 	fclose(pFile);
 	g_free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIPHONE_CONF_DIR, LIBIPHONE_HOST_CERTIF, NULL);
+	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_HOST_CERTIF, NULL);
 	pFile = fopen(pem, "wb");
 	fwrite(host_cert->data, 1, host_cert->size, pFile);
 	fclose(pFile);

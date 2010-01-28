@@ -1,5 +1,5 @@
 /**
- * @file libiphone/mobilebackup.h
+ * @file libimobiledevice/mobilebackup.h
  * @brief MobileBackup Implementation
  * \internal
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 
 /* Error Codes */
 #define MOBILEBACKUP_E_SUCCESS                0
@@ -43,7 +43,7 @@ typedef int16_t mobilebackup_error_t;
 struct mobilebackup_client_int;
 typedef struct mobilebackup_client_int *mobilebackup_client_t;
 
-mobilebackup_error_t mobilebackup_client_new(iphone_device_t device, uint16_t port, mobilebackup_client_t * client);
+mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mobilebackup_client_t * client);
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);

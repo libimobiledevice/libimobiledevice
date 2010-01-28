@@ -1,5 +1,5 @@
 /**
- * @file libiphone/lockdown.h
+ * @file libimobiledevice/lockdown.h
  * @brief Communcation with the lockdown device daemon
  * \internal
  *
@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 
 /* Error Codes */
 #define LOCKDOWN_E_SUCCESS                    0
@@ -66,8 +66,8 @@ struct lockdownd_pair_record {
 typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
 
 /* Interface */
-lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client, const char *label);
-lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lockdownd_client_t *client, const char *label);
+lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
+lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
 lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
 
 lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);

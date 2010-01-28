@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libiphone, 0.9.6, nospam@nowhere.com)
+AC_INIT(libimobiledevice, 0.9.7, nospam@nowhere.com)
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -27,7 +27,7 @@ PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3 )
 PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
-AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], ["libgcrypt is required to build libiphone"])
+AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], ["libgcrypt is required to build libimobiledevice"])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -137,7 +137,7 @@ fdi/Makefile
 dev/Makefile
 tools/Makefile
 swig/Makefile
-libiphone-1.0.pc
+libimobiledevice-1.0.pc
 ])
 
 echo "

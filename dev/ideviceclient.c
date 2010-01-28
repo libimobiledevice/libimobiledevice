@@ -1,6 +1,6 @@
 /*
  * main.c
- * Rudimentary interface to the iPhone
+ * Test program for testing several services.
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -25,10 +25,10 @@
 #include <errno.h>
 #include <glib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
-#include <libiphone/afc.h>
-#include <libiphone/notification_proxy.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/afc.h>
+#include <libimobiledevice/notification_proxy.h>
 
 static void notifier(const char *notification)
 {
@@ -37,7 +37,7 @@ static void notifier(const char *notification)
 	printf("---------------------------------------------------------\n");
 }
 
-static void perform_notification(iphone_device_t phone, lockdownd_client_t client, const char *notification)
+static void perform_notification(idevice_t phone, lockdownd_client_t client, const char *notification)
 {
 	uint16_t nport = 0;
 	np_client_t np;
@@ -62,30 +62,30 @@ int main(int argc, char *argv[])
 	uint16_t port = 0, i = 0;
 	uint16_t npp;
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
+	idevice_t phone = NULL;
 	uint64_t lockfile = 0;
 	np_client_t gnp = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
-		iphone_set_debug_level(1);
+		idevice_set_debug_level(1);
 	} else {
-		iphone_set_debug_level(0);
+		idevice_set_debug_level(0);
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
-		printf("No iPhone found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new(&phone, NULL)) {
+		printf("No device found, is it plugged in?\n");
 		return -1;
 	}
 
 	char *uuid = NULL;
-	if (IPHONE_E_SUCCESS == iphone_device_get_uuid(phone, &uuid)) {
+	if (IDEVICE_E_SUCCESS == idevice_get_uuid(phone, &uuid)) {
 		printf("DeviceUniqueID : %s\n", uuid);
 	}
 	if (uuid)
 		free(uuid);
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphoneclient")) {
-		iphone_device_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "ideviceclient")) {
+		idevice_free(phone);
 		printf("Exiting.\n");
 		return -1;
 	}
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 			uint64_t my_file = 0;
 			char **info = NULL;
 			uint64_t fsize = 0;
-			if (AFC_E_SUCCESS == afc_get_file_info(afc, "/readme.libiphone.fx", &info) && info) {
+			if (AFC_E_SUCCESS == afc_get_file_info(afc, "/readme.libimobiledevice.fx", &info) && info) {
 				for (i = 0; info[i]; i += 2) {
 					printf("%s: %s\n", info[i], info[i+1]);
 					if (!strcmp(info[i], "st_size")) {
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (AFC_E_SUCCESS ==
-				afc_file_open(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
+				afc_file_open(afc, "/readme.libimobiledevice.fx", AFC_FOPEN_RDONLY, &my_file) && my_file) {
 				printf("A file size: %llu\n", (long long)fsize);
 				char *file_data = (char *) malloc(sizeof(char) * fsize);
 				afc_file_read(afc, my_file, file_data, fsize, &bytes);
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 			} else
 				printf("couldn't open a file\n");
 
-			afc_file_open(afc, "/readme.libiphone.fx", AFC_FOPEN_WR, &my_file);
+			afc_file_open(afc, "/readme.libimobiledevice.fx", AFC_FOPEN_WR, &my_file);
 			if (my_file) {
 				char *outdatafile = strdup("this is a bitchin text file\n");
 				afc_file_write(afc, my_file, outdatafile, strlen(outdatafile), &bytes);
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 				printf("Failure. (expected unless you have a /renme file on your phone)\n");
 
 			printf("Seek & read\n");
-			afc_file_open(afc, "/readme.libiphone.fx", AFC_FOPEN_RDONLY, &my_file);
+			afc_file_open(afc, "/readme.libimobiledevice.fx", AFC_FOPEN_RDONLY, &my_file);
 			if (AFC_E_SUCCESS != afc_file_seek(afc, my_file, 5, SEEK_CUR))
 				printf("WARN: SEEK DID NOT WORK\n");
 			char *threeletterword = (char *) malloc(sizeof(char) * 5);
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 	printf("All done.\n");
 
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

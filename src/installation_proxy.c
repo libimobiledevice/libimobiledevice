@@ -92,7 +92,7 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
  * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error value
  *     when an error occured.
  */
-instproxy_error_t instproxy_client_new(iphone_device_t device, uint16_t port, instproxy_client_t *client)
+instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())

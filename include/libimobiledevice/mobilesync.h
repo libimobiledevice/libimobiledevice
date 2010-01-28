@@ -1,5 +1,5 @@
 /**
- * @file libiphone/mobilesync.h
+ * @file libimobiledevice/mobilesync.h
  * @brief MobileSync Implementation
  * \internal
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 
 /* Error Codes */
 #define MOBILESYNC_E_SUCCESS                0
@@ -43,7 +43,7 @@ typedef int16_t mobilesync_error_t;
 struct mobilesync_client_int;
 typedef struct mobilesync_client_int *mobilesync_client_t;
 
-mobilesync_error_t mobilesync_client_new(iphone_device_t device, uint16_t port, mobilesync_client_t * client);
+mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client);
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
 mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
 mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);

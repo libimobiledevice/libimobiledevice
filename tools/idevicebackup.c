@@ -1,5 +1,5 @@
 /*
- * iphonebackup.c
+ * idevicebackup.c
  * Command line interface to use the device's backup and restore service
  *
  * Copyright (c) 2009-2010 Martin Szulecki All Rights Reserved.
@@ -27,18 +27,18 @@
 #include <signal.h>
 #include <glib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
-#include <libiphone/mobilebackup.h>
-#include <libiphone/notification_proxy.h>
-#include <libiphone/afc.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/mobilebackup.h>
+#include <libimobiledevice/notification_proxy.h>
+#include <libimobiledevice/afc.h>
 
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
 static mobilebackup_client_t mobilebackup = NULL;
 static lockdownd_client_t client = NULL;
-static iphone_device_t phone = NULL;
+static idevice_t phone = NULL;
 
 static int quit_flag = 0;
 
@@ -111,7 +111,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 	plist_dict_insert_item(ret, "Serial Number", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
-	iphone_device_get_uuid(phone, &uuid);
+	idevice_get_uuid(phone, &uuid);
 	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(uuid));
 
 	/* uppercase */
@@ -383,7 +383,7 @@ static void do_post_notification(const char *notification)
 	np_client_t np;
 
 	if (!client) {
-		if (lockdownd_client_new_with_handshake(phone, &client, "iphonebackup") != LOCKDOWN_E_SUCCESS) {
+		if (lockdownd_client_new_with_handshake(phone, &client, "idevicebackup") != LOCKDOWN_E_SUCCESS) {
 			return;
 		}
 	}
@@ -427,7 +427,7 @@ static void print_usage(int argc, char **argv)
 
 int main(int argc, char *argv[])
 {
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	char uuid[41];
 	uint16_t port = 0;
@@ -455,7 +455,7 @@ int main(int argc, char *argv[])
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			iphone_set_debug_level(1);
+			idevice_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -518,23 +518,23 @@ int main(int argc, char *argv[])
 	printf("Backup directory is \"%s\"\n", backup_directory);
 
 	if (uuid[0] != 0) {
-		ret = iphone_device_new(&phone, uuid);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, uuid);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
 		}
 	}
 	else
 	{
-		ret = iphone_device_new(&phone, NULL);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, NULL);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphonebackup")) {
-		iphone_device_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicebackup")) {
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -946,7 +946,7 @@ int main(int argc, char *argv[])
 	if (mobilebackup)
 		mobilebackup_client_free(mobilebackup);
 
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

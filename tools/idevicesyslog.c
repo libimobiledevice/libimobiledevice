@@ -1,5 +1,5 @@
 /*
- * syslog_relay.c
+ * idevicesyslog.c
  * Relay the syslog of a device to stdout
  *
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
@@ -26,8 +26,8 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 static int quit_flag = 0;
 
@@ -45,8 +45,8 @@ static void clean_exit(int sig)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	idevice_t phone = NULL;
+	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	char uuid[41];
 	uint16_t port = 0;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			iphone_set_debug_level(1);
+			idevice_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -83,23 +83,23 @@ int main(int argc, char *argv[])
 	}
 
 	if (uuid[0] != 0) {
-		ret = iphone_device_new(&phone, uuid);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, uuid);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
 		}
 	}
 	else
 	{
-		ret = iphone_device_new(&phone, NULL);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, NULL);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphonesyslog")) {
-		iphone_device_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicesyslog")) {
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -109,15 +109,15 @@ int main(int argc, char *argv[])
 		lockdownd_client_free(client);
 		
 		/* connect to socket relay messages */
-		iphone_connection_t conn = NULL;
-		if ((iphone_device_connect(phone, port, &conn) != IPHONE_E_SUCCESS) || !conn) {
+		idevice_connection_t conn = NULL;
+		if ((idevice_connect(phone, port, &conn) != IDEVICE_E_SUCCESS) || !conn) {
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
 			while (!quit_flag) {
 				char *receive = NULL;
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
-				ret = iphone_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
+				ret = idevice_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
 				datalen = ntohl(datalen);
 
 				if (datalen == 0)
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 				receive = (char *) malloc(sizeof(char) * datalen);
 
 				while (!quit_flag && (recv_bytes <= datalen)) {
-					ret = iphone_connection_receive(conn, receive, datalen, &bytes);
+					ret = idevice_connection_receive(conn, receive, datalen, &bytes);
 
 					if (bytes == 0)
 						break;
@@ -140,12 +140,12 @@ int main(int argc, char *argv[])
 				free(receive);
 			}
 		}
-		iphone_device_disconnect(conn);
+		idevice_disconnect(conn);
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
 
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

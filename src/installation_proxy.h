@@ -23,7 +23,7 @@
 
 #include <glib.h>
 
-#include "libiphone/installation_proxy.h"
+#include "libimobiledevice/installation_proxy.h"
 #include "property_list_service.h"
 
 struct instproxy_client_int {

@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <stdint.h>
 
-#include "libiphone/afc.h"
+#include "libimobiledevice/afc.h"
 
 #define AFC_MAGIC "CFA6LPAA"
 #define AFC_MAGIC_LEN (8)
@@ -58,7 +58,7 @@ typedef struct __AFCToken {
 } AFCToken;
 
 struct afc_client_int {
-	iphone_connection_t connection;
+	idevice_connection_t connection;
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;

@@ -24,26 +24,26 @@
 #include <arpa/inet.h>
 
 #include "property_list_service.h"
-#include "iphone.h"
+#include "idevice.h"
 #include "debug.h"
 
 /**
- * Convert an iphone_error_t value to an property_list_service_error_t value.
+ * Convert an idevice_error_t value to an property_list_service_error_t value.
  * Used internally to get correct error codes.
  *
- * @param err An iphone_error_t error code
+ * @param err An idevice_error_t error code
  *
  * @return A matching property_list_service_error_t error code,
  *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR otherwise.
  */
-static property_list_service_error_t iphone_to_property_list_service_error(iphone_error_t err)
+static property_list_service_error_t idevice_to_property_list_service_error(idevice_error_t err)
 {
 	switch (err) {
-		case IPHONE_E_SUCCESS:
+		case IDEVICE_E_SUCCESS:
 			return PROPERTY_LIST_SERVICE_E_SUCCESS;
-		case IPHONE_E_INVALID_ARG:
+		case IDEVICE_E_INVALID_ARG:
 			return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-		case IPHONE_E_SSL_ERROR:
+		case IDEVICE_E_SSL_ERROR:
 			return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
 		default:
 			break;
@@ -64,14 +64,14 @@ static property_list_service_error_t iphone_to_property_list_service_error(iphon
  *     PROPERTY_LIST_SERVICE_E_INVALID_ARG when one of the arguments is invalid,
  *     or PROPERTY_LIST_SERVICE_E_MUX_ERROR when connecting to the device failed.
  */
-property_list_service_error_t property_list_service_client_new(iphone_device_t device, uint16_t port, property_list_service_client_t *client)
+property_list_service_error_t property_list_service_client_new(idevice_t device, uint16_t port, property_list_service_client_t *client)
 {
 	if (!device || port == 0 || !client || *client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
 	/* Attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, port, &connection) != IPHONE_E_SUCCESS) {
+	idevice_connection_t connection = NULL;
+	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	}
 
@@ -98,7 +98,7 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 	if (!client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
-	property_list_service_error_t err = iphone_to_property_list_service_error(iphone_device_disconnect(client->connection));
+	property_list_service_error_t err = idevice_to_property_list_service_error(idevice_disconnect(client->connection));
 	free(client);
 	return err;
 }
@@ -141,9 +141,9 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 
 	nlen = htonl(length);
 	debug_info("sending %d bytes", length);
-	iphone_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	idevice_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		iphone_connection_send(client->connection, content, length, (uint32_t*)&bytes);
+		idevice_connection_send(client->connection, content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			debug_info("sent %d bytes", bytes);
 			debug_plist(plist);
@@ -221,7 +221,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	iphone_connection_receive_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	idevice_connection_receive_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
 		debug_info("initial read failed!");
@@ -235,7 +235,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
-				iphone_connection_receive(client->connection, content+curlen, pktlen-curlen, &bytes);
+				idevice_connection_receive(client->connection, content+curlen, pktlen-curlen, &bytes);
 				if (bytes <= 0) {
 					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 					break;
@@ -324,7 +324,7 @@ property_list_service_error_t property_list_service_enable_ssl(property_list_ser
 {
 	if (!client || !client->connection)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-	return iphone_to_property_list_service_error(iphone_connection_enable_ssl(client->connection));
+	return idevice_to_property_list_service_error(idevice_connection_enable_ssl(client->connection));
 }
 
 /**
@@ -341,6 +341,6 @@ property_list_service_error_t property_list_service_disable_ssl(property_list_se
 {
 	if (!client || !client->connection)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-	return iphone_to_property_list_service_error(iphone_connection_disable_ssl(client->connection));
+	return idevice_to_property_list_service_error(idevice_connection_disable_ssl(client->connection));
 }
 

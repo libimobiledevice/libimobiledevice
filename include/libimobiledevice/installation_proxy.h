@@ -1,5 +1,5 @@
 /**
- * @file libiphone/installation_proxy.h
+ * @file libimobiledevice/installation_proxy.h
  * @brief Implementation to talk to the installation proxy on a device
  * \internal
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 #include <glib.h>
 
 /* Error Codes */
@@ -48,7 +48,7 @@ typedef struct instproxy_client_int *instproxy_client_t;
 typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status);
 
 /* Interface */
-instproxy_error_t instproxy_client_new(iphone_device_t device, uint16_t port, instproxy_client_t *client);
+instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client);
 instproxy_error_t instproxy_client_free(instproxy_client_t client);
 
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);

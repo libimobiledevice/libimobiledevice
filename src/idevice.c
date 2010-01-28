@@ -1,5 +1,5 @@
 /* 
- * iphone.c
+ * idevice.c
  * Device discovery and communication interface.
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -27,14 +27,14 @@
 
 #include <usbmuxd.h>
 #include <gnutls/gnutls.h>
-#include "iphone.h"
+#include "idevice.h"
 #include "debug.h"
 
-static iphone_event_cb_t event_cb = NULL;
+static idevice_event_cb_t event_cb = NULL;
 
 static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 {
-	iphone_event_t ev;
+	idevice_event_t ev;
 
 	ev.event = event->event;
 	ev.uuid = event->device.uuid;
@@ -53,35 +53,35 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
  * @param user_data Application-specific data passed as parameter
  *   to the registered callback function.
  *
- * @return IPHONE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
  */
-iphone_error_t iphone_event_subscribe(iphone_event_cb_t callback, void *user_data)
+idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
 {
 	event_cb = callback;
 	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
         if (res != 0) {
 		event_cb = NULL;
 		debug_info("Error %d when subscribing usbmux event callback!", res);
-		return IPHONE_E_UNKNOWN_ERROR;
+		return IDEVICE_E_UNKNOWN_ERROR;
 	}
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 
 /**
  * Release the event callback function that has been registered with
- *  iphone_event_subscribe().
+ *  idevice_event_subscribe().
  *
- * @return IPHONE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
  */
-iphone_error_t iphone_event_unsubscribe()
+idevice_error_t idevice_event_unsubscribe()
 {
 	event_cb = NULL;
 	int res = usbmuxd_unsubscribe();
 	if (res != 0) {
 		debug_info("Error %d when unsubscribing usbmux event callback!", res);
-		return IPHONE_E_UNKNOWN_ERROR;
+		return IDEVICE_E_UNKNOWN_ERROR;
 	}
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 
 /**
@@ -91,9 +91,9 @@ iphone_error_t iphone_event_unsubscribe()
  *   This list is terminated by a NULL pointer.
  * @param count Number of devices found.
  *
- * @return IPHONE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
  */
-iphone_error_t iphone_get_device_list(char ***devices, int *count)
+idevice_error_t idevice_get_device_list(char ***devices, int *count)
 {
 	usbmuxd_device_info_t *dev_list;
 
@@ -102,7 +102,7 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
 
 	if (usbmuxd_get_device_list(&dev_list) < 0) {
 		debug_info("ERROR: usbmuxd is not running!\n", __func__);
-		return IPHONE_E_NO_DEVICE;
+		return IDEVICE_E_NO_DEVICE;
 	}
 
 	char **newlist = NULL;
@@ -120,7 +120,7 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
 	newlist[newcount] = NULL;
 	*devices = newlist;
 
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 
 /**
@@ -128,9 +128,9 @@ iphone_error_t iphone_get_device_list(char ***devices, int *count)
  *
  * @param devices List of uuids to free.
  *
- * @return Always returnes IPHONE_E_SUCCESS.
+ * @return Always returnes IDEVICE_E_SUCCESS.
  */
-iphone_error_t iphone_device_list_free(char **devices)
+idevice_error_t idevice_device_list_free(char **devices)
 {
 	if (devices) {
 		int i = 0;
@@ -139,52 +139,52 @@ iphone_error_t iphone_device_list_free(char **devices)
 		}
 		free(devices);
 	}
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 
 /**
- * Creates an iphone_device_t structure for the device specified by uuid,
+ * Creates an idevice_t structure for the device specified by uuid,
  *  if the device is available.
  *
- * @note The resulting iphone_device_t structure has to be freed with
- * iphone_device_free() if it is no longer used.
+ * @note The resulting idevice_t structure has to be freed with
+ * idevice_free() if it is no longer used.
  *
  * @param device Upon calling this function, a pointer to a location of type
- *  iphone_device_t. On successful return, this location will be populated.
+ *  idevice_t. On successful return, this location will be populated.
  * @param uuid The UUID to match.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_new(iphone_device_t * device, const char *uuid)
+idevice_error_t idevice_new(idevice_t * device, const char *uuid)
 {
 	usbmuxd_device_info_t muxdev;
 	int res = usbmuxd_get_device_by_uuid(uuid, &muxdev);
 	if (res > 0) {
-		iphone_device_t phone = (iphone_device_t) malloc(sizeof(struct iphone_device_int));
+		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_int));
 		phone->uuid = strdup(muxdev.uuid);
 		phone->conn_type = CONNECTION_USBMUXD;
 		phone->conn_data = (void*)muxdev.handle;
 		*device = phone;
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	}
 	/* other connection types could follow here */
 
-	return IPHONE_E_NO_DEVICE;
+	return IDEVICE_E_NO_DEVICE;
 }
 
-/** Cleans up an iPhone structure, then frees the structure itself.  
- * This is a library-level function; deals directly with the iPhone to tear
+/** Cleans up an idevice structure, then frees the structure itself.  
+ * This is a library-level function; deals directly with the device to tear
  *  down relations, but otherwise is mostly internal.
  * 
- * @param device A pointer to an iPhone structure.
+ * @param device idevice_t to free.
  */
-iphone_error_t iphone_device_free(iphone_device_t device)
+idevice_error_t idevice_free(idevice_t device)
 {
 	if (!device)
-		return IPHONE_E_INVALID_ARG;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+		return IDEVICE_E_INVALID_ARG;
+	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 
-	ret = IPHONE_E_SUCCESS;
+	ret = IDEVICE_E_SUCCESS;
 
 	free(device->uuid);
 
@@ -203,34 +203,34 @@ iphone_error_t iphone_device_free(iphone_device_t device)
  *
  * @param device The device to connect to.
  * @param port The destination port to connect to.
- * @param connection Pointer to an iphone_connection_t that will be filled
+ * @param connection Pointer to an idevice_connection_t that will be filled
  *   with the necessary data of the connection.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t port, iphone_connection_t *connection)
+idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
 {
 	if (!device) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
 		int sfd = usbmuxd_connect((uint32_t)(device->conn_data), port);
 		if (sfd < 0) {
 			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
-			return IPHONE_E_UNKNOWN_ERROR;
+			return IDEVICE_E_UNKNOWN_ERROR;
 		}
-		iphone_connection_t new_connection = (iphone_connection_t)malloc(sizeof(struct iphone_connection_int));
+		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_int));
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)sfd;
 		new_connection->ssl_data = NULL;
 		*connection = new_connection;
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", device->conn_type);
 	}
 
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -238,21 +238,21 @@ iphone_error_t iphone_device_connect(iphone_device_t device, uint16_t port, ipho
  *
  * @param connection The connection to close.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_device_disconnect(iphone_connection_t connection)
+idevice_error_t idevice_disconnect(idevice_connection_t connection)
 {
 	if (!connection) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 	/* shut down ssl if enabled */
 	if (connection->ssl_data) {
-		iphone_connection_disable_ssl(connection);
+		idevice_connection_disable_ssl(connection);
 	}
-	iphone_error_t result = IPHONE_E_UNKNOWN_ERROR;
+	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
 		usbmuxd_disconnect((int)(connection->data));
-		result = IPHONE_E_SUCCESS;
+		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
@@ -263,23 +263,23 @@ iphone_error_t iphone_device_disconnect(iphone_connection_t connection)
 /**
  * Internally used function to send raw data over the given connection.
  */
-static iphone_error_t internal_connection_send(iphone_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
+static idevice_error_t internal_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_send((int)(connection->data), data, len, sent_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
-			return IPHONE_E_UNKNOWN_ERROR;
+			return IDEVICE_E_UNKNOWN_ERROR;
 		}
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IDEVICE_E_UNKNOWN_ERROR;
 
 }
 
@@ -292,22 +292,22 @@ static iphone_error_t internal_connection_send(iphone_connection_t connection, c
  * @param sent_bytes Pointer to an uint32_t that will be filled
  *   with the number of bytes actually sent.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_connection_send(iphone_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
+idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->ssl_data) {
 		ssize_t sent = gnutls_record_send(connection->ssl_data->session, (void*)data, (size_t)len);
 		if ((uint32_t)sent == (uint32_t)len) {
 			*sent_bytes = sent;
-			return IPHONE_E_SUCCESS;
+			return IDEVICE_E_SUCCESS;
 		}
 		*sent_bytes = 0;
-		return IPHONE_E_SSL_ERROR;
+		return IDEVICE_E_SSL_ERROR;
 	}
 	return internal_connection_send(connection, data, len, sent_bytes);
 }
@@ -316,23 +316,23 @@ iphone_error_t iphone_connection_send(iphone_connection_t connection, const char
  * Internally used function for receiving raw data over the given connection
  * using a timeout.
  */
-static iphone_error_t internal_connection_receive_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+static idevice_error_t internal_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv_timeout((int)(connection->data), data, len, recv_bytes, timeout);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(-res));
-			return IPHONE_E_UNKNOWN_ERROR;
+			return IDEVICE_E_UNKNOWN_ERROR;
 		}
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -348,22 +348,22 @@ static iphone_error_t internal_connection_receive_timeout(iphone_connection_t co
  * @param timeout Timeout in milliseconds after which this function should
  *   return even if no data has been received.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_connection_receive_timeout(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->ssl_data) {
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
 		if (received > 0) {
 			*recv_bytes = received;
-			return IPHONE_E_SUCCESS;
+			return IDEVICE_E_SUCCESS;
 		}
 		*recv_bytes = 0;
-		return IPHONE_E_SSL_ERROR;
+		return IDEVICE_E_SSL_ERROR;
 	}
 	return internal_connection_receive_timeout(connection, data, len, recv_bytes, timeout);
 }
@@ -371,30 +371,30 @@ iphone_error_t iphone_connection_receive_timeout(iphone_connection_t connection,
 /**
  * Internally used function for receiving raw data over the given connection.
  */
-static iphone_error_t internal_connection_receive(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
+static idevice_error_t internal_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv((int)(connection->data), data, len, recv_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv returned %d (%s)", res, strerror(-res));
-			return IPHONE_E_UNKNOWN_ERROR;
+			return IDEVICE_E_UNKNOWN_ERROR;
 		}
 
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
 /**
  * Receive data from a device via the given connection.
- * This function is like iphone_connection_receive_timeout, but with a predefined
- *  reasonable timeout.
+ * This function is like idevice_connection_receive_timeout, but with a
+ * predefined reasonable timeout.
  *
  * @param connection The connection to receive data from.
  * @param data Buffer that will be filled with the received data.
@@ -402,47 +402,47 @@ static iphone_error_t internal_connection_receive(iphone_connection_t connection
  * @param len Buffer size or number of bytes to receive.
  * @param recv_bytes Number of bytes actually received.
  *
- * @return IPHONE_E_SUCCESS if ok, otherwise an error code.
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-iphone_error_t iphone_connection_receive(iphone_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
+idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->ssl_data) {
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
 		if (received > 0) {
 			*recv_bytes = received;
-			return IPHONE_E_SUCCESS;
+			return IDEVICE_E_SUCCESS;
 		}
 		*recv_bytes = 0;
-		return IPHONE_E_SSL_ERROR;
+		return IDEVICE_E_SSL_ERROR;
 	}
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
-iphone_error_t iphone_device_get_handle(iphone_device_t device, uint32_t *handle)
+idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
 		*handle = (uint32_t)device->conn_data;
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", device->conn_type);
 	}
-	return IPHONE_E_UNKNOWN_ERROR;
+	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-iphone_error_t iphone_device_get_uuid(iphone_device_t device, char **uuid)
+idevice_error_t idevice_get_uuid(idevice_t device, char **uuid)
 {
 	if (!device)
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 
 	*uuid = strdup(device->uuid);
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 
 /**
@@ -453,8 +453,8 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 	int bytes = 0, pos_start_fill = 0;
 	size_t tbytes = 0;
 	int this_len = length;
-	iphone_error_t res;
-	iphone_connection_t connection = (iphone_connection_t)transport;
+	idevice_error_t res;
+	idevice_connection_t connection = (idevice_connection_t)transport;
 	char *recv_buffer;
 
 	debug_info("pre-read client wants %zi bytes", length);
@@ -463,8 +463,8 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 
 	/* repeat until we have the full data or an error occurs */
 	do {
-		if ((res = internal_connection_receive(connection, recv_buffer, this_len, (uint32_t*)&bytes)) != IPHONE_E_SUCCESS) {
-			debug_info("ERROR: iphone_connection_receive returned %d", res);
+		if ((res = internal_connection_receive(connection, recv_buffer, this_len, (uint32_t*)&bytes)) != IDEVICE_E_SUCCESS) {
+			debug_info("ERROR: idevice_connection_receive returned %d", res);
 			return res;
 		}
 		debug_info("post-read we got %i bytes", bytes);
@@ -496,7 +496,7 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 static ssize_t internal_ssl_write(gnutls_transport_ptr_t transport, char *buffer, size_t length)
 {
 	uint32_t bytes = 0;
-	iphone_connection_t connection = (iphone_connection_t)transport;
+	idevice_connection_t connection = (idevice_connection_t)transport;
 	debug_info("pre-send length = %zi", length);
 	internal_connection_send(connection, buffer, length, &bytes);
 	debug_info("post-send sent %i bytes", bytes);
@@ -524,16 +524,16 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
  *
  * @param connection The connection to enable SSL for.
  *
- * @return IPHONE_E_SUCCESS on success, IPHONE_E_INVALID_ARG when connection
- *     is NULL or connection->ssl_data is non-NULL, or IPHONE_E_SSL_ERROR when
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
+ *     is NULL or connection->ssl_data is non-NULL, or IDEVICE_E_SSL_ERROR when
  *     SSL initialization, setup, or handshake fails.
  */
-iphone_error_t iphone_connection_enable_ssl(iphone_connection_t connection)
+idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 {
 	if (!connection || connection->ssl_data)
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 
-	iphone_error_t ret = IPHONE_E_SSL_ERROR;
+	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
 	uint32_t return_me = 0;
 
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_int));
@@ -580,7 +580,7 @@ iphone_error_t iphone_connection_enable_ssl(iphone_connection_t connection)
 		debug_info("oh.. errno says %s", strerror(errno));
 	} else {
 		connection->ssl_data = ssl_data_loc;
-		ret = IPHONE_E_SUCCESS;
+		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled");
 	}
 	return ret;
@@ -591,17 +591,17 @@ iphone_error_t iphone_connection_enable_ssl(iphone_connection_t connection)
  *
  * @param connection The connection to disable SSL for.
  *
- * @return IPHONE_E_SUCCESS on success, IPHONE_E_INVALID_ARG when connection
- *     is NULL. This function also returns IPHONE_E_SUCCESS when SSL is not
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
+ *     is NULL. This function also returns IDEVICE_E_SUCCESS when SSL is not
  *     enabled and does no further error checking on cleanup.
  */
-iphone_error_t iphone_connection_disable_ssl(iphone_connection_t connection)
+idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 {
 	if (!connection)
-		return IPHONE_E_INVALID_ARG;
+		return IDEVICE_E_INVALID_ARG;
 	if (!connection->ssl_data) {
 		/* ignore if ssl is not enabled */ 
-		return IPHONE_E_SUCCESS;
+		return IDEVICE_E_SUCCESS;
 	}
 
 	if (connection->ssl_data->session) {
@@ -613,6 +613,6 @@ iphone_error_t iphone_connection_disable_ssl(iphone_connection_t connection)
 
 	debug_info("SSL mode disabled");
 
-	return IPHONE_E_SUCCESS;
+	return IDEVICE_E_SUCCESS;
 }
 

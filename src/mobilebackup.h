@@ -21,7 +21,7 @@
 #ifndef MOBILEBACKUP_H
 #define MOBILEBACKUP_H
 
-#include "libiphone/mobilebackup.h"
+#include "libimobiledevice/mobilebackup.h"
 #include "device_link_service.h"
 
 struct mobilebackup_client_int {

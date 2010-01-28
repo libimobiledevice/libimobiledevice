@@ -1,6 +1,6 @@
 /*
  * lockdown.c
- * libiphone built-in lockdownd client
+ * libimobiledevice built-in lockdownd client
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -30,7 +30,7 @@
 
 #include "property_list_service.h"
 #include "lockdown.h"
-#include "iphone.h"
+#include "idevice.h"
 #include "debug.h"
 #include "userpref.h"
 
@@ -229,7 +229,7 @@ void lockdownd_client_set_label(lockdownd_client_t client, const char *label)
 	}
 }
 
-/** Polls the iPhone for lockdownd data.
+/** Polls the device for lockdownd data.
  *
  * @param control The lockdownd client
  * @param plist The plist to store the received data
@@ -254,7 +254,7 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist)
 	return ret;
 }
 
-/** Sends lockdownd data to the iPhone
+/** Sends lockdownd data to the device
  *
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.
@@ -270,7 +270,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	iphone_error_t err;
+	idevice_error_t err;
 
 	err = property_list_service_send_xml_plist(client->parent, plist);
 	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -578,7 +578,7 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_t *client, const char *label)
+lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -619,7 +619,7 @@ lockdownd_error_t lockdownd_client_new(iphone_device_t device, lockdownd_client_
  *
  * @return an error code (LOCKDOWN_E_SUCCESS on success)
  */
-lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lockdownd_client_t *client, const char *label)
+lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -644,7 +644,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(iphone_device_t device, lo
 			free(type);
 	}
 
-	ret = iphone_device_get_uuid(device, &client_loc->uuid);
+	ret = idevice_get_uuid(device, &client_loc->uuid);
 	if (LOCKDOWN_E_SUCCESS != ret) {
 		debug_info("failed to get device uuid.");
 	}
@@ -759,7 +759,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	plist_t dict = NULL;
 	plist_t dict_record = NULL;
 	gnutls_datum_t public_key = { NULL, 0 };
-	int pairing_mode = 0; /* 0 = libiphone, 1 = external */
+	int pairing_mode = 0; /* 0 = libimobiledevice, 1 = external */
 
 	if (pair_record && pair_record->host_id) {
 		/* valid pair_record passed? */
@@ -780,7 +780,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			return ret;
 		}
 		debug_info("device public key follows:\n%s", public_key.data);
-		/* get libiphone pair_record */
+		/* get libimobiledevice pair_record */
 		ret = generate_pair_record_plist(public_key, NULL, &dict_record);
 		if (ret != LOCKDOWN_E_SUCCESS) {
 			if (dict_record)
@@ -795,7 +795,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	plist_dict_insert_item(dict,"PairRecord", dict_record);
 	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
 
-	/* send to iPhone */
+	/* send to device */
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
@@ -803,7 +803,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	/* Now get iPhone's answer */
+	/* Now get device's answer */
 	ret = lockdownd_receive(client, &dict);
 
 	if (ret != LOCKDOWN_E_SUCCESS)
@@ -1116,7 +1116,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 	return ret;
 }
 
-/** Starts communication with lockdownd after the iPhone has been paired,
+/** Starts communication with lockdownd after the device has been paired,
  *  and if the device requires it, switches to SSL mode.
  *
  * @param client The lockdownd client
@@ -1244,7 +1244,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartService"));
 	plist_dict_insert_item(dict,"Service", plist_new_string(service));
 
-	/* send to iPhone */
+	/* send to device */
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;

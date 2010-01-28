@@ -25,7 +25,7 @@
 #include <gnutls/gnutls.h>
 #include <string.h>
 
-#include "libiphone/lockdown.h"
+#include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"
 
 struct lockdownd_client_int {

@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 #include "afc.h"
-#include "iphone.h"
+#include "idevice.h"
 #include "debug.h"
 
 // This is the maximum size an AFC data packet can be
@@ -61,7 +61,7 @@ static void afc_unlock(afc_client_t client)
  *     is invalid, AFC_E_MUX_ERROR when the connection failed, or AFC_E_NO_MEM
  *     when there's a memory allocation problem.
  */
-afc_error_t afc_client_new(iphone_device_t device, uint16_t port, afc_client_t * client)
+afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
@@ -71,8 +71,8 @@ afc_error_t afc_client_new(iphone_device_t device, uint16_t port, afc_client_t *
 		return AFC_E_INVALID_ARGUMENT;
 
 	/* attempt connection */
-	iphone_connection_t connection = NULL;
-	if (iphone_device_connect(device, port, &connection) != IPHONE_E_SUCCESS) {
+	idevice_connection_t connection = NULL;
+	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
 		return AFC_E_MUX_ERROR;
 	}
 
@@ -82,7 +82,7 @@ afc_error_t afc_client_new(iphone_device_t device, uint16_t port, afc_client_t *
 	/* allocate a packet */
 	client_loc->afc_packet = (AFCPacket *) malloc(sizeof(AFCPacket));
 	if (!client_loc->afc_packet) {
-		iphone_device_disconnect(client_loc->connection);
+		idevice_disconnect(client_loc->connection);
 		free(client_loc);
 		return AFC_E_NO_MEM;
 	}
@@ -108,7 +108,7 @@ afc_error_t afc_client_free(afc_client_t client)
 	if (!client || !client->connection || !client->afc_packet)
 		return AFC_E_INVALID_ARGUMENT;
 
-	iphone_device_disconnect(client->connection);
+	idevice_disconnect(client->connection);
 	free(client->afc_packet);
 	if (client->mutex) {
 		g_mutex_free(client->mutex);
@@ -169,7 +169,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		iphone_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		idevice_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
 		if (sent == 0) {
 			/* FIXME: should this be handled as success?! */
 			return AFC_E_SUCCESS;
@@ -178,7 +178,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 
 		/* send AFC packet data */
 		sent = 0;
-		iphone_connection_send(client->connection, data, offset, &sent);
+		idevice_connection_send(client->connection, data, offset, &sent);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
 		}
@@ -190,7 +190,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		debug_buffer(data + offset, length - offset);
 
 		sent = 0;
-		iphone_connection_send(client->connection, data + offset, length - offset, &sent);
+		idevice_connection_send(client->connection, data + offset, length - offset, &sent);
 
 		*bytes_sent = sent;
 		return AFC_E_SUCCESS;
@@ -203,7 +203,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		iphone_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		idevice_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
 		}
@@ -213,7 +213,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 			debug_info("packet data follows");
 
 			debug_buffer(data, length);
-			iphone_connection_send(client->connection, data, length, &sent);
+			idevice_connection_send(client->connection, data, length, &sent);
 			*bytes_sent += sent;
 		}
 		return AFC_E_SUCCESS;
@@ -241,7 +241,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 	*bytes_recv = 0;
 
 	/* first, read the AFC header */
-	iphone_connection_receive(client->connection, (char*)&header, sizeof(AFCPacket), bytes_recv);
+	idevice_connection_receive(client->connection, (char*)&header, sizeof(AFCPacket), bytes_recv);
 	AFCPacket_from_LE(&header);
 	if (*bytes_recv == 0) {
 		debug_info("Just didn't get enough.");
@@ -295,7 +295,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 
 	*dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
-		iphone_connection_receive(client->connection, *dump_here, this_len, bytes_recv);
+		idevice_connection_receive(client->connection, *dump_here, this_len, bytes_recv);
 		if (*bytes_recv <= 0) {
 			free(*dump_here);
 			*dump_here = NULL;
@@ -313,7 +313,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			iphone_connection_receive(client->connection, (*dump_here)+current_count, entire_len - current_count, bytes_recv);
+			idevice_connection_receive(client->connection, (*dump_here)+current_count, entire_len - current_count, bytes_recv);
 			if (*bytes_recv <= 0) {
 				debug_info("Error receiving data (recv returned %d)", *bytes_recv);
 				break;
@@ -701,7 +701,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error on failure.
  */
-iphone_error_t
+idevice_error_t
 afc_file_open(afc_client_t client, const char *filename,
 					 afc_file_mode_t file_mode, uint64_t *handle)
 {
@@ -760,7 +760,7 @@ afc_file_open(afc_client_t client, const char *filename,
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value on error.
  */
-iphone_error_t
+idevice_error_t
 afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
 {
 	char *input = NULL;
@@ -833,7 +833,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
  * 
  * @return AFC_E_SUCCESS on success, or an AFC_E_* error value on error.
  */
-iphone_error_t
+idevice_error_t
 afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
 {
 	char *acknowledgement = NULL;

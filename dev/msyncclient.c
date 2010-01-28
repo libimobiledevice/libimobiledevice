@@ -1,6 +1,6 @@
 /*
  * msyncclient.c
- * Rudimentary interface to the MobileSync iPhone
+ * Rudimentary interface to the MobileSync service.
  *
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
@@ -23,9 +23,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
-#include <libiphone/mobilesync.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/mobilesync.h>
 
 static char check_string(plist_t node, char* string)
 {
@@ -143,18 +143,18 @@ int main(int argc, char *argv[])
 {
 	uint16_t port = 0;
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
+	idevice_t phone = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug"))
-		iphone_set_debug_level(1);
+		idevice_set_debug_level(1);
 
-	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
-		printf("No iPhone found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new(&phone, NULL)) {
+		printf("No device found, is it plugged in?\n");
 		return -1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "msyncclient")) {
-		iphone_device_free(phone);
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 	printf("All done.\n");
 
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

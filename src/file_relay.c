@@ -36,7 +36,7 @@
  *     FILE_RELAY_E_INVALID_ARG when one of the parameters is invalid,
  *     or FILE_RELAY_E_MUX_ERROR when the connection failed.
  */
-file_relay_error_t file_relay_client_new(iphone_device_t device, uint16_t port, file_relay_client_t *client)
+file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_relay_client_t *client)
 {
 	if (!device || port == 0 || !client || *client) {
 		return FILE_RELAY_E_INVALID_ARG;
@@ -92,7 +92,7 @@ file_relay_error_t file_relay_client_free(file_relay_client_t client)
  *     - tmp
  *     - SystemConfiguration
  * @param connection The connection that has to be used for receiving the 
- *     data using iphone_connection_receive(). The connection will be closed
+ *     data using idevice_connection_receive(). The connection will be closed
  *     automatically by the device, but use file_relay_client_free() to clean
  *     up properly.
  *
@@ -107,7 +107,7 @@ file_relay_error_t file_relay_client_free(file_relay_client_t client)
  *     sources are invalid, FILE_RELAY_E_STAGING_EMPTY if no data is available
  *     for the given sources, or FILE_RELAY_E_UNKNOWN_ERROR otherwise.
  */
-file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, iphone_connection_t *connection)
+file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection)
 {
 	if (!client || !client->parent || !sources || !sources[0]) {
 		return FILE_RELAY_E_INVALID_ARG;

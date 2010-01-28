@@ -1,5 +1,5 @@
 /*
- * iphoneinfo.c
+ * ideviceinfo.c
  * Simple utility to show information about an attached device
  *
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 #define FORMAT_KEY_VALUE 1
 #define FORMAT_XML 2
@@ -197,7 +197,7 @@ static void print_usage(int argc, char **argv)
 	
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Show information about the first connected iPhone/iPod Touch.\n\n");
+	printf("Show information about a connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
 	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
@@ -215,8 +215,8 @@ static void print_usage(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	idevice_t phone = NULL;
+	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	int format = FORMAT_KEY_VALUE;
 	char uuid[41];
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			iphone_set_debug_level(1);
+			idevice_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
@@ -279,23 +279,23 @@ int main(int argc, char *argv[])
 	}
 
 	if (uuid[0] != 0) {
-		ret = iphone_device_new(&phone, uuid);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, uuid);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
 			return -1;
 		}
 	}
 	else
 	{
-		ret = iphone_device_new(&phone, NULL);
-		if (ret != IPHONE_E_SUCCESS) {
+		ret = idevice_new(&phone, NULL);
+		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphoneinfo")) {
-		iphone_device_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "ideviceinfo")) {
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 	if (domain != NULL)
 		free(domain);
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

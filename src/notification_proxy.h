@@ -23,7 +23,7 @@
 
 #include <glib.h>
 
-#include "libiphone/notification_proxy.h"
+#include "libimobiledevice/notification_proxy.h"
 #include "property_list_service.h"
 
 struct np_client_int {

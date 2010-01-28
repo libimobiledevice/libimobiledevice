@@ -1,9 +1,9 @@
-nobase_include_HEADERS = libiphone/libiphone.h \
-			 libiphone/lockdown.h \
-			 libiphone/afc.h \
-			 libiphone/file_relay.h \
-			 libiphone/notification_proxy.h \
-			 libiphone/installation_proxy.h \
-			 libiphone/sbservices.h \
-			 libiphone/mobilesync.h \
-			 libiphone/mobilebackup.h
+nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
+			 libimobiledevice/lockdown.h \
+			 libimobiledevice/afc.h \
+			 libimobiledevice/file_relay.h \
+			 libimobiledevice/notification_proxy.h \
+			 libimobiledevice/installation_proxy.h \
+			 libimobiledevice/sbservices.h \
+			 libimobiledevice/mobilesync.h \
+			 libimobiledevice/mobilebackup.h

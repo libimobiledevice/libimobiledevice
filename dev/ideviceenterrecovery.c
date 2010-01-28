@@ -1,5 +1,5 @@
 /*
- * iphoneenterrecovery.c
+ * ideviceenterrecovery.c
  * Simple utility to make a device in normal mode enter recovery mode.
  *
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
@@ -24,8 +24,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 static void print_usage(int argc, char **argv)
 {
@@ -42,8 +42,8 @@ static void print_usage(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
-	iphone_error_t ret = IPHONE_E_UNKNOWN_ERROR;
+	idevice_t phone = NULL;
+	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	char uuid[41];
 	uuid[0] = 0;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			iphone_set_debug_level(1);
+			idevice_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -67,14 +67,14 @@ int main(int argc, char *argv[])
 	}
 	strcpy(uuid, argv[i]);
 
-	ret = iphone_device_new(&phone, uuid);
-	if (ret != IPHONE_E_SUCCESS) {
+	ret = idevice_new(&phone, uuid);
+	if (ret != IDEVICE_E_SUCCESS) {
 		printf("No device found with uuid %s, is it plugged in?\n", uuid);
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "iphoneenterrecovery")) {
-		iphone_device_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "ideviceenterrecovery")) {
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	printf("Device is successfully switching to recovery mode.\n");
 
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

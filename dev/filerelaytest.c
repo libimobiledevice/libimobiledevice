@@ -19,17 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 #include <stdio.h>
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
-#include <libiphone/file_relay.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/file_relay.h>
 
 int main(int argc, char **argv)
 {
-	iphone_device_t dev = NULL;
+	idevice_t dev = NULL;
 	lockdownd_client_t client = NULL;
 	file_relay_client_t frc = NULL;
 
-	if (iphone_device_new(&dev, NULL) != IPHONE_E_SUCCESS) {
+	if (idevice_new(&dev, NULL) != IDEVICE_E_SUCCESS) {
 		printf("no device connected?!\n");
 		goto leave_cleanup;
 	}
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 		goto leave_cleanup;
 	}
 
-	iphone_connection_t dump = NULL;
+	idevice_connection_t dump = NULL;
 	const char *sources[] = {"AppleSupport", "Network", "VPN", "WiFi", "UserDatabases", "CrashReporter", "tmp", "SystemConfiguration", NULL};
 
 	printf("Requesting");
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 	FILE *f = fopen("dump.cpio.gz", "w");
 	setbuf(stdout, NULL);
 	printf("receiving ");
-	while (iphone_connection_receive(dump, buf, 4096, &len) == IPHONE_E_SUCCESS) {
+	while (idevice_connection_receive(dump, buf, 4096, &len) == IDEVICE_E_SUCCESS) {
 		fwrite(buf, 1, len, f);
 		cnt += len;
 		printf(".", len);
@@ -101,7 +101,7 @@ leave_cleanup:
 		lockdownd_client_free(client);
 	}
 	if (dev) {
-		iphone_device_free(dev);
+		idevice_free(dev);
 	}
 
 	return 0;

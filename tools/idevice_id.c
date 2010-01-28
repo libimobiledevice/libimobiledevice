@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 #define MODE_NONE 0
 #define MODE_SHOW_ID 1
@@ -25,7 +25,7 @@ static void print_usage(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	iphone_device_t phone = NULL;
+	idevice_t phone = NULL;
 	lockdownd_client_t client = NULL;
 	char **dev_list = NULL;
 	char *devname = NULL;
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			iphone_set_debug_level(1);
+			idevice_set_debug_level(1);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
@@ -63,14 +63,14 @@ int main(int argc, char **argv)
 
 	switch (mode) {
 	case MODE_SHOW_ID:
-		iphone_device_new(&phone, uuid);
+		idevice_new(&phone, uuid);
 		if (!phone) {
 			fprintf(stderr, "ERROR: No device with UUID=%s attached.\n", uuid);
 			return -2;
 		}
 
-		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "iphone_id")) {
-			iphone_device_free(phone);
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "idevice_id")) {
+			idevice_free(phone);
 			fprintf(stderr, "ERROR: Connecting to device failed!\n");
 			return -2;
 		}
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 		}
 
 		lockdownd_client_free(client);
-		iphone_device_free(phone);
+		idevice_free(phone);
 
 		if (ret == 0) {
 			printf("%s\n", devname);
@@ -94,14 +94,14 @@ int main(int argc, char **argv)
 		return ret;
 	case MODE_LIST_DEVICES:
 	default:
-		if (iphone_get_device_list(&dev_list, &i) < 0) {
+		if (idevice_get_device_list(&dev_list, &i) < 0) {
 			fprintf(stderr, "ERROR: Unable to retrieve device list!\n");
 			return -1;
 		}
 		for (i = 0; dev_list[i] != NULL; i++) {
 			printf("%s\n", dev_list[i]);
 		}
-		iphone_device_list_free(dev_list);
+		idevice_device_list_free(dev_list);
 		return 0;
 	}
 }

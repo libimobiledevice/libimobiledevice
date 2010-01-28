@@ -26,30 +26,30 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
+	idevice_t phone = NULL;
 
-	iphone_set_debug_level(1);
+	idevice_set_debug_level(1);
 
-	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
-		printf("No iPhone found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new(&phone, NULL)) {
+		printf("No device found, is it plugged in?\n");
 		return -1;
 	}
 
 	char *uuid = NULL;
-	if (IPHONE_E_SUCCESS == iphone_device_get_uuid(phone, &uuid)) {
+	if (IDEVICE_E_SUCCESS == idevice_get_uuid(phone, &uuid)) {
 		printf("DeviceUniqueID : %s\n", uuid);
 	}
 	if (uuid)
 		free(uuid);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "lckdclient")) {
-		iphone_device_free(phone);
+		idevice_free(phone);
 		return -1;
 	}
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	}
 	clear_history();
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

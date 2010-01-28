@@ -1,31 +1,31 @@
  /* swig.i */
- %module iphone
+ %module imobiledevice
  %feature("autodoc", "1");
  %{
  /* Includes the header in the wrapper code */
- #include <libiphone/libiphone.h>
- #include <libiphone/lockdown.h>
- #include <libiphone/mobilesync.h>
+ #include <libimobiledevice/libimobiledevice.h>
+ #include <libimobiledevice/lockdown.h>
+ #include <libimobiledevice/mobilesync.h>
  #include <plist/plist.h>
  #include <plist/plist++.h>
  #include "../src/debug.h"
  typedef struct {
-	iphone_device_t dev;
- } iPhone;
+	idevice_t dev;
+ } idevice;
 
  typedef struct {
-	iPhone* dev;
+	idevice* dev;
 	lockdownd_client_t client;
  } Lockdownd;
 
  typedef struct {
-	iPhone* dev;
+	idevice* dev;
 	mobilesync_client_t client;
  } MobileSync;
 
 //now declare funtions to handle creation and deletion of objects
-void my_delete_iPhone(iPhone* dev);
-Lockdownd* my_new_Lockdownd(iPhone* phone);
+void my_delete_idevice(idevice* dev);
+Lockdownd* my_new_Lockdownd(idevice* device);
 void my_delete_Lockdownd(Lockdownd* lckd);
 MobileSync* my_new_MobileSync(Lockdownd* lckd);
 PList::Node* new_node_from_plist(plist_t node);
@@ -37,16 +37,16 @@ PList::Node* new_node_from_plist(plist_t node);
 %include "plist/swig/plist.i"
 
 typedef struct {
-	iphone_device_t dev;
-} iPhone;
+	idevice_t dev;
+} idevice;
 
 typedef struct {
-	iPhone* dev;
+	idevice* dev;
 	lockdownd_client_t client;
 } Lockdownd;
 
 typedef struct {
-	iPhone* dev;
+	idevice* dev;
 	mobilesync_client_t client;
 } MobileSync;
 
@@ -54,19 +54,19 @@ typedef struct {
 //now define funtions to handle creation and deletion of objects
 
 
-void my_delete_iPhone(iPhone* dev) {
+void my_delete_idevice(idevice* dev) {
 	if (dev) {
-		iphone_device_free(dev->dev);
+		idevice_free(dev->dev);
 		free(dev);
 	}
 }
 
-Lockdownd* my_new_Lockdownd(iPhone* phone) {
-	if (!phone) return NULL;
+Lockdownd* my_new_Lockdownd(idevice* device) {
+	if (!device) return NULL;
 	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
-	client->dev = phone;
+	client->dev = device;
 	client->client = NULL;
-	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new_with_handshake(phone->dev , &(client->client), NULL)) {
+	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new_with_handshake(device->dev , &(client->client), NULL)) {
 		return client;
 	}
 	else {
@@ -133,29 +133,29 @@ PList::Node* new_node_from_plist(plist_t node)
 %}
 
 
-%extend iPhone {             // Attach these functions to struct iPhone
-	iPhone() {
-		iPhone* phone = (iPhone*) malloc(sizeof(iPhone));
-		phone->dev = NULL;
-		return phone;
+%extend idevice {             // Attach these functions to struct idevice
+	idevice() {
+		idevice* device = (idevice*) malloc(sizeof(idevice));
+		device->dev = NULL;
+		return device;
 	}
 
-	~iPhone() {
-		my_delete_iPhone($self);
+	~idevice() {
+		my_delete_idevice($self);
 	}
 
 	void set_debug_level(int level) {
-		iphone_set_debug_level(level);
+		idevice_set_debug_level(level);
 	}
 
 	int init_device_by_uuid(char* uuid) {
-		if (IPHONE_E_SUCCESS == iphone_device_new(&($self->dev), uuid))
+		if (IDEVICE_E_SUCCESS == idevice_new(&($self->dev), uuid))
 			return 1;
 		return 0;
 	}
 
 	int init_device() {
-		if (IPHONE_E_SUCCESS == iphone_device_new(&($self->dev), NULL))
+		if (IDEVICE_E_SUCCESS == idevice_new(&($self->dev), NULL))
 			return 1;
 		return 0;
 	}
@@ -163,7 +163,7 @@ PList::Node* new_node_from_plist(plist_t node)
 	%newobject get_uuid;
 	char* get_uuid(){
 		char* uuid = NULL;
-		iphone_device_get_uuid($self->dev, &uuid);
+		idevice_get_uuid($self->dev, &uuid);
 		return uuid;
 	}
 
@@ -174,8 +174,8 @@ PList::Node* new_node_from_plist(plist_t node)
 
 
 %extend Lockdownd {             // Attach these functions to struct Lockdownd
-	Lockdownd(iPhone* phone) {
-		return my_new_Lockdownd(phone);
+	Lockdownd(idevice* device) {
+		return my_new_Lockdownd(device);
 	}
 
 	~Lockdownd() {

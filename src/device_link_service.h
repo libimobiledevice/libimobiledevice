@@ -41,7 +41,7 @@ typedef struct device_link_service_client_int *device_link_service_client_t;
 
 typedef int16_t device_link_service_error_t;
 
-device_link_service_error_t device_link_service_client_new(iphone_device_t device, uint16_t port, device_link_service_client_t *client);
+device_link_service_error_t device_link_service_client_new(idevice_t device, uint16_t port, device_link_service_client_t *client);
 device_link_service_error_t device_link_service_client_free(device_link_service_client_t client);
 device_link_service_error_t device_link_service_version_exchange(device_link_service_client_t client, uint64_t version_major, uint64_t version_minor);
 device_link_service_error_t device_link_service_process_message(device_link_service_client_t client, plist_t message);

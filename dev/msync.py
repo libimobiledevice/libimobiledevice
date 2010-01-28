@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 
-from iphone import *
+from imobiledevice import *
 from plist import *
 
 # get msync client
 def GetMobileSyncClient() :
-    phone = iPhone()
+    phone = idevice()
     if not phone.init_device() :
         print "Couldn't find device, is it connected ?\n"
         return None

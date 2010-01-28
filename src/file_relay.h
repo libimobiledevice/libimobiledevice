@@ -21,7 +21,7 @@
 #ifndef FILE_RELAY_H
 #define FILE_RELAY_H
 
-#include "libiphone/file_relay.h"
+#include "libimobiledevice/file_relay.h"
 #include "property_list_service.h"
 
 /* Error Codes */

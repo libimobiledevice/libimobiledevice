@@ -21,7 +21,7 @@
 #ifndef MOBILESYNC_H
 #define MOBILESYNC_H
 
-#include "libiphone/mobilesync.h"
+#include "libimobiledevice/mobilesync.h"
 #include "device_link_service.h"
 
 struct mobilesync_client_int {

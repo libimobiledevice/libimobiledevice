@@ -86,7 +86,7 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client is NULL, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_client_new(iphone_device_t device, uint16_t port, sbservices_client_t *client)
+sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbservices_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())

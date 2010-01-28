@@ -78,7 +78,7 @@ static char *device_link_service_get_message(plist_t dl_msg)
  *     DEVICE_LINK_SERVICE_E_INVALID_ARG when one of the parameters is invalid,
  *     or DEVICE_LINK_SERVICE_E_MUX_ERROR when the connection failed.
  */
-device_link_service_error_t device_link_service_client_new(iphone_device_t device, uint16_t port, device_link_service_client_t *client)
+device_link_service_error_t device_link_service_client_new(idevice_t device, uint16_t port, device_link_service_client_t *client)
 {
 	if (!device || port == 0 || !client || *client) {
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;

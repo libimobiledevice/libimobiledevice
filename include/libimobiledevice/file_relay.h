@@ -1,5 +1,5 @@
 /**
- * @file libiphone/file_relay.h
+ * @file libimobiledevice/file_relay.h
  * @brief file_relay Implementation
  * \internal
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 
 /* Error Codes */
 #define FILE_RELAY_E_SUCCESS                0
@@ -44,10 +44,10 @@ typedef int16_t file_relay_error_t;
 struct file_relay_client_int;
 typedef struct file_relay_client_int *file_relay_client_t;
 
-file_relay_error_t file_relay_client_new(iphone_device_t device, uint16_t port, file_relay_client_t *client);
+file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_relay_client_t *client);
 file_relay_error_t file_relay_client_free(file_relay_client_t client);
 
-file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, iphone_connection_t *connection);
+file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection);
 
 #ifdef __cplusplus
 }

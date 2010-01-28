@@ -92,7 +92,7 @@ static np_error_t np_error(property_list_service_error_t err)
  *   or NP_E_CONN_FAILED when the connection to the device could not be
  *   established.
  */
-np_error_t np_client_new(iphone_device_t device, uint16_t port, np_client_t *client)
+np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
@@ -177,7 +177,7 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 	return res;
 }
 
-/** Notifies the iphone to send a notification on the specified event.
+/** Notifies the device to send a notification on the specified event.
  *
  * @param client The client to send to
  * @param notification The notifications that should be observed.
@@ -206,7 +206,7 @@ np_error_t np_observe_notification( np_client_t client, const char *notification
 	return res;
 }
 
-/** Notifies the iphone to send a notification on specified events.
+/** Notifies the device to send a notification on specified events.
  *
  * @param client The client to send to
  * @param notification_spec Specification of the notifications that should be

@@ -42,6 +42,9 @@ On Ubuntu/Debian, you can do:
 Who/What/Where?
 ===============
 
+Home:
+	http://www.libimobiledevice.org/
+
 Wiki:
 	http://matt.colyer.name/projects/iphone-linux/
 
@@ -57,10 +60,10 @@ Mailing List:
 Credits
 =======
 
-Apple, iPhone, iPod and iPod Touch are trademarks of Apple Inc.
-libiphone is an independent software library and has not been authorized, 
-sponsored, or otherwise approved by Apple Inc.
+Apple, iPhone, iPod, and iPod Touch are trademarks of Apple Inc.
+libimobiledevice is an independent software library and has not been
+authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2010-01-22
+	2010-01-28
 

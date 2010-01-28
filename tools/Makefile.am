@@ -3,25 +3,25 @@ INCLUDES = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
-bin_PROGRAMS = iphone_id iphoneinfo iphonesyslog iphonebackup
+bin_PROGRAMS = idevice_id ideviceinfo idevicesyslog idevicebackup
 
-iphoneinfo_SOURCES = iphoneinfo.c
-iphoneinfo_CFLAGS = $(AM_CFLAGS)
-iphoneinfo_LDFLAGS = $(AM_LDFLAGS)
-iphoneinfo_LDADD = ../src/libiphone.la
+ideviceinfo_SOURCES = ideviceinfo.c
+ideviceinfo_CFLAGS = $(AM_CFLAGS)
+ideviceinfo_LDFLAGS = $(AM_LDFLAGS)
+ideviceinfo_LDADD = ../src/libimobiledevice.la
 
-iphonesyslog_SOURCES = iphonesyslog.c
-iphonesyslog_CFLAGS = $(AM_CFLAGS)
-iphonesyslog_LDFLAGS = $(AM_LDFLAGS)
-iphonesyslog_LDADD = ../src/libiphone.la
+idevicesyslog_SOURCES = idevicesyslog.c
+idevicesyslog_CFLAGS = $(AM_CFLAGS)
+idevicesyslog_LDFLAGS = $(AM_LDFLAGS)
+idevicesyslog_LDADD = ../src/libimobiledevice.la
 
-iphone_id_SOURCES = iphone_id.c
-iphone_id_CFLAGS = $(AM_CFLAGS)
-iphone_id_LDFLAGS = $(AM_LDFLAGS)
-iphone_id_LDADD = ../src/libiphone.la
+idevice_id_SOURCES = idevice_id.c
+idevice_id_CFLAGS = $(AM_CFLAGS)
+idevice_id_LDFLAGS = $(AM_LDFLAGS)
+idevice_id_LDADD = ../src/libimobiledevice.la
 
-iphonebackup_SOURCES = iphonebackup.c
-iphonebackup_CFLAGS = $(AM_CFLAGS)
-iphonebackup_LDFLAGS = $(AM_LDFLAGS)
-iphonebackup_LDADD = ../src/libiphone.la
+idevicebackup_SOURCES = idevicebackup.c
+idevicebackup_CFLAGS = $(AM_CFLAGS)
+idevicebackup_LDFLAGS = $(AM_LDFLAGS)
+idevicebackup_LDADD = ../src/libimobiledevice.la
 

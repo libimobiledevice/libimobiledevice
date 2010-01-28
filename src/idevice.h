@@ -1,5 +1,5 @@
 /*
- * iphone.h
+ * idevice.h
  * Device discovery and communication interface -- header file.
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -18,13 +18,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef IPHONE_H
-#define IPHONE_H
+#ifndef IDEVICE_H
+#define IDEVICE_H
 
 #include <plist/plist.h>
 #include <gnutls/gnutls.h>
 
-#include "libiphone/libiphone.h"
+#include "libimobiledevice/libimobiledevice.h"
 
 enum connection_type {
 	CONNECTION_USBMUXD = 1
@@ -36,19 +36,19 @@ struct ssl_data_int {
 };
 typedef struct ssl_data_int *ssl_data_t;
 
-struct iphone_connection_int {
+struct idevice_connection_int {
 	enum connection_type type;
 	void *data;
 	ssl_data_t ssl_data;
 };
 
-struct iphone_device_int {
+struct idevice_int {
 	char *uuid;
 	enum connection_type conn_type;
 	void *conn_data;
 };
 
-iphone_error_t iphone_connection_enable_ssl(iphone_connection_t connection);
-iphone_error_t iphone_connection_disable_ssl(iphone_connection_t connection);
+idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
+idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 #endif

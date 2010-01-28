@@ -21,7 +21,7 @@
 #ifndef PROPERTY_LIST_SERVICE_H
 #define PROPERTY_LIST_SERVICE_H
 
-#include "iphone.h"
+#include "idevice.h"
 
 /* Error Codes */
 #define PROPERTY_LIST_SERVICE_E_SUCCESS                0
@@ -33,7 +33,7 @@
 #define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
 
 struct property_list_service_client_int {
-	iphone_connection_t connection;
+	idevice_connection_t connection;
 };
 
 typedef struct property_list_service_client_int *property_list_service_client_t;
@@ -41,7 +41,7 @@ typedef struct property_list_service_client_int *property_list_service_client_t;
 typedef int16_t property_list_service_error_t;
 
 /* creation and destruction */
-property_list_service_error_t property_list_service_client_new(iphone_device_t device, uint16_t port, property_list_service_client_t *client);
+property_list_service_error_t property_list_service_client_new(idevice_t device, uint16_t port, property_list_service_client_t *client);
 property_list_service_error_t property_list_service_client_free(property_list_service_client_t client);
 
 /* sending */

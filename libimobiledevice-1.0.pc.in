@@ -3,10 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libiphone
-Description: A library to communicate with the Lockdown server on the iPhone
+Name: libimobiledevice
+Description: A library to communicate with services running on Apple iPhone/iPod Touch devices.
 Version: @VERSION@
 Requires: libplist >= 0.12 libusbmuxd >= 0.1.0 glib-2.0 >= 2.14.1 gthread-2.0 >= 2.14.1 gnutls >= 1.6.3 libtasn1 >= 1.1
-Libs: -L${libdir} -liphone
+Libs: -L${libdir} -limobiledevice
 Cflags: -I${includedir}
 

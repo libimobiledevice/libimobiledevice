@@ -1,5 +1,5 @@
 /**
- * @file libiphone/notification_proxy.h
+ * @file libimobiledevice/notification_proxy.h
  * @brief Implementation to talk to the notification proxy on a device
  * \internal
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#include <libiphone/libiphone.h>
+#include <libimobiledevice/libimobiledevice.h>
 
 /* Error Codes */
 #define NP_E_SUCCESS                0
@@ -74,7 +74,7 @@ typedef struct np_client_int *np_client_t;
 typedef void (*np_notify_cb_t) (const char *notification);
 
 /* Interface */
-np_error_t np_client_new(iphone_device_t device, uint16_t port, np_client_t *client);
+np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client);
 np_error_t np_client_free(np_client_t client);
 np_error_t np_post_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notification(np_client_t client, const char *notification);

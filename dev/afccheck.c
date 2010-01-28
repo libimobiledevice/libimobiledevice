@@ -24,9 +24,9 @@
 #include <string.h>
 #include <glib.h>
 
-#include <libiphone/libiphone.h>
-#include <libiphone/lockdown.h>
-#include <libiphone/afc.h>
+#include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/afc.h>
 
 #define BUFFER_SIZE 20000
 #define NB_THREADS 10
@@ -53,7 +53,7 @@ static void check_afc(gpointer data)
 		buf[i] = ((param *) data)->id * i;
 	}
 
-	//now  writes buffer on iphone
+	//now  writes buffer on device
 	uint64_t file = 0;
 	char path[50];
 	sprintf(path, "/Buf%i", ((param *) data)->id);
@@ -91,30 +91,30 @@ static void check_afc(gpointer data)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	iphone_device_t phone = NULL;
+	idevice_t phone = NULL;
 	GError *err;
 	uint16_t port = 0;
 	afc_client_t afc = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
-		iphone_set_debug_level(1);
+		idevice_set_debug_level(1);
 	} else {
-		iphone_set_debug_level(0);
+		idevice_set_debug_level(0);
 	}
 
-	if (IPHONE_E_SUCCESS != iphone_device_new(&phone, NULL)) {
-		printf("No iPhone found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new(&phone, NULL)) {
+		printf("No device found, is it plugged in?\n");
 		return 1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "afccheck")) {
-		iphone_device_free(phone);
+		idevice_free(phone);
 		return 1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
 		lockdownd_client_free(client);
-		iphone_device_free(phone);
+		idevice_free(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
 	}
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 	}
 
 	lockdownd_client_free(client);
-	iphone_device_free(phone);
+	idevice_free(phone);
 
 	return 0;
 }

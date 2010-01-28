@@ -23,7 +23,7 @@
 
 #include <glib.h>
 
-#include "libiphone/sbservices.h"
+#include "libimobiledevice/sbservices.h"
 #include "property_list_service.h"
 
 struct sbservices_client_int {

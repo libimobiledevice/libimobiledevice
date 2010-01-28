@@ -28,7 +28,7 @@
 #include <stdlib.h>
 
 #include "debug.h"
-#include "libiphone/libiphone.h"
+#include "libimobiledevice/libimobiledevice.h"
 
 int debug_level = 0;
 
@@ -38,7 +38,7 @@ int debug_level = 0;
  *
  * @param level Set to 0 for no debugging or 1 for debugging.
  */
-void iphone_set_debug_level(int level)
+void idevice_set_debug_level(int level)
 {
 	debug_level = level;
 }
