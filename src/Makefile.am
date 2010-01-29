@@ -4,6 +4,7 @@ AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libglib2_CFLAGS) $(libgnutls
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice.la
+libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
 libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       debug.c debug.h\
 		       userpref.c userpref.h\

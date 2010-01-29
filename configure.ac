@@ -14,6 +14,16 @@ AC_PROG_SWIG(1.3.21)
 AX_SWIG_ENABLE_CXX
 SWIG_PYTHON
 
+dnl libtool versioning
+# +1 : 0 : +1  == adds new functions to the interface
+# +1 : 0 : 0   == changes or removes functions (changes include both
+#                 changes to the signature and the semantic)
+#  ? :+1 : ?   == just internal changes
+# CURRENT : REVISION : AGE
+LIBIMOBILEDEVICE_SO_VERSION=0:0:0
+
+AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
