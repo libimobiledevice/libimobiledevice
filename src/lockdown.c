@@ -1337,7 +1337,19 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 	if (lockdown_check_result(dict, "Activate") == RESULT_SUCCESS) {
 		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
+		
+	} else {
+		plist_t error_node = plist_dict_get_item(dict, "Error");
+		if (error_node && PLIST_STRING == plist_get_node_type(error_node)) {
+			char *error = NULL;
+			plist_get_string_val(error_node, &error);
+			if (!strcmp(error, "InvalidActivationRecord")) {
+				ret = LOCKDOWN_E_INVALID_ACTIVATION_RECORD;
+			}
+			free(error);
+		}
 	}
+	
 	plist_free(dict);
 	dict = NULL;
 
