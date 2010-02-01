@@ -148,6 +148,7 @@ dev/Makefile
 tools/Makefile
 swig/Makefile
 libimobiledevice-1.0.pc
+doxygen.cfg
 ])
 
 echo "
