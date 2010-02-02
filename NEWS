@@ -1,3 +1,17 @@
+Version 0.9.7 (RC1)
+~~~~~~~~~~~~~~~~~~~
+
+* Project is now called libimobiledevice due to legal reasons
+* Changes:
+  - Project renamed to libimobiledevice
+  - Add soname versioning for future releases
+  - Fix regression causing never paired devices to not work by adding
+    auto-pairing for devices in lockdownd_client_new_with_handshake
+  - Add file_relay service implementation and dev test tool
+  - Minor device link service fixes 
+  - New idevicebackup tool with support for full and incremental backups
+  - Add mobilebackup service implementation
+
 Version 0.9.6
 ~~~~~~~~~~~~~
 
