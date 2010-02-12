@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/include  $(libplist_CFLAGS) $(SWIG_PYTHON_CPPFLAGS) -I$(oldincludedir)
+AM_CPPFLAGS = -I$(top_srcdir)/include  $(libplist_CFLAGS) $(SWIG_PYTHON_CPPFLAGS) -I$(oldincludedir)
 
 if HAVE_SWIG
 BUILT_SOURCES = imobiledevice_wrap.cxx
@@ -28,7 +28,7 @@ _imobiledevice_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS)
 _imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la $(libplistmm_LIBS)
 
 imobiledevice_wrap.cxx : $(SWIG_SOURCES)
-	$(SWIG) $(SWIG_PYTHON_OPT) $(INCLUDES) -I$(top_srcdir)/src -o $@ $<
+	$(SWIG) $(SWIG_PYTHON_OPT) $(AM_CPPFLAGS) -I$(top_srcdir)/src -o $@ $<
 
 endif # HAVE_SWIG
 
