@@ -253,9 +253,20 @@ device_link_service_error_t device_link_service_disconnect(device_link_service_c
 	return err;
 }
 
+/**
+ * Sends a DLMessageProcessMessage plist.
+ *
+ * @param client The device link service client to use.
+ * @param message PLIST_DICT to send.
+ *
+ * @return DEVICE_LINK_SERVICE_E_SUCCESS on success,
+ *     DEVICE_LINK_SERVICE_E_INVALID_ARG if client or message is invalid or
+ *     message is not a PLIST_DICT, or DEVICE_LINK_SERVICE_E_MUX_ERROR if
+ *     the DLMessageProcessMessage plist could not be sent.
+ */
 device_link_service_error_t device_link_service_process_message(device_link_service_client_t client, plist_t message)
 {
-	if (!client || !message)
+	if (!client || !client->parent || !message)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
 
 	if (plist_get_node_type(message) != PLIST_DICT)
@@ -263,13 +274,69 @@ device_link_service_error_t device_link_service_process_message(device_link_serv
 
 	plist_t array = plist_new_array();
 	plist_array_append_item(array, plist_new_string("DLMessageProcessMessage"));
-	plist_array_append_item(array, message);
+	plist_array_append_item(array, plist_copy(message));
 
 	device_link_service_error_t err = DEVICE_LINK_SERVICE_E_SUCCESS;
 	if (property_list_service_send_binary_plist(client->parent, array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		err = DEVICE_LINK_SERVICE_E_MUX_ERROR;
 	}
 	plist_free(array);
+	return err;
+}
+
+/**
+ * Receives a DLMessageProcessMessage plist.
+ *
+ * @param client The connected device link service client used for receiving.
+ * @param message Pointer to a plist that will be set to the contents of the
+ *    message contents upon successful return.
+ *
+ * @return DEVICE_LINK_SERVICE_E_SUCCESS when a DLMessageProcessMessage was
+ *    received, DEVICE_LINK_SERVICE_E_INVALID_ARG when client or message is
+ *    invalid, DEVICE_LINK_SERVICE_E_PLIST_ERROR if the received plist is
+ *    invalid or is not a DLMessageProcessMessage,
+ *    or DEVICE_LINK_SERVICE_E_MUX_ERROR if receiving from device fails.
+ */
+device_link_service_error_t device_link_service_get_process_message(device_link_service_client_t client, plist_t *message)
+{
+	if (!client || !client->parent || !message)
+		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
+
+	plist_t pmsg = NULL;
+	if (property_list_service_receive_plist(client->parent, &pmsg) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		return DEVICE_LINK_SERVICE_E_MUX_ERROR;
+	}
+
+	device_link_service_error_t err = DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR;
+
+	char *msg = device_link_service_get_message(pmsg);
+	if (!msg || strcmp(msg, "DLMessageProcessMessage")) {
+		debug_info("Did not receive DLMessageProcessMessage as expected!");
+		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
+		goto leave;
+	}
+
+	if (plist_array_get_size(pmsg) != 2) {
+		debug_info("Malformed plist received for DLMessageProcessMessage");
+		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
+		goto leave;
+	}
+
+	plist_t msg_loc = plist_array_get_item(pmsg, 1);
+	if (msg_loc) {
+		*message = plist_copy(msg_loc);
+		err = DEVICE_LINK_SERVICE_E_SUCCESS;
+	} else {
+		*message = NULL;
+		err = DEVICE_LINK_SERVICE_E_PLIST_ERROR;
+	}
+
+leave:
+	if (msg)
+		free(msg);
+	if (pmsg)
+		plist_free(pmsg);
+
 	return err;
 }
 
