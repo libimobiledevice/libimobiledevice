@@ -6,5 +6,6 @@ nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
 			 libimobiledevice/installation_proxy.h \
 			 libimobiledevice/sbservices.h \
 			 libimobiledevice/mobile_image_mounter.h \
+			 libimobiledevice/screenshotr.h \
 			 libimobiledevice/mobilesync.h \
 			 libimobiledevice/mobilebackup.h
