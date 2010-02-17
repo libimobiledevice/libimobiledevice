@@ -16,5 +16,6 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       notification_proxy.c notification_proxy.h\
 		       installation_proxy.c installation_proxy.h\
 		       sbservices.c sbservices.h\
+		       mobile_image_mounter.c mobile_image_mounter.h\
 		       mobilesync.c mobilesync.h\
 		       mobilebackup.c mobilebackup.h

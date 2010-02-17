@@ -3,7 +3,7 @@ INCLUDES = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicesyslog idevicebackup
+bin_PROGRAMS = idevice_id ideviceinfo idevicesyslog idevicebackup ideviceimagemounter
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
@@ -25,3 +25,7 @@ idevicebackup_CFLAGS = $(AM_CFLAGS)
 idevicebackup_LDFLAGS = $(AM_LDFLAGS)
 idevicebackup_LDADD = ../src/libimobiledevice.la
 
+ideviceimagemounter_SOURCES = ideviceimagemounter.c
+ideviceimagemounter_CFLAGS = $(AM_CFLAGS)
+ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS)
+ideviceimagemounter_LDADD = ../src/libimobiledevice.la
