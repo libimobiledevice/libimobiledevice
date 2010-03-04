@@ -6,83 +6,60 @@
  #include <libimobiledevice/libimobiledevice.h>
  #include <libimobiledevice/lockdown.h>
  #include <libimobiledevice/mobilesync.h>
+ #include <libimobiledevice/notification_proxy.h>
  #include <plist/plist.h>
  #include <plist/plist++.h>
  #include "../src/debug.h"
- typedef struct {
-	idevice_t dev;
- } idevice;
-
- typedef struct {
-	idevice* dev;
-	lockdownd_client_t client;
- } Lockdownd;
-
- typedef struct {
-	idevice* dev;
-	mobilesync_client_t client;
- } MobileSync;
-
-//now declare funtions to handle creation and deletion of objects
-void my_delete_idevice(idevice* dev);
-Lockdownd* my_new_Lockdownd(idevice* device);
-void my_delete_Lockdownd(Lockdownd* lckd);
-MobileSync* my_new_MobileSync(Lockdownd* lckd);
-PList::Node* new_node_from_plist(plist_t node);
-
- %}
-/* Parse the header file to generate wrappers */
-%include "stdint.i"
-%include "cstring.i"
-%include "plist/swig/plist.i"
 
 typedef struct {
-	idevice_t dev;
+    idevice_t dev;
 } idevice;
 
 typedef struct {
-	idevice* dev;
-	lockdownd_client_t client;
+    idevice* dev;
+    lockdownd_client_t client;
 } Lockdownd;
 
 typedef struct {
-	idevice* dev;
-	mobilesync_client_t client;
+    idevice* dev;
+    mobilesync_client_t client;
 } MobileSync;
 
-%inline %{
-//now define funtions to handle creation and deletion of objects
+typedef struct {
+    idevice* dev;
+    np_client_t client;
+} NotificationProxy;
 
-
-void my_delete_idevice(idevice* dev) {
+//now declare funtions to handle creation and deletion of objects
+static void my_delete_idevice(idevice* dev) {
 	if (dev) {
 		idevice_free(dev->dev);
 		free(dev);
 	}
 }
 
-Lockdownd* my_new_Lockdownd(idevice* device) {
-	if (!device) return NULL;
-	Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
-	client->dev = device;
-	client->client = NULL;
-	if (LOCKDOWN_E_SUCCESS == lockdownd_client_new_with_handshake(device->dev , &(client->client), NULL)) {
-		return client;
-	}
-	else {
-		free(client);
-		return NULL;
-	}
+static Lockdownd* my_new_Lockdownd(idevice* device) {
+    if (!device) return NULL;
+    Lockdownd* client = (Lockdownd*) malloc(sizeof(Lockdownd));
+    client->dev = device;
+    client->client = NULL;
+    if (LOCKDOWN_E_SUCCESS == lockdownd_client_new_with_handshake(device->dev , &(client->client), NULL)) {
+        return client;
+    }
+    else {
+        free(client);
+        return NULL;
+    }
 }
 
-void my_delete_Lockdownd(Lockdownd* lckd) {
-	if (lckd) {
-		lockdownd_client_free(lckd->client);
-		free(lckd);
-	}
+static void my_delete_Lockdownd(Lockdownd* lckd) {
+    if (lckd) {
+        lockdownd_client_free(lckd->client);
+        free(lckd);
+    }
 }
 
-MobileSync* my_new_MobileSync(Lockdownd* lckd) {
+static MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	if (!lckd || !lckd->dev) return NULL;
 	MobileSync* client = NULL;
 	uint16_t port = 0;
@@ -95,7 +72,20 @@ MobileSync* my_new_MobileSync(Lockdownd* lckd) {
 	return client;
 }
 
-PList::Node* new_node_from_plist(plist_t node)
+static NotificationProxy* my_new_NotificationProxy(Lockdownd* lckd) {
+    if (!lckd || !lckd->dev) return NULL;
+    NotificationProxy* client = NULL;
+    uint16_t port = 0;
+	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(lckd->client, "com.apple.mobile.notification_proxy", &port)) {
+        client = (NotificationProxy*) malloc(sizeof(NotificationProxy));
+        client->dev = lckd->dev;
+        client->client = NULL;
+		np_client_new(lckd->dev->dev, port, &(client->client));
+    }
+    return client;
+}
+
+static PList::Node* new_node_from_plist(plist_t node)
 {
 	PList::Node* ret = NULL;
 	plist_type subtype = plist_get_node_type(node);
@@ -130,7 +120,102 @@ PList::Node* new_node_from_plist(plist_t node)
 	}
 	return ret;
 }
-%}
+
+#ifdef SWIGPYTHON
+PyObject* python_callback = NULL;
+
+static void NotificationProxyPythonCallback(const char *notification) {
+    PyObject *arglist;
+    PyGILState_STATE gstate;
+
+    arglist = Py_BuildValue("(s)",notification);
+
+    gstate = PyGILState_Ensure();
+
+    PyEval_CallObject(python_callback, arglist);
+
+    Py_XDECREF(arglist);
+    PyGILState_Release(gstate);
+}
+#endif
+ %}
+
+/* Parse the header file to generate wrappers */
+%include "stdint.i"
+%include "cstring.i"
+%include "plist/swig/plist.i"
+
+/* This needs to be here since if it's after
+ * the structs, SWIG won't pick it up for %extend
+ */
+#ifdef SWIGPYTHON
+%typemap(in) (PyObject *pyfunc) {
+    if (!PyCallable_Check($input)) {
+        PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+        return NULL;
+    }
+    $1 = $input;
+}
+%typemap(in) (const char **string_list) {
+    /* Check if it's a list */
+    if (PyList_Check($input)) {
+        int size = PyList_Size($input);
+        int i = 0;
+        $1 = (char **) malloc((size+1)*sizeof(char *));
+        for (i = 0; i < size; i++) {
+            PyObject *o = PyList_GetItem($input,i);
+            if (PyString_Check(o)) {
+                $1[i] = PyString_AsString(PyList_GetItem($input,i));
+            } else {
+                PyErr_SetString(PyExc_TypeError,"List must contain strings");
+                free($1);
+                return NULL;
+            }
+        }
+        $1[i] = 0;
+    } else if (PyTuple_Check($input)) {
+        int size = PyTuple_Size($input);
+        int i = 0;
+        $1 = (char **) malloc((size+1)*sizeof(char *));
+        for (i = 0; i < size; i++) {
+            PyObject *o = PyTuple_GetItem($input,i);
+            if (PyString_Check(o)) {
+                $1[i] = PyString_AsString(PyTuple_GetItem($input,i));
+            } else {
+                PyErr_SetString(PyExc_TypeError,"List must contain strings");
+                free($1);
+                return NULL;
+            }
+        }
+        $1[i] = 0;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "not a list or tuple");
+        return NULL;
+    }
+}
+%typemap(freearg) (const char **string_list) {
+    free((char *) $1);
+}
+#endif
+
+ typedef struct {
+	idevice_t dev;
+ } idevice;
+
+typedef struct {
+    idevice* dev;
+    lockdownd_client_t client;
+} Lockdownd;
+
+typedef struct {
+    idevice* dev;
+    mobilesync_client_t client;
+} MobileSync;
+
+typedef struct {
+    idevice* dev;
+    np_client_t client;
+} NotificationProxy;
 
 
 %extend idevice {             // Attach these functions to struct idevice
@@ -172,7 +257,6 @@ PList::Node* new_node_from_plist(plist_t node)
 	}
 };
 
-
 %extend Lockdownd {             // Attach these functions to struct Lockdownd
 	Lockdownd(idevice* device) {
 		return my_new_Lockdownd(device);
@@ -195,6 +279,10 @@ PList::Node* new_node_from_plist(plist_t node)
 	MobileSync* get_mobilesync_client() {
 		return my_new_MobileSync($self);
 	}
+
+    NotificationProxy* get_notification_proxy_client() {
+        return my_new_NotificationProxy($self);
+    }
 };
 
 %extend MobileSync {             // Attach these functions to struct MobileSync
@@ -218,3 +306,42 @@ PList::Node* new_node_from_plist(plist_t node)
 	}
 };
 
+#define NP_SYNC_WILL_START           "com.apple.itunes-mobdev.syncWillStart"
+#define NP_SYNC_DID_START            "com.apple.itunes-mobdev.syncDidStart"
+#define NP_SYNC_DID_FINISH           "com.apple.itunes-mobdev.syncDidFinish"
+#define NP_SYNC_LOCK_REQUEST         "com.apple.itunes-mobdev.syncLockRequest"
+
+%extend NotificationProxy {
+    NotificationProxy(Lockdownd* lckd) {
+        return my_new_NotificationProxy(lckd);
+    }
+
+    ~NotificationProxy() {
+        np_client_free($self->client);
+        free($self);
+    }
+
+    int16_t post_notification(const char* notification) {
+        return np_post_notification($self->client, notification);
+    }
+
+    int16_t observe_notification(const char* notification) {
+        return np_observe_notification($self->client, notification);
+    }
+
+    int16_t observe_notifications(const char** string_list) {
+        return np_observe_notifications($self->client, string_list);
+    }
+};
+
+#ifdef SWIGPYTHON
+%extend NotificationProxy {
+    int16_t set_callback(PyObject *pyfunc) {
+        int16_t res;
+        python_callback = pyfunc;
+        res = np_set_notify_callback($self->client, NotificationProxyPythonCallback);
+        Py_INCREF(pyfunc);
+        return res;
+    }
+};
+#endif
