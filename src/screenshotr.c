@@ -1,6 +1,6 @@
 /*
  * screenshotr.c 
- * com.apple.mobile.screenshotr implementation.
+ * com.apple.mobile.screenshotr service implementation.
  * 
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
@@ -60,12 +60,15 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
 }
 
 /**
- * Makes a connection to the screenshotr service on the device.
+ * Connects to the screenshotr service on the specified device.
  *
  * @param device The device to connect to.
  * @param port Destination port (usually given by lockdownd_start_service).
  * @param client Pointer that will be set to a newly allocated
  *     screenshotr_client_t upon successful return.
+ *
+ * @note This service is only available if a developer disk image has been
+ *     mounted.
  *
  * @return SCREENSHOTR_E_SUCCESS on success, SCREENSHOTR_E_INVALID ARG if one
  *     or more parameters are invalid, or SCREENSHOTR_E_CONN_FAILED if the
@@ -100,9 +103,10 @@ screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port,
 }
 
 /**
- * Disconnects a screenshotr client from the device.
+ * Disconnects a screenshotr client from the device and frees up the
+ * screenshotr client data.
  *
- * @param client The client to disconnect.
+ * @param client The screenshotr client to disconnect and free.
  *
  * @return SCREENSHOTR_E_SUCCESS on success, or SCREENSHOTR_E_INVALID_ARG
  *     if client is NULL.

@@ -1,6 +1,6 @@
 /* 
  * screenshotr.h
- * com.apple.mobile.screenshotr definitions.
+ * com.apple.mobile.screenshotr service header file.
  * 
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
