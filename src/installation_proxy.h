@@ -1,6 +1,6 @@
 /*
  * installation_proxy.h
- * Installation Proxy header file.
+ * com.apple.mobile.installation_proxy service header file.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *

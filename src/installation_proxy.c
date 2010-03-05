@@ -1,6 +1,6 @@
 /*
  * installation_proxy.c
- * Installation Proxy implementation.
+ * com.apple.mobile.installation_proxy service implementation.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
@@ -35,7 +35,8 @@ struct instproxy_status_data {
 	char *operation;
 };
 
-/** Locks an installation_proxy client, done for thread safety stuff.
+/**
+ * Locks an installation_proxy client, used for thread safety.
  *
  * @param client The installation_proxy client to lock
  */
@@ -45,7 +46,8 @@ static void instproxy_lock(instproxy_client_t client)
 	g_mutex_lock(client->mutex);
 }
 
-/** Unlocks an installation_proxy client, done for thread safety stuff.
+/**
+ * Unlocks an installation_proxy client, used for thread safety.
  * 
  * @param client The installation_proxy client to lock
  */
@@ -82,7 +84,7 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
 }
 
 /**
- * Creates a new installation_proxy client
+ * Connects to the installation_proxy service on the specified device.
  *
  * @param device The device to connect to
  * @param port Destination port (usually given by lockdownd_start_service).
@@ -116,9 +118,10 @@ instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instprox
 }
 
 /**
- * Frees an installation_proxy client.
+ * Disconnects an installation_proxy client from the device and frees up the
+ * installation_proxy client data.
  *
- * @param client The installation_proxy client to free.
+ * @param client The installation_proxy client to disconnect and free.
  *
  * @return INSTPROXY_E_SUCCESS on success
  *      or INSTPROXY_E_INVALID_ARG if client is NULL.
@@ -144,7 +147,7 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 
 /**
  * Send a command with specified options to the device.
- * Internally used only.
+ * Only used internally.
  *
  * @param client The connected installation_proxy client.
  * @param command The command to execute. Required.
