@@ -1,6 +1,6 @@
  /* 
  * file_relay.c
- * file_relay service implementation.
+ * com.apple.mobile.file_relay service implementation.
  * 
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
  *
@@ -25,10 +25,10 @@
 #include "debug.h"
 
 /**
- * Creates a new file_relay client.
+ * Connects to the file_relay service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Port on device to connect to.
+ * @param port Destination port (usually given by lockdownd_start_service).
  * @param client Reference that will point to a newly allocated
  *     file_relay_client_t upon successful return.
  *
@@ -57,9 +57,10 @@ file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_r
 }
 
 /**
- * Frees a file_relay client.
+ * Disconnects a file_relay client from the device and frees up the file_relay
+ * client data.
  *
- * @param client The file_relay_client_t to free.
+ * @param client The file_relay client to disconnect and free.
  *
  * @return FILE_RELAY_E_SUCCESS on success,
  *     FILE_RELAY_E_INVALID_ARG when one of client or client->parent

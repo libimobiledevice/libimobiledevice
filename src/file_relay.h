@@ -1,6 +1,6 @@
  /* 
  * file_relay.h
- * Definitions for the file_relay service
+ * com.apple.mobile.file_relay service header file.
  * 
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
  *
