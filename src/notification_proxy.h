@@ -1,6 +1,6 @@
 /*
  * notification_proxy.h
- * Notification Proxy header file.
+ * com.apple.mobile.notification_proxy service header file.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
