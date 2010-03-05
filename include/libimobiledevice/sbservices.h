@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/sbservices.h
- * @brief Implementation to talk to com.apple.springboardservices on a device
+ * @brief Implementation to talk to the SpringBoard services on a device
  * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.

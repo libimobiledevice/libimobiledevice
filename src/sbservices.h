@@ -1,6 +1,6 @@
 /*
  * sbservices.h
- * SpringBoard Services header file.
+ * com.apple.springboardservices service header file.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *

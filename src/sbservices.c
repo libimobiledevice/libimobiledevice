@@ -1,6 +1,6 @@
 /*
  * sbservices.c
- * SpringBoard Services implementation.
+ * com.apple.springboardservices service implementation.
  *
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
@@ -29,9 +29,10 @@
 #include "property_list_service.h"
 #include "debug.h"
 
-/** Locks an sbservices client, done for thread safety stuff.
+/**
+ * Locks an sbservices client, used for thread safety.
  *
- * @param client The sbservices client to lock.
+ * @param client sbservices client to lock.
  */
 static void sbs_lock(sbservices_client_t client)
 {
@@ -39,9 +40,10 @@ static void sbs_lock(sbservices_client_t client)
 	g_mutex_lock(client->mutex);
 }
 
-/** Unlocks an sbservices client, done for thread safety stuff.
+/**
+ * Unlocks an sbservices client, used for thread safety.
  * 
- * @param client The sbservices client to unlock
+ * @param client sbservices client to unlock
  */
 static void sbs_unlock(sbservices_client_t client)
 {
@@ -76,10 +78,10 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
 }
 
 /**
- * Creates a new sbservices client.
+ * Connects to the springboardservices service on the specified device.
  *
  * @param device The device to connect to.
- * @param port The port on device to connect to.
+ * @param port Destination port (usually given by lockdownd_start_service).
  * @param client Pointer that will point to a newly allocated
  *     sbservices_client_t upon successful return.
  *
@@ -110,9 +112,10 @@ sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbserv
 }
 
 /**
- * Frees an sbservices client.
+ * Disconnects an sbservices client from the device and frees up the
+ * sbservices client data.
  *
- * @param client The sbservices client to free.
+ * @param client The sbservices client to disconnect and free.
  *
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client is NULL, or an SBSERVICES_E_* error code otherwise.
