@@ -1,6 +1,6 @@
 /*
  * mobile_image_mounter.h
- * Mobile Image Mounter header file.
+ * com.apple.mobile.mobile_image_mounter service header file.
  *
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
  *

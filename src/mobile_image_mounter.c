@@ -1,6 +1,6 @@
 /*
  * mobile_image_mounter.c
- * MobileImageMounter implementation.
+ * com.apple.mobile.mobile_image_mounter service implementation.
  *
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
  *
@@ -30,18 +30,20 @@
 #include "property_list_service.h"
 #include "debug.h"
 
-/** Locks an MobileImageMounter client, done for thread safety stuff.
+/**
+ * Locks a mobile_image_mounter client, used for thread safety.
  *
- * @param client The MIM to lock
+ * @param client mobile_image_mounter client to lock
  */
 static void mobile_image_mounter_lock(mobile_image_mounter_client_t client)
 {
 	g_mutex_lock(client->mutex);
 }
 
-/** Unlocks an MIM client, done for thread safety stuff.
+/**
+ * Unlocks a mobile_image_mounter client, used for thread safety.
  * 
- * @param client The MIM to unlock
+ * @param client mobile_image_mounter client to unlock
  */
 static void mobile_image_mounter_unlock(mobile_image_mounter_client_t client)
 {
@@ -76,7 +78,7 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
 }
 
 /**
- * Makes a connection to the MobileImageMounter service on the phone. 
+ * Connects to the mobile_image_mounter service on the specified device.
  * 
  * @param device The device to connect to.
  * @param port Destination port (usually given by lockdownd_start_service).
@@ -84,8 +86,8 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
  *    mobile_image_mounter_client_t upon successful return.
  * 
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
- *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG when device is NULL,
- *    or MOBILE_IMAGE_MOUNTER_E_CONN_FAILED when the connection to the
+ *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if device is NULL,
+ *    or MOBILE_IMAGE_MOUNTER_E_CONN_FAILED if the connection to the
  *    device could not be established.
  */
 mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t port, mobile_image_mounter_client_t *client)
@@ -112,12 +114,13 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t
 }
 
 /**
- * Disconnects an MobileImageMounter client from the device.
+ * Disconnects a mobile_image_mounter client from the device and frees up the
+ * mobile_image_mounter client data.
  * 
- * @param client The client to disconnect.
+ * @param client The mobile_image_mounter client to disconnect and free.
  *
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
- *    or MOBILE_IMAGE_MOUNTER_E_INVALID_ARG when client is NULL.
+ *    or MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if client is NULL.
  */
 mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client)
 {
@@ -179,7 +182,7 @@ leave_unlock:
 /**
  * Mounts an image on the device.
  *
- * @param client The connected MobileImageMounter client.
+ * @param client The connected mobile_image_mounter client.
  * @param image_path The absolute path of the image to mount. The image must
  *    be present before calling this function.
  * @param image_signature Pointer to a buffer holding the images' signature
@@ -190,9 +193,11 @@ leave_unlock:
  *
  * @note This function may return MOBILE_IMAGE_MOUNTER_E_SUCCESS even if the
  *    operation has failed. Check the resulting plist for further information.
+ *    Note that there is no unmounting function. The mount persists until the
+ *    device is rebooted.
  *
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
- *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG when on ore more parameters are
+ *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if on ore more parameters are
  *    invalid, or another error code otherwise.
  */
 mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *image_signature, uint16_t signature_length, const char *image_type, plist_t *result)
@@ -227,7 +232,7 @@ leave_unlock:
 }
 
 /**
- * Hangs up the connection to the MobileImageMounter service.
+ * Hangs up the connection to the mobile_image_mounter service.
  * This functions has to be called before freeing up a mobile_image_mounter
  * instance. If not, errors appear in the device's syslog.
  *
