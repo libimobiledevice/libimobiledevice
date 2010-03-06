@@ -59,7 +59,7 @@ enum device_link_file_status_t {
 	DEVICE_LINK_FILE_STATUS_LAST_HUNK
 };
 
-static void notify_cb(const char *notification)
+static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
 		printf("User has aborted on-device\n");
@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
 	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
 		np_client_new(phone, port, &np);
-		np_set_notify_callback(np, notify_cb);
+		np_set_notify_callback(np, notify_cb, NULL);
 		const char *noties[5] = {
 			NP_SYNC_CANCEL_REQUEST,
 			NP_SYNC_SUSPEND_REQUEST,

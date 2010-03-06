@@ -30,7 +30,7 @@
 #include <libimobiledevice/afc.h>
 #include <libimobiledevice/notification_proxy.h>
 
-static void notifier(const char *notification)
+static void notifier(const char *notification, void *userdata)
 {
 	printf("---------------------------------------------------------\n");
 	printf("------> Notification received: %s\n", notification);
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 					NULL
 				};
 				np_observe_notifications(gnp, nspec);
-				np_set_notify_callback(gnp, notifier);
+				np_set_notify_callback(gnp, notifier, NULL);
 			}
 
 			perform_notification(phone, client, NP_SYNC_WILL_START);

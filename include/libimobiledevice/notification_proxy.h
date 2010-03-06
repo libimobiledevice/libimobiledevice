@@ -71,7 +71,7 @@ typedef int16_t np_error_t;
 struct np_client_int;
 typedef struct np_client_int *np_client_t;
 
-typedef void (*np_notify_cb_t) (const char *notification);
+typedef void (*np_notify_cb_t) (const char *notification, void *userdata);
 
 /* Interface */
 np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client);
@@ -79,7 +79,7 @@ np_error_t np_client_free(np_client_t client);
 np_error_t np_post_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
-np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb);
+np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
 
 #ifdef __cplusplus
 }
