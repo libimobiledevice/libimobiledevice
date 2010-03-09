@@ -122,20 +122,15 @@ static PList::Node* new_node_from_plist(plist_t node)
 }
 
 #ifdef SWIGPYTHON
-PyObject* python_callback = NULL;
+static void NotificationProxyPythonCallback(const char *notification, void* user_data) {
+    PyObject *func, *arglist;
 
-static void NotificationProxyPythonCallback(const char *notification) {
-    PyObject *arglist;
-    PyGILState_STATE gstate;
-
+    func = (PyObject *) user_data;
     arglist = Py_BuildValue("(s)",notification);
 
-    gstate = PyGILState_Ensure();
+    PyEval_CallObject(func, arglist);
 
-    PyEval_CallObject(python_callback, arglist);
-
-    Py_XDECREF(arglist);
-    PyGILState_Release(gstate);
+    Py_DECREF(arglist);
 }
 #endif
  %}
@@ -338,8 +333,7 @@ typedef struct {
 %extend NotificationProxy {
     int16_t set_callback(PyObject *pyfunc) {
         int16_t res;
-        python_callback = pyfunc;
-        res = np_set_notify_callback($self->client, NotificationProxyPythonCallback);
+        res = np_set_notify_callback($self->client, NotificationProxyPythonCallback, (void *) pyfunc);
         Py_INCREF(pyfunc);
         return res;
     }
