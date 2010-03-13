@@ -10,8 +10,6 @@ Requirements
 Development Packages of:
 	libgnutls
 	libgcrypt
-	libusb
-	libfuse (and the associated kernel modules)
 	glib2.0
 	libplist
 	libusbmuxd (within usbmuxd package, see below)
@@ -36,8 +34,7 @@ To compile run:
 
 On Ubuntu/Debian, you can do:
 	sudo apt-get install build-essential automake autoconf libtool\
-          libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev \
-          libreadline5-dev
+          libgnutls-dev libglib2.0-dev libxml2-dev libreadline5-dev
 
 Who/What/Where?
 ===============
@@ -55,7 +52,7 @@ Tickets:
 	http://libiphone.lighthouseapp.com/
 
 Mailing List:
-	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
+	http://lists.libimobiledevice.org/mailman/listinfo/libimobiledevice-devel
 
 Credits
 =======
@@ -65,5 +62,5 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2010-01-28
+	2010-03-13
 
