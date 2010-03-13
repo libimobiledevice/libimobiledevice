@@ -1,0 +1,36 @@
+.TH "idevicebackup" 1
+.SH NAME
+idevicebackup \- Create or restore backup for iPhone/iPod Touch devices.
+.SH SYNOPSIS
+.B idevicebackup
+[OPTIONS] CMD [DIRECTORY]
+
+.SH DESCRIPTION
+
+Create or restore backup from the current or specified directory.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B backup
+saves a device backup into DIRECTORY.
+.TP
+.B restore
+restores a device backup from DIRECTORY.
+
+.SH AUTHORS
+Martin Szulecki
+
+Nikias Bassen
+
+Man page written to conform with Debian by Julien Lavergne.

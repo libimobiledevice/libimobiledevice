@@ -1,0 +1,35 @@
+.TH "ideviceinfo" 1
+.SH NAME
+ideviceinfo \- Show information about the first connected iPhone/iPod Touch.
+.SH SYNOPSIS
+.B ideviceinfo
+[OPTIONS]
+
+.SH DESCRIPTION
+
+Show information about the first connected iPhone/iPod Touch.
+
+.SH OPTIONS
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP
+.B \-q, \-\-domain NAME
+set domain of query to NAME. Default: None.
+.TP
+.B \-k, \-\-key NAME
+only query key specified by NAME. Default: All keys.
+.TP
+.B \-x, \-\-xml
+output information as xml plist instead of key/value pairs.
+.TP
+.B \-h, \-\-help
+prints usage information
+
+.SH AUTHOR
+Martin Szulecki
+
+Man page written to conform with Debian by Julien Lavergne.

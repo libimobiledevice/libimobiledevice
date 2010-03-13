@@ -1,0 +1,41 @@
+.TH "ideviceimagemounter" 1
+.SH NAME
+ideviceimagemounter \- Mount disk images on the iPhone/iPod Touch.
+.SH SYNOPSIS
+.B ideviceimagemounter
+[OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE
+
+.SH DESCRIPTION
+
+Mounts the specified disk image on the iPhone/iPod Touch device.
+
+.SH OPTIONS
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP
+.B \-l, \-\-list
+list mount information
+.TP
+.B \-t, \-\-imagetype NAME
+the image type to use, default is 'Developer'
+.TP
+.B \-x, \-\-xml
+use XML output
+.TP
+.B \-h, \-\-help
+prints usage information
+.TP
+.B IMAGE_FILE
+the image filename to mount
+.TP
+.B IMAGE_SIGNATURE_FILE
+corresponding signature file for image filename
+
+.SH AUTHOR
+Nikias Bassen
+
+Man page written to conform with Debian by Julien Lavergne.

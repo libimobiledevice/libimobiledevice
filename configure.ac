@@ -147,6 +147,7 @@ fdi/Makefile
 dev/Makefile
 tools/Makefile
 swig/Makefile
+docs/Makefile
 libimobiledevice-1.0.pc
 doxygen.cfg
 ])

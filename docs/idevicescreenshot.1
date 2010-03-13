@@ -1,0 +1,29 @@
+.TH "idevicescreenshot" 1
+.SH NAME
+idevicescreenshot \- Gets a screenshot from the connected iPhone/iPod Touch.
+.SH SYNOPSIS
+.B idevicescreenshot
+[OPTIONS]
+
+.SH DESCRIPTION
+
+Gets a screenshot from the connected iPhone/iPod Touch.
+
+NOTE: A mounted developer disk image is required on the device, otherwise
+ the screenshotr service is not available.
+
+.SH OPTIONS
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP
+.B \-h, \-\-help
+prints usage information
+
+.SH AUTHOR
+Nikias Bassen
+
+Man page written to conform with Debian by Julien Lavergne.

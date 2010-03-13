@@ -33,7 +33,7 @@ libtool
 py-compile
 stamp-h1
 src/.libs
-docs/*
+docs/html
 libimobiledevice-1.0.pc
 dev/.libs/*
 dev/afccheck
