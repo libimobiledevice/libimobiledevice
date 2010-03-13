@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <time.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -68,19 +69,22 @@ int main(int argc, char **argv)
 			printf("Could not connect to screenshotr!\n");
 		} else {
 			char *imgdata = NULL;
+			char filename[36];
 			uint64_t imgsize = 0;
+			time_t now = time(NULL);
+			strftime(filename, 36, "screenshot-%Y-%m-%d-%H-%M-%S.tiff", gmtime(&now));
 			if (screenshotr_take_screenshot(shotr, &imgdata, &imgsize) == SCREENSHOTR_E_SUCCESS) {
-				FILE *f = fopen("screenshot.tiff", "w");
+				FILE *f = fopen(filename, "w");
 				if (f) {
 					if (fwrite(imgdata, 1, (size_t)imgsize, f) == (size_t)imgsize) {
-						printf("Screenshot saved to screenshot.tiff\n");
+						printf("Screenshot saved to %s\n", filename);
 						result = 0;
 					} else {
-						printf("Could not save screenshot to file!\n");
+						printf("Could not save screenshot to file %s!\n", filename);
 					}
 					fclose(f);
 				} else {
-					printf("Could not open screenshot.tiff for writing: %s\n", strerror(errno));
+					printf("Could not open %s for writing: %s\n", filename, strerror(errno));
 				}
 			} else {
 				printf("Could not get screenshot!\n");
@@ -102,8 +106,9 @@ void print_usage(int argc, char **argv)
         name = strrchr(argv[0], '/');
         printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
         printf("Gets a screenshot from the connected iPhone/iPod Touch.\n");
-	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
-	printf(" the screenshotr service is not available.\n\n");
+        printf("The screenshot is saved as a TIFF image in the current directory.\n");
+        printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
+        printf("the screenshotr service is not available.\n\n");
         printf("  -d, --debug\t\tenable communication debugging\n");
         printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
         printf("  -h, --help\t\tprints usage information\n");
