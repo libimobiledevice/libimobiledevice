@@ -52,11 +52,6 @@ typedef struct {
 	uint64_t filehandle, size;
 } AFCFilePacket;
 
-typedef struct __AFCToken {
-	struct __AFCToken *last, *next;
-	char *token;
-} AFCToken;
-
 struct afc_client_int {
 	idevice_connection_t connection;
 	AFCPacket *afc_packet;
