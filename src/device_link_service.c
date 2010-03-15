@@ -264,7 +264,7 @@ device_link_service_error_t device_link_service_disconnect(device_link_service_c
  *     message is not a PLIST_DICT, or DEVICE_LINK_SERVICE_E_MUX_ERROR if
  *     the DLMessageProcessMessage plist could not be sent.
  */
-device_link_service_error_t device_link_service_process_message(device_link_service_client_t client, plist_t message)
+device_link_service_error_t device_link_service_send_process_message(device_link_service_client_t client, plist_t message)
 {
 	if (!client || !client->parent || !message)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
@@ -297,7 +297,7 @@ device_link_service_error_t device_link_service_process_message(device_link_serv
  *    invalid or is not a DLMessageProcessMessage,
  *    or DEVICE_LINK_SERVICE_E_MUX_ERROR if receiving from device fails.
  */
-device_link_service_error_t device_link_service_get_process_message(device_link_service_client_t client, plist_t *message)
+device_link_service_error_t device_link_service_receive_process_message(device_link_service_client_t client, plist_t *message)
 {
 	if (!client || !client->parent || !message)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
