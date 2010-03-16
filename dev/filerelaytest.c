@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	while (idevice_connection_receive(dump, buf, 4096, &len) == IDEVICE_E_SUCCESS) {
 		fwrite(buf, 1, len, f);
 		cnt += len;
-		printf(".", len);
+		printf(".");
 		len = 0;
 	}
 	printf("\n");
