@@ -35,6 +35,7 @@ extern "C" {
 #define MOBILEBACKUP_E_PLIST_ERROR           -2
 #define MOBILEBACKUP_E_MUX_ERROR             -3
 #define MOBILEBACKUP_E_BAD_VERSION           -4
+#define MOBILEBACKUP_E_REPLY_NOT_OK          -5
 
 #define MOBILEBACKUP_E_UNKNOWN_ERROR       -256
 
@@ -47,6 +48,9 @@ mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mo
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
+mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
+mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
+mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
 
 #ifdef __cplusplus
 }
