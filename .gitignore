@@ -49,3 +49,5 @@ tools/idevicesyslog
 tools/idevicebackup
 tools/ideviceimagemounter
 tools/idevicescreenshot
+cython/.libs/*
+cython/*.c

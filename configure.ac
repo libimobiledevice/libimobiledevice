@@ -69,12 +69,12 @@ if test "x$ac_cv_have_endian" = "xno"; then
   fi
 fi
 
-
+# SWIG Python Bindings
 AC_ARG_WITH([swig],
             [AS_HELP_STRING([--without-swig],
-            [build Python bindings using swig (default is yes)])],
+            [build Python bindings using SWIG (default is yes)])],
             [build_swig=false],
-	    [build_swig=true])
+            [build_swig=true])
 if test "$build_swig" = "true"; then
             AM_PATH_PYTHON(2.3)
             AC_PROG_SWIG(1.3.21)
@@ -83,13 +83,13 @@ if test "$build_swig" = "true"; then
 else
             SWIG=false
 fi
-
 if [test "x$SWIG" != "xfalse"]; then
-            python_bindings=yes
+            SWIG_SUB=swig
+            swig_python_bindings=yes
 else
-            python_bindings=no
+            SWIG_SUB=
+            swig_python_bindings=no
 fi
-
 AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
 
 AC_ARG_ENABLE([openssl],
@@ -124,9 +124,32 @@ else
   ssl_provider="GnuTLS"
 fi
 
+# Cython Python Bindings
+AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
+
+AC_ARG_WITH([cython],
+            [AS_HELP_STRING([--without-cython],
+            [build Python bindings using Cython (default is yes)])],
+            [build_cython=false],
+            [build_cython=true])
+if test "$build_cython" = "true"; then
+            AM_PATH_PYTHON(2.3)
+            AC_PROG_CYTHON(0.12.1)
+            CYTHON_PYTHON
+else
+            CYTHON=false
+
+fi
+if [test "x$CYTHON" != "xfalse"]; then
+            CYTHON_SUB=cython
+            CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist)/plist/cython
+else
+            CYTHON_SUB=
+            cython_python_bindings=no
+fi
+AM_CONDITIONAL([HAVE_CYTHON],[test "x$CYTHON" = "xcython"])
 
 AC_SUBST([DEV_SUB])
-
 
 AC_ARG_ENABLE([dev-tools],
             [AS_HELP_STRING([--enable-dev-tools],
@@ -200,6 +223,7 @@ include/Makefile
 dev/Makefile
 tools/Makefile
 swig/Makefile
+cython/Makefile
 docs/Makefile
 libimobiledevice-1.0.pc
 doxygen.cfg
@@ -212,7 +236,8 @@ Configuration for $PACKAGE $VERSION:
   Install prefix: .........: $prefix
   Debug code ..............: $building_debug_code
   Dev tools ...............: $building_dev_tools
-  Python bindings .........: $python_bindings
+  SWIG Python bindings ....: $swig_python_bindings
+  Cython Python bindgins ..: $cython_python_bindings
   SSL support .............: $ssl_provider
 
   Now type 'make' to build $PACKAGE $VERSION,
