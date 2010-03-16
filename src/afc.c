@@ -57,9 +57,9 @@ static void afc_unlock(afc_client_t client)
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
  * 
- * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARGUMENT when device or port
- *     is invalid, AFC_E_MUX_ERROR when the connection failed, or AFC_E_NO_MEM
- *     when there's a memory allocation problem.
+ * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG when device or port is
+ *  invalid, AFC_E_MUX_ERROR when the connection failed, or AFC_E_NO_MEM if
+ *  there is a memory allocation problem.
  */
 afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
 {
@@ -68,7 +68,7 @@ afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * clien
 		g_thread_init(NULL);
 
 	if (!device || port==0)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	/* attempt connection */
 	idevice_connection_t connection = NULL;
@@ -99,14 +99,15 @@ afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * clien
 	return AFC_E_SUCCESS;
 }
 
-/** Disconnects an AFC client from the phone.
+/**
+ * Disconnects an AFC client from the phone.
  * 
  * @param client The client to disconnect.
  */
 afc_error_t afc_client_free(afc_client_t client)
 {
 	if (!client || !client->connection || !client->afc_packet)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	idevice_disconnect(client->connection);
 	free(client->afc_packet);
@@ -137,7 +138,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 	uint32_t sent = 0;
 
 	if (!client || !client->connection || !client->afc_packet)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	*bytes_sent = 0;
 
@@ -416,7 +417,7 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !dir || !list || (list && *list))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -460,7 +461,7 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !infos)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -507,7 +508,7 @@ afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char *
 
 	*value = NULL;
 	if (key == NULL)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	ret = afc_get_device_info(client, &kvps);
 	if (ret != AFC_E_SUCCESS)
@@ -530,8 +531,7 @@ afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char *
  * @param client The client to use.
  * @param path The path to delete. (must be a fully-qualified path)
  * 
- * @return AFC_E_SUCCESS if everythong went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_remove_path(afc_client_t client, const char *path)
 {
@@ -540,7 +540,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !path || !client->afc_packet || !client->connection)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -572,8 +572,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
  * @param from The name to rename from. (must be a fully-qualified path)
  * @param to The new name. (must also be a fully-qualified path)
  * 
- * @return AFC_E_SUCCESS if everythong went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
 {
@@ -583,7 +582,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !from || !to || !client->afc_packet || !client->connection)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -614,8 +613,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
  * @param dir The directory's path. (must be a fully-qualified path, I assume
  *        all other mkdir restrictions apply as well)
  *
- * @return AFC_E_SUCCESS if everythong went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 {
@@ -624,7 +622,7 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -664,7 +662,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !path || !infolist)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -714,7 +712,7 @@ afc_file_open(afc_client_t client, const char *filename,
 	*handle = 0;
 
 	if (!client || !client->connection || !client->afc_packet)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -769,7 +767,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
 	afc_error_t ret = AFC_E_SUCCESS;
 
 	if (!client || !client->afc_packet || !client->connection || handle == 0)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 	debug_info("called for length %i", length);
 
 	afc_lock(client);
@@ -845,7 +843,7 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
 	afc_error_t ret = AFC_E_SUCCESS;
 
 	if (!client || !client->afc_packet || !client->connection || !bytes_written || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -929,7 +927,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -977,7 +975,7 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1027,7 +1025,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1070,7 +1068,7 @@ afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *positi
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1121,7 +1119,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1154,8 +1152,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
  * @param path The path of the file to be truncated.
  * @param newsize The size to set the file to. 
  * 
- * @return AFC_E_SUCCESS if everything went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
@@ -1166,7 +1163,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !path || !client->afc_packet || !client->connection)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1198,8 +1195,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
  * @param target The file to be linked.
  * @param linkname The name of link.
  * 
- * @return AFC_E_SUCCESS if everything went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
 {
@@ -1210,7 +1206,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !target || !linkname || !client->afc_packet || !client->connection)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -1246,8 +1242,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
  * @param path Path of the file for which the modification time should be set.
  * @param mtime The modification time to set in nanoseconds since epoch.
  * 
- * @return AFC_E_SUCCESS if everything went well, AFC_E_INVALID_ARGUMENT
- *         if arguments are NULL or invalid, AFC_E_NOT_ENOUGH_DATA otherwise.
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
 {
@@ -1258,7 +1253,7 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || !path || !client->afc_packet || !client->connection)
-		return AFC_E_INVALID_ARGUMENT;
+		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 

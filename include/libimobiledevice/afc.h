@@ -37,7 +37,7 @@ extern "C" {
 #define AFC_E_READ_ERROR              4
 #define AFC_E_WRITE_ERROR             5
 #define AFC_E_UNKNOWN_PACKET_TYPE     6
-#define AFC_E_INVALID_ARGUMENT        7
+#define AFC_E_INVALID_ARG             7
 #define AFC_E_OBJECT_NOT_FOUND        8
 #define AFC_E_OBJECT_IS_DIR           9
 #define AFC_E_PERM_DENIED            10
