@@ -18,20 +18,23 @@ cdef extern from "pyerrors.h":
 cdef class BaseError(Exception):
     cdef dict _lookup_table
     cdef int16_t _c_errcode
-    cpdef get_message(self)
 
     def __cinit__(self, int16_t errcode):
         self._c_errcode = errcode
-        Exception.__init__(self, errcode)
-    
+
     def __nonzero__(self):
         return self._c_errcode != 0
 
-    cpdef get_message(self):
-        return '%s (%s)' % (self._lookup_table[self._c_errcode], self._c_errcode)
+    property message:
+        def __get__(self):
+            return self._lookup_table[self._c_errcode]
+
+    property code:
+        def __get__(self):
+            return self._c_errcode
 
     def __str__(self):
-        return self.get_message()
+        return '%s (%s)' % (self.message, self.code)
 
     def __repr__(self):
         return self.__str__()
@@ -55,25 +58,17 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
         idevice_event_type event
         char *uuid
         int conn_type
-    ctypedef void (*idevice_event_cb_t) (idevice_event_t *event, void *user_data)
-    cdef extern idevice_error_t c_idevice_event_subscribe "idevice_event_subscribe" (idevice_event_cb_t callback, void *user_data)
-    cdef extern idevice_error_t c_idevice_event_unsubscribe "idevice_event_unsubscribe" ()
+    ctypedef idevice_event_t* const_idevice_event_t "const idevice_event_t*"
+    ctypedef void (*idevice_event_cb_t) (const_idevice_event_t event, void *user_data)
+    cdef extern idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+    cdef extern idevice_error_t idevice_event_unsubscribe()
+    idevice_error_t idevice_get_device_list(char ***devices, int *count)
+    idevice_error_t idevice_device_list_free(char **devices)
     void idevice_set_debug_level(int level)
     idevice_error_t idevice_new(idevice_t *device, char *uuid)
     idevice_error_t idevice_free(idevice_t device)
     idevice_error_t idevice_get_uuid(idevice_t device, char** uuid)
     idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
-
-def set_debug_level(level):
-    idevice_set_debug_level(level)
-
-#cdef void idevice_event_cb(idevice_event_t *c_event, void *user_data):
-    #event = iDeviceEvent()
-    #event._c_event = c_event
-    #(<object>user_data)(event)
-
-#def idevice_event_subscribe(callback):
-    #c_idevice_event_subscribe(idevice_event_cb, <void*>callback)
 
 cdef class iDeviceError(BaseError):
     def __cinit__(self, *args, **kwargs):
@@ -88,8 +83,39 @@ cdef class iDeviceError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
+def set_debug_level(level):
+    idevice_set_debug_level(level)
+
 cdef class iDeviceEvent:
-    cdef idevice_event_t* _c_event
+    cdef const_idevice_event_t _c_event
+
+cdef void idevice_event_cb(const_idevice_event_t c_event, void *user_data):
+    cdef iDeviceEvent event = iDeviceEvent()
+    event._c_event = c_event
+    (<object>user_data)(event)
+
+def event_subscribe(callback):
+    cdef iDeviceError err = iDeviceError(idevice_event_subscribe(idevice_event_cb, <void*>callback))
+    if err: raise err
+
+def event_unsubscribe():
+    cdef iDeviceError err = iDeviceError(idevice_event_unsubscribe())
+    if err: raise err
+
+def get_device_list():
+    cdef char** devices
+    cdef int count
+    cdef list result
+    cdef bytes device
+    cdef iDeviceError err = iDeviceError(idevice_get_device_list(&devices, &count))
+
+    result = []
+    for i from 0 <= i < count:
+        device = devices[i]
+        result.append(device)
+
+    idevice_device_list_free(devices)
+    return result
 
 cdef class iDevice:
     cdef idevice_t _c_dev
@@ -188,7 +214,7 @@ cdef class LockdownClient:
             err = LockdownError(lockdownd_client_free(self._c_client))
             if err: raise err
     
-    cpdef start_service(self, service):
+    cpdef int start_service(self, service):
         cdef uint16_t port
         err = LockdownError(lockdownd_start_service(self._c_client, service, &port))
         if err: raise err
@@ -231,9 +257,13 @@ cdef class MobileSyncError(BaseError):
 cdef class MobileSyncClient:
     cdef mobilesync_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown not None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
         cdef iDevice dev = device
-        cdef LockdownClient lckd = lockdown
+        cdef LockdownClient lckd
+        if lockdown is None:
+            lckd = LockdownClient(dev)
+        else:
+            lcdk = lockdown
         port = lckd.start_service("com.apple.mobilesync")
         err = MobileSyncError(mobilesync_client_new(dev._c_dev, port, &(self._c_client)))
         if err: raise err
@@ -286,9 +316,13 @@ cdef class NotificationProxyError(BaseError):
 cdef class NotificationProxy:
     cdef np_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown not None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
         cdef iDevice dev = device
-        cdef LockdownClient lckd = lockdown
+        cdef LockdownClient lckd
+        if lockdown is None:
+            lckd = LockdownClient(dev)
+        else:
+            lckd = lockdown
         port = lckd.start_service("com.apple.mobile.notification_proxy")
         err = NotificationProxyError(np_client_new(dev._c_dev, port, &(self._c_client)))
         if err: raise err
@@ -323,9 +357,13 @@ cdef class SpringboardServicesError(BaseError):
 cdef class SpringboardServices:
     cdef sbservices_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown not None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
         cdef iDevice dev = device
-        cdef LockdownClient lckd = lockdown
+        cdef LockdownClient lckd
+        if lockdown is None:
+            lckd = LockdownClient(dev)
+        else:
+            lckd = lockdown
         port = lockdown.start_service("com.apple.springboardservices")
         err = SpringboardServicesError(sbservices_client_new(dev._c_dev, port, &(self._c_client)))
         if err: raise err
