@@ -71,7 +71,8 @@ typedef int16_t np_error_t;
 typedef struct np_client_private np_client_private;
 typedef np_client_private *np_client_t; /**< The client handle. */
 
-typedef void (*np_notify_cb_t) (const char *notification, void *userdata);
+/** Reports which notification was received. */
+typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
 np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client);

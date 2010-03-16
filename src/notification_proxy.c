@@ -33,7 +33,7 @@
 struct np_thread {
 	np_client_t client;
 	np_notify_cb_t cbfunc;
-	void *userdata;
+	void *user_data;
 };
 
 /**
@@ -334,7 +334,7 @@ gpointer np_notifier( gpointer arg )
 	while (npt->client->parent) {
 		np_get_notification(npt->client, &notification);
 		if (notification) {
-			npt->cbfunc(notification, npt->userdata);
+			npt->cbfunc(notification, npt->user_data);
 			free(notification);
 			notification = NULL;
 		}
@@ -356,8 +356,8 @@ gpointer np_notifier( gpointer arg )
  * @param client the NP client
  * @param notify_cb pointer to a callback function or NULL to de-register a
  *        previously set callback function.
- * @param userdata Pointer that will be passed to the callback function as
- *        userdata. If notify_cb is NULL, this parameter is ignored.
+ * @param user_data Pointer that will be passed to the callback function as
+ *        user data. If notify_cb is NULL, this parameter is ignored.
  *
  * @note Only one callback function can be registered at the same time;
  *       any previously set callback function will be removed automatically.
@@ -366,7 +366,7 @@ gpointer np_notifier( gpointer arg )
  *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
  *         the callback thread could no be created.
  */
-np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb, void *userdata )
+np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb, void *user_data )
 {
 	if (!client)
 		return NP_E_INVALID_ARG;
@@ -388,7 +388,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 		if (npt) {
 			npt->client = client;
 			npt->cbfunc = notify_cb;
-			npt->userdata = userdata;
+			npt->user_data = user_data;
 
 			client->notifier = g_thread_create(np_notifier, npt, TRUE, NULL);
 			if (client->notifier) {
