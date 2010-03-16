@@ -32,12 +32,13 @@
 
 #define DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR       -256
 
+/** Represents an error code. */
+typedef int16_t device_link_service_error_t;
 
 struct device_link_service_client_private {
 	property_list_service_client_t parent;
 };
 
-typedef int16_t device_link_service_error_t;
 typedef struct device_link_service_client_private *device_link_service_client_t;
 
 device_link_service_error_t device_link_service_client_new(idevice_t device, uint16_t port, device_link_service_client_t *client);

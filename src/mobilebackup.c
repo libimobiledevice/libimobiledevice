@@ -59,6 +59,18 @@ static mobilebackup_error_t mobilebackup_error(device_link_service_error_t err)
 	return MOBILEBACKUP_E_UNKNOWN_ERROR;
 }
 
+/**
+ * Connects to the mobilebackup service on the specified device.
+ *
+ * @param device The device to connect to.
+ * @param port Destination port (usually given by lockdownd_start_service).
+ * @param client Pointer that will be set to a newly allocated
+ *     mobilebackup_client_t upon successful return.
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID ARG if one
+ *     or more parameters are invalid, or DEVICE_LINK_SERVICE_E_BAD_VERSION if
+ *     the mobilebackup version on the device is newer.
+ */
 mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port,
 						   mobilebackup_client_t * client)
 {
@@ -87,6 +99,15 @@ mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port,
 	return ret;
 }
 
+/**
+ * Disconnects a mobilebackup client from the device and frees up the
+ * mobilebackup client data.
+ *
+ * @param client The mobilebackup client to disconnect and free.
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, or MOBILEBACKUP_E_INVALID_ARG
+ *     if client is NULL.
+ */
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
 {
 	if (!client)
@@ -97,9 +118,10 @@ mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
 	return err;
 }
 
-/** Polls the device for MobileBackup data.
+/**
+ * Polls the device for mobilebackup data.
  *
- * @param client The MobileBackup client
+ * @param client The mobilebackup client
  * @param plist A pointer to the location where the plist should be stored
  *
  * @return an error code
@@ -112,12 +134,13 @@ mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t 
 	return ret;
 }
 
-/** Sends MobileBackup data to the device
+/**
+ * Sends mobilebackup data to the device
  * 
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.
  *
- * @param client The MobileBackup client
+ * @param client The mobilebackup client
  * @param plist The location of the plist to send
  *
  * @return an error code

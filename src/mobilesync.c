@@ -59,6 +59,18 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 	return MOBILESYNC_E_UNKNOWN_ERROR;
 }
 
+/**
+ * Connects to the mobilesync service on the specified device.
+ *
+ * @param device The device to connect to.
+ * @param port Destination port (usually given by lockdownd_start_service).
+ * @param client Pointer that will be set to a newly allocated
+ *     mobilesync_client_t upon successful return.
+ *
+ * @return MOBILESYNC_E_SUCCESS on success, MOBILESYNC_E_INVALID ARG if one
+ *     or more parameters are invalid, or DEVICE_LINK_SERVICE_E_BAD_VERSION if
+ *     the mobilesync version on the device is newer.
+ */
 mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port,
 						   mobilesync_client_t * client)
 {
@@ -87,6 +99,15 @@ mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port,
 	return ret;
 }
 
+/**
+ * Disconnects a mobilesync client from the device and frees up the
+ * mobilesync client data.
+ *
+ * @param client The mobilesync client to disconnect and free.
+ *
+ * @return MOBILESYNC_E_SUCCESS on success, or MOBILESYNC_E_INVALID_ARG
+ *     if client is NULL.
+ */
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
 	if (!client)
@@ -97,9 +118,10 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 	return err;
 }
 
-/** Polls the device for MobileSync data.
+/**
+ * Polls the device for mobilesync data.
  *
- * @param client The MobileSync client
+ * @param client The mobilesync client
  * @param plist A pointer to the location where the plist should be stored
  *
  * @return an error code
@@ -112,12 +134,13 @@ mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plis
 	return ret;
 }
 
-/** Sends MobileSync data to the device
+/**
+ * Sends mobilesync data to the device
  * 
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.
  *
- * @param client The MobileSync client
+ * @param client The mobilesync client
  * @param plist The location of the plist to send
  *
  * @return an error code

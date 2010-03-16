@@ -30,7 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <glib.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define INSTPROXY_E_SUCCESS                0
 #define INSTPROXY_E_INVALID_ARG           -1
 #define INSTPROXY_E_PLIST_ERROR           -2
@@ -39,12 +40,15 @@ extern "C" {
 #define INSTPROXY_E_OP_FAILED             -5
 
 #define INSTPROXY_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t instproxy_error_t;
 
 typedef struct instproxy_client_private instproxy_client_private;
 typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */
 
+/** Reports the status of the given operation */
 typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status);
 
 /* Interface */

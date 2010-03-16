@@ -1,6 +1,6 @@
 /*
  * lockdown.c
- * libimobiledevice built-in lockdownd client
+ * com.apple.mobile.lockdownd service implementation.
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -124,15 +124,14 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 }
 
 /**
- * Closes the lockdownd communication session, by sending the StopSession
- * Request to the device.
+ * Closes the lockdownd session by sending the StopSession request.
  *
  * @see lockdownd_start_session
  *
- * @param control The lockdown client
+ * @param client The lockdown client
  * @param session_id The id of a running session
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id)
 {
@@ -178,11 +177,13 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 	return ret;
 }
 
-/** Closes the lockdownd client and does the necessary housekeeping.
+/**
+ * Closes the lockdownd client session if one is running and frees up the
+ * lockdownd_client struct.
  *
  * @param client The lockdown client
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 {
@@ -229,12 +230,14 @@ void lockdownd_client_set_label(lockdownd_client_t client, const char *label)
 	}
 }
 
-/** Polls the device for lockdownd data.
+/**
+ * Receives a plist from lockdownd.
  *
- * @param control The lockdownd client
+ * @param client The lockdownd client
  * @param plist The plist to store the received data
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ *  plist is NULL
  */
 lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist)
 {
@@ -254,7 +257,8 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist)
 	return ret;
 }
 
-/** Sends lockdownd data to the device
+/**
+ * Sends a plist to lockdownd.
  *
  * @note This function is low-level and should only be used if you need to send
  *        a new type of message.
@@ -262,7 +266,8 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist)
  * @param client The lockdownd client
  * @param plist The plist to send
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ *  plist is NULL
  */
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 {
@@ -279,13 +284,14 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
 	return ret;
 }
 
-/** Query the type of the service daemon. Depending on whether the device is
+/**
+ * Query the type of the service daemon. Depending on whether the device is
  * queried in normal mode or restore mode, different types will be returned.
  *
  * @param client The lockdownd client
- * @param type The type returned by the service daemon. Can be NULL to ignore.
+ * @param type The type returned by the service daemon. Pass NULL to ignore.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 {
@@ -325,14 +331,15 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 	return ret;
 }
 
-/** Retrieves a preferences plist using an optional domain and/or key name.
+/**
+ * Retrieves a preferences plist using an optional domain and/or key name.
  *
- * @param client an initialized lockdownd client.
- * @param domain the domain to query on or NULL for global domain
- * @param key the key name to request or NULL to query for all keys
- * @param value a plist node representing the result value node
+ * @param client An initialized lockdownd client.
+ * @param domain The domain to query on or NULL for global domain
+ * @param key The key name to request or NULL to query for all keys
+ * @param value A plist node representing the result value node
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value)
 {
@@ -387,14 +394,16 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 	return ret;
 }
 
-/** Sets a preferences value using a plist and optional domain and/or key name.
+/**
+ * Sets a preferences value using a plist and optional by domain and/or key name.
  *
  * @param client an initialized lockdownd client.
  * @param domain the domain to query on or NULL for global domain
  * @param key the key name to set the value or NULL to set a value dict plist
  * @param value a plist node of any node type representing the value to set
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or 
+ *  value is NULL
  */
 lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value)
 {
@@ -444,15 +453,16 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
 	return ret;
 }
 
-/** Removes a preference node on the device by domain and/or key name
+/**
+ * Removes a preference node by domain and/or key name.
  *
  * @note: Use with caution as this could remove vital information on the device
  *
- * @param client an initialized lockdownd client.
- * @param domain the domain to query on or NULL for global domain
- * @param key the key name to remove or NULL remove all keys for the current domain
+ * @param client An initialized lockdownd client.
+ * @param domain The domain to query on or NULL for global domain
+ * @param key The key name to remove or NULL remove all keys for the current domain
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key)
 {
@@ -501,9 +511,14 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 	return ret;
 }
 
-/** Asks for the device's unique id. Part of the lockdownd handshake.
+/**
+ * Returns the unique id of the device from lockdownd.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @param client An initialized lockdownd client.
+ * @param uuid Holds the unique id of the device. The caller is responsible
+ *  for freeing the memory.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
  */
 lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **uuid)
 {
@@ -521,9 +536,14 @@ lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **uu
 	return ret;
 }
 
-/** Askes for the device's public key. Part of the lockdownd handshake.
+/**
+ * Retrieves the public key of the device from lockdownd.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @param client An initialized lockdownd client.
+ * @param public_key Holds the public key of the device. The caller is
+ *  responsible for freeing the memory.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
  */
 lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key)
 {
@@ -546,12 +566,14 @@ lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnu
 	return ret;
 }
 
-/** Askes for the device's name.
+/**
+ * Retrieves the name of the device from lockdownd set by the user.
  *
- * @param client The pointer to the location of the new lockdownd_client
+ * @param client An initialized lockdownd client.
+ * @param device_name Holds the name of the device. The caller is
+ *  responsible for freeing the memory.
  *
- *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success
  */
 lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name)
 {
@@ -570,13 +592,17 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
 	return ret;
 }
 
-/** Creates a lockdownd client for the device.
+/**
+ * Creates a new lockdownd client for the device.
  *
- * @param phone The device to create a lockdownd client for
+ * @note This function does not pair with the device or start a session. This
+ *  has to be done manually by the caller after the client is created.
+ *
+ * @param device The device to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
- * @param label The label to use for communication. Usually the program name
+ * @param label The label to use for communication. Usually the program name.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label)
 {
@@ -609,15 +635,18 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	return ret;
 }
 
-/** Creates a lockdownd client for the device and starts initial handshake.
- * The handshake consists of query_type, validate_pair, pair and
- * start_session calls.
+/**
+ * Creates a new lockdownd client for the device and starts initial handshake.
+ * The handshake consists out of query_type, validate_pair, pair and
+ * start_session calls. It uses the internal pairing record management.
  *
- * @param phone The device to create a lockdownd client for
+ * @param device The device to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
- * @param label The label to use for communication. Usually the program name
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_INVALID_CONF if configuration data is wrong
  */
 lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label)
 {
@@ -690,6 +719,14 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	return ret;
 }
 
+/**
+ * Returns a new plist from the supplied lockdownd pair record. The caller is
+ * responsible for freeing the plist.
+ *
+ * @param pair_record The pair record to create a plist from.
+ *
+ * @return A pair record plist from the device, NULL if pair_record is not set
+ */
 static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_record)
 {
 	if (!pair_record)
@@ -712,6 +749,17 @@ static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_recor
 	return dict;
 }
 
+/**
+ * Generates a new pairing record plist and required certificates for the 
+ * supplied public key of the device and the host_id of the caller's host
+ * computer.
+ *
+ * @param public_key The public key of the device.
+ * @param host_id The HostID to use for the pair record plist.
+ * @param pair_record_plist Holds the generated pair record.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
+ */
 static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, char *host_id, plist_t *pair_record_plist)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
@@ -743,7 +791,8 @@ static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, c
 	return ret;
 }
 
-/** Function used internally by lockdownd_pair() and lockdownd_validate_pair()
+/**
+ * Function used internally by lockdownd_pair() and lockdownd_validate_pair()
  *
  * @param client The lockdown client to pair with.
  * @param pair_record The pair record to use for pairing. If NULL is passed, then
@@ -751,10 +800,17 @@ static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, c
  *    generated automatically when pairing is done for the first time.
  * @param verb This is either "Pair", "ValidatePair" or "Unpair".
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
+ *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
 static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb)
 {
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
 	plist_t dict_record = NULL;
@@ -855,15 +911,18 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 }
 
 /** 
- * Pairs the device with the given HostID.
- * It's part of the lockdownd handshake.
+ * Pairs the device using the supplied pair record.
  *
  * @param client The lockdown client to pair with.
  * @param pair_record The pair record to use for pairing. If NULL is passed, then
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
+ *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
@@ -871,17 +930,21 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_recor
 }
 
 /** 
- * Pairs the device with the given HostID. The difference to lockdownd_pair()
- * is that the specified host will become trusted host of the device.
- * It's part of the lockdownd handshake.
+ * Validates if the device is paired with the given HostID. If succeeded them
+ * specified host will become trusted host of the device indicated by the 
+ * lockdownd preference named TrustedHostAttached. Otherwise the host must because
+ * paired using lockdownd_pair() first.
  *
  * @param client The lockdown client to pair with.
  * @param pair_record The pair record to validate pairing with. If NULL is
- *    passed, then the pair records from the current machine are used.
- *    New records will be generated automatically when pairing is done
- *    for the first time.
+ *    passed, then the pair record is read from the internal pairing record
+ *    management.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
+ *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
@@ -890,13 +953,17 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_p
 
 /** 
  * Unpairs the device with the given HostID and removes the pairing records
- * from the device and host.
+ * from the device and host if the internal pairing record management is used.
  *
  * @param client The lockdown client to pair with.
  * @param pair_record The pair record to use for unpair. If NULL is passed, then
  *    the pair records from the current machine are used.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
+ *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
 lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
@@ -908,7 +975,7 @@ lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_rec
  *
  * @param client The lockdown client
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 {
@@ -939,12 +1006,12 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 }
 
 /**
- * Performs the Goodbye Request to tell the device the communication
- * session is now closed.
+ * Sends the Goodbye request to lockdownd signaling the end of communication.
  *
  * @param client The lockdown client
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the device did not acknowledge the request
  */
 lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 {
@@ -978,10 +1045,18 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	return ret;
 }
 
-/** Generates the device certificate from the public key as well as the host
- *  and root certificates.
+/**
+ * Generates the device certificate from the public key as well as the host
+ * and root certificates.
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @param public_key The public key of the device to use for generation.
+ * @param odevice_cert Holds the generated device certificate.
+ * @param ohost_cert Holds the generated host certificate.
+ * @param oroot_cert Holds the generated root certificate.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when a parameter is NULL,
+ *  LOCKDOWN_E_INVALID_CONF if the internal configuration system failed,
+ *  LOCKDOWN_E_SSL_ERROR if the certificates could not be generated
  */
 lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * odevice_cert,
 									   gnutls_datum_t * ohost_cert, gnutls_datum_t * oroot_cert)
@@ -1116,15 +1191,18 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 	return ret;
 }
 
-/** Starts communication with lockdownd after the device has been paired,
- *  and if the device requires it, switches to SSL mode.
+/**
+ * Opens a session with lockdownd and switches to SSL mode if device wants it.
  *
  * @param client The lockdownd client
  * @param host_id The HostID of the computer
- * @param session_id The session_id of the created session
+ * @param session_id The new session_id of the created session
  * @param ssl_enabled Whether SSL communication is used in the session
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when a client or
+ *  host_id is NULL, LOCKDOWN_E_PLIST_ERROR if the response plist had errors,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the supplied HostID,
+ *  LOCKDOWN_E_SSL_ERROR if enabling SSL communication failed
  */
 lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled)
 {
@@ -1212,13 +1290,17 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	return ret;
 }
 
-/** Command to start the desired service
+/**
+ * Requests to start a service and retrieve it's port on success.
  *
  * @param client The lockdownd client
  * @param service The name of the service to start
  * @param port The port number the service was started on
  
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
+ *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
+ *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
+ *  started by the device
  */
 lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, uint16_t *port)
 {
@@ -1300,10 +1382,15 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
  *
  * @see http://iphone-docs.org/doku.php?id=docs:protocols:activation
  *
- * @param control The lockdown client
+ * @param client The lockdown client
  * @param activation_record The activation record plist dictionary
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ *  activation_record is NULL, LOCKDOWN_E_NO_RUNNING_SESSION if no session is
+ *  open, LOCKDOWN_E_PLIST_ERROR if the received plist is broken, 
+ *  LOCKDOWN_E_ACTIVATION_FAILED if the activation failed, 
+ *  LOCKDOWN_E_INVALID_ACTIVATION_RECORD if the device reports that the
+ *  activation_record is invalid
  */
 lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record) 
 {
@@ -1357,12 +1444,14 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 }
 
 /**
- * Deactivates the device, returning it to the locked
- * “Activate with iTunes” screen.
+ * Deactivates the device, returning it to the locked “Activate with iTunes”
+ * screen.
  *
- * @param control The lockdown client
+ * @param client The lockdown client
  *
- * @return an error code (LOCKDOWN_E_SUCCESS on success)
+ * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_NO_RUNNING_SESSION if no session is open, 
+ *  LOCKDOWN_E_PLIST_ERROR if the received plist is broken
  */
 lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 {

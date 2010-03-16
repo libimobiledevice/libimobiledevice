@@ -29,7 +29,8 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define MOBILESYNC_E_SUCCESS                0
 #define MOBILESYNC_E_INVALID_ARG           -1
 #define MOBILESYNC_E_PLIST_ERROR           -2
@@ -37,7 +38,9 @@ extern "C" {
 #define MOBILESYNC_E_BAD_VERSION           -4
 
 #define MOBILESYNC_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t mobilesync_error_t;
 
 typedef struct mobilesync_client_private mobilesync_client_private;

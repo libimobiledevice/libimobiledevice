@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/lockdown.h
- * @brief Communcation with the lockdown device daemon
+ * @brief Implementation to communicate with the lockdown device daemon
  * \internal
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -30,7 +30,8 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define LOCKDOWN_E_SUCCESS                     0
 #define LOCKDOWN_E_INVALID_ARG                -1
 #define LOCKDOWN_E_INVALID_CONF               -2
@@ -52,18 +53,21 @@ extern "C" {
 #define LOCKDOWN_E_INVALID_ACTIVATION_RECORD -18
 
 #define LOCKDOWN_E_UNKNOWN_ERROR            -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t lockdownd_error_t;
 
 typedef struct lockdownd_client_private lockdownd_client_private;
 typedef lockdownd_client_private *lockdownd_client_t; /**< The client handle. */
 
 struct lockdownd_pair_record {
-	char *device_certificate;
-	char *host_certificate;
-	char *host_id;
-	char *root_certificate;
+	char *device_certificate; /**< The device certificate */
+	char *host_certificate;   /**< The host certificate */
+	char *host_id;            /**< A unique HostID for the host computer */
+	char *root_certificate;   /**< The root certificate */
 };
+/** A pair record holding device, host and root certificates along the host_id */
 typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
 
 /* Interface */

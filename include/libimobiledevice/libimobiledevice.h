@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/libimobiledevice.h
- * @brief Common code and device handling
+ * @brief Device/Connection handling and communication
  * \internal
  *
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
@@ -32,7 +32,8 @@ extern "C" {
 #include <sys/stat.h>
 #include <plist/plist.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define IDEVICE_E_SUCCESS                0
 #define IDEVICE_E_INVALID_ARG           -1
 #define IDEVICE_E_UNKNOWN_ERROR         -2
@@ -40,7 +41,9 @@ extern "C" {
 #define IDEVICE_E_NOT_ENOUGH_DATA       -4
 #define IDEVICE_E_BAD_HEADER            -5
 #define IDEVICE_E_SSL_ERROR             -6
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t idevice_error_t;
 
 typedef struct idevice_private idevice_private;
@@ -53,23 +56,25 @@ typedef idevice_connection_private *idevice_connection_t; /**< The connection ha
 void idevice_set_debug_level(int level);
 
 /* discovery (events/asynchronous) */
-// event type
+/** The event type for device add or removal */
 enum idevice_event_type {
 	IDEVICE_DEVICE_ADD = 1,
 	IDEVICE_DEVICE_REMOVE
 };
 
-// event data structure
+/* event data structure */
+/** Provides information about the occoured event. */
 typedef struct {
-	enum idevice_event_type event;
-	const char *uuid;
-	int conn_type;
+	enum idevice_event_type event; /**< The event type. */
+	const char *uuid; /**< The device unique id. */
+	int conn_type; /**< The connection type. Currently only 1 for usbmuxd. */
 } idevice_event_t;
 
-// event callback function prototype
+/* event callback function prototype */
+/** Callback to notifiy if a device was added or removed. */
 typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_data);
 
-// functions
+/* functions */
 idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
 idevice_error_t idevice_event_unsubscribe();
 

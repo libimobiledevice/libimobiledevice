@@ -29,14 +29,17 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define SBSERVICES_E_SUCCESS                0
 #define SBSERVICES_E_INVALID_ARG           -1
 #define SBSERVICES_E_PLIST_ERROR           -2
 #define SBSERVICES_E_CONN_FAILED           -3
 
 #define SBSERVICES_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t sbservices_error_t;
 
 typedef struct sbservices_client_private sbservices_client_private;

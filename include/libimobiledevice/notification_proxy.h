@@ -29,23 +29,36 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define NP_E_SUCCESS                0
 #define NP_E_INVALID_ARG           -1
 #define NP_E_PLIST_ERROR           -2
 #define NP_E_CONN_FAILED           -3
 
 #define NP_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t np_error_t;
 
-/* Notification IDs for use with post_notification (client --> device) */
+/**
+ * @name Notifications that can be send
+ *
+ * For use with np_post_notification() (client --> device)
+ */
 #define NP_SYNC_WILL_START           "com.apple.itunes-mobdev.syncWillStart"
 #define NP_SYNC_DID_START            "com.apple.itunes-mobdev.syncDidStart"
 #define NP_SYNC_DID_FINISH           "com.apple.itunes-mobdev.syncDidFinish"
 #define NP_SYNC_LOCK_REQUEST         "com.apple.itunes-mobdev.syncLockRequest"
+/*@}*/
 
-/* Notification IDs for use with observe_notification (device --> client) */
+/**
+ * @name Notifications that can be received
+ *
+ * For use with np_observe_notification() (device --> client)
+ */
+/*@{*/
 #define NP_SYNC_CANCEL_REQUEST       "com.apple.itunes-client.syncCancelRequest"
 #define NP_SYNC_SUSPEND_REQUEST      "com.apple.itunes-client.syncSuspendRequest"
 #define NP_SYNC_RESUME_REQUEST       "com.apple.itunes-client.syncResumeRequest"
@@ -67,6 +80,7 @@ typedef int16_t np_error_t;
 #define NP_ITDBPREP_DID_END          "com.apple.itdbprep.notification.didEnd"
 #define NP_LANGUAGE_CHANGED          "com.apple.language.changed"
 #define NP_ADDRESS_BOOK_PREF_CHANGED "com.apple.AddressBook.PreferenceChanged"
+/*@}*/
 
 typedef struct np_client_private np_client_private;
 typedef np_client_private *np_client_t; /**< The client handle. */

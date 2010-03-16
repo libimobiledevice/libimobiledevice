@@ -42,7 +42,8 @@
 #define LIBIMOBILEDEVICE_HOST_CERTIF "HostCertificate.pem"
 
 
-/** Creates a freedesktop compatible configuration directory.
+/**
+ * Creates a freedesktop compatible configuration directory.
  */
 static void userpref_create_config_dir(void)
 {
@@ -60,7 +61,8 @@ static int get_rand(int min, int max)
 	return retval;
 }
 
-/** Generates a valid HostID (which is actually a UUID).
+/**
+ * Generates a valid HostID (which is actually a UUID).
  *
  * @return A null terminated string containing a valid HostID.
  */
@@ -85,7 +87,8 @@ static char *userpref_generate_host_id()
 	return hostid;
 }
 
-/** Store HostID in config file.
+/**
+ * Store HostID in config file.
  *
  * @param host_id A null terminated string containing a valid HostID.
  */
@@ -123,7 +126,8 @@ static int userpref_set_host_id(const char *host_id)
 	return 1;
 }
 
-/** Reads the HostID from a previously generated configuration file.
+/**
+ * Reads the HostID from a previously generated configuration file.
  *
  * @note It is the responsibility of the calling function to free the returned host_id
  *
@@ -158,7 +162,8 @@ void userpref_get_host_id(char **host_id)
 	debug_info("Using %s as HostID", *host_id);
 }
 
-/** Determines whether this device has been connected to this system before.
+/**
+ * Determines whether this device has been connected to this system before.
  *
  * @param uid The device uid as given by the device.
  *
@@ -180,8 +185,9 @@ int userpref_has_device_public_key(const char *uuid)
 	return ret;
 }
 
-/** Mark the device (as represented by the key) as having connected to this
- *  configuration.
+/**
+ * Mark the device (as represented by the key) as having connected to this
+ * configuration.
  *
  * @param public_key The public key given by the device
  *
@@ -213,7 +219,8 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t
 	return USERPREF_E_SUCCESS;
 }
 
-/** Remove the public key stored for the device with uuid from this host.
+/**
+ * Remove the public key stored for the device with uuid from this host.
  *
  * @param uuid The uuid of the device
  *
@@ -237,7 +244,8 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
 	return USERPREF_E_SUCCESS;
 }
 
-/** Private function which reads the given file into a gnutls structure.
+/**
+ * Private function which reads the given file into a gnutls structure.
  *
  * @param file The filename of the file to read
  * @param data The pointer at which to store the data.
@@ -266,7 +274,8 @@ static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 	return success;
 }
 
-/** Private function which generate private keys and certificates.
+/**
+ * Private function which generate private keys and certificates.
  *
  * @return 1 if keys were successfully generated, 0 otherwise
  */
@@ -365,7 +374,8 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	return ret;
 }
 
-/** Private function which import the given key into a gnutls structure.
+/**
+ * Private function which import the given key into a gnutls structure.
  *
  * @param key_name The filename of the private key to import.
  * @param key the gnutls key structure.
@@ -387,7 +397,8 @@ static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_pr
 	return ret;
 }
 
-/** Private function which import the given certificate into a gnutls structure.
+/**
+ * Private function which import the given certificate into a gnutls structure.
  *
  * @param crt_name The filename of the certificate to import.
  * @param cert the gnutls certificate structure.
@@ -409,7 +420,8 @@ static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_cr
 	return ret;
 }
 
-/** Function to retrieve host keys and certificates.
+/**
+ * Function to retrieve host keys and certificates.
  * This function trigger key generation if they do not exists yet or are invalid.
  *
  * @note This function can take few seconds to complete (typically 5 seconds)
@@ -459,7 +471,8 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
 	return ret;
 }
 
-/** Function to retrieve certificates encoded in PEM format.
+/**
+ * Function to retrieve certificates encoded in PEM format.
  *
  * @param pem_root_cert The root certificate.
  * @param pem_host_cert The host certificate.
@@ -480,7 +493,8 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
 	return USERPREF_E_INVALID_CONF;
 }
 
-/** Create and save a configuration file containing the given data.
+/**
+ * Create and save a configuration file containing the given data.
  *
  * @note: All fields must specified and be non-null
  *

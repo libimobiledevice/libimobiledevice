@@ -208,7 +208,7 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 	if (res != SBSERVICES_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
 	}
-	// NO RESPONSE
+	/* NO RESPONSE */
 
 	if (dict) {
 		plist_free(dict);

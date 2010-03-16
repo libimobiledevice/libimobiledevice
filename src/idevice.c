@@ -172,7 +172,8 @@ idevice_error_t idevice_new(idevice_t * device, const char *uuid)
 	return IDEVICE_E_NO_DEVICE;
 }
 
-/** Cleans up an idevice structure, then frees the structure itself.  
+/**
+ * Cleans up an idevice structure, then frees the structure itself.
  * This is a library-level function; deals directly with the device to tear
  *  down relations, but otherwise is mostly internal.
  * 
@@ -422,6 +423,9 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
+/**
+ * Gets the handle of the device. Depends on the connection type.
+ */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
@@ -436,6 +440,9 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
+/**
+ * Gets the unique id for the device.
+ */
 idevice_error_t idevice_get_uuid(idevice_t device, char **uuid)
 {
 	if (!device)
@@ -469,10 +476,10 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 		}
 		debug_info("post-read we got %i bytes", bytes);
 
-		// increase read count
+		/* increase read count */
 		tbytes += bytes;
 
-		// fill the buffer with what we got right now
+		/* fill the buffer with what we got right now */
 		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
 		pos_start_fill += bytes;
 
@@ -538,7 +545,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
-	// Set up GnuTLS...
+	/* Set up GnuTLS... */
 	debug_info("enabling SSL mode");
 	errno = 0;
 	gnutls_global_init();
@@ -558,7 +565,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		gnutls_protocol_set_priority(ssl_data_loc->session, protocol_priority);
 		gnutls_mac_set_priority(ssl_data_loc->session, mac_priority);
 	}
-	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate); // this part is killing me.
+	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate); /* this part is killing me. */
 
 	debug_info("GnuTLS step 1...");
 	gnutls_transport_set_ptr(ssl_data_loc->session, (gnutls_transport_ptr_t)connection);

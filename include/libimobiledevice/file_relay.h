@@ -29,7 +29,8 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define FILE_RELAY_E_SUCCESS                0
 #define FILE_RELAY_E_INVALID_ARG           -1
 #define FILE_RELAY_E_PLIST_ERROR           -2
@@ -38,7 +39,9 @@ extern "C" {
 #define FILE_RELAY_E_STAGING_EMPTY         -5
 
 #define FILE_RELAY_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t file_relay_error_t;
 
 typedef struct file_relay_client_private file_relay_client_private;

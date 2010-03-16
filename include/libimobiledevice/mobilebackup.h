@@ -29,7 +29,8 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-/* Error Codes */
+/** @name Error Codes */
+/*@{*/
 #define MOBILEBACKUP_E_SUCCESS                0
 #define MOBILEBACKUP_E_INVALID_ARG           -1
 #define MOBILEBACKUP_E_PLIST_ERROR           -2
@@ -38,7 +39,9 @@ extern "C" {
 #define MOBILEBACKUP_E_REPLY_NOT_OK          -5
 
 #define MOBILEBACKUP_E_UNKNOWN_ERROR       -256
+/*@}*/
 
+/** Represents an error code. */
 typedef int16_t mobilebackup_error_t;
 
 typedef struct mobilebackup_client_private mobilebackup_client_private;
