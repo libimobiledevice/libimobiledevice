@@ -234,35 +234,6 @@ static int plist_strcmp(plist_t node, const char *str)
 	return ret;
 }
 
-static plist_t device_link_message_factory_process_message_new(plist_t content)
-{
-	plist_t ret = plist_new_array();
-	plist_array_append_item(ret, plist_new_string("DLMessageProcessMessage"));
-	plist_array_append_item(ret, content);
-	return ret;
-}
-
-static void mobilebackup_cancel_backup_with_error(const char *reason)
-{
-	plist_t node = plist_new_dict();
-	plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("BackupMessageError"));
-	plist_dict_insert_item(node, "BackupErrorReasonKey", plist_new_string(reason));
-
-	plist_t message = device_link_message_factory_process_message_new(node);
-
-	mobilebackup_send(mobilebackup, message);
-
-	plist_free(message);
-	message = NULL;
-}
-
-static plist_t mobilebackup_factory_backup_file_received_new()
-{
-	plist_t node = plist_new_dict();
-	plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("kBackupMessageBackupFileReceived"));
-	return device_link_message_factory_process_message_new(node);
-}
-
 static gchar *mobilebackup_build_path(const char *backup_directory, const char *name, const char *extension)
 {
 	gchar *filename = g_strconcat(name, extension, NULL);
@@ -650,54 +621,27 @@ int main(int argc, char *argv[])
 			/* request backup from device with manifest from last backup */
 			printf("Requesting backup from device...\n");
 
-			node = plist_new_dict();
-
-			if (manifest_plist)
-				plist_dict_insert_item(node, "BackupManifestKey", manifest_plist);
-
-			plist_dict_insert_item(node, "BackupComputerBasePathKey", plist_new_string("/"));
-			plist_dict_insert_item(node, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
-			plist_dict_insert_item(node, "BackupProtocolVersion", plist_new_string("1.6"));
-
-			plist_t message = device_link_message_factory_process_message_new(node);
-			mobilebackup_send(mobilebackup, message);
-			plist_free(message);
-			message = NULL;
-			node = NULL;
-
-			/* get response */
-			int backup_ok = 0;
-			mobilebackup_receive(mobilebackup, &message);
-
-			node = plist_array_get_item(message, 0);
-			if (!plist_strcmp(node, "DLMessageProcessMessage")) {
-				node = plist_array_get_item(message, 1);
-				node = plist_dict_get_item(node, "BackupMessageTypeKey");
-				if (node && !plist_strcmp(node, "BackupMessageBackupReplyOK")) {
-					printf("Device accepts manifest and will send backup data now...\n");
-					backup_ok = 1;
-					printf("Acknowledging...\n");
-					if (is_full_backup)
-						printf("Full backup mode.\n");
-					else
-						printf("Incremental backup mode.\n");
-					printf("Please wait. Device prepares backup data...\n");
-					/* send it back for ACK */
-					mobilebackup_send(mobilebackup, message);
-				}
+			mobilebackup_error_t err = mobilebackup_request_backup(mobilebackup, manifest_plist, "/", "1.6");
+			if (err == MOBILEBACKUP_E_SUCCESS) {
+				if (is_full_backup)
+					printf("Full backup mode.\n");
+				else
+					printf("Incremental backup mode.\n");
+				printf("Please wait. Device is preparing backup data...\n");
 			} else {
-				printf("ERROR: Unhandled message received!\n");
-			}
-			plist_free(message);
-			message = NULL;
-
-			if (!backup_ok) {
-				printf("ERROR: Device rejected to start the backup process.\n");
+				if (err == MOBILEBACKUP_E_BAD_VERSION) {
+					printf("ERROR: Could not start backup process: backup protocol version mismatch!\n");
+				} else if (err == MOBILEBACKUP_E_REPLY_NOT_OK) {
+					printf("ERROR: Could not start backup process: device refused to start the backup process.\n");
+				} else {
+					printf("ERROR: Could not start backup process: unspecified error occured\n");
+				}
 				break;
 			}
 
 			/* reset backup status */
-			backup_ok = 0;
+			int backup_ok = 0;
+			plist_t message = NULL;
 
 			/* receive and save DLSendFile files and metadata, ACK each */
 			int file_index = 0;
@@ -836,15 +780,12 @@ int main(int argc, char *argv[])
 						printf("DONE\n");
 
 					/* acknowlegdge that we received the file */
-					message = mobilebackup_factory_backup_file_received_new();
-					mobilebackup_send(mobilebackup, message);
-					plist_free(message);
-					message = NULL;
+					mobilebackup_send_backup_file_received(mobilebackup);
 				}
 
 				if (quit_flag > 0) {
 					/* need to cancel the backup here */
-					mobilebackup_cancel_backup_with_error("Cancelling DLSendFile");
+					mobilebackup_send_error(mobilebackup, "Cancelling DLSendFile");
 
 					/* remove any atomic Manifest.plist.tmp */
 					if (manifest_path)
