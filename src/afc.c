@@ -383,15 +383,25 @@ static uint32_t count_nullspaces(char *string, uint32_t number)
 	return nulls;
 }
 
-static char **make_strings_list(char *tokens, uint32_t true_length)
+/**
+ * Splits a string of tokens by null characters and returns each token in a
+ * char array/list.
+ *
+ * @param tokens The characters to split into a list.
+ * @param length The length of the tokens string.
+ *
+ * @return A char ** list with each token found in the string. The caller is
+ *  responsible for freeing the memory.
+ */
+static char **make_strings_list(char *tokens, uint32_t length)
 {
 	uint32_t nulls = 0, i = 0, j = 0;
 	char **list = NULL;
 
-	if (!tokens || !true_length)
+	if (!tokens || !length)
 		return NULL;
 
-	nulls = count_nullspaces(tokens, true_length);
+	nulls = count_nullspaces(tokens, length);
 	list = (char **) malloc(sizeof(char *) * (nulls + 1));
 	for (i = 0; i < nulls; i++) {
 		list[i] = strdup(tokens + j);
