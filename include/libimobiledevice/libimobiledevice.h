@@ -63,7 +63,7 @@ enum idevice_event_type {
 };
 
 /* event data structure */
-/** Provides information about the occoured event. */
+/** Provides information about the occured event. */
 typedef struct {
 	enum idevice_event_type event; /**< The event type. */
 	const char *uuid; /**< The device unique id. */
