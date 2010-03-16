@@ -41,8 +41,8 @@ extern "C" {
 
 typedef int16_t file_relay_error_t;
 
-struct file_relay_client_int;
-typedef struct file_relay_client_int *file_relay_client_t;
+typedef struct file_relay_client_private file_relay_client_private;
+typedef file_relay_client_private *file_relay_client_t; /**< The client handle. */
 
 file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_relay_client_t *client);
 file_relay_error_t file_relay_client_free(file_relay_client_t client);

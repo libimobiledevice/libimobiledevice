@@ -76,7 +76,7 @@ afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * clien
 		return AFC_E_MUX_ERROR;
 	}
 
-	afc_client_t client_loc = (afc_client_t) malloc(sizeof(struct afc_client_int));
+	afc_client_t client_loc = (afc_client_t) malloc(sizeof(struct afc_client_private));
 	client_loc->connection = connection;
 
 	/* allocate a packet */

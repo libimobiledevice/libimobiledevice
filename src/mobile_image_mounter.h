@@ -26,7 +26,7 @@
 #include "libimobiledevice/mobile_image_mounter.h"
 #include "property_list_service.h"
 
-struct mobile_image_mounter_client_int {
+struct mobile_image_mounter_client_private {
 	property_list_service_client_t parent;
 	GMutex *mutex;
 };

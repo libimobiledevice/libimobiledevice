@@ -48,7 +48,7 @@ file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_r
 	}
 
 	/* create client object */
-	file_relay_client_t client_loc = (file_relay_client_t) malloc(sizeof(struct file_relay_client_int));
+	file_relay_client_t client_loc = (file_relay_client_t) malloc(sizeof(struct file_relay_client_private));
 	client_loc->parent = plistclient;
 
 	/* all done, return success */

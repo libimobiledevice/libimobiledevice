@@ -30,19 +30,19 @@ enum connection_type {
 	CONNECTION_USBMUXD = 1
 };
 
-struct ssl_data_int {
+struct ssl_data_private {
         gnutls_certificate_credentials_t certificate;
 	gnutls_session_t session;
 };
-typedef struct ssl_data_int *ssl_data_t;
+typedef struct ssl_data_private *ssl_data_t;
 
-struct idevice_connection_int {
+struct idevice_connection_private {
 	enum connection_type type;
 	void *data;
 	ssl_data_t ssl_data;
 };
 
-struct idevice_int {
+struct idevice_private {
 	char *uuid;
 	enum connection_type conn_type;
 	void *conn_data;

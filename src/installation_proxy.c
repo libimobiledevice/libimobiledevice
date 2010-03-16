@@ -108,7 +108,7 @@ instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instprox
 		return INSTPROXY_E_CONN_FAILED;
 	}
 
-	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_int));
+	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));
 	client_loc->parent = plistclient;
 	client_loc->mutex = g_mutex_new();
 	client_loc->status_updater = NULL;

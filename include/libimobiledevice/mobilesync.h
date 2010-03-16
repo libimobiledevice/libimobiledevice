@@ -40,8 +40,8 @@ extern "C" {
 
 typedef int16_t mobilesync_error_t;
 
-struct mobilesync_client_int;
-typedef struct mobilesync_client_int *mobilesync_client_t;
+typedef struct mobilesync_client_private mobilesync_client_private;
+typedef mobilesync_client_private *mobilesync_client_t; /**< The client handle */
 
 mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client);
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);

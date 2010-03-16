@@ -52,7 +52,7 @@ typedef struct {
 	uint64_t filehandle, size;
 } AFCFilePacket;
 
-struct afc_client_int {
+struct afc_client_private {
 	idevice_connection_t connection;
 	AFCPacket *afc_packet;
 	int file_handle;

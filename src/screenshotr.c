@@ -86,7 +86,7 @@ screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port,
 		return ret;
 	}
 
-	screenshotr_client_t client_loc = (screenshotr_client_t) malloc(sizeof(struct screenshotr_client_int));
+	screenshotr_client_t client_loc = (screenshotr_client_t) malloc(sizeof(struct screenshotr_client_private));
 	client_loc->parent = dlclient;
 
 	/* perform handshake */

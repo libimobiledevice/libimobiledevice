@@ -110,7 +110,7 @@ np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client)
 		return NP_E_CONN_FAILED;
 	}
 
-	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_int));
+	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_private));
 	client_loc->parent = plistclient;
 
 	client_loc->mutex = g_mutex_new();

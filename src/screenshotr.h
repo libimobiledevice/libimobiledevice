@@ -24,7 +24,7 @@
 #include "libimobiledevice/screenshotr.h"
 #include "device_link_service.h"
 
-struct screenshotr_client_int {
+struct screenshotr_client_private {
 	device_link_service_client_t parent;
 };
 

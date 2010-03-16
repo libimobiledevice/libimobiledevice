@@ -42,8 +42,8 @@ extern "C" {
 
 typedef int16_t instproxy_error_t;
 
-struct instproxy_client_int;
-typedef struct instproxy_client_int *instproxy_client_t;
+typedef struct instproxy_client_private instproxy_client_private;
+typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */
 
 typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status);
 

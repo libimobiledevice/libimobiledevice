@@ -591,7 +591,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 		return LOCKDOWN_E_MUX_ERROR;
 	}
 
-	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_int));
+	lockdownd_client_t client_loc = (lockdownd_client_t) malloc(sizeof(struct lockdownd_client_private));
 	client_loc->parent = plistclient;
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;

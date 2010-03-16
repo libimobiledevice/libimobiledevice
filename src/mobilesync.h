@@ -24,7 +24,7 @@
 #include "libimobiledevice/mobilesync.h"
 #include "device_link_service.h"
 
-struct mobilesync_client_int {
+struct mobilesync_client_private {
 	device_link_service_client_t parent;
 };
 

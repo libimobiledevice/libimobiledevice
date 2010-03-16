@@ -33,13 +33,12 @@
 #define DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR       -256
 
 
-struct device_link_service_client_int {
+struct device_link_service_client_private {
 	property_list_service_client_t parent;
 };
 
-typedef struct device_link_service_client_int *device_link_service_client_t;
-
 typedef int16_t device_link_service_error_t;
+typedef struct device_link_service_client_private *device_link_service_client_t;
 
 device_link_service_error_t device_link_service_client_new(idevice_t device, uint16_t port, device_link_service_client_t *client);
 device_link_service_error_t device_link_service_client_free(device_link_service_client_t client);

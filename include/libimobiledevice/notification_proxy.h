@@ -68,8 +68,8 @@ typedef int16_t np_error_t;
 #define NP_LANGUAGE_CHANGED          "com.apple.language.changed"
 #define NP_ADDRESS_BOOK_PREF_CHANGED "com.apple.AddressBook.PreferenceChanged"
 
-struct np_client_int;
-typedef struct np_client_int *np_client_t;
+typedef struct np_client_private np_client_private;
+typedef np_client_private *np_client_t; /**< The client handle. */
 
 typedef void (*np_notify_cb_t) (const char *notification, void *userdata);
 

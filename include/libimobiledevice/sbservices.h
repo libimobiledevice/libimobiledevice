@@ -39,8 +39,8 @@ extern "C" {
 
 typedef int16_t sbservices_error_t;
 
-struct sbservices_client_int;
-typedef struct sbservices_client_int *sbservices_client_t;
+typedef struct sbservices_client_private sbservices_client_private;
+typedef sbservices_client_private *sbservices_client_t; /**< The client handle. */
 
 /* Interface */
 sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbservices_client_t *client);

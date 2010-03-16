@@ -83,8 +83,8 @@ typedef enum {
 	AFC_LOCK_UN = 8 | 4  // unlock
 } afc_lock_op_t;
 
-struct afc_client_int;
-typedef struct afc_client_int *afc_client_t;
+typedef struct afc_client_private afc_client_private;
+typedef afc_client_private *afc_client_t; /**< The client handle. */
 
 /* Interface */
 afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t *client);

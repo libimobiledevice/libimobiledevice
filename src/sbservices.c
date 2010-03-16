@@ -103,7 +103,7 @@ sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbserv
 		return err;
 	}
 
-	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_int));
+	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_private));
 	client_loc->parent = plistclient;
 	client_loc->mutex = g_mutex_new();
 

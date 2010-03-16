@@ -71,7 +71,7 @@ mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port,
 		return ret;
 	}
 
-	mobilesync_client_t client_loc = (mobilesync_client_t) malloc(sizeof(struct mobilesync_client_int));
+	mobilesync_client_t client_loc = (mobilesync_client_t) malloc(sizeof(struct mobilesync_client_private));
 	client_loc->parent = dlclient;
 
 	/* perform handshake */

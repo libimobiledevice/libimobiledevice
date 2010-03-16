@@ -32,11 +32,11 @@
 
 #define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
 
-struct property_list_service_client_int {
+struct property_list_service_client_private {
 	idevice_connection_t connection;
 };
 
-typedef struct property_list_service_client_int *property_list_service_client_t;
+typedef struct property_list_service_client_private *property_list_service_client_t;
 
 typedef int16_t property_list_service_error_t;
 

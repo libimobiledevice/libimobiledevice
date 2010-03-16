@@ -104,7 +104,7 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t
 		return MOBILE_IMAGE_MOUNTER_E_CONN_FAILED;
 	}
 
-	mobile_image_mounter_client_t client_loc = (mobile_image_mounter_client_t) malloc(sizeof(struct mobile_image_mounter_client_int));
+	mobile_image_mounter_client_t client_loc = (mobile_image_mounter_client_t) malloc(sizeof(struct mobile_image_mounter_client_private));
 	client_loc->parent = plistclient;
 
 	client_loc->mutex = g_mutex_new();

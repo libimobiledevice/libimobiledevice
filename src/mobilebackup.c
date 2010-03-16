@@ -71,7 +71,7 @@ mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port,
 		return ret;
 	}
 
-	mobilebackup_client_t client_loc = (mobilebackup_client_t) malloc(sizeof(struct mobilebackup_client_int));
+	mobilebackup_client_t client_loc = (mobilebackup_client_t) malloc(sizeof(struct mobilebackup_client_private));
 	client_loc->parent = dlclient;
 
 	/* perform handshake */

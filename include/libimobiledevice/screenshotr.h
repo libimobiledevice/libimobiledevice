@@ -40,8 +40,8 @@ extern "C" {
 
 typedef int16_t screenshotr_error_t;
 
-struct screenshotr_client_int;
-typedef struct screenshotr_client_int *screenshotr_client_t;
+typedef struct screenshotr_client_private screenshotr_client_private;
+typedef screenshotr_client_private *screenshotr_client_t; /**< The client handle. */
 
 screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port, screenshotr_client_t * client);
 screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);

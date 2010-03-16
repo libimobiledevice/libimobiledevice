@@ -43,11 +43,11 @@ extern "C" {
 
 typedef int16_t idevice_error_t;
 
-struct idevice_int;
-typedef struct idevice_int *idevice_t;
+typedef struct idevice_private idevice_private;
+typedef idevice_private *idevice_t; /**< The device handle. */
 
-struct idevice_connection_int;
-typedef struct idevice_connection_int *idevice_connection_t;
+typedef struct idevice_connection_private idevice_connection_private;
+typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
 /* generic */
 void idevice_set_debug_level(int level);

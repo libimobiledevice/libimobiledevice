@@ -39,8 +39,8 @@ extern "C" {
 
 typedef int16_t mobile_image_mounter_error_t;
 
-struct mobile_image_mounter_client_int;
-typedef struct mobile_image_mounter_client_int *mobile_image_mounter_client_t;
+typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_private;
+typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**< The client handle. */
 
 /* Interface */
 mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t port, mobile_image_mounter_client_t *client);

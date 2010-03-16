@@ -160,7 +160,7 @@ idevice_error_t idevice_new(idevice_t * device, const char *uuid)
 	usbmuxd_device_info_t muxdev;
 	int res = usbmuxd_get_device_by_uuid(uuid, &muxdev);
 	if (res > 0) {
-		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_int));
+		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_private));
 		phone->uuid = strdup(muxdev.uuid);
 		phone->conn_type = CONNECTION_USBMUXD;
 		phone->conn_data = (void*)muxdev.handle;
@@ -220,7 +220,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
-		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_int));
+		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)sfd;
 		new_connection->ssl_data = NULL;
@@ -536,7 +536,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
 	uint32_t return_me = 0;
 
-	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_int));
+	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
 	// Set up GnuTLS...
 	debug_info("enabling SSL mode");

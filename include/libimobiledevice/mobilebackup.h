@@ -41,8 +41,8 @@ extern "C" {
 
 typedef int16_t mobilebackup_error_t;
 
-struct mobilebackup_client_int;
-typedef struct mobilebackup_client_int *mobilebackup_client_t;
+typedef struct mobilebackup_client_private mobilebackup_client_private;
+typedef mobilebackup_client_private *mobilebackup_client_t; /**< The client handle. */
 
 mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mobilebackup_client_t * client);
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);

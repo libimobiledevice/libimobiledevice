@@ -90,7 +90,7 @@ device_link_service_error_t device_link_service_client_new(idevice_t device, uin
 	}
 
 	/* create client object */
-	device_link_service_client_t client_loc = (device_link_service_client_t) malloc(sizeof(struct device_link_service_client_int));
+	device_link_service_client_t client_loc = (device_link_service_client_t) malloc(sizeof(struct device_link_service_client_private));
 	client_loc->parent = plistclient;
 
 	/* all done, return success */

@@ -24,7 +24,7 @@
 #include "libimobiledevice/mobilebackup.h"
 #include "device_link_service.h"
 
-struct mobilebackup_client_int {
+struct mobilebackup_client_private {
 	device_link_service_client_t parent;
 };
 

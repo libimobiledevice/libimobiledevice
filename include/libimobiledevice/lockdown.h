@@ -55,8 +55,8 @@ extern "C" {
 
 typedef int16_t lockdownd_error_t;
 
-struct lockdownd_client_int;
-typedef struct lockdownd_client_int *lockdownd_client_t;
+typedef struct lockdownd_client_private lockdownd_client_private;
+typedef lockdownd_client_private *lockdownd_client_t; /**< The client handle. */
 
 struct lockdownd_pair_record {
 	char *device_certificate;

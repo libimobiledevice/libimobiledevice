@@ -28,7 +28,7 @@
 #include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"
 
-struct lockdownd_client_int {
+struct lockdownd_client_private {
 	property_list_service_client_t parent;
 	int ssl_enabled;
 	char *session_id;

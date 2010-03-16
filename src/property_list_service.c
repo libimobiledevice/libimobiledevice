@@ -76,7 +76,7 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 	}
 
 	/* create client object */
-	property_list_service_client_t client_loc = (property_list_service_client_t)malloc(sizeof(struct property_list_service_client_int));
+	property_list_service_client_t client_loc = (property_list_service_client_t)malloc(sizeof(struct property_list_service_client_private));
 	client_loc->connection = connection;
 
 	*client = client_loc;
