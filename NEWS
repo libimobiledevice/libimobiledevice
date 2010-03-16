@@ -1,3 +1,16 @@
+Version 1.0.0
+~~~~~~~~~~~~~
+
+* Changes:
+  - Update and fix documentation for full coverage
+  - Add man pages for tools
+  - Extend mobilebackup interface
+  - Add user data argument to notification callback function
+  - Fix broken Python bindings
+  - Add Python bindings for notification proxy interface
+  - Add screenshotr interface and tool
+  - Add mobile_image_mounter interface and tool
+
 Version 0.9.7 (RC1)
 ~~~~~~~~~~~~~~~~~~~
 
