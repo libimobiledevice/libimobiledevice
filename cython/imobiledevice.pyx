@@ -19,6 +19,16 @@ cdef class BaseError(Exception):
     def __repr__(self):
         return self.__str__()
 
+cdef class Base:
+    cdef inline int handle_error(self, int16_t ret) except -1:
+        if ret == 0:
+            return 0
+        cdef BaseError err = self._error(ret)
+        raise err
+        return -1
+
+    cdef inline BaseError _error(self, int16_t ret): pass
+
 cdef extern from "libimobiledevice/libimobiledevice.h":
     int16_t IDEVICE_E_SUCCESS
     int16_t IDEVICE_E_INVALID_ARG
@@ -70,44 +80,53 @@ cpdef event_unsubscribe():
     if err: raise err
 
 cpdef get_device_list():
-    cdef char** devices
-    cdef int count
-    cdef list result
-    cdef bytes device
-    cdef iDeviceError err = iDeviceError(idevice_get_device_list(&devices, &count))
+    cdef:
+        char** devices
+        int count
+        list result
+        bytes device
+        iDeviceError err = iDeviceError(idevice_get_device_list(&devices, &count))
+
+    if err: raise err
 
     result = []
     for i from 0 <= i < count:
         device = devices[i]
         result.append(device)
 
-    idevice_device_list_free(devices)
+    err = iDeviceError(idevice_device_list_free(devices))
+    if err: raise err
     return result
 
-cdef class iDevice:
+cdef class iDevice(Base):
     def __cinit__(self, uuid=None, *args, **kwargs):
-        cdef char* c_uuid = NULL
+        cdef:
+            char* c_uuid = NULL
+            idevice_error_t err
         if uuid is not None:
             c_uuid = uuid
-        err = iDeviceError(idevice_new(&(self._c_dev), c_uuid))
-        if err: raise err
+        err = idevice_new(&self._c_dev, c_uuid)
+        self.handle_error(err)
 
     def __dealloc__(self):
         if self._c_dev is not NULL:
-            err = iDeviceError(idevice_free(self._c_dev))
-            if err: raise err
+            self.handle_error(idevice_free(self._c_dev))
+
+    cdef inline BaseError _error(self, int16_t ret):
+        return iDeviceError(ret)
 
     property uuid:
         def __get__(self):
-            cdef char* uuid
-            err = iDeviceError(idevice_get_uuid(self._c_dev, &uuid))
-            if err: raise err
+            cdef:
+                char* uuid
+                idevice_error_t err
+            err = idevice_get_uuid(self._c_dev, &uuid)
+            self.handle_error(err)
             return uuid
     property handle:
         def __get__(self):
             cdef uint32_t handle
-            err = iDeviceError(idevice_get_handle(self._c_dev, &handle))
-            if err: raise err
+            self.handle_error(idevice_get_handle(self._c_dev, &handle))
             return handle
 
 cdef extern from "libimobiledevice/lockdown.h":
@@ -166,27 +185,34 @@ cdef class LockdownError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class LockdownClient:
+cdef class LockdownClient(Base):
     def __cinit__(self, iDevice device not None, char *label=NULL, *args, **kwargs):
-        cdef iDevice dev = device
-        err = LockdownError(lockdownd_client_new_with_handshake(dev._c_dev, &(self._c_client), label))
-        if err: raise err
+        cdef:
+            iDevice dev = device
+            lockdownd_error_t err = lockdownd_client_new_with_handshake(dev._c_dev, &(self._c_client), label)
+        self.handle_error(err)
     
     def __dealloc__(self):
+        cdef lockdownd_error_t err
         if self._c_client is not NULL:
-            err = LockdownError(lockdownd_client_free(self._c_client))
-            if err: raise err
+            err = lockdownd_client_free(self._c_client)
+            self.handle_error(err)
+
+    cdef inline BaseError _error(self, int16_t ret):
+        return LockdownError(ret)
     
     cpdef int start_service(self, service):
-        cdef uint16_t port
-        err = LockdownError(lockdownd_start_service(self._c_client, service, &port))
-        if err: raise err
+        cdef:
+            uint16_t port
+            lockdownd_error_t err
+        err = lockdownd_start_service(self._c_client, service, &port)
+        self.handle_error(err)
         return port
     
     cpdef goodbye(self):
         pass
 
-include "property_list_service.pxi"
+include "property_list_client.pxi"
 include "mobilesync.pxi"
 include "notification_proxy.pxi"
 include "sbservices.pxi"

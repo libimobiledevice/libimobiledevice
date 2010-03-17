@@ -10,6 +10,10 @@ cdef class BaseError(Exception):
     cdef dict _lookup_table
     cdef int16_t _c_errcode
 
+cdef class Base:
+    cdef inline int handle_error(self, int16_t ret) except -1
+    cdef inline BaseError _error(self, int16_t ret)
+
 cdef class iDeviceError(BaseError): pass
 
 cdef extern from "libimobiledevice/libimobiledevice.h":
@@ -29,7 +33,7 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
 cdef class iDeviceEvent:
     cdef const_idevice_event_t _c_event
 
-cdef class iDevice:
+cdef class iDevice(Base):
     cdef idevice_t _c_dev
 
 cdef class LockdownError(BaseError): pass
@@ -39,7 +43,7 @@ cdef extern from "libimobiledevice/lockdown.h":
         pass
     ctypedef lockdownd_client_int *lockdownd_client_t
 
-cdef class LockdownClient:
+cdef class LockdownClient(Base):
     cdef lockdownd_client_t _c_client
     cpdef int start_service(self, service)
     cpdef goodbye(self)

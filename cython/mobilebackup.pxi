@@ -28,27 +28,33 @@ cdef class MobileBackupError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class MobileBackupClient(PropertyListService):
+cdef class MobileBackupClient(PropertyListClient):
     cdef mobilebackup_client_t _c_client
 
     def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
-        cdef iDevice dev = device
-        cdef LockdownClient lckd
+        cdef:
+            iDevice dev = device
+            LockdownClient lckd
+            mobilebackup_error_t err
         if lockdown is None:
             lckd = LockdownClient(dev)
         else:
             lckd = lockdown
         port = lckd.start_service("com.apple.mobilebackup")
-        err = MobileBackupError(mobilebackup_client_new(dev._c_dev, port, &self._c_client))
-        if err: raise err
+        err = mobilebackup_client_new(dev._c_dev, port, &self._c_client)
+        self.handle_error(err)
 
     def __dealloc__(self):
+        cdef mobilebackup_error_t err
         if self._c_client is not NULL:
-            err = MobileBackupError(mobilebackup_client_free(self._c_client))
-            if err: raise err
+            err = mobilebackup_client_free(self._c_client)
+            self.handle_error(err)
 
-    cdef _send(self, plist.plist_t node):
-        return MobileBackupError(mobilebackup_send(self._c_client, node))
+    cdef inline int16_t _send(self, plist.plist_t node):
+        return mobilebackup_send(self._c_client, node)
 
-    cdef _receive(self, plist.plist_t* node):
-        return MobileBackupError(mobilebackup_receive(self._c_client, node))
+    cdef inline int16_t _receive(self, plist.plist_t* node):
+        return mobilebackup_receive(self._c_client, node)
+
+    cdef inline BaseError _error(self, int16_t ret):
+        return MobileBackupError(ret)
