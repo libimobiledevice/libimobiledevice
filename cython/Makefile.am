@@ -6,25 +6,27 @@ AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_L
 if HAVE_CYTHON
 
 BUILT_SOURCES = imobiledevice.c
+PXDINCLUDES = imobiledevice.pxd stdint.pxi $(CYTHON_PLIST_INCLUDE_DIR)/plist.pxd
+PXIINCLUDES = stdint.pxi mobilesync.pxi notification_proxy.pxi sbservices.pxi mobilebackup.pxi
 
 CLEANFILES =                \
         *.pyc               \
         *.pyo               \
-        imobiledevice.so	\
         imobiledevice.c
 
-EXTRA_DIST =                \
-        imobiledevice.pyx
+EXTRA_DIST = imobiledevice.pyx imobiledevice.pxd $(PXIINCLUDES)
 
 imobiledevicedir = $(pyexecdir)
 imobiledevice_LTLIBRARIES = imobiledevice.la
-nodist_imobiledevice_la_SOURCES = imobiledevice.c #imobiledevice_private.c
+imobiledevice_la_SOURCES = imobiledevice.pyx
 imobiledevice_la_CFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) 
 imobiledevice_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS)
 imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la
 
-imobiledevice.c: imobiledevice.pyx $(CYTHON_PLIST_INCLUDE_DIR)/plist.pxd
-	$(CYTHON) --line-directives -I$(CYTHON_PLIST_INCLUDE_DIR) -I$(top_srcdir)/src -o $@ $<
+imobiledevice.c: imobiledevice.pyx $(PXDINCLUDES) $(PXIINCLUDES)
+
+.pyx.c:
+	$(CYTHON) -I$(CYTHON_PLIST_INCLUDE_DIR) -I$(top_srcdir)/src -o $@ $<
 
 # imobiledevice_private.c: $(IMOBILEDEVICE_PRIVATE_SOURCES) $(IMOBILEDEVICE_INCLUDES) $(PLIST_INCLUDES)
 #	$(CYTHON) $(IMOBILEDEVICE_CPPFLAGS) -I$(top_srcdir)/src -o $@ $<
