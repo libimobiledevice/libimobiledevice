@@ -143,7 +143,6 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 include/Makefile
-fdi/Makefile
 dev/Makefile
 tools/Makefile
 swig/Makefile

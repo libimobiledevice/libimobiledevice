@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include fdi swig dev tools docs
+SUBDIRS = src include swig dev tools docs
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-dev-tools
 
