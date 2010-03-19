@@ -7,13 +7,14 @@ if HAVE_CYTHON
 
 BUILT_SOURCES = imobiledevice.c
 PXDINCLUDES = imobiledevice.pxd stdint.pxi $(CYTHON_PLIST_INCLUDE_DIR)/plist.pxd
-PXIINCLUDES =				\
-	stdint.pxi				\
-	mobilesync.pxi			\
-	notification_proxy.pxi	\
-	sbservices.pxi			\
-	mobilebackup.pxi		\
-	property_list_client.pxi
+PXIINCLUDES =					\
+	stdint.pxi					\
+	mobilesync.pxi				\
+	notification_proxy.pxi		\
+	sbservices.pxi				\
+	mobilebackup.pxi			\
+	property_list_client.pxi	\
+	afc.pxi
 
 CLEANFILES =                \
         *.pyc               \

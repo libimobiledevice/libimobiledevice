@@ -20,7 +20,6 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     cdef struct idevice_int:
         pass
     ctypedef idevice_int* idevice_t
-    ctypedef int16_t idevice_error_t
     cdef enum idevice_event_type:
         IDEVICE_DEVICE_ADD = 1,
         IDEVICE_DEVICE_REMOVE

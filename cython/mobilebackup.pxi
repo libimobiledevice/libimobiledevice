@@ -3,13 +3,13 @@ cdef extern from "libimobiledevice/mobilebackup.h":
         pass
     ctypedef mobilebackup_client_int *mobilebackup_client_t
 
-    ctypedef int16_t mobilebackup_error_t
-    int16_t MOBILEBACKUP_E_SUCCESS
-    int16_t MOBILEBACKUP_E_INVALID_ARG
-    int16_t MOBILEBACKUP_E_PLIST_ERROR
-    int16_t MOBILEBACKUP_E_MUX_ERROR
-    int16_t MOBILEBACKUP_E_BAD_VERSION
-    int16_t MOBILEBACKUP_E_UNKNOWN_ERROR
+    ctypedef enum mobilebackup_error_t:
+        MOBILEBACKUP_E_SUCCESS = 0
+        MOBILEBACKUP_E_INVALID_ARG = -1
+        MOBILEBACKUP_E_PLIST_ERROR = -2
+        MOBILEBACKUP_E_MUX_ERROR = -3
+        MOBILEBACKUP_E_BAD_VERSION = -4
+        MOBILEBACKUP_E_UNKNOWN_ERROR = -256
 
     mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mobilebackup_client_t * client)
     mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)

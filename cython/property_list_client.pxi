@@ -3,7 +3,7 @@ cdef class PropertyListClient(Base):
         cdef plist.Node n = node
         self.handle_error(self._send(n._c_node))
 
-    cpdef plist.Node receive(self):
+    cpdef object receive(self):
         cdef plist.plist_t c_node = NULL
         self.handle_error(self._receive(&c_node))
 

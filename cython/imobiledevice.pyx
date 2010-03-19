@@ -30,13 +30,14 @@ cdef class Base:
     cdef inline BaseError _error(self, int16_t ret): pass
 
 cdef extern from "libimobiledevice/libimobiledevice.h":
-    int16_t IDEVICE_E_SUCCESS
-    int16_t IDEVICE_E_INVALID_ARG
-    int16_t IDEVICE_E_UNKNOWN_ERROR
-    int16_t IDEVICE_E_NO_DEVICE
-    int16_t IDEVICE_E_NOT_ENOUGH_DATA
-    int16_t IDEVICE_E_BAD_HEADER
-    int16_t IDEVICE_E_SSL_ERROR
+    ctypedef enum idevice_error_t:
+        IDEVICE_E_SUCCESS = 0
+        IDEVICE_E_INVALID_ARG = -1
+        IDEVICE_E_UNKNOWN_ERROR = -2
+        IDEVICE_E_NO_DEVICE = -3
+        IDEVICE_E_NOT_ENOUGH_DATA = -4
+        IDEVICE_E_BAD_HEADER = -5
+        IDEVICE_E_SSL_ERROR = -6
     ctypedef void (*idevice_event_cb_t) (const_idevice_event_t event, void *user_data)
     cdef extern idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
     cdef extern idevice_error_t idevice_event_unsubscribe()
@@ -49,7 +50,7 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 
 cdef class iDeviceError(BaseError):
-    def __cinit__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._lookup_table = {
             IDEVICE_E_SUCCESS: 'Success',
             IDEVICE_E_INVALID_ARG: 'Invalid argument',
@@ -133,27 +134,27 @@ cdef extern from "libimobiledevice/lockdown.h":
     cdef struct lockdownd_client_int:
         pass
     ctypedef lockdownd_client_int *lockdownd_client_t
-    ctypedef int16_t lockdownd_error_t
-    int16_t LOCKDOWN_E_SUCCESS
-    int16_t LOCKDOWN_E_INVALID_ARG
-    int16_t LOCKDOWN_E_INVALID_CONF
-    int16_t LOCKDOWN_E_PLIST_ERROR
-    int16_t LOCKDOWN_E_PAIRING_FAILED
-    int16_t LOCKDOWN_E_SSL_ERROR
-    int16_t LOCKDOWN_E_DICT_ERROR
-    int16_t LOCKDOWN_E_START_SERVICE_FAILED
-    int16_t LOCKDOWN_E_NOT_ENOUGH_DATA
-    int16_t LOCKDOWN_E_SET_VALUE_PROHIBITED
-    int16_t LOCKDOWN_E_GET_VALUE_PROHIBITED
-    int16_t LOCKDOWN_E_REMOVE_VALUE_PROHIBITED
-    int16_t LOCKDOWN_E_MUX_ERROR
-    int16_t LOCKDOWN_E_ACTIVATION_FAILED
-    int16_t LOCKDOWN_E_PASSWORD_PROTECTED
-    int16_t LOCKDOWN_E_NO_RUNNING_SESSION
-    int16_t LOCKDOWN_E_INVALID_HOST_ID
-    int16_t LOCKDOWN_E_INVALID_SERVICE
-    int16_t LOCKDOWN_E_INVALID_ACTIVATION_RECORD
-    int16_t LOCKDOWN_E_UNKNOWN_ERROR
+    ctypedef enum lockdownd_error_t:
+        LOCKDOWN_E_SUCCESS = 0
+        LOCKDOWN_E_INVALID_ARG = -1
+        LOCKDOWN_E_INVALID_CONF = -2
+        LOCKDOWN_E_PLIST_ERROR = -3
+        LOCKDOWN_E_PAIRING_FAILED = -4
+        LOCKDOWN_E_SSL_ERROR = -5
+        LOCKDOWN_E_DICT_ERROR = -6
+        LOCKDOWN_E_START_SERVICE_FAILED = -7
+        LOCKDOWN_E_NOT_ENOUGH_DATA = -8
+        LOCKDOWN_E_SET_VALUE_PROHIBITED = -9
+        LOCKDOWN_E_GET_VALUE_PROHIBITED = -10
+        LOCKDOWN_E_REMOVE_VALUE_PROHIBITED = -11
+        LOCKDOWN_E_MUX_ERROR = -12
+        LOCKDOWN_E_ACTIVATION_FAILED = -13
+        LOCKDOWN_E_PASSWORD_PROTECTED = -14
+        LOCKDOWN_E_NO_RUNNING_SESSION = -15
+        LOCKDOWN_E_INVALID_HOST_ID = -16
+        LOCKDOWN_E_INVALID_SERVICE = -17
+        LOCKDOWN_E_INVALID_ACTIVATION_RECORD = -18
+        LOCKDOWN_E_UNKNOWN_ERROR = -256
 
     lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, char *label)
     lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
@@ -217,3 +218,4 @@ include "mobilesync.pxi"
 include "notification_proxy.pxi"
 include "sbservices.pxi"
 include "mobilebackup.pxi"
+include "afc.pxi"

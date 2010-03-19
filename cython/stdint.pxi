@@ -5,6 +5,8 @@ cdef extern from *:
     ctypedef unsigned int uint32_t
     ctypedef int int32_t
 IF UNAME_MACHINE == 'x86_64':
+    ctypedef long int int64_t
     ctypedef unsigned long int uint64_t
 ELSE:
+    ctypedef long long int int64_t
     ctypedef unsigned long long int uint64_t

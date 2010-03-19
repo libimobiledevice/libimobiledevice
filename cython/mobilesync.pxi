@@ -3,13 +3,13 @@ cdef extern from "libimobiledevice/mobilesync.h":
         pass
     ctypedef mobilesync_client_int *mobilesync_client_t
 
-    ctypedef int16_t mobilesync_error_t
-    int16_t MOBILESYNC_E_SUCCESS
-    int16_t MOBILESYNC_E_INVALID_ARG
-    int16_t MOBILESYNC_E_PLIST_ERROR
-    int16_t MOBILESYNC_E_MUX_ERROR
-    int16_t MOBILESYNC_E_BAD_VERSION
-    int16_t MOBILESYNC_E_UNKNOWN_ERROR
+    ctypedef enum mobilesync_error_t:
+        MOBILESYNC_E_SUCCESS = 0
+        MOBILESYNC_E_INVALID_ARG = -1
+        MOBILESYNC_E_PLIST_ERROR = -2
+        MOBILESYNC_E_MUX_ERROR = -3
+        MOBILESYNC_E_BAD_VERSION = -4
+        MOBILESYNC_E_UNKNOWN_ERROR = -256
 
     mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client)
     mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
