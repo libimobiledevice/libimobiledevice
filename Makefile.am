@@ -9,7 +9,7 @@ pkgconfig_DATA = libimobiledevice-1.0.pc
 
 EXTRA_DIST = docs
 
-docs/html: doxygen.cfg src/*.c src/*.h include/libimobiledevice/*.h
+docs/html: $(top_builddir)/doxygen.cfg $(top_srcdir)/src/*.c $(top_srcdir)/src/*.h $(top_srcdir)/include/libimobiledevice/*.h
 	rm -rf docs/html
 	doxygen doxygen.cfg
 
