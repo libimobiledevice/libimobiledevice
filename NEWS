@@ -10,6 +10,7 @@ Version 1.0.0
   - Add Python bindings for notification proxy interface
   - Add screenshotr interface and tool
   - Add mobile_image_mounter interface and tool
+  - Remove HAL fdi rules
 
 Version 0.9.7 (RC1)
 ~~~~~~~~~~~~~~~~~~~
