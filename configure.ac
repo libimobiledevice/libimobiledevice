@@ -41,7 +41,7 @@ AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], ["libg
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h stdint.h stdlib.h string.h gcrypt.h])
+AC_CHECK_HEADERS([netinet/in.h stdint.h stdlib.h string.h gcrypt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

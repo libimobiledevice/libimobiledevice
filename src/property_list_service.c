@@ -20,8 +20,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "property_list_service.h"
 #include "idevice.h"

@@ -22,7 +22,6 @@
 #include <plist/plist.h>
 #include <string.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
 
 #include "mobilebackup.h"
 #include "device_link_service.h"

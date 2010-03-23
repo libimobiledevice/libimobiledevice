@@ -23,7 +23,6 @@
 #define LOCKDOWND_H
 
 #include <gnutls/gnutls.h>
-#include <string.h>
 
 #include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"

@@ -21,7 +21,6 @@
 #ifndef IDEVICE_H
 #define IDEVICE_H
 
-#include <plist/plist.h>
 #include <gnutls/gnutls.h>
 
 #include "libimobiledevice/libimobiledevice.h"
