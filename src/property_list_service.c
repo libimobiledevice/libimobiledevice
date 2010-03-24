@@ -20,7 +20,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
+#include <glib.h>
 
 #include "property_list_service.h"
 #include "idevice.h"
@@ -138,7 +138,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 		return PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
 
-	nlen = htonl(length);
+	nlen = GUINT32_TO_BE(length);
 	debug_info("sending %d bytes", length);
 	idevice_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
@@ -229,7 +229,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		if ((char)pktlen == 0) { /* prevent huge buffers */
 			uint32_t curlen = 0;
 			char *content = NULL;
-			pktlen = ntohl(pktlen);
+			pktlen = GUINT32_FROM_BE(pktlen);
 			debug_info("%d bytes following", pktlen);
 			content = (char*)malloc(pktlen);
 

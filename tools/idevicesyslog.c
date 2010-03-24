@@ -22,9 +22,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <netinet/in.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <glib.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
 				ret = idevice_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
-				datalen = ntohl(datalen);
+				datalen = GUINT32_FROM_BE(datalen);
 
 				if (datalen == 0)
 					continue;
