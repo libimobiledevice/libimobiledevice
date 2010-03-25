@@ -739,21 +739,21 @@ void instproxy_client_options_add(plist_t client_options, ...)
 		char *key = strdup(arg);
 		if (!strcmp(key, "SkipUninstall")) {
 			int intval = va_arg(args, int);
-			plist_dict_set_item(client_options, key, plist_new_bool(intval));
+			plist_dict_insert_item(client_options, key, plist_new_bool(intval));
 		} else if (!strcmp(key, "ApplicationSINF") || !strcmp(key, "iTunesMetadata")) {
 			plist_t plistval = va_arg(args, plist_t);
 			if (!plistval) {
 				free(key);
 				break;
 			}
-			plist_dict_set_item(client_options, key, plist_copy(plistval));
+			plist_dict_insert_item(client_options, key, plist_copy(plistval));
 		} else {
 			char *strval = va_arg(args, char*);
 			if (!strval) {
 				free(key);
 				break;
 			}
-			plist_dict_set_item(client_options, key, plist_new_string(strval));
+			plist_dict_insert_item(client_options, key, plist_new_string(strval));
 		}
 		free(key);
 		arg = va_arg(args, char*);
