@@ -14,7 +14,11 @@ PXIINCLUDES =					\
 	sbservices.pxi				\
 	mobilebackup.pxi			\
 	property_list_client.pxi	\
-	afc.pxi
+	afc.pxi						\
+	file_relay.pxi				\
+	screenshotr.pxi				\
+	installation_proxy.pxi		\
+	mobile_image_mounter.pxi
 
 CLEANFILES =                \
         *.pyc               \
@@ -26,8 +30,8 @@ EXTRA_DIST = imobiledevice.pyx imobiledevice.pxd $(PXIINCLUDES)
 imobiledevicedir = $(pyexecdir)
 imobiledevice_LTLIBRARIES = imobiledevice.la
 imobiledevice_la_SOURCES = imobiledevice.pyx
-imobiledevice_la_CFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) 
-imobiledevice_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS)
+imobiledevice_la_CFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) $(libglib2_CFLAGS) $(libgthread2_CFLAGS)
+imobiledevice_la_LDFLAGS = -module -avoid-version $(PYTHON_LDFLAGS) $(libglib2_LIBS) $(libgthread2_LIBS)
 imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la
 
 imobiledevice.c: imobiledevice.pyx $(PXDINCLUDES) $(PXIINCLUDES)

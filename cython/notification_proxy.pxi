@@ -1,10 +1,7 @@
-cdef extern from *:
-    ctypedef char* const_char_ptr "const char*"
-
 cdef extern from "libimobiledevice/notification_proxy.h":
-    cdef struct np_client_int:
+    cdef struct np_client_private:
         pass
-    ctypedef np_client_int *np_client_t
+    ctypedef np_client_private *np_client_t
     ctypedef enum np_error_t:
         NP_E_SUCCESS = 0
         NP_E_INVALID_ARG = -1
@@ -27,9 +24,9 @@ cdef class NotificationProxyError(BaseError):
         self._lookup_table = {
             NP_E_SUCCESS: "Success",
             NP_E_INVALID_ARG: "Invalid argument",
-            NP_E_PLIST_ERROR: "PList Error",
-            NP_E_CONN_FAILED: "Connection Failed",
-            NP_E_UNKNOWN_ERROR: "Unknown Error"
+            NP_E_PLIST_ERROR: "Property list error",
+            NP_E_CONN_FAILED: "Connection failed",
+            NP_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)
 

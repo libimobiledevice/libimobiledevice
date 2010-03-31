@@ -1,7 +1,7 @@
 cdef extern from "libimobiledevice/afc.h":
-    cdef struct afc_client_int:
+    cdef struct afc_client_private:
         pass
-    ctypedef afc_client_int *afc_client_t
+    ctypedef afc_client_private *afc_client_t
     ctypedef enum afc_error_t:
         AFC_E_SUCCESS = 0
         AFC_E_UNKNOWN_ERROR = 1
@@ -10,7 +10,7 @@ cdef extern from "libimobiledevice/afc.h":
         AFC_E_READ_ERROR = 4
         AFC_E_WRITE_ERROR = 5
         AFC_E_UNKNOWN_PACKET_TYPE = 6
-        AFC_E_INVALID_ARGUMENT = 7
+        AFC_E_INVALID_ARG = 7
         AFC_E_OBJECT_NOT_FOUND = 8
         AFC_E_OBJECT_IS_DIR = 9
         AFC_E_PERM_DENIED = 10
@@ -79,7 +79,7 @@ cdef class AfcError(BaseError):
             AFC_E_READ_ERROR: "Read error",
             AFC_E_WRITE_ERROR: "Write error",
             AFC_E_UNKNOWN_PACKET_TYPE: "Unknown packet type",
-            AFC_E_INVALID_ARGUMENT: "Invalid argument",
+            AFC_E_INVALID_ARG: "Invalid argument",
             AFC_E_OBJECT_NOT_FOUND: "Object not found",
             AFC_E_OBJECT_IS_DIR: "Object is directory",
             AFC_E_PERM_DENIED: "Permission denied",

@@ -17,9 +17,12 @@ cdef class Base:
 cdef class iDeviceError(BaseError): pass
 
 cdef extern from "libimobiledevice/libimobiledevice.h":
-    cdef struct idevice_int:
+    cdef struct idevice_private:
         pass
-    ctypedef idevice_int* idevice_t
+    ctypedef idevice_private* idevice_t
+    cdef struct idevice_connection_private:
+        pass
+    ctypedef idevice_connection_private* idevice_connection_t
     cdef enum idevice_event_type:
         IDEVICE_DEVICE_ADD = 1,
         IDEVICE_DEVICE_REMOVE
@@ -32,15 +35,22 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
 cdef class iDeviceEvent:
     cdef const_idevice_event_t _c_event
 
+cdef class iDeviceConnection(Base):
+    cdef idevice_connection_t _c_connection
+
+    cpdef disconnect(self)
+
 cdef class iDevice(Base):
     cdef idevice_t _c_dev
+
+    cpdef iDeviceConnection connect(self, uint16_t port)
 
 cdef class LockdownError(BaseError): pass
 
 cdef extern from "libimobiledevice/lockdown.h":
-    cdef struct lockdownd_client_int:
+    cdef struct lockdownd_client_private:
         pass
-    ctypedef lockdownd_client_int *lockdownd_client_t
+    ctypedef lockdownd_client_private *lockdownd_client_t
 
 cdef class LockdownClient(Base):
     cdef lockdownd_client_t _c_client

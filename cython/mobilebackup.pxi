@@ -1,7 +1,7 @@
 cdef extern from "libimobiledevice/mobilebackup.h":
-    cdef struct mobilebackup_client_int:
+    cdef struct mobilebackup_client_private:
         pass
-    ctypedef mobilebackup_client_int *mobilebackup_client_t
+    ctypedef mobilebackup_client_private *mobilebackup_client_t
 
     ctypedef enum mobilebackup_error_t:
         MOBILEBACKUP_E_SUCCESS = 0
@@ -21,9 +21,9 @@ cdef class MobileBackupError(BaseError):
         self._lookup_table = {
             MOBILEBACKUP_E_SUCCESS: "Success",
             MOBILEBACKUP_E_INVALID_ARG: "Invalid argument",
-            MOBILEBACKUP_E_PLIST_ERROR: "PList Error",
-            MOBILEBACKUP_E_MUX_ERROR: "MUX Error",
-            MOBILEBACKUP_E_BAD_VERSION: "Bad Version",
+            MOBILEBACKUP_E_PLIST_ERROR: "Property list error",
+            MOBILEBACKUP_E_MUX_ERROR: "MUX error",
+            MOBILEBACKUP_E_BAD_VERSION: "Bad version",
             MOBILEBACKUP_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

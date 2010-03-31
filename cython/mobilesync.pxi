@@ -1,7 +1,7 @@
 cdef extern from "libimobiledevice/mobilesync.h":
-    cdef struct mobilesync_client_int:
+    cdef struct mobilesync_client_private:
         pass
-    ctypedef mobilesync_client_int *mobilesync_client_t
+    ctypedef mobilesync_client_private *mobilesync_client_t
 
     ctypedef enum mobilesync_error_t:
         MOBILESYNC_E_SUCCESS = 0
@@ -21,9 +21,9 @@ cdef class MobileSyncError(BaseError):
         self._lookup_table = {
             MOBILESYNC_E_SUCCESS: "Success",
             MOBILESYNC_E_INVALID_ARG: "Invalid argument",
-            MOBILESYNC_E_PLIST_ERROR: "PList Error",
-            MOBILESYNC_E_MUX_ERROR: "MUX Error",
-            MOBILESYNC_E_BAD_VERSION: "Bad Version",
+            MOBILESYNC_E_PLIST_ERROR: "Property list error",
+            MOBILESYNC_E_MUX_ERROR: "MUX error",
+            MOBILESYNC_E_BAD_VERSION: "Bad version",
             MOBILESYNC_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

@@ -1,7 +1,7 @@
 cdef extern from "libimobiledevice/sbservices.h":
-    cdef struct sbservices_client_int:
+    cdef struct sbservices_client_private:
         pass
-    ctypedef sbservices_client_int *sbservices_client_t
+    ctypedef sbservices_client_private *sbservices_client_t
     ctypedef enum sbservices_error_t:
         SBSERVICES_E_SUCCESS = 0
         SBSERVICES_E_INVALID_ARG = -1
@@ -19,9 +19,9 @@ cdef class SpringboardServicesError(BaseError):
         self._lookup_table = {
             SBSERVICES_E_SUCCESS: "Success",
             SBSERVICES_E_INVALID_ARG: "Invalid argument",
-            SBSERVICES_E_PLIST_ERROR: "PList Error",
-            SBSERVICES_E_CONN_FAILED: "Connection Failed",
-            SBSERVICES_E_UNKNOWN_ERROR: "Unknown Error"
+            SBSERVICES_E_PLIST_ERROR: "Property list error",
+            SBSERVICES_E_CONN_FAILED: "Connection failed",
+            SBSERVICES_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)
 

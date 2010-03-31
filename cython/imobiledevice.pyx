@@ -48,6 +48,11 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     idevice_error_t idevice_free(idevice_t device)
     idevice_error_t idevice_get_uuid(idevice_t device, char** uuid)
     idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
+    idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
+    idevice_error_t idevice_disconnect(idevice_connection_t connection)
+    idevice_error_t idevice_connection_send(idevice_connection_t connection, char *data, uint32_t len, uint32_t *sent_bytes)
+    idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+    idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 
 cdef class iDeviceError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -99,6 +104,18 @@ cpdef get_device_list():
     if err: raise err
     return result
 
+cdef class iDeviceConnection(Base):
+    def __init__(self, *args, **kwargs):
+        raise TypeError("iDeviceConnection cannot be instantiated.  Please use iDevice.connect()")
+
+    cpdef disconnect(self):
+        cdef idevice_error_t err
+        err = idevice_disconnect(self._c_connection)
+        self.handle_error(err)
+
+    cdef inline BaseError _error(self, int16_t ret):
+        return iDeviceError(ret)
+
 cdef class iDevice(Base):
     def __cinit__(self, uuid=None, *args, **kwargs):
         cdef:
@@ -116,6 +133,14 @@ cdef class iDevice(Base):
     cdef inline BaseError _error(self, int16_t ret):
         return iDeviceError(ret)
 
+    cpdef iDeviceConnection connect(self, uint16_t port):
+        cdef:
+            idevice_error_t err
+            iDeviceConnection conn = iDeviceConnection.__new__(iDeviceConnection)
+        err = idevice_connect(self._c_dev, port, &conn._c_connection)
+        self.handle_error(err)
+        return conn
+
     property uuid:
         def __get__(self):
             cdef:
@@ -131,9 +156,9 @@ cdef class iDevice(Base):
             return handle
 
 cdef extern from "libimobiledevice/lockdown.h":
-    cdef struct lockdownd_client_int:
+    cdef struct lockdownd_client_private:
         pass
-    ctypedef lockdownd_client_int *lockdownd_client_t
+    ctypedef lockdownd_client_private *lockdownd_client_t
     ctypedef enum lockdownd_error_t:
         LOCKDOWN_E_SUCCESS = 0
         LOCKDOWN_E_INVALID_ARG = -1
@@ -166,7 +191,7 @@ cdef class LockdownError(BaseError):
             LOCKDOWN_E_SUCCESS: "Success",
             LOCKDOWN_E_INVALID_ARG: "Invalid argument",
             LOCKDOWN_E_INVALID_CONF: "Invalid configuration",
-            LOCKDOWN_E_PLIST_ERROR: "PList error",
+            LOCKDOWN_E_PLIST_ERROR: "Property list error",
             LOCKDOWN_E_PAIRING_FAILED: "Pairing failed",
             LOCKDOWN_E_SSL_ERROR: "SSL error",
             LOCKDOWN_E_DICT_ERROR: "Dict error",
@@ -213,9 +238,16 @@ cdef class LockdownClient(Base):
     cpdef goodbye(self):
         pass
 
+cdef extern from *:
+    ctypedef char* const_char_ptr "const char*"
+
 include "property_list_client.pxi"
 include "mobilesync.pxi"
 include "notification_proxy.pxi"
 include "sbservices.pxi"
 include "mobilebackup.pxi"
 include "afc.pxi"
+include "file_relay.pxi"
+include "screenshotr.pxi"
+include "installation_proxy.pxi"
+include "mobile_image_mounter.pxi"
