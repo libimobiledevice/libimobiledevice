@@ -27,7 +27,6 @@ Installation
 ============
 
 To compile run:
-	./autogen.sh
 	./configure
 	make
 	sudo make install
@@ -42,11 +41,8 @@ Who/What/Where?
 Home:
 	http://www.libimobiledevice.org/
 
-Wiki:
-	http://matt.colyer.name/projects/iphone-linux/
-
 Code:
-	git clone git://github.com/MattColyer/libiphone.git
+	git clone git://git.sukimashita.com/libimobiledevice.git
 
 Tickets:
 	http://libiphone.lighthouseapp.com/
@@ -62,5 +58,5 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2010-03-13
+	2010-03-31
 
