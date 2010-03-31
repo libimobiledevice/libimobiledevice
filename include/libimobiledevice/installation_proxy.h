@@ -49,21 +49,21 @@ typedef struct instproxy_client_private instproxy_client_private;
 typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */
 
 /** Reports the status of the given operation */
-typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status);
+typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status, void *user_data);
 
 /* Interface */
 instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client);
 instproxy_error_t instproxy_client_free(instproxy_client_t client);
 
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);
-instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb);
-instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb);
-instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb);
+instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result);
-instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb);
-instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb);
-instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb);
+instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
 plist_t instproxy_client_options_new();
 void instproxy_client_options_add(plist_t client_options, ...) G_GNUC_NULL_TERMINATED;
