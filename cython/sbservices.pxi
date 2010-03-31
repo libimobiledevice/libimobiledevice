@@ -25,7 +25,7 @@ cdef class SpringboardServicesError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class SpringboardServices:
+cdef class SpringboardServicesClient(Base):
     cdef sbservices_client_t _c_client
 
     def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):

@@ -27,7 +27,7 @@ cdef class MobileImageMounterError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class MobileImageMounterClient(PropertyListClient):
+cdef class MobileImageMounterClient(Base):
     cdef mobile_image_mounter_client_t _c_client
 
     def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):

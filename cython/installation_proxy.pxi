@@ -42,7 +42,7 @@ cdef class InstallationProxyError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class InstallationProxyClient(Base):
+cdef class InstallationProxy(Base):
     cdef instproxy_client_t _c_client
 
     def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):

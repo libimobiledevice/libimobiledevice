@@ -70,10 +70,12 @@ cdef class iDeviceError(BaseError):
 cpdef set_debug_level(int level):
     idevice_set_debug_level(level)
 
-cdef class iDeviceEvent: pass
+cdef class iDeviceEvent:
+    def __init__(self, *args, **kwargs):
+        raise TypeError("iDeviceEvent cannot be instantiated")
 
 cdef void idevice_event_cb(const_idevice_event_t c_event, void *user_data):
-    cdef iDeviceEvent event = iDeviceEvent()
+    cdef iDeviceEvent event = iDeviceEvent.__new__(iDeviceEvent)
     event._c_event = c_event
     (<object>user_data)(event)
 
