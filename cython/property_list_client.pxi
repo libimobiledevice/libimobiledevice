@@ -4,8 +4,16 @@ cdef class PropertyListClient(Base):
         self.handle_error(self._send(n._c_node))
 
     cpdef object receive(self):
-        cdef plist.plist_t c_node = NULL
-        self.handle_error(self._receive(&c_node))
+        cdef:
+            plist.plist_t c_node = NULL
+            int16_t err
+        err = self._receive(&c_node)
+        try:
+            self.handle_error(err)
+        except BaseError, e:
+            if c_node != NULL:
+                plist_free(c_node)
+            raise
 
         return plist.plist_t_to_node(c_node)
 

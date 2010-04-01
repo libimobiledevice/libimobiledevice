@@ -66,9 +66,6 @@ cdef extern from "libimobiledevice/afc.h":
     afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, char *target, char *linkname)
     afc_error_t afc_set_file_time(afc_client_t client, char *path, uint64_t mtime)
 
-cdef extern from *:
-    void free(void *ptr)
-
 cdef class AfcError(BaseError):
     def __init__(self, *args, **kwargs):
         self._lookup_table = {

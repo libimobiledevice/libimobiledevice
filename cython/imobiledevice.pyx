@@ -67,27 +67,40 @@ cdef class iDeviceError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cpdef set_debug_level(int level):
+def set_debug_level(int level):
     idevice_set_debug_level(level)
 
 cdef class iDeviceEvent:
     def __init__(self, *args, **kwargs):
         raise TypeError("iDeviceEvent cannot be instantiated")
 
-cdef void idevice_event_cb(const_idevice_event_t c_event, void *user_data):
+    def __str__(self):
+        return 'iDeviceEvent: %s (%s)' % (self.event == IDEVICE_DEVICE_ADD and 'Add' or 'Remove', self.uuid)
+
+    property event:
+        def __get__(self):
+            return self._c_event.event
+    property uuid:
+        def __get__(self):
+            return self._c_event.uuid
+    property conn_type:
+        def __get__(self):
+            return self._c_event.conn_type
+
+cdef void idevice_event_cb(const_idevice_event_t c_event, void *user_data) with gil:
     cdef iDeviceEvent event = iDeviceEvent.__new__(iDeviceEvent)
     event._c_event = c_event
     (<object>user_data)(event)
 
-cpdef event_subscribe(object callback):
+def event_subscribe(object callback):
     cdef iDeviceError err = iDeviceError(idevice_event_subscribe(idevice_event_cb, <void*>callback))
     if err: raise err
 
-cpdef event_unsubscribe():
+def event_unsubscribe():
     cdef iDeviceError err = iDeviceError(idevice_event_unsubscribe())
     if err: raise err
 
-cpdef get_device_list():
+def get_device_list():
     cdef:
         char** devices
         int count
@@ -214,10 +227,14 @@ cdef class LockdownError(BaseError):
         BaseError.__init__(self, *args, **kwargs)
 
 cdef class LockdownClient(Base):
-    def __cinit__(self, iDevice device not None, char *label=NULL, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, bytes label="", *args, **kwargs):
         cdef:
             iDevice dev = device
-            lockdownd_error_t err = lockdownd_client_new_with_handshake(dev._c_dev, &(self._c_client), label)
+            lockdownd_error_t err
+            char* c_label = NULL
+        if label:
+            c_label = label
+        err = lockdownd_client_new_with_handshake(dev._c_dev, &(self._c_client), c_label)
         self.handle_error(err)
     
     def __dealloc__(self):
@@ -229,7 +246,7 @@ cdef class LockdownClient(Base):
     cdef inline BaseError _error(self, int16_t ret):
         return LockdownError(ret)
     
-    cpdef int start_service(self, service):
+    cpdef int start_service(self, bytes service):
         cdef:
             uint16_t port
             lockdownd_error_t err
@@ -242,6 +259,8 @@ cdef class LockdownClient(Base):
 
 cdef extern from *:
     ctypedef char* const_char_ptr "const char*"
+    void free(void *ptr)
+    void plist_free(plist.plist_t node)
 
 include "property_list_client.pxi"
 include "mobilesync.pxi"

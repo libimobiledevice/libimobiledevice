@@ -54,10 +54,5 @@ cdef extern from "libimobiledevice/lockdown.h":
 
 cdef class LockdownClient(Base):
     cdef lockdownd_client_t _c_client
-    cpdef int start_service(self, service)
+    cpdef int start_service(self, bytes service)
     cpdef goodbye(self)
-
-cpdef set_debug_level(int level)
-cpdef event_subscribe(object callback)
-cpdef event_unsubscribe()
-cpdef get_device_list()

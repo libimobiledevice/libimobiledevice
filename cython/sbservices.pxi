@@ -29,14 +29,16 @@ cdef class SpringboardServicesClient(Base):
     cdef sbservices_client_t _c_client
 
     def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
-        cdef iDevice dev = device
-        cdef LockdownClient lckd
+        cdef:
+            iDevice dev = device
+            LockdownClient lckd
         if lockdown is None:
             lckd = LockdownClient(dev)
         else:
             lckd = lockdown
-        port = lockdown.start_service("com.apple.springboardservices")
-        self.handle_error(sbservices_client_new(dev._c_dev, port, &(self._c_client)))
+        port = lckd.start_service("com.apple.springboardservices")
+        err = SpringboardServicesError(sbservices_client_new(dev._c_dev, port, &(self._c_client)))
+        if err: raise err
     
     def __dealloc__(self):
         if self._c_client is not NULL:
@@ -51,7 +53,14 @@ cdef class SpringboardServicesClient(Base):
             cdef:
                 plist.plist_t c_node = NULL
                 plist.Node node
-            self.handle_error(sbservices_get_icon_state(self._c_client, &c_node))
+                sbservices_error_t err
+            err = sbservices_get_icon_state(self._c_client, &c_node)
+            try:
+                self.handle_error(err)
+            except BaseError, e:
+                if c_node != NULL:
+                    plist_free(c_node)
+                raise
             node = plist.plist_t_to_node(c_node)
             return node
         def __set__(self, plist.Node newstate not None):
@@ -63,6 +72,13 @@ cdef class SpringboardServicesClient(Base):
             bytes result
             char* pngdata = NULL
             uint64_t pngsize
-        self.handle_error(sbservices_get_icon_pngdata(self._c_client, bundleId, &pngdata, &pngsize))
-        result = pngdata[:pngsize]
+            sbservices_error_t err
+        err = sbservices_get_icon_pngdata(self._c_client, bundleId, &pngdata, &pngsize)
+        try:
+            self.handle_error(err)
+        except BaseError, e:
+            raise
+        finally:
+            result = pngdata[:pngsize]
+            free(pngdata)
         return result
