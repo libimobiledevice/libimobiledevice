@@ -150,17 +150,26 @@ static void buffer_read_from_filename(const char *filename, char **buffer, uint3
 	FILE *f;
 	uint64_t size;
 
+	*length = 0;
+
 	f = fopen(filename, "rb");
+	if (!f) {
+		return;
+	}
 
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	rewind(f);
 
+	if (size == 0) {
+		return;
+	}
+
 	*buffer = (char*)malloc(sizeof(char)*size);
 	fread(*buffer, sizeof(char), size, f);
 	fclose(f);
 
-	*length = size;
+	*length = (uint32_t)size;
 }
 
 static void buffer_write_to_filename(const char *filename, const char *buffer, uint32_t length)
@@ -186,7 +195,7 @@ static int plist_read_from_filename(plist_t *plist, const char *filename)
 		return 0;
 	}
 
-	if (memcmp(buffer, "bplist00", 8) == 0) {
+	if ((length > 8) && (memcmp(buffer, "bplist00", 8) == 0)) {
 		plist_from_bin(buffer, length, plist);
 	} else {
 		plist_from_xml(buffer, length, plist);
@@ -553,7 +562,11 @@ int main(int argc, char *argv[])
 			printf("Reading Info.plist from backup.\n");
 			plist_read_from_filename(&info_plist, info_path);
 
-			if (cmd == CMD_BACKUP) {
+			if (!info_plist) {
+				printf("Could not read Info.plist\n");
+				is_full_backup = 1;
+			}
+			if (info_plist && (cmd == CMD_BACKUP)) {
 				if (mobilebackup_info_is_current_device(info_plist)) {
 					/* update the last backup time within Info.plist */
 					mobilebackup_info_update_last_backup_date(info_plist);
@@ -587,16 +600,6 @@ int main(int argc, char *argv[])
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
 
-			/* Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
-			/* create new Info.plist on new backups */
-			if (is_full_backup) {
-				printf("Creating Info.plist for new backup.\n");
-				info_plist = mobilebackup_factory_info_plist_new();
-				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
-			}
-
-			g_free(info_path);
-
 			/* Manifest.plist (backup manifest (backup state)) */
 			char *manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist");
 
@@ -604,7 +607,26 @@ int main(int argc, char *argv[])
 			if (!is_full_backup) {
 				printf("Reading existing Manifest.\n");
 				plist_read_from_filename(&manifest_plist, manifest_path);
+				if (!manifest_plist) {
+					printf("Could not read Manifest.plist, switching to full backup mode.\n");
+					is_full_backup = 1;
+				}
 			}
+
+			/* Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
+
+			/* create new Info.plist on new backups */
+			if (is_full_backup) {
+				if (info_plist) {
+					plist_free(info_plist);
+					info_plist = NULL;
+				}
+				remove(info_path);
+				printf("Creating Info.plist for new backup.\n");
+				info_plist = mobilebackup_factory_info_plist_new();
+				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+			}
+			g_free(info_path);
 
 			plist_free(info_plist);
 			info_plist = NULL;
