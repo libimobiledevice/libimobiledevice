@@ -67,6 +67,10 @@ cdef extern from "libimobiledevice/afc.h":
     afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position)
     afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize)
 
+LOCK_SH = AFC_LOCK_SH
+LOCK_EX = AFC_LOCK_EX
+LOCK_UN = AFC_LOCK_UN
+
 cdef class AfcError(BaseError):
     def __init__(self, *args, **kwargs):
         self._lookup_table = {
@@ -114,6 +118,9 @@ cdef class AfcFile(Base):
 
     cpdef close(self):
         self.handle_error(afc_file_close(self._client._c_client, self._c_handle))
+
+    cpdef lock(self, int operation):
+        self.handle_error(afc_file_lock(self._client._c_client, self._c_handle, <afc_lock_op_t>operation))
 
     cpdef seek(self, int64_t offset, int whence):
         self.handle_error(afc_file_seek(self._client._c_client, self._c_handle, offset, whence))
@@ -208,14 +215,26 @@ cdef class AfcClient(BaseService):
 
         return result
 
-    cpdef AfcFile open(self, bytes filename):
+    cpdef AfcFile open(self, bytes filename, bytes mode='r'):
         cdef:
-            str mode = 'r'
             afc_file_mode_t c_mode
             uint64_t handle
             AfcFile f
-        if mode == 'r':
+        if mode == <bytes>'r':
             c_mode = AFC_FOPEN_RDONLY
+        elif mode == <bytes>'r+':
+            c_mode = AFC_FOPEN_RW
+        elif mode == <bytes>'w':
+            c_mode = AFC_FOPEN_WRONLY
+        elif mode == <bytes>'w+':
+            c_mode = AFC_FOPEN_WR
+        elif mode == <bytes>'a':
+            c_mode = AFC_FOPEN_APPEND
+        elif mode == <bytes>'a+':
+            c_mode = AFC_FOPEN_RDAPPEND
+        else:
+            raise ValueError("mode string must be 'r', 'r+', 'w', 'w+', 'a', or 'a+'")
+
         self.handle_error(afc_file_open(self._c_client, filename, c_mode, &handle))
         f = AfcFile.__new__(AfcFile)
         f._c_handle = handle
@@ -256,6 +275,12 @@ cdef class AfcClient(BaseService):
 
     cpdef truncate(self, bytes path, uint64_t newsize):
         self.handle_error(afc_truncate(self._c_client, path, newsize))
+
+    cpdef link(self, bytes source, bytes link_name):
+        self.handle_error(afc_make_link(self._c_client, AFC_HARDLINK, source, link_name))
+
+    cpdef symlink(self, bytes source, bytes link_name):
+        self.handle_error(afc_make_link(self._c_client, AFC_SYMLINK, source, link_name))
 
     cpdef set_file_time(self, bytes path, uint64_t mtime):
         self.handle_error(afc_set_file_time(self._c_client, path, mtime))
