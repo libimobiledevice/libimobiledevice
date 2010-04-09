@@ -28,19 +28,14 @@ cdef class MobileBackupError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class MobileBackupClient(PropertyListClient):
+cdef class MobileBackupClient(PropertyListService):
+    __service_name__ = "com.apple.mobilebackup"
     cdef mobilebackup_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
         cdef:
             iDevice dev = device
-            LockdownClient lckd
             mobilebackup_error_t err
-        if lockdown is None:
-            lckd = LockdownClient(dev)
-        else:
-            lckd = lockdown
-        port = lckd.start_service("com.apple.mobilebackup")
         err = mobilebackup_client_new(dev._c_dev, port, &self._c_client)
         self.handle_error(err)
 

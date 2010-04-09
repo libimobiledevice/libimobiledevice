@@ -27,19 +27,14 @@ cdef class MobileImageMounterError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class MobileImageMounterClient(Base):
+cdef class MobileImageMounterClient(PropertyListService):
+    __service_name__ = "com.apple.mobile.mobile_image_mounter"
     cdef mobile_image_mounter_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
         cdef:
             iDevice dev = device
-            LockdownClient lckd
             mobile_image_mounter_error_t err
-        if lockdown is None:
-            lckd = LockdownClient(dev)
-        else:
-            lckd = lockdown
-        port = lckd.start_service("com.apple.mobile.mobile_image_mounter")
         err = mobile_image_mounter_new(dev._c_dev, port, &self._c_client)
         self.handle_error(err)
     

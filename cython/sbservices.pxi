@@ -26,19 +26,13 @@ cdef class SpringboardServicesError(BaseError):
         BaseError.__init__(self, *args, **kwargs)
 
 cdef class SpringboardServicesClient(Base):
+    __service_name__ = "com.apple.springboardservices"
     cdef sbservices_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
         cdef:
             iDevice dev = device
-            LockdownClient lckd
-        if lockdown is None:
-            lckd = LockdownClient(dev)
-        else:
-            lckd = lockdown
-        port = lckd.start_service("com.apple.springboardservices")
-        err = SpringboardServicesError(sbservices_client_new(dev._c_dev, port, &(self._c_client)))
-        if err: raise err
+        self.handle_error(sbservices_client_new(dev._c_dev, port, &self._c_client))
     
     def __dealloc__(self):
         if self._c_client is not NULL:
@@ -52,7 +46,6 @@ cdef class SpringboardServicesClient(Base):
         def __get__(self):
             cdef:
                 plist.plist_t c_node = NULL
-                plist.Node node
                 sbservices_error_t err
             err = sbservices_get_icon_state(self._c_client, &c_node)
             try:
@@ -61,11 +54,9 @@ cdef class SpringboardServicesClient(Base):
                 if c_node != NULL:
                     plist_free(c_node)
                 raise
-            node = plist.plist_t_to_node(c_node)
-            return node
+            return plist.plist_t_to_node(c_node)
         def __set__(self, plist.Node newstate not None):
-            cdef plist.Node node = newstate
-            self.handle_error(sbservices_set_icon_state(self._c_client, node._c_node))
+            self.handle_error(sbservices_set_icon_state(self._c_client, newstate._c_node))
 
     cpdef bytes get_pngdata(self, bytes bundleId):
         cdef:

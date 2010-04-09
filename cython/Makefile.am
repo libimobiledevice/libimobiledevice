@@ -9,6 +9,7 @@ BUILT_SOURCES = imobiledevice.c
 PXDINCLUDES = imobiledevice.pxd stdint.pxi $(CYTHON_PLIST_INCLUDE_DIR)/plist.pxd
 PXIINCLUDES =					\
 	stdint.pxi					\
+	lockdown.pxi				\
 	mobilesync.pxi				\
 	notification_proxy.pxi		\
 	sbservices.pxi				\

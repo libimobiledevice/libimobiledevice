@@ -45,14 +45,47 @@ cdef class iDevice(Base):
 
     cpdef iDeviceConnection connect(self, uint16_t port)
 
-cdef class LockdownError(BaseError): pass
+cdef class BaseService(Base):
+    pass
+
+cdef class PropertyListService(BaseService):
+    cpdef send(self, plist.Node node)
+    cpdef object receive(self)
+    cdef inline int16_t _send(self, plist.plist_t node)
+    cdef inline int16_t _receive(self, plist.plist_t* c_node)
 
 cdef extern from "libimobiledevice/lockdown.h":
     cdef struct lockdownd_client_private:
         pass
     ctypedef lockdownd_client_private *lockdownd_client_t
+    cdef struct lockdownd_pair_record:
+        char *device_certificate
+        char *host_certificate
+        char *host_id
+        char *root_certificate
+    ctypedef lockdownd_pair_record *lockdownd_pair_record_t
 
-cdef class LockdownClient(Base):
+cdef class LockdownError(BaseError): pass
+
+cdef class LockdownPairRecord:
+    cdef lockdownd_pair_record_t _c_record
+
+cdef class LockdownClient(PropertyListService):
     cdef lockdownd_client_t _c_client
-    cpdef int start_service(self, bytes service)
+    cdef readonly iDevice device
+
+    cpdef bytes query_type(self)
+    cpdef plist.Node get_value(self, bytes domain=*, bytes key=*)
+    cpdef set_value(self, bytes domain, bytes key, object value)
+    cpdef remove_value(self, bytes domain, bytes key)
+    cpdef uint16_t start_service(self, object service)
+    cpdef object get_service_client(self, object service_class)
+    cpdef tuple start_session(self, bytes host_id)
+    cpdef stop_session(self, bytes session_id)
+    cpdef pair(self, object pair_record=*)
+    cpdef validate_pair(self, object pair_record=*)
+    cpdef unpair(self, object pair_record=*)
+    cpdef activate(self, plist.Node activation_record)
+    cpdef deactivate(self)
+    cpdef enter_recovery(self)
     cpdef goodbye(self)

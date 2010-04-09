@@ -28,19 +28,14 @@ cdef class MobileSyncError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class MobileSyncClient(PropertyListClient):
+cdef class MobileSyncClient(DeviceLinkService):
+    __service_name__ = "com.apple.mobilesync"
     cdef mobilesync_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
         cdef:
             iDevice dev = device
-            LockdownClient lckd
             mobilesync_error_t err
-        if lockdown is None:
-            lckd = LockdownClient(dev)
-        else:
-            lckd = lockdown
-        port = lckd.start_service("com.apple.mobilesync")
         err = mobilesync_client_new(dev._c_dev, port, &(self._c_client))
         self.handle_error(err)
     

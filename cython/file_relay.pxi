@@ -33,19 +33,14 @@ cdef class FileRelayError(BaseError):
 
 cimport stdlib
 
-cdef class FileRelayClient(Base):
+cdef class FileRelayClient(PropertyListService):
+    __service_name__ = "com.apple.mobile.file_relay"
     cdef file_relay_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownClient lockdown=None, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
         cdef:
             iDevice dev = device
-            LockdownClient lckd
             file_relay_error_t err
-        if lockdown is None:
-            lckd = LockdownClient(dev)
-        else:
-            lckd = lockdown
-        port = lckd.start_service("com.apple.mobile.file_relay")
         err = file_relay_client_new(dev._c_dev, port, &self._c_client)
         self.handle_error(err)
 

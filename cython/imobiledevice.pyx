@@ -170,99 +170,42 @@ cdef class iDevice(Base):
             self.handle_error(idevice_get_handle(self._c_dev, &handle))
             return handle
 
-cdef extern from "libimobiledevice/lockdown.h":
-    cdef struct lockdownd_client_private:
-        pass
-    ctypedef lockdownd_client_private *lockdownd_client_t
-    ctypedef enum lockdownd_error_t:
-        LOCKDOWN_E_SUCCESS = 0
-        LOCKDOWN_E_INVALID_ARG = -1
-        LOCKDOWN_E_INVALID_CONF = -2
-        LOCKDOWN_E_PLIST_ERROR = -3
-        LOCKDOWN_E_PAIRING_FAILED = -4
-        LOCKDOWN_E_SSL_ERROR = -5
-        LOCKDOWN_E_DICT_ERROR = -6
-        LOCKDOWN_E_START_SERVICE_FAILED = -7
-        LOCKDOWN_E_NOT_ENOUGH_DATA = -8
-        LOCKDOWN_E_SET_VALUE_PROHIBITED = -9
-        LOCKDOWN_E_GET_VALUE_PROHIBITED = -10
-        LOCKDOWN_E_REMOVE_VALUE_PROHIBITED = -11
-        LOCKDOWN_E_MUX_ERROR = -12
-        LOCKDOWN_E_ACTIVATION_FAILED = -13
-        LOCKDOWN_E_PASSWORD_PROTECTED = -14
-        LOCKDOWN_E_NO_RUNNING_SESSION = -15
-        LOCKDOWN_E_INVALID_HOST_ID = -16
-        LOCKDOWN_E_INVALID_SERVICE = -17
-        LOCKDOWN_E_INVALID_ACTIVATION_RECORD = -18
-        LOCKDOWN_E_UNKNOWN_ERROR = -256
-
-    lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, char *label)
-    lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
-    lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, char *service, uint16_t *port)
-
-cdef class LockdownError(BaseError):
-    def __init__(self, *args, **kwargs):
-        self._lookup_table = {
-            LOCKDOWN_E_SUCCESS: "Success",
-            LOCKDOWN_E_INVALID_ARG: "Invalid argument",
-            LOCKDOWN_E_INVALID_CONF: "Invalid configuration",
-            LOCKDOWN_E_PLIST_ERROR: "Property list error",
-            LOCKDOWN_E_PAIRING_FAILED: "Pairing failed",
-            LOCKDOWN_E_SSL_ERROR: "SSL error",
-            LOCKDOWN_E_DICT_ERROR: "Dict error",
-            LOCKDOWN_E_START_SERVICE_FAILED: "Start service failed",
-            LOCKDOWN_E_NOT_ENOUGH_DATA: "Not enough data",
-            LOCKDOWN_E_SET_VALUE_PROHIBITED: "Set value prohibited",
-            LOCKDOWN_E_GET_VALUE_PROHIBITED: "Get value prohibited",
-            LOCKDOWN_E_REMOVE_VALUE_PROHIBITED: "Remove value prohibited",
-            LOCKDOWN_E_MUX_ERROR: "MUX Error",
-            LOCKDOWN_E_ACTIVATION_FAILED: "Activation failed",
-            LOCKDOWN_E_PASSWORD_PROTECTED: "Password protected",
-            LOCKDOWN_E_NO_RUNNING_SESSION: "No running session",
-            LOCKDOWN_E_INVALID_HOST_ID: "Invalid host ID",
-            LOCKDOWN_E_INVALID_SERVICE: "Invalid service",
-            LOCKDOWN_E_INVALID_ACTIVATION_RECORD: "Invalid activation record",
-            LOCKDOWN_E_UNKNOWN_ERROR: "Unknown error"
-        }
-        BaseError.__init__(self, *args, **kwargs)
-
-cdef class LockdownClient(Base):
-    def __cinit__(self, iDevice device not None, bytes label="", *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            lockdownd_error_t err
-            char* c_label = NULL
-        if label:
-            c_label = label
-        err = lockdownd_client_new_with_handshake(dev._c_dev, &(self._c_client), c_label)
-        self.handle_error(err)
-    
-    def __dealloc__(self):
-        cdef lockdownd_error_t err
-        if self._c_client is not NULL:
-            err = lockdownd_client_free(self._c_client)
-            self.handle_error(err)
-
-    cdef inline BaseError _error(self, int16_t ret):
-        return LockdownError(ret)
-    
-    cpdef int start_service(self, bytes service):
-        cdef:
-            uint16_t port
-            lockdownd_error_t err
-        err = lockdownd_start_service(self._c_client, service, &port)
-        self.handle_error(err)
-        return port
-    
-    cpdef goodbye(self):
-        pass
-
 cdef extern from *:
     ctypedef char* const_char_ptr "const char*"
     void free(void *ptr)
     void plist_free(plist.plist_t node)
 
-include "property_list_client.pxi"
+cdef class BaseService(Base):
+    __service_name__ = None
+
+cdef class PropertyListService(BaseService):
+    cpdef send(self, plist.Node node):
+        self.handle_error(self._send(node._c_node))
+
+    cpdef object receive(self):
+        cdef:
+            plist.plist_t c_node = NULL
+            int16_t err
+        err = self._receive(&c_node)
+        try:
+            self.handle_error(err)
+        except BaseError, e:
+            if c_node != NULL:
+                plist_free(c_node)
+            raise
+
+        return plist.plist_t_to_node(c_node)
+
+    cdef inline int16_t _send(self, plist.plist_t node):
+        raise NotImplementedError("send is not implemented")
+
+    cdef inline int16_t _receive(self, plist.plist_t* c_node):
+        raise NotImplementedError("receive is not implemented")
+
+cdef class DeviceLinkService(PropertyListService):
+    pass
+
+include "lockdown.pxi"
 include "mobilesync.pxi"
 include "notification_proxy.pxi"
 include "sbservices.pxi"
