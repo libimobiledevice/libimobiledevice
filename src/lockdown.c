@@ -786,6 +786,13 @@ static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, c
 	if (!host_id)
 		free(host_id_loc);
 
+	if (device_cert.data)
+		free(device_cert.data);
+	if (host_cert.data)
+		free(host_cert.data);
+	if (root_cert.data)
+		free(root_cert.data);
+
 	return ret;
 }
 
