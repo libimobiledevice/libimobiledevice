@@ -1186,6 +1186,16 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 				break;
 			}
 		}
+
+		if (essentially_null.data)
+			free(essentially_null.data);
+		gnutls_x509_crt_deinit(dev_cert);
+		gnutls_x509_crt_deinit(root_cert);
+		gnutls_x509_crt_deinit(host_cert);
+		gnutls_x509_privkey_deinit(fake_privkey);
+		gnutls_x509_privkey_deinit(root_privkey);
+		gnutls_x509_privkey_deinit(host_privkey);
+
 	}
 
 	gnutls_free(modulus.data);
