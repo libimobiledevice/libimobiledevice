@@ -622,7 +622,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	client_loc->uuid = NULL;
 	client_loc->label = NULL;
 	if (label != NULL)
-		strdup(label);
+		client_loc->label = strdup(label);
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		*client = client_loc;
