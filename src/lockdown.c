@@ -1169,6 +1169,9 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 
 						g_free(pem_root_cert.data);
 						g_free(pem_host_cert.data);
+
+						if (dev_pem.data)
+							gnutls_free(dev_pem.data);
 					}
 				}
 			}
