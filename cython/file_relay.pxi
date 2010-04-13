@@ -62,7 +62,7 @@ cdef class FileRelayClient(PropertyListService):
         c_sources[count] = NULL
 
         err = file_relay_request_sources(self._c_client, <const_sources_t>c_sources, &conn._c_connection)
-        free(c_sources)
+        stdlib.free(c_sources)
         self.handle_error(err)
         return conn
 

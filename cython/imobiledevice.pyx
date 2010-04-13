@@ -172,8 +172,8 @@ cdef class iDevice(Base):
 
 cdef extern from *:
     ctypedef char* const_char_ptr "const char*"
-    void free(void *ptr)
-    void plist_free(plist.plist_t node)
+
+cimport stdlib
 
 cdef class BaseService(Base):
     __service_name__ = None
@@ -191,7 +191,7 @@ cdef class PropertyListService(BaseService):
             self.handle_error(err)
         except BaseError, e:
             if c_node != NULL:
-                plist_free(c_node)
+                plist.plist_free(c_node)
             raise
 
         return plist.plist_t_to_node(c_node)

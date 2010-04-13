@@ -122,7 +122,7 @@ cdef class LockdownClient(PropertyListService):
         finally:
             if c_type != NULL:
                 result = c_type
-                free(c_type)
+                stdlib.free(c_type)
 
         return result
 
@@ -141,7 +141,7 @@ cdef class LockdownClient(PropertyListService):
             self.handle_error(err)
         except BaseError, e:
             if c_node != NULL:
-                plist_free(c_node)
+                plist.plist_free(c_node)
             raise
 
         return plist.plist_t_to_node(c_node)
@@ -154,7 +154,7 @@ cdef class LockdownClient(PropertyListService):
             raise
         finally:
             if c_node != NULL:
-                plist_free(c_node)
+                plist.plist_free(c_node)
 
     cpdef remove_value(self, bytes domain, bytes key):
         self.handle_error(lockdownd_remove_value(self._c_client, domain, key))
@@ -207,7 +207,7 @@ cdef class LockdownClient(PropertyListService):
         finally:
             if c_session_id != NULL:
                 session_id = c_session_id
-                free(c_session_id)
+                stdlib.free(c_session_id)
 
         return (session_id, ssl_enabled)
 
