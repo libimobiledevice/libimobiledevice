@@ -25,7 +25,7 @@ cdef class SpringboardServicesError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class SpringboardServicesClient(Base):
+cdef class SpringboardServicesClient(PropertyListService):
     __service_name__ = "com.apple.springboardservices"
     cdef sbservices_client_t _c_client
 

@@ -27,7 +27,7 @@ cdef class ScreenshotrError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class ScreenshotrClient(Base):
+cdef class ScreenshotrClient(DeviceLinkService):
     __service_name__ = "com.apple.mobile.screenshotr"
     cdef screenshotr_client_t _c_client
 

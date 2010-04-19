@@ -30,7 +30,7 @@ cdef class NotificationProxyError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class NotificationProxy(Base):
+cdef class NotificationProxyClient(PropertyListService):
     __service_name__ = "com.apple.mobile.notification_proxy"
     cdef np_client_t _c_client
 

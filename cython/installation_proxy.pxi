@@ -42,7 +42,7 @@ cdef class InstallationProxyError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cdef class InstallationProxy(Base):
+cdef class InstallationProxyClient(PropertyListService):
     __service_name__ = "com.apple.mobile.installation_proxy"
     cdef instproxy_client_t _c_client
 
