@@ -14,7 +14,6 @@ PXIINCLUDES =					\
 	notification_proxy.pxi		\
 	sbservices.pxi				\
 	mobilebackup.pxi			\
-	property_list_client.pxi	\
 	afc.pxi						\
 	file_relay.pxi				\
 	screenshotr.pxi				\
