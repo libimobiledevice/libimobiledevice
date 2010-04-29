@@ -164,7 +164,7 @@ cdef class LockdownClient(PropertyListService):
             char* c_service_name = NULL
             uint16_t port = 0
 
-        if hasattr(service, '__service_name__') and \
+        if issubclass(service, BaseService) and \
             service.__service_name__ is not None \
             and isinstance(service.__service_name__, basestring):
             c_service_name = <bytes>service.__service_name__
