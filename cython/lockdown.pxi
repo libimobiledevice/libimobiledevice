@@ -90,18 +90,17 @@ cdef class LockdownPairRecord:
 cdef class LockdownClient(PropertyListService):
     def __cinit__(self, iDevice device not None, bytes label="", bool handshake=True, *args, **kwargs):
         cdef:
-            iDevice dev = device
             lockdownd_error_t err
             char* c_label = NULL
         if label:
             c_label = label
         if handshake:
-            err = lockdownd_client_new_with_handshake(dev._c_dev, &self._c_client, c_label)
+            err = lockdownd_client_new_with_handshake(device._c_dev, &self._c_client, c_label)
         else:
-            err = lockdownd_client_new(dev._c_dev, &self._c_client, c_label)
+            err = lockdownd_client_new(device._c_dev, &self._c_client, c_label)
         self.handle_error(err)
 
-        self.device = dev
+        self.device = device
 
     def __dealloc__(self):
         cdef lockdownd_error_t err
@@ -117,14 +116,14 @@ cdef class LockdownClient(PropertyListService):
         err = lockdownd_query_type(self._c_client, &c_type)
         try:
             self.handle_error(err)
+            result = c_type
+
+            return result
         except BaseError, e:
             raise
         finally:
             if c_type != NULL:
-                result = c_type
                 stdlib.free(c_type)
-
-        return result
 
     cpdef plist.Node get_value(self, bytes domain=None, bytes key=None):
         cdef:
@@ -136,15 +135,17 @@ cdef class LockdownClient(PropertyListService):
             c_domain = domain
         if key is not None:
             c_key = key
+
         err = lockdownd_get_value(self._c_client, c_domain, c_key, &c_node)
+
         try:
             self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
         except BaseError, e:
             if c_node != NULL:
                 plist.plist_free(c_node)
             raise
-
-        return plist.plist_t_to_node(c_node)
 
     cpdef set_value(self, bytes domain, bytes key, object value):
         cdef plist.plist_t c_node = plist.native_to_plist_t(value)
@@ -175,10 +176,10 @@ cdef class LockdownClient(PropertyListService):
 
         try:
             self.handle_error(lockdownd_start_service(self._c_client, c_service_name, &port))
+            
+            return port
         except BaseError, e:
             raise
-
-        return port
 
     cpdef object get_service_client(self, object service_class):
         cdef:
@@ -202,14 +203,14 @@ cdef class LockdownClient(PropertyListService):
         err = lockdownd_start_session(self._c_client, host_id, &c_session_id, &ssl_enabled)
         try:
             self.handle_error(err)
+
+            session_id = c_session_id
+            return (session_id, ssl_enabled)
         except BaseError, e:
             raise
         finally:
             if c_session_id != NULL:
-                session_id = c_session_id
                 stdlib.free(c_session_id)
-
-        return (session_id, ssl_enabled)
 
     cpdef stop_session(self, bytes session_id):
         self.handle_error(lockdownd_stop_session(self._c_client, session_id))

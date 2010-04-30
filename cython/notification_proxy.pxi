@@ -89,11 +89,7 @@ cdef class NotificationProxyClient(PropertyListService):
     cdef np_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            np_error_t err
-        err = np_client_new(dev._c_dev, port, &self._c_client)
-        self.handle_error(err)
+        self.handle_error(np_client_new(device._c_dev, port, &self._c_client))
 
     def __dealloc__(self):
         cdef np_error_t err

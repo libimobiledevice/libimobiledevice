@@ -33,11 +33,7 @@ cdef class MobileBackupClient(PropertyListService):
     cdef mobilebackup_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            mobilebackup_error_t err
-        err = mobilebackup_client_new(dev._c_dev, port, &self._c_client)
-        self.handle_error(err)
+        self.handle_error(mobilebackup_client_new(device._c_dev, port, &self._c_client))
 
     def __dealloc__(self):
         cdef mobilebackup_error_t err

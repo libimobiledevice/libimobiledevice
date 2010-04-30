@@ -38,11 +38,7 @@ cdef class FileRelayClient(PropertyListService):
     cdef file_relay_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            file_relay_error_t err
-        err = file_relay_client_new(dev._c_dev, port, &self._c_client)
-        self.handle_error(err)
+        self.handle_error(file_relay_client_new(device._c_dev, port, &self._c_client))
 
     def __dealloc__(self):
         cdef file_relay_error_t err

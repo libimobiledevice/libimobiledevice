@@ -32,11 +32,7 @@ cdef class MobileImageMounterClient(PropertyListService):
     cdef mobile_image_mounter_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            mobile_image_mounter_error_t err
-        err = mobile_image_mounter_new(dev._c_dev, port, &self._c_client)
-        self.handle_error(err)
+        self.handle_error(mobile_image_mounter_new(device._c_dev, port, &self._c_client))
     
     def __dealloc__(self):
         cdef mobile_image_mounter_error_t err
@@ -52,8 +48,14 @@ cdef class MobileImageMounterClient(PropertyListService):
             plist.plist_t c_node = NULL
             mobile_image_mounter_error_t err
         err = mobile_image_mounter_lookup_image(self._c_client, image_type, &c_node)
-        self.handle_error(err)
-        return plist.plist_t_to_node(c_node)
+
+        try:
+            self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
+        except Exception, e:
+            if c_node != NULL:
+                plist.plist_free(c_node)
 
     cpdef plist.Node mount_image(self, bytes image_path, bytes image_signature, bytes image_type):
         cdef:
@@ -61,8 +63,14 @@ cdef class MobileImageMounterClient(PropertyListService):
             mobile_image_mounter_error_t err
         err = mobile_image_mounter_mount_image(self._c_client, image_path, image_signature, len(image_signature),
                                                image_type, &c_node)
-        self.handle_error(err)
-        return plist.plist_t_to_node(c_node)
+
+        try:
+            self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
+        except Exception, e:
+            if c_node != NULL:
+                plist.plist_free(c_node)
 
     cpdef hangup(self):
         cdef mobile_image_mounter_error_t err

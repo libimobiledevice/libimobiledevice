@@ -32,11 +32,7 @@ cdef class ScreenshotrClient(DeviceLinkService):
     cdef screenshotr_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            screenshotr_error_t err
-        err = screenshotr_client_new(dev._c_dev, port, &self._c_client)
-        self.handle_error(err)
+        self.handle_error(screenshotr_client_new(device._c_dev, port, &self._c_client))
 
     def __dealloc__(self):
         cdef screenshotr_error_t err
@@ -46,15 +42,21 @@ cdef class ScreenshotrClient(DeviceLinkService):
 
     cpdef bytes take_screenshot(self):
         cdef:
-            char* c_data
+            char* c_data = NULL
             uint64_t data_size
             bytes result
             screenshotr_error_t err
 
         err = screenshotr_take_screenshot(self._c_client, &c_data, &data_size)
-        self.handle_error(err)
-        result = c_data[:data_size]
-        return result
+        try:
+            self.handle_error(err)
+
+            result = c_data[:data_size]
+            return result
+        except Exception, e:
+            if c_data != NULL:
+                stdlib.free(c_data)
+            raise
 
     cdef inline BaseError _error(self, int16_t ret):
         return ScreenshotrError(ret)

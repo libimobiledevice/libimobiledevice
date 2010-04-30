@@ -102,13 +102,16 @@ def event_unsubscribe():
 
 def get_device_list():
     cdef:
-        char** devices
+        char** devices = NULL
         int count
         list result
         bytes device
         iDeviceError err = iDeviceError(idevice_get_device_list(&devices, &count))
 
-    if err: raise err
+    if err:
+        if devices != NULL:
+            idevice_device_list_free(devices)
+        raise err
 
     result = []
     for i from 0 <= i < count:
@@ -131,15 +134,16 @@ cdef class iDeviceConnection(Base):
     cdef inline BaseError _error(self, int16_t ret):
         return iDeviceError(ret)
 
+cimport stdlib
+
 cdef class iDevice(Base):
-    def __cinit__(self, uuid=None, *args, **kwargs):
-        cdef:
-            char* c_uuid = NULL
-            idevice_error_t err
-        if uuid is not None:
-            c_uuid = uuid
-        err = idevice_new(&self._c_dev, c_uuid)
-        self.handle_error(err)
+    def __cinit__(self, object uuid=None, *args, **kwargs):
+        cdef char* c_uuid = NULL
+        if isinstance(uuid, basestring):
+            c_uuid = <bytes>uuid
+        elif uuid is not None:
+            raise TypeError("iDevice's constructor takes a string or None as the uuid argument")
+        self.handle_error(idevice_new(&self._c_dev, c_uuid))
 
     def __dealloc__(self):
         if self._c_dev is not NULL:
@@ -151,10 +155,19 @@ cdef class iDevice(Base):
     cpdef iDeviceConnection connect(self, uint16_t port):
         cdef:
             idevice_error_t err
-            iDeviceConnection conn = iDeviceConnection.__new__(iDeviceConnection)
-        err = idevice_connect(self._c_dev, port, &conn._c_connection)
-        self.handle_error(err)
-        return conn
+            idevice_connection_t c_conn = NULL
+            iDeviceConnection conn
+        err = idevice_connect(self._c_dev, port, &c_conn)
+        try:
+            self.handle_error(err)
+
+            conn = iDeviceConnection.__new__(iDeviceConnection)
+            conn._c_connection = c_conn
+
+            return conn
+        except Exception, e:
+            if c_conn != NULL:
+                idevice_disconnect(c_conn)
 
     property uuid:
         def __get__(self):
@@ -162,8 +175,12 @@ cdef class iDevice(Base):
                 char* uuid
                 idevice_error_t err
             err = idevice_get_uuid(self._c_dev, &uuid)
-            self.handle_error(err)
-            return uuid
+            try:
+                self.handle_error(err)
+                return uuid
+            except Exception, e:
+                if uuid != NULL:
+                    stdlib.free(uuid)
     property handle:
         def __get__(self):
             cdef uint32_t handle
@@ -172,8 +189,6 @@ cdef class iDevice(Base):
 
 cdef extern from *:
     ctypedef char* const_char_ptr "const char*"
-
-cimport stdlib
 
 cdef class BaseService(Base):
     __service_name__ = None
@@ -189,12 +204,12 @@ cdef class PropertyListService(BaseService):
         err = self._receive(&c_node)
         try:
             self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
         except BaseError, e:
             if c_node != NULL:
                 plist.plist_free(c_node)
             raise
-
-        return plist.plist_t_to_node(c_node)
 
     cdef inline int16_t _send(self, plist.plist_t node):
         raise NotImplementedError("send is not implemented")

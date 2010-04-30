@@ -154,11 +154,7 @@ cdef class AfcClient(BaseService):
     cdef afc_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            afc_error_t err
-        err = afc_client_new(dev._c_dev, port, &(self._c_client))
-        self.handle_error(err)
+        self.handle_error(afc_client_new(device._c_dev, port, &(self._c_client)))
     
     def __dealloc__(self):
         cdef afc_error_t err

@@ -33,11 +33,7 @@ cdef class MobileSyncClient(DeviceLinkService):
     cdef mobilesync_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-            mobilesync_error_t err
-        err = mobilesync_client_new(dev._c_dev, port, &(self._c_client))
-        self.handle_error(err)
+        self.handle_error(mobilesync_client_new(device._c_dev, port, &(self._c_client)))
     
     def __dealloc__(self):
         cdef mobilesync_error_t err

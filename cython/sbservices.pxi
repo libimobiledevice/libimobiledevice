@@ -30,14 +30,12 @@ cdef class SpringboardServicesClient(PropertyListService):
     cdef sbservices_client_t _c_client
 
     def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        cdef:
-            iDevice dev = device
-        self.handle_error(sbservices_client_new(dev._c_dev, port, &self._c_client))
+        self.handle_error(sbservices_client_new(device._c_dev, port, &self._c_client))
     
     def __dealloc__(self):
         if self._c_client is not NULL:
-            err = SpringboardServicesError(sbservices_client_free(self._c_client))
-            if err: raise err
+            err = sbservices_client_free(self._c_client)
+            self.handle_error(err)
 
     cdef inline BaseError _error(self, int16_t ret):
         return SpringboardServicesError(ret)
@@ -50,11 +48,12 @@ cdef class SpringboardServicesClient(PropertyListService):
             err = sbservices_get_icon_state(self._c_client, &c_node)
             try:
                 self.handle_error(err)
+
+                return plist.plist_t_to_node(c_node)
             except BaseError, e:
                 if c_node != NULL:
                     plist.plist_free(c_node)
                 raise
-            return plist.plist_t_to_node(c_node)
         def __set__(self, plist.Node newstate not None):
             self.handle_error(sbservices_set_icon_state(self._c_client, newstate._c_node))
 
@@ -66,7 +65,8 @@ cdef class SpringboardServicesClient(PropertyListService):
         err = sbservices_get_icon_pngdata(self._c_client, bundleId, &pngdata, &pngsize)
         try:
             self.handle_error(err)
+
+            return pngdata[:pngsize]
         except BaseError, e:
             stdlib.free(pngdata)
             raise
-        return pngdata[:pngsize]
