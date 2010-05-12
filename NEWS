@@ -1,3 +1,16 @@
+Version 1.0.1
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Cleanup includes of files
+  - Use glib instead of netinet for endianess
+  - Fix installation_proxy not adding client options correctly
+  - idevicebackup: better handle broken or missing plist files
+  - Fix some memory leaks in pairing/handshake process
+  - Fix label not being used in lockdownd_client_new()
+  - Update AUTHORS, README and installation instructions
+
 Version 1.0.0
 ~~~~~~~~~~~~~
 
