@@ -116,6 +116,7 @@ device_link_service_error_t device_link_service_client_free(device_link_service_
 	if (property_list_service_client_free(client->parent) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR;
 	}
+	free(client);
 	return DEVICE_LINK_SERVICE_E_SUCCESS;
 }
 
