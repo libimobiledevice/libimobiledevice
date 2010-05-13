@@ -41,6 +41,8 @@ cdef extern from "libimobiledevice/lockdown.h":
     lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
     lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
     lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
+    lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count)
+    lockdownd_error_t lockdownd_data_classes_free(char **classes)
 
 cdef class LockdownError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -244,6 +246,27 @@ cdef class LockdownClient(PropertyListService):
 
     cpdef goodbye(self):
         self.handle_error(lockdownd_goodbye(self._c_client))
+
+    cpdef list get_sync_data_classes(self):
+        cdef:
+            char **classes = NULL
+            int count = 0
+            list result = []
+            bytes data_class
+
+        try:
+            self.handle_error(lockdownd_get_sync_data_classes(self._c_client, &classes, &count))
+
+            for i from 0 <= i < count:
+                data_class = classes[i]
+                result.append(data_class)
+
+            return result
+        except Exception, e:
+            raise
+        finally:
+            if classes != NULL:
+                lockdownd_data_classes_free(classes)
 
     cdef inline int16_t _send(self, plist.plist_t node):
         return lockdownd_send(self._c_client, node)

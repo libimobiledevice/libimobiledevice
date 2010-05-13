@@ -89,3 +89,4 @@ cdef class LockdownClient(PropertyListService):
     cpdef deactivate(self)
     cpdef enter_recovery(self)
     cpdef goodbye(self)
+    cpdef list get_sync_data_classes(self)
