@@ -79,16 +79,16 @@ cdef class MobileSyncClient(DeviceLinkService):
             err = mobilesync_client_free(self._c_client)
             self.handle_error(err)
 
-    cpdef tuple session_start(self, bytes data_class, bytes last_sync_time, bytes current_time):
+    cpdef tuple session_start(self, bytes data_class, bytes device_anchor, bytes host_anchor):
         cdef:
             mobilesync_anchors_t anchors = NULL
             mobilesync_sync_type_t sync_type
             uint64_t data_class_version
 
-        if last_sync_time is None:
-            anchors = mobilesync_anchors_new(NULL, current_time)
+        if device_anchor is None:
+            anchors = mobilesync_anchors_new(NULL, host_anchor)
         else:
-            anchors = mobilesync_anchors_new(last_sync_time, current_time)
+            anchors = mobilesync_anchors_new(device_anchor, host_anchor)
 
         try:
             self.handle_error(mobilesync_session_start(self._c_client, data_class, anchors, &sync_type, &data_class_version))
