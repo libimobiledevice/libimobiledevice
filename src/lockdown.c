@@ -2,6 +2,7 @@
  * lockdown.c
  * com.apple.mobile.lockdownd service implementation.
  *
+ * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +22,10 @@
 
 #include <string.h>
 #include <stdlib.h>
+#define _GNU_SOURCE 1
+#define __USE_GNU 1
+#include <stdio.h>
+#include <ctype.h>
 #include <glib.h>
 #include <libtasn1.h>
 #include <gnutls/x509.h>
@@ -1506,3 +1511,109 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 	return ret;
 }
 
+static void str_remove_spaces(char *source)
+{
+	char *dest = source;
+	while (*source != 0) {
+		if (!isspace(*source)) {
+			*dest++ = *source; /* copy */
+		}
+		source++;
+	}
+	*dest = 0;
+}
+
+lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count)
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	if (!client->session_id)
+		return LOCKDOWN_E_NO_RUNNING_SESSION;
+
+	plist_t dict = NULL;
+	plist_dict_iter iter = NULL;
+	lockdownd_error_t err = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	char *key = NULL;
+	plist_t value = NULL;
+
+	char **newlist = NULL;
+	int newcount = 0;
+
+	*classes = NULL;
+	*count = 0;
+
+	err = lockdownd_get_value(client, "com.apple.mobile.tethered_sync", NULL, &dict);
+	if (err != LOCKDOWN_E_SUCCESS) {
+		if (dict) {
+			plist_free(dict);
+		}
+		return err;
+	}
+
+	if (plist_get_node_type(dict) != PLIST_DICT) {
+		plist_free(dict);
+		return LOCKDOWN_E_PLIST_ERROR;
+	}
+
+	plist_dict_new_iter(dict, &iter);
+
+	plist_dict_next_item(dict, iter, &key, &value);
+	while (key && value) {
+		int add_to_list = 0;
+		plist_t disabled = NULL;
+
+		disabled = plist_dict_get_item(value, "DisableTethered");
+
+		if (!disabled) {
+			add_to_list = 1;
+		} else {
+			if (plist_get_node_type(disabled) == PLIST_BOOLEAN) {
+				uint8_t val = 0;
+				plist_get_bool_val(disabled, &val);
+				add_to_list = val > 0 ? 0 : 1;
+			} else {
+				uint64_t val = 0;
+				plist_get_uint_val(disabled, &val);
+				add_to_list = val > 0 ? 0 : 1;
+			}
+		}
+
+		if (add_to_list) {
+			newlist = realloc(*classes, sizeof(char*) * (newcount+1));
+			str_remove_spaces(key);
+			asprintf(&newlist[newcount++], "com.apple.%s", key);
+			*classes = newlist;
+		}
+		free(key);
+		key = NULL;
+		value = NULL;
+		plist_dict_next_item(dict, iter, &key, &value);
+	}
+
+	*count = newcount;
+	newlist = realloc(*classes, sizeof(char*) * (newcount+1));
+	newlist[newcount] = NULL;
+	*classes = newlist;
+
+	if (iter) {
+		free(iter);
+	}
+	if (dict) {
+		plist_free(dict);
+	}
+	return LOCKDOWN_E_SUCCESS;
+}
+
+lockdownd_error_t lockdownd_data_classes_free(char **classes)
+{
+	if (classes) {
+		int i = 0;
+		while (classes[i++]) {
+			free(classes[i]);
+		}
+		free(classes);
+	}
+	return LOCKDOWN_E_SUCCESS;
+}
