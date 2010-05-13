@@ -194,8 +194,10 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	if (client->session_id)
+	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
+		free(client->session_id);
+	}
 
 	if (client->parent) {
 		lockdownd_goodbye(client);
@@ -1238,6 +1240,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* if we have a running session, stop current one first */
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
+		free(client->session_id);
 	}
 
 	/* setup request plist */
