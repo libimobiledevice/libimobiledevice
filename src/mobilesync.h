@@ -2,6 +2,7 @@
  * mobilesync.h
  * Definitions for the built-in MobileSync client
  * 
+ * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -24,8 +25,15 @@
 #include "libimobiledevice/mobilesync.h"
 #include "device_link_service.h"
 
+typedef enum {
+	MOBILESYNC_SYNC_DIR_DEVICE_TO_COMPUTER,
+	MOBILESYNC_SYNC_DIR_COMPUTER_TO_DEVICE
+} mobilesync_sync_direction_t;
+
 struct mobilesync_client_private {
 	device_link_service_client_t parent;
+	mobilesync_sync_direction_t direction;
+	char *data_class;
 };
 
 #endif

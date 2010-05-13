@@ -3,6 +3,7 @@
  * @brief MobileSync Implementation
  * \internal
  *
+ * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -28,6 +29,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <glib.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -36,9 +38,19 @@ extern "C" {
 #define MOBILESYNC_E_PLIST_ERROR           -2
 #define MOBILESYNC_E_MUX_ERROR             -3
 #define MOBILESYNC_E_BAD_VERSION           -4
+#define MOBILESYNC_E_SYNC_REFUSED          -5
+#define MOBILESYNC_E_CANCELLED             -6
+#define MOBILESYNC_E_WRONG_DIRECTION       -7
+#define MOBILESYNC_E_NOT_READY             -8
 
 #define MOBILESYNC_E_UNKNOWN_ERROR       -256
 /*@}*/
+
+typedef enum {
+	MOBILESYNC_SYNC_TYPE_FAST,
+	MOBILESYNC_SYNC_TYPE_SLOW,
+	MOBILESYNC_SYNC_TYPE_RESET
+} mobilesync_sync_type_t;
 
 /** Represents an error code. */
 typedef int16_t mobilesync_error_t;
@@ -46,10 +58,41 @@ typedef int16_t mobilesync_error_t;
 typedef struct mobilesync_client_private mobilesync_client_private;
 typedef mobilesync_client_private *mobilesync_client_t; /**< The client handle */
 
+typedef struct {
+	char *device_anchor;
+	char *computer_anchor;
+} mobilesync_anchors;
+typedef mobilesync_anchors *mobilesync_anchors_t;
+
+/* Interface */
 mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client);
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
+
 mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
 mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
+
+mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, mobilesync_sync_type_t *sync_type, uint64_t *data_class_version);
+mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason);
+mobilesync_error_t mobilesync_finish(mobilesync_client_t client);
+
+mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client);
+mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client);
+
+mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions);
+mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client);
+
+mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client);
+
+mobilesync_error_t mobilesync_send_changes(mobilesync_client_t client, plist_t entities, uint8_t is_last_record, plist_t actions);
+mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plist_t *mapping);
+
+/* Helper */
+mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor);
+void mobilesync_anchors_free(mobilesync_anchors_t anchors);
+
+plist_t mobilesync_actions_new();
+void mobilesync_actions_add(plist_t actions, ...) G_GNUC_NULL_TERMINATED;
+void mobilesync_actions_free(plist_t actions);
 
 #ifdef __cplusplus
 }
