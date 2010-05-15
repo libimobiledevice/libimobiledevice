@@ -270,6 +270,7 @@ leave_unlock:
  * @param status_cb Pointer to a callback function or NULL
  * @param operation Operation name. Will be passed to the callback function
  *        in async mode or shown in debug messages in sync mode. 
+ * @param user_data Callback data passed to status_cb.
  */
 static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, instproxy_status_cb_t status_cb, const char *operation)
 {
@@ -377,6 +378,7 @@ static gpointer instproxy_status_updater(gpointer arg)
  * @param status_cb Pointer to a callback function or NULL
  * @param operation Operation name. Will be passed to the callback function
  *        in async mode or shown in debug messages in sync mode.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS when the thread was created (async mode), or
  *         when the operation completed successfully (sync).
@@ -415,6 +417,7 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  * @param command The command to execute.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured. 
@@ -454,6 +457,7 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
  *        an .app directory instead of an install package.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
@@ -484,6 +488,7 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  *        an .app directory instead of an install package.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
@@ -507,6 +512,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  *        Currently there are no known client options, so pass NULL here.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
@@ -599,6 +605,7 @@ leave_unlock:
  *          "ArchiveType" -> "ApplicationOnly" 
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
@@ -639,6 +646,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  *        Currently there are no known client options, so pass NULL here.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
@@ -679,6 +687,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  *        Currently there are no known client options, so passing NULL is fine.
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
+ * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *     an error occured.
