@@ -46,10 +46,11 @@ extern "C" {
 #define MOBILESYNC_E_UNKNOWN_ERROR       -256
 /*@}*/
 
+/** The sync type of the current sync session. */
 typedef enum {
-	MOBILESYNC_SYNC_TYPE_FAST,
-	MOBILESYNC_SYNC_TYPE_SLOW,
-	MOBILESYNC_SYNC_TYPE_RESET
+	MOBILESYNC_SYNC_TYPE_FAST, /**< Fast-sync requires that only the changes made since the last synchronization should be reported by the computer. */
+	MOBILESYNC_SYNC_TYPE_SLOW, /**< Slow-sync requires that all data from the computer needs to be synchronized/sent. */
+	MOBILESYNC_SYNC_TYPE_RESET /**< Reset-sync signals that the computer should send all data again. */
 } mobilesync_sync_type_t;
 
 /** Represents an error code. */
@@ -62,7 +63,7 @@ typedef struct {
 	char *device_anchor;
 	char *computer_anchor;
 } mobilesync_anchors;
-typedef mobilesync_anchors *mobilesync_anchors_t;
+typedef mobilesync_anchors *mobilesync_anchors_t; /**< Anchors used by the device and computer. */
 
 /* Interface */
 mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client);
