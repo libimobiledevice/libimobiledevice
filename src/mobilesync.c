@@ -161,7 +161,7 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 	return mobilesync_error(device_link_service_send(client->parent, plist));
 }
 
-mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, mobilesync_sync_type_t *sync_type, uint64_t *data_class_version)
+mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version)
 {
 	if (!client || client->data_class || !data_class ||
 		!anchors || !anchors->computer_anchor) {
@@ -183,7 +183,7 @@ mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data
 		plist_array_append_item(msg, plist_new_string("---"));
 	}
 	plist_array_append_item(msg, plist_new_string(anchors->computer_anchor));
-	plist_array_append_item(msg, plist_new_uint(*data_class_version));
+	plist_array_append_item(msg, plist_new_uint(computer_data_class_version));
 	plist_array_append_item(msg, plist_new_string(EMPTY_PARAMETER_STRING));
 
 	err = mobilesync_send(client, msg);
@@ -258,14 +258,14 @@ mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data
 		}
 	}
 
-	if (data_class_version != NULL) {
-		plist_t data_class_version_node = plist_array_get_item(msg, 5);
-		if (!data_class_version_node) {
+	if (device_data_class_version != NULL) {
+		plist_t device_data_class_version_node = plist_array_get_item(msg, 5);
+		if (!device_data_class_version_node) {
 			err = MOBILESYNC_E_PLIST_ERROR;
 			goto out;
 		}
 
-		plist_get_uint_val(data_class_version_node, data_class_version);
+		plist_get_uint_val(device_data_class_version_node, device_data_class_version);
 	}
 
 	err = MOBILESYNC_E_SUCCESS;

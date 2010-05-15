@@ -71,7 +71,7 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
 mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
 mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
 
-mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, mobilesync_sync_type_t *sync_type, uint64_t *data_class_version);
+mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version);
 mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason);
 mobilesync_error_t mobilesync_finish(mobilesync_client_t client);
 
