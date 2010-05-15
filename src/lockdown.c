@@ -1526,6 +1526,20 @@ static void str_remove_spaces(char *source)
 	*dest = 0;
 }
 
+/**
+ * Calculates and returns the data classes the device supports and which are 
+ * enabled for synchronization from lockdownd.
+ *
+ * @param client An initialized lockdownd client.
+ * @param classes A pointer to store an array of class names. The caller is responsible
+ *  for freeing the memory which can be done using mobilesync_data_classes_free().
+ * @param count The number of items in the classes array.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success,
+ *  LOCKDOWN_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_NO_RUNNING_SESSION if no session is open, 
+ *  LOCKDOWN_E_PLIST_ERROR if the received plist is broken
+ */
 lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count)
 {
 	if (!client)
@@ -1609,6 +1623,14 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
 	return LOCKDOWN_E_SUCCESS;
 }
 
+
+/**
+ * Frees memory of an allocated array of data classes as returned by lockdownd_get_sync_data_classes()
+ *
+ * @param classes An array of class names to free.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
+ */
 lockdownd_error_t lockdownd_data_classes_free(char **classes)
 {
 	if (classes) {
