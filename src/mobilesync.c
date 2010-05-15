@@ -422,16 +422,22 @@ mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_
 		goto out;
 	}
 
-	*entities = plist_copy(plist_array_get_item(msg, 2));
+	if (entities != NULL) {
+		*entities = plist_copy(plist_array_get_item(msg, 2));
+	}
 
-	plist_get_bool_val(plist_array_get_item(msg, 3), &has_more_changes);
-	*is_last_record = (has_more_changes > 0 ? 0 : 1);
+	if (is_last_record != NULL) {
+		plist_get_bool_val(plist_array_get_item(msg, 3), &has_more_changes);
+		*is_last_record = (has_more_changes > 0 ? 0 : 1);
+	}
 
-	actions_node = plist_array_get_item(msg, 4);
-	if (plist_get_node_type(actions) == PLIST_DICT)
-		*actions = plist_copy(actions_node);
-	else
-		*actions = NULL;
+	if (actions != NULL) {
+		actions_node = plist_array_get_item(msg, 4);
+		if (plist_get_node_type(actions) == PLIST_DICT)
+			*actions = plist_copy(actions_node);
+		else
+			*actions = NULL;
+	}
 
 	out:
 	if (response_type) {
