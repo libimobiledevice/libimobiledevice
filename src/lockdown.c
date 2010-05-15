@@ -1527,8 +1527,7 @@ static void str_remove_spaces(char *source)
 }
 
 /**
- * Calculates and returns the data classes the device supports and which are 
- * enabled for synchronization from lockdownd.
+ * Calculates and returns the data classes the device supports from lockdownd.
  *
  * @param client An initialized lockdownd client.
  * @param classes A pointer to store an array of class names. The caller is responsible
@@ -1549,19 +1548,17 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
 		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	plist_t dict = NULL;
-	plist_dict_iter iter = NULL;
 	lockdownd_error_t err = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	char *key = NULL;
 	plist_t value = NULL;
 
 	char **newlist = NULL;
-	int newcount = 0;
+	char *val = NULL;
 
 	*classes = NULL;
 	*count = 0;
 
-	err = lockdownd_get_value(client, "com.apple.mobile.tethered_sync", NULL, &dict);
+	err = lockdownd_get_value(client, "com.apple.mobile.iTunes", "SyncDataClasses", &dict);
 	if (err != LOCKDOWN_E_SUCCESS) {
 		if (dict) {
 			plist_free(dict);
@@ -1569,54 +1566,26 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
 		return err;
 	}
 
-	if (plist_get_node_type(dict) != PLIST_DICT) {
+	if (plist_get_node_type(dict) != PLIST_ARRAY) {
 		plist_free(dict);
 		return LOCKDOWN_E_PLIST_ERROR;
 	}
 
-	plist_dict_new_iter(dict, &iter);
-
-	plist_dict_next_item(dict, iter, &key, &value);
-	while (key && value) {
-		int add_to_list = 0;
-		plist_t disabled = NULL;
-
-		disabled = plist_dict_get_item(value, "DisableTethered");
-
-		if (!disabled) {
-			add_to_list = 1;
-		} else {
-			if (plist_get_node_type(disabled) == PLIST_BOOLEAN) {
-				uint8_t val = 0;
-				plist_get_bool_val(disabled, &val);
-				add_to_list = val > 0 ? 0 : 1;
-			} else {
-				uint64_t val = 0;
-				plist_get_uint_val(disabled, &val);
-				add_to_list = val > 0 ? 0 : 1;
-			}
-		}
-
-		if (add_to_list) {
-			newlist = realloc(*classes, sizeof(char*) * (newcount+1));
-			str_remove_spaces(key);
-			asprintf(&newlist[newcount++], "com.apple.%s", key);
+	while((value = plist_array_get_item(dict, *count)) != NULL) {
+			plist_get_string_val(value, &val);
+			newlist = realloc(*classes, sizeof(char*) * (*count+1));
+			str_remove_spaces(val);
+			asprintf(&newlist[*count], "com.apple.%s", val);
+			free(val);
+			val = NULL;
 			*classes = newlist;
-		}
-		free(key);
-		key = NULL;
-		value = NULL;
-		plist_dict_next_item(dict, iter, &key, &value);
+			*count = *count+1;
 	}
 
-	*count = newcount;
-	newlist = realloc(*classes, sizeof(char*) * (newcount+1));
-	newlist[newcount] = NULL;
+	newlist = realloc(*classes, sizeof(char*) * (*count+1));
+	newlist[*count] = NULL;
 	*classes = newlist;
 
-	if (iter) {
-		free(iter);
-	}
 	if (dict) {
 		plist_free(dict);
 	}
