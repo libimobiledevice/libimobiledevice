@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/file_relay.h
- * @brief file_relay Implementation
+ * @brief Retrieve compressed CPIO archives.
  * \internal
  *
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.

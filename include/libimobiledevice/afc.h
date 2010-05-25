@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/afc.h
- * @brief AFC Implementation
+ * @brief Access the filesystem.
  * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.

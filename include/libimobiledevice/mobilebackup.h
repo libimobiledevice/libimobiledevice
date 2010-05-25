@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/mobilebackup.h
- * @brief MobileBackup Implementation
+ * @brief Backup and restore of all device data.
  * \internal
  *
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.

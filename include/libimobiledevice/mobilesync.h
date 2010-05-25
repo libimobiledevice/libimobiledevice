@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/mobilesync.h
- * @brief MobileSync Implementation
+ * @brief Synchronize data classes with a device and computer.
  * \internal
  *
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.

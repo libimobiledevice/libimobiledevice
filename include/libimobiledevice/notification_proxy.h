@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/notification_proxy.h
- * @brief Implementation to talk to the notification proxy on a device
+ * @brief Observe and post notifications.
  * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.

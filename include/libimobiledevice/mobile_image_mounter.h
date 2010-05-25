@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/mobile_image_mounter.h
- * @brief Implementation of the mobile image mounter service.
+ * @brief Mount developer/debug disk images on the device.
  * \internal
  *
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.

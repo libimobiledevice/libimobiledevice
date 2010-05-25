@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/restore.h
- * @brief Implementation to communicate with the restore device daemon
+ * @brief Initiate restore process or reboot device.
  * \internal
  *
  * Copyright (c) 2010 Joshua Hill. All Rights Reserved.

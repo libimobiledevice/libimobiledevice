@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/lockdown.h
- * @brief Implementation to communicate with the lockdown device daemon
+ * @brief Manage device preferences, start services, pairing and activation.
  * \internal
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.

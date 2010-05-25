@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/installation_proxy.h
- * @brief Implementation to talk to the installation proxy on a device
+ * @brief Manage applications on a device.
  * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.

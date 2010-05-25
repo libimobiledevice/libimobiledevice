@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/sbservices.h
- * @brief Implementation to talk to the SpringBoard services on a device
+ * @brief Manage SpringBoard icons and retrieve icon images.
  * \internal
  *
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.
