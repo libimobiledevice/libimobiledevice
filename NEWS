@@ -1,3 +1,11 @@
+Version 1.1.0
+~~~~~~~~~~~~~
+
+* Changes:
+  - Add mobilesync service implementation
+  - Add restored service implementation
+  - Update documentation
+
 Version 1.0.1
 ~~~~~~~~~~~~~
 
