@@ -602,6 +602,9 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  *
  * @note This function does not pair with the device or start a session. This
  *  has to be done manually by the caller after the client is created.
+ *  The device disconnects automatically if the lockdown connection idles
+ *  for more than 10 seconds. Make sure to call lockdownd_client_free() as soon
+ *  as the connection is no longer needed.
  *
  * @param device The device to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
@@ -644,6 +647,10 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
  * Creates a new lockdownd client for the device and starts initial handshake.
  * The handshake consists out of query_type, validate_pair, pair and
  * start_session calls. It uses the internal pairing record management.
+ *
+ * @note The device disconnects automatically if the lockdown connection idles
+ *  for more than 10 seconds. Make sure to call lockdownd_client_free() as soon
+ *  as the connection is no longer needed.
  *
  * @param device The device to create a lockdownd client for
  * @param client The pointer to the location of the new lockdownd_client
