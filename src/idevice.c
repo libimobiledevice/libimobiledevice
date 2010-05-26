@@ -162,7 +162,7 @@ idevice_error_t idevice_new(idevice_t * device, const char *uuid)
 		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_private));
 		phone->uuid = strdup(muxdev.uuid);
 		phone->conn_type = CONNECTION_USBMUXD;
-		phone->conn_data = (void*)muxdev.handle;
+		phone->conn_data = (void*)(long)muxdev.handle;
 		*device = phone;
 		return IDEVICE_E_SUCCESS;
 	}
@@ -215,14 +215,14 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 	}
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
-		int sfd = usbmuxd_connect((uint32_t)(device->conn_data), port);
+		int sfd = usbmuxd_connect((uint32_t)(long)device->conn_data, port);
 		if (sfd < 0) {
 			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_USBMUXD;
-		new_connection->data = (void*)sfd;
+		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
@@ -251,7 +251,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	}
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
-		usbmuxd_disconnect((int)(connection->data));
+		usbmuxd_disconnect((int)(long)connection->data);
 		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
@@ -270,7 +270,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_send((int)(connection->data), data, len, sent_bytes);
+		int res = usbmuxd_send((int)(long)connection->data, data, len, sent_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -323,7 +323,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_recv_timeout((int)(connection->data), data, len, recv_bytes, timeout);
+		int res = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -378,7 +378,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_recv((int)(connection->data), data, len, recv_bytes);
+		int res = usbmuxd_recv((int)(long)connection->data, data, len, recv_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -431,7 +431,7 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 		return IDEVICE_E_INVALID_ARG;
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
-		*handle = (uint32_t)device->conn_data;
+		*handle = (uint32_t)(long)device->conn_data;
 		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", device->conn_type);
