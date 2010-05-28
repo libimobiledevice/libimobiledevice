@@ -2,8 +2,12 @@ Version 1.1.0
 ~~~~~~~~~~~~~
 
 * Changes:
+  - Allow connecting without pairing with ideviceinfo
+  - Add idevicepair tool to manage pairings
+  - Add ideviceenterrecovery tool
   - Add mobilesync service implementation
   - Add restored service implementation
+  - Silence some 64bit compiler warnings
   - Update documentation
 
 Version 1.0.1
