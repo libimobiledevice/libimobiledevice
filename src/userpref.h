@@ -40,6 +40,7 @@ G_GNUC_INTERNAL userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_r
 G_GNUC_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
 G_GNUC_INTERNAL userpref_error_t userpref_remove_device_public_key(const char *uuid);
 G_GNUC_INTERNAL int userpref_has_device_public_key(const char *uuid);
+userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count);
 G_GNUC_INTERNAL void userpref_get_host_id(char **host_id);
 
 #endif
