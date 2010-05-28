@@ -54,7 +54,8 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
  * plist to a previously sent request.
  *
  * @param dict The plist to evaluate.
- * @param query_match Name of the request to match.
+ * @param query_match Name of the request to match or NULL if no match is
+ *        required.
  *
  * @return RESULT_SUCCESS when the result is 'Success',
  *         RESULT_FAILURE when the result is 'Failure',
@@ -76,7 +77,7 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 		if (!query_value) {
 			return ret;
 		}
-		if (strcmp(query_value, query_match) != 0) {
+		if (query_match && (strcmp(query_value, query_match) != 0)) {
 			free(query_value);
 			return ret;
 		}
@@ -876,8 +877,16 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	if (ret != LOCKDOWN_E_SUCCESS)
 		return ret;
 
-	if (lockdown_check_result(dict, verb) != RESULT_SUCCESS) {
-		ret = LOCKDOWN_E_PAIRING_FAILED;
+	if (strcmp(verb, "Unpair") == 0) {
+		/* workaround for Unpair giving back ValidatePair,
+		 * seems to be a bug in the device's fw */
+		if (lockdown_check_result(dict, NULL) != RESULT_SUCCESS) {
+			ret = LOCKDOWN_E_PAIRING_FAILED;
+		}
+	} else {
+		if (lockdown_check_result(dict, verb) != RESULT_SUCCESS) {
+			ret = LOCKDOWN_E_PAIRING_FAILED;
+		}
 	}
 
 	/* if pairing succeeded */
