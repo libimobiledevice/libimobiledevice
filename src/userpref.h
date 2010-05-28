@@ -38,9 +38,9 @@ G_GNUC_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey
 G_GNUC_INTERNAL userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
 G_GNUC_INTERNAL userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
 G_GNUC_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
-G_GNUC_INTERNAL userpref_error_t userpref_remove_device_public_key(const char *uuid);
+userpref_error_t userpref_remove_device_public_key(const char *uuid);
 G_GNUC_INTERNAL int userpref_has_device_public_key(const char *uuid);
 userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count);
-G_GNUC_INTERNAL void userpref_get_host_id(char **host_id);
+void userpref_get_host_id(char **host_id);
 
 #endif
