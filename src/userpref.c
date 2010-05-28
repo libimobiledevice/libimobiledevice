@@ -186,6 +186,66 @@ int userpref_has_device_public_key(const char *uuid)
 }
 
 /**
+ * Fills a list with UUIDs of devices that have been connected to this
+ * system before, i.e. for which a public key file exists.
+ *
+ * @param list A pointer to a char** initially pointing to NULL that will
+ *        hold a newly allocated list of UUIDs upon successful return.
+ *        The caller is responsible for freeing the memory. Note that if
+ *        no public key file was found the list has to be freed too as it
+ *        points to a terminating NULL element.
+ * @param count The number of UUIDs found. This parameter can be NULL if it
+ *        is not required.
+ *
+ * @return USERPREF_E_SUCCESS on success, or USERPREF_E_INVALID_ARG if the 
+ *         list parameter is not pointing to NULL.
+ */
+userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
+{
+	GDir *config_dir;
+	gchar *config_path;
+	const gchar *dir_file;
+	GList *uuids = NULL;
+	unsigned int i;
+	unsigned int found = 0;
+
+	if (!list || (list && *list)) {
+		debug_info("ERROR: The list parameter needs to point to NULL!");
+		return USERPREF_E_INVALID_ARG;
+	}
+
+	if (count) {
+		*count = 0;
+	}
+
+	config_path = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, NULL);
+
+	config_dir = g_dir_open(config_path,0,NULL);
+	if (config_dir) {
+		while ((dir_file = g_dir_read_name(config_dir))) {
+			if (g_str_has_suffix(dir_file, ".pem") && (strlen(dir_file) == 44)) {
+				uuids = g_list_append(uuids, g_strndup(dir_file, strlen(dir_file)-4));
+				found++;
+			}
+		}
+		g_dir_close(config_dir);
+	}
+	*list = (char**)malloc(sizeof(char*) * (found+1));
+	for (i = 0; i < found; i++) {
+		(*list)[i] = g_list_nth_data(uuids, i);
+	}
+	(*list)[i] = NULL;
+
+	if (count) {
+		*count = found;
+	}
+	g_list_free(uuids);
+	g_free(config_path);
+
+	return USERPREF_E_SUCCESS;
+}
+
+/**
  * Mark the device (as represented by the key) as having connected to this
  * configuration.
  *
