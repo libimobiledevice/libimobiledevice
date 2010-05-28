@@ -48,18 +48,18 @@ static const char PATH_PREFIX[] = "/private/var/mobile/Media";
 
 static void print_usage(int argc, char **argv)
 {
-        char *name = NULL;
+	char *name = NULL;
 
-        name = strrchr(argv[0], '/');
-        printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n\n", (name ? name + 1: argv[0]));
-        printf("Mounts the specified disk image on the device.\n\n");
-        printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	name = strrchr(argv[0], '/');
+	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n\n", (name ? name + 1: argv[0]));
+	printf("Mounts the specified disk image on the device.\n\n");
+	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
 	printf("  -l, --list\t\tList mount information\n");
 	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
 	printf("  -x, --xml\t\tUse XML output\n");
-        printf("  -d, --debug\t\tenable communication debugging\n");
-        printf("  -h, --help\t\tprints usage information\n");
-        printf("\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("\n");
 }
 
 static void parse_opts(int argc, char **argv)
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 				}
 				if (total != amount) {
 					fprintf(stderr, "Error: wrote only %d of %d\n", total,
-							amount);
+							(unsigned int)amount);
 					afc_file_close(afc, af);
 					fclose(f);
 					goto leave;
@@ -517,7 +517,7 @@ leave:
 	idevice_free(device);
 
 	if (image_path)
-    		free(image_path);
+			free(image_path);
 	if (image_sig_path)
 		free(image_sig_path);
 
