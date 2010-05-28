@@ -199,6 +199,7 @@ static void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	printf("Show information about a connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -s, --simple\t\tuse a simple connection to avoid auto-pairing with the device\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
 	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
 	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
@@ -218,6 +219,7 @@ int main(int argc, char *argv[])
 	idevice_t phone = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
+	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
 	char uuid[41];
 	char *domain = NULL;
@@ -268,6 +270,10 @@ int main(int argc, char *argv[])
 			format = FORMAT_XML;
 			continue;
 		}
+		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--simple")) {
+			simple = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
@@ -294,7 +300,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "ideviceinfo")) {
+	if (LOCKDOWN_E_SUCCESS != (simple ?
+			lockdownd_client_new(phone, &client, "ideviceinfo"):
+			lockdownd_client_new_with_handshake(phone, &client, "ideviceinfo"))) {
 		idevice_free(phone);
 		return -1;
 	}
