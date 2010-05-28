@@ -35,13 +35,14 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("\n%s - Pair or unpair a connected iPhone/iPod Touch/iPad.\n\n", (name ? name + 1: argv[0]));
+	printf("\n%s - Manage pairings with iPhone/iPod Touch/iPad devices and this host.\n\n", (name ? name + 1: argv[0]));
 	printf("Usage: %s [OPTIONS] COMMAND\n\n", (name ? name + 1: argv[0]));
 	printf(" Where COMMAND is one of:\n");
-	printf("  pair         pair device\n");
-	printf("  validate     validate if paired with device\n");
-	printf("  unpair       unpair device\n");
-	printf("  list         list currently paired devices\n\n");
+	printf("  hostid       print the host id of this computer\n");
+	printf("  pair         pair device with this computer\n");
+	printf("  validate     validate if device is paired with this computer\n");
+	printf("  unpair       unpair device with this computer\n");
+	printf("  list         list devices paired with this computer\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --uuid UUID  target specific device by its 40-digit device UUID\n");
@@ -53,7 +54,7 @@ static void parse_opts(int argc, char **argv)
 {
 	static struct option longopts[] = {
 		{"help", 0, NULL, 'h'},
-		{"uuid", 0, NULL, 'u'},
+		{"uuid", 1, NULL, 'u'},
 		{"debug", 0, NULL, 'd'},
 		{NULL, 0, NULL, 0}
 	};
@@ -68,7 +69,7 @@ static void parse_opts(int argc, char **argv)
 		switch (c) {
 		case 'h':
 			print_usage(argc, argv);
-			exit(0);
+			exit(EXIT_SUCCESS);
 		case 'u':
 			if (strlen(optarg) != 40) {
 				printf("%s: invalid UUID specified (length != 40)\n", argv[0]);
@@ -82,7 +83,7 @@ static void parse_opts(int argc, char **argv)
 			break;
 		default:
 			print_usage(argc, argv);
-			exit(2);
+			exit(EXIT_SUCCESS);
 		}
 	}
 }
@@ -94,10 +95,11 @@ int main(int argc, char **argv)
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	lockdownd_error_t lerr;
 	int result;
+
 	char *type = NULL;
 	char *cmd;
 	typedef enum {
-		OP_NONE = 0, OP_PAIR, OP_VALIDATE, OP_UNPAIR, OP_LIST
+		OP_NONE = 0, OP_PAIR, OP_VALIDATE, OP_UNPAIR, OP_LIST, OP_HOSTID
 	} op_t;
 	op_t op = OP_NONE;
 
@@ -106,8 +108,8 @@ int main(int argc, char **argv)
 	if ((argc - optind) < 1) {
 		printf("ERROR: You need to specify a COMMAND!\n");
 		print_usage(argc, argv);
-		exit(2);
-	}	
+		exit(EXIT_FAILURE);
+	}
 
 	cmd = (argv+optind)[0];
 
@@ -119,10 +121,24 @@ int main(int argc, char **argv)
 		op = OP_UNPAIR;
 	} else if (!strcmp(cmd, "list")) {
 		op = OP_LIST;
+	} else if (!strcmp(cmd, "hostid")) {
+		op = OP_HOSTID;
 	} else {
 		printf("ERROR: Invalid command '%s' specified\n", cmd);
 		print_usage(argc, argv);
-		exit(2);
+		exit(EXIT_FAILURE);
+	}
+
+	if (op == OP_HOSTID) {
+		char *hostid = NULL;
+		userpref_get_host_id(&hostid);
+
+		printf("%s\n", hostid);
+
+		if (hostid)
+			free(hostid);
+
+		return EXIT_SUCCESS;
 	}
 
 	if (op == OP_LIST) {
@@ -133,28 +149,26 @@ int main(int argc, char **argv)
 		for (i = 0; i < count; i++) {
 			printf("%s\n", uuids[i]);
 		}
-		if (uuids) {
+		if (uuids)
 			g_strfreev(uuids);
-		}
-		if (uuid) {
+		if (uuid)
 			free(uuid);
-		}
-		return 0;
+		return EXIT_SUCCESS;
 	}
-		
+
 	if (uuid) {
 		ret = idevice_new(&phone, uuid);
 		free(uuid);
 		uuid = NULL;
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with uuid %s, is it plugged in?\n", uuid);
-			return -1;
+			return EXIT_FAILURE;
 		}
 	} else {
 		ret = idevice_new(&phone, NULL);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -162,14 +176,15 @@ int main(int argc, char **argv)
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(phone);
 		printf("ERROR: lockdownd_client_new failed with error code %d\n", lerr);
-		return -1;
+		return EXIT_FAILURE;
 	}
 
-	result = 0;
+	result = EXIT_SUCCESS;
+
 	lerr = lockdownd_query_type(client, &type);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		printf("QueryType failed, error code %d\n", lerr);
-		result = -1;
+		result = EXIT_FAILURE;
 		goto leave;
 	} else {
 		if (strcmp("com.apple.mobile.lockdown", type)) {
@@ -182,35 +197,58 @@ int main(int argc, char **argv)
 
 	ret = idevice_get_uuid(phone, &uuid);
 	if (ret != IDEVICE_E_SUCCESS) {
-		printf("Could not get device uuid, error code %d\n", ret);
-		result = -1;
+		printf("ERROR: Could not get device uuid, error code %d\n", ret);
+		result = EXIT_FAILURE;
 		goto leave;
 	}
 
-	if ((op == OP_PAIR) || (op == OP_VALIDATE)) {
-		/* TODO */
+	switch(op) {
+		default:
+		case OP_PAIR:
 		lerr = lockdownd_pair(client, NULL);
-		if (op == OP_VALIDATE) {
-			ret = lockdownd_validate_pair(client, NULL);
-		}
 		if (lerr == LOCKDOWN_E_SUCCESS) {
-			printf("SUCCESS -  device %s paired\n", uuid);
-		} else if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
-			printf("ERROR - Could not pair device because a passcode is set. Enter the passcode on the device and try again.\n");
+			printf("SUCCESS: Paired with device %s\n", uuid);
 		} else {
-			printf("ERROR - Pairing failed, error code %d\n", lerr);
-		}
-	} else if (op == OP_UNPAIR) {
-		lerr = lockdownd_unpair(client, NULL);
-		if (lerr == LOCKDOWN_E_SUCCESS) {
-			printf("SUCCESS - device %s unpaired\n", uuid);
-		} else {
-			if (lerr == LOCKDOWN_E_INVALID_HOST_ID) {
-				printf("ERROR - Unpair %s failed: device is not paired with this system\n", uuid);
+			result = EXIT_FAILURE;
+			if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
+				printf("ERROR: Could not pair with the device because a passcode is set. Please enter the passcode on the device and retry.\n");
 			} else {
-				printf("ERROR - Unpair %s failed: return code %d\n", uuid, lerr);
+				printf("ERROR: Pairing with device %s failed with unhandled error code %d\n", uuid, lerr);
 			}
 		}
+		break;
+
+		case OP_VALIDATE:
+		lerr = lockdownd_validate_pair(client, NULL);
+		if (lerr == LOCKDOWN_E_SUCCESS) {
+			printf("SUCCESS: Validated pairing with device %s\n", uuid);
+		} else {
+			result = EXIT_FAILURE;
+			if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
+				printf("ERROR: Could not validate with the device because a passcode is set. Please enter the passcode on the device and retry.\n");
+			} else if (lerr == LOCKDOWN_E_INVALID_HOST_ID) {
+				printf("ERROR: Device %s is not paired with this host\n", uuid);
+			} else {
+				printf("ERROR: Pairing failed with unhandled error code %d\n", lerr);
+			}
+		}
+		break;
+
+		case OP_UNPAIR:
+		lerr = lockdownd_unpair(client, NULL);
+		if (lerr == LOCKDOWN_E_SUCCESS) {
+			/* also remove local device public key */
+			userpref_remove_device_public_key(uuid);
+			printf("SUCCESS: Unpaired with device %s\n", uuid);
+		} else {
+			result = EXIT_FAILURE;
+			if (lerr == LOCKDOWN_E_INVALID_HOST_ID) {
+				printf("ERROR: Device %s is not paired with this host\n", uuid);
+			} else {
+				printf("ERROR: Unpairing with device %s failed with unhandled error code %d\n", uuid, lerr);
+			}
+		}
+		break;
 	}
 
 leave:
