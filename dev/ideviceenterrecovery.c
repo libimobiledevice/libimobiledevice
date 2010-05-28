@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "ideviceenterrecovery")) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "ideviceenterrecovery")) {
 		idevice_free(phone);
 		return -1;
 	}
