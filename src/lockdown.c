@@ -617,8 +617,6 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		debug_info("could not connect to lockdownd (device %s)", device->uuid);
@@ -630,17 +628,11 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
 	client_loc->uuid = NULL;
-	client_loc->label = NULL;
-	if (label != NULL)
-		client_loc->label = strdup(label);
+	client_loc->label = label ? strdup(label) : NULL;
 
-	if (LOCKDOWN_E_SUCCESS == ret) {
-		*client = client_loc;
-	} else {
-		lockdownd_client_free(client_loc);
-	}
+	*client = client_loc;
 
-	return ret;
+	return LOCKDOWN_E_SUCCESS;
 }
 
 /**
