@@ -544,7 +544,7 @@ int main(int argc, char *argv[])
 		afc_client_new(phone, port, &afc);
 	}
 
-	/* start syslog_relay service and retrieve port */
+	/* start mobilebackup service and retrieve port */
 	port = 0;
 	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
