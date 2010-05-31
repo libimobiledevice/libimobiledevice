@@ -690,7 +690,7 @@ int main(int argc, char *argv[])
 				node_tmp = plist_array_get_item(message, 2);
 
 				/* first message hunk contains total backup size */
-				if (hunk_index == 0) {
+				if ((hunk_index == 0) && (file_index == 0)) {
 					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
 					if (node) {
 						plist_get_uint_val(node, &backup_total_size);
@@ -747,7 +747,7 @@ int main(int argc, char *argv[])
 						filename_mdinfo = mobilebackup_build_path(backup_directory, file_path, ".mdinfo");
 
 						/* remove any existing file */
-						if (stat(filename_mdinfo, &st) != 0)
+						if (stat(filename_mdinfo, &st) == 0)
 							remove(filename_mdinfo);
 
 						node = plist_dict_get_item(node_tmp, "BackupFileInfo");
@@ -768,7 +768,7 @@ int main(int argc, char *argv[])
 					filename_mddata = mobilebackup_build_path(backup_directory, file_path, is_manifest ? NULL: ".mddata");
 
 					/* if this is the first hunk, remove any existing file */
-					if (stat(filename_mddata, &st) != 0)
+					if ((hunk_index == 0) && (stat(filename_mddata, &st) == 0))
 						remove(filename_mddata);
 
 					/* get file data hunk */
@@ -803,6 +803,8 @@ int main(int argc, char *argv[])
 
 					/* acknowlegdge that we received the file */
 					mobilebackup_send_backup_file_received(mobilebackup);
+					/* reset hunk_index */
+					hunk_index = 0;
 				}
 
 				if (quit_flag > 0) {
