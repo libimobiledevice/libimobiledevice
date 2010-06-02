@@ -152,6 +152,72 @@ mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t pli
 }
 
 /**
+ * Receives a plist from the device and checks if the value for the
+ * BackupMessageTypeKey matches the value passed in the message parameter.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param message The expected message to check.
+ * @param result Pointer to a plist_t that will be set to the received plist
+ *    for further processing. The caller has to free it using plist_free().
+ *    Note that it will be set to NULL if the operation itself fails due to
+ *    a communication or plist error.
+ *    If this parameter is NULL, it will be ignored.
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
+ *    client or message is invalid, MOBILEBACKUP_E_REPLY_NOT_OK if the
+ *    expected message could not be received, MOBILEBACKUP_E_PLIST_ERROR if
+ *    the received message is not a valid backup message plist (i.e. the
+ *    BackupMessageTypeKey is not present), or MOBILEBACKUP_E_MUX_ERROR
+ *    if a communication error occurs.
+ */
+static mobilebackup_error_t mobilebackup_receive_message(mobilebackup_client_t client, const char *message, plist_t *result)
+{
+	if (!client || !client->parent || !message)
+		return MOBILEBACKUP_E_INVALID_ARG;
+
+	if (result)
+		*result = NULL;
+	mobilebackup_error_t err;
+
+	plist_t dict = NULL;
+
+	/* receive DLMessageProcessMessage */
+	err = mobilebackup_error(device_link_service_receive_process_message(client->parent, &dict));
+	if (err != MOBILEBACKUP_E_SUCCESS) {
+		goto leave;
+	}
+
+	plist_t node = plist_dict_get_item(dict, "BackupMessageTypeKey");
+	if (!node) {
+		debug_info("ERROR: BackupMessageTypeKey not found in plist!");
+		err = MOBILEBACKUP_E_PLIST_ERROR;
+		goto leave;
+	}
+
+	char *str = NULL;
+	plist_get_string_val(node, &str);
+	if (str && (strcmp(str, message) == 0)) {
+		err = MOBILEBACKUP_E_SUCCESS;
+	} else {
+		debug_info("ERROR: BackupMessageTypeKey value does not match '%s'!", message);
+		err = MOBILEBACKUP_E_REPLY_NOT_OK;
+	}
+	if (str)
+		free(str);
+
+	if (result) {
+		*result = dict;
+		dict = NULL;
+	}
+leave:
+	if (dict) {
+		plist_free(dict);
+	}
+
+	return err;
+}
+
+/**
  * Request a backup from the connected device.
  *
  * @param client The connected MobileBackup client to use.
@@ -196,33 +262,15 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
 	}
 
 	/* now receive and hopefully get a BackupMessageBackupReplyOK */
-	err = mobilebackup_error(device_link_service_receive_process_message(client->parent, &dict));
+	err = mobilebackup_receive_message(client, "BackupMessageBackupReplyOK", &dict);
 	if (err != MOBILEBACKUP_E_SUCCESS) {
 		debug_info("ERROR: Could not receive BackupReplyOK message (%d)!", err);
 		goto leave;
 	}
 
-	plist_t node = plist_dict_get_item(dict, "BackupMessageTypeKey");
-	if (!node) {
-		debug_info("ERROR: BackupMessageTypeKey not found in BackupReplyOK message!");
-		err = MOBILEBACKUP_E_PLIST_ERROR;
-		goto leave;
-	}
-
-	char *str = NULL;
-	plist_get_string_val(node, &str);
-	if (!str || (strcmp(str, "BackupMessageBackupReplyOK") != 0)) {
-		debug_info("ERROR: BackupMessageTypeKey value does not match 'BackupMessageBackupReplyOK'");
-		err = MOBILEBACKUP_E_REPLY_NOT_OK;
-		if (str)
-			free(str);
-		goto leave;
-	}
-	free(str);
-	str = NULL;
-
-	node = plist_dict_get_item(dict, "BackupProtocolVersion");
+	plist_t node = plist_dict_get_item(dict, "BackupProtocolVersion");
 	if (node) {
+		char *str = NULL;
 		plist_get_string_val(node, &str);
 		if (str) {
 			if (strcmp(str, proto_version) != 0) {
