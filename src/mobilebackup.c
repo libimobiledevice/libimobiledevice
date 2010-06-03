@@ -152,6 +152,50 @@ mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t pli
 }
 
 /**
+ * Sends a backup message plist.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param message The message to send. This will be inserted into the request
+ *     plist as value for BackupMessageTypeKey. If this parameter is NULL,
+ *     the plist passed in the options parameter will be sent directly.
+ * @param options Additional options as PLIST_DICT to add to the request.
+ *     The BackupMessageTypeKey with the value passed in the message parameter
+ *     will be inserted into this plist before sending it. This parameter
+ *     can be NULL if message is not NULL.
+ */
+static mobilebackup_error_t mobilebackup_send_message(mobilebackup_client_t client, const char *message, plist_t options)
+{
+	if (!client || !client->parent || (!message && !options))
+		return MOBILEBACKUP_E_INVALID_ARG;
+
+	if (options && (plist_get_node_type(options) != PLIST_DICT)) {
+		return MOBILEBACKUP_E_INVALID_ARG;
+	}
+
+	mobilebackup_error_t err;
+
+	if (message) {
+		plist_t dict = NULL;
+		if (options) {
+			dict = plist_copy(options);
+		} else {
+			dict = plist_new_dict();
+		}
+		plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string(message));
+
+		/* send it as DLMessageProcessMessage */
+		err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
+		plist_free(dict);
+	} else {
+		err = mobilebackup_error(device_link_service_send_process_message(client->parent, options));
+	}
+	if (err != MOBILEBACKUP_E_SUCCESS) {
+		debug_info("ERROR: Could not send message '%s' (%d)!", message, err);
+	}
+	return err;
+}
+
+/**
  * Receives a plist from the device and checks if the value for the
  * BackupMessageTypeKey matches the value passed in the message parameter.
  *
@@ -252,8 +296,8 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
 	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
 	plist_dict_insert_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
 
-	/* send it as DLMessageProcessMessage */
-	err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
+	/* send request */
+	err = mobilebackup_send_message(client, NULL, dict);
 	plist_free(dict);
 	dict = NULL;
 	if (err != MOBILEBACKUP_E_SUCCESS) {
@@ -283,7 +327,7 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
 		goto leave;
 
 	/* BackupMessageBackupReplyOK received, send it back */
-	err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
+	err = mobilebackup_send_message(client, NULL, dict);
 	if (err != MOBILEBACKUP_E_SUCCESS) {
 		debug_info("ERROR: Could not send BackupReplyOK ACK (%d)", err);
 	}
@@ -305,20 +349,7 @@ leave:
  */
 mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client)
 {
-	if (!client || !client->parent)
-		return MOBILEBACKUP_E_INVALID_ARG;
-
-	mobilebackup_error_t err;
-
-	/* construct ACK plist */
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("kBackupMessageBackupFileReceived"));
-
-	/* send it as DLMessageProcessMessage */
-	err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
-	plist_free(dict);
-
-	return err;
+	return mobilebackup_send_message(client, "kBackupMessageBackupFileReceived", NULL);
 }
 
 /**
@@ -340,11 +371,9 @@ mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const
 
 	/* construct error plist */
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageError"));
 	plist_dict_insert_item(dict, "BackupErrorReasonKey", plist_new_string(reason));
 
-	/* send it as DLMessageProcessMessage */
-	err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
+	err = mobilebackup_send_message(client, "BackupMessageError", dict);
 	plist_free(dict);
 
 	return err;
