@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <glib.h>
+#include <gcrypt.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -58,6 +59,23 @@ enum device_link_file_status_t {
 	DEVICE_LINK_FILE_STATUS_HUNK,
 	DEVICE_LINK_FILE_STATUS_LAST_HUNK
 };
+
+static void sha1_of_data(const char *input, uint32_t size, unsigned char *hash_out)
+{
+	gcry_md_hash_buffer(GCRY_MD_SHA1, hash_out, input, size);
+}
+
+static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, int hash_len)
+{
+	int i;
+	for (i = 0; i < hash_len; i++) {
+		if (hash1[i] != hash2[i]) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 
 static void notify_cb(const char *notification, void *userdata)
 {
@@ -913,6 +931,58 @@ int main(int argc, char *argv[])
 				break;
 			}
 			/* now make sure backup integrity is ok! verify all files */
+			printf("Reading existing Manifest.\n");
+			plist_read_from_filename(&manifest_plist, manifest_path);
+			if (!manifest_plist) {
+				printf("Could not read Manifest.plist. Aborting.\n");
+				break;
+			}
+
+			printf("Verifying backup integrity, please wait.\n");
+			char *bin = NULL;
+			uint64_t binsize = 0;
+			node = plist_dict_get_item(manifest_plist, "Data");
+			if (!node || (plist_get_node_type(node) != PLIST_DATA)) {
+				printf("Could not read Data key from Manifest.plist!\n");
+				break;
+			}
+			plist_get_data_val(node, &bin, &binsize);
+			plist_t backup_data = NULL;
+			if (bin) {
+				char *auth_ver = NULL;
+				unsigned char *auth_sig = NULL;
+				uint64_t auth_sig_len = 0;
+				/* verify AuthSignature */
+				node = plist_dict_get_item(manifest_plist, "AuthVersion");
+				plist_get_string_val(node, &auth_ver);
+				if (auth_ver && (strcmp(auth_ver, "2.0") == 0)) {
+					node = plist_dict_get_item(manifest_plist, "AuthSignature");
+					if (node && (plist_get_node_type(node) == PLIST_DATA)) {
+						plist_get_data_val(node, (char**)&auth_sig, &auth_sig_len);
+					}
+					if (auth_sig && (auth_sig_len == 20)) {
+						/* calculate the sha1, then compare */
+						unsigned char data_sha1[20];
+						sha1_of_data(bin, binsize, data_sha1);
+						if (compare_hash(auth_sig, data_sha1, 20)) {
+							printf("AuthSignature is valid\n");
+						} else {
+							printf("ERROR: AuthSignature is NOT VALID\n");
+						}
+					} else {
+						printf("Could not get AuthSignature from manifest!\n");
+					}
+					g_free(auth_sig);
+				} else if (auth_ver) {
+					printf("Unknown AuthVersion '%s', cannot verify AuthSignature\n", auth_ver); 
+				}
+				plist_from_bin(bin, (uint32_t)binsize, &backup_data);
+				g_free(bin);
+			}
+			if (!backup_data) {
+				printf("Could not read plist from Manifest.plist Data key!\n");
+				break;
+			}
 				/* loop over Files entries in Manifest data plist */
 					/* make sure both .mddata/.mdinfo files are available for each entry */
 			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
