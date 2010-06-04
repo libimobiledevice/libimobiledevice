@@ -872,11 +872,22 @@ int main(int argc, char *argv[])
 
 			break;
 			case CMD_RESTORE:
-			printf("Restoring backup is NOT IMPLEMENTED.\n");
-			/* verify battery on AC enough battery remaining */
+			/* TODO: verify battery on AC enough battery remaining */
+			/* verify if Status.plist says we read from an successful backup */
+			/* now make sure backup integrity is ok! verify all files */
+				/* loop over Files entries in Manifest data plist */
+					/* make sure both .mddata/.mdinfo files are available for each entry */
 			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
-			/* read mddata/mdinfo files and send to devices using DLSendFile */
-			/* signal restore finished message to device */
+			/* loop over Files entries in Manifest data plist */
+				/* read mddata/mdinfo files and send to device using DLSendFile */
+				/* if all hunks of a file are sent, device must send ack */
+			/* observe notification_proxy id com.apple.mobile.application_installed */
+			/* loop over Applications entries in Manifest data plist */
+				/* send AppInfo entries */
+				/* receive com.apple.mobile.application_installed notification */
+				/* receive BackupMessageRestoreApplicationReceived from device */
+			/* signal restore finished message to device; BackupMessageRestoreComplete */
+			/* close down notification_proxy connection */
 			/* close down lockdown connection as it is no longer needed */
 			lockdownd_client_free(client);
 			client = NULL;
