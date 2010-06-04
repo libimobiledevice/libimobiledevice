@@ -536,12 +536,14 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
 	}
 
-	/* start AFC, we need this for the lock file */
 	afc_client_t afc = NULL;
-	port = 0;
-	ret = lockdownd_start_service(client, "com.apple.afc", &port);
-	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-		afc_client_new(phone, port, &afc);
+	if (cmd == CMD_BACKUP) {
+		/* start AFC, we need this for the lock file */
+		port = 0;
+		ret = lockdownd_start_service(client, "com.apple.afc", &port);
+		if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+			afc_client_new(phone, port, &afc);
+		}
 	}
 
 	/* start mobilebackup service and retrieve port */
@@ -581,9 +583,11 @@ int main(int argc, char *argv[])
 			is_full_backup = 1;
 		}
 
-		do_post_notification(NP_SYNC_WILL_START);
 		uint64_t lockfile = 0;
-		afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
+		if (cmd == CMD_BACKUP) {
+			do_post_notification(NP_SYNC_WILL_START);
+			afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
+		}
 		if (lockfile) {
 			do_post_notification(NP_SYNC_LOCK_REQUEST);
 			if (afc_file_lock(afc, lockfile, AFC_LOCK_EX) == AFC_E_SUCCESS) {
