@@ -594,14 +594,14 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		/* Manifest.plist (backup manifest (backup state)) */
+		char *manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist");
+
 		switch(cmd) {
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
-
-			/* Manifest.plist (backup manifest (backup state)) */
-			char *manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist");
 
 			/* read the last Manifest.plist */
 			if (!is_full_backup) {
@@ -866,10 +866,6 @@ int main(int argc, char *argv[])
 			} else {
 				printf("Backup Failed.\n");
 			}
-
-			if (manifest_path)
-				g_free(manifest_path);
-
 			break;
 			case CMD_RESTORE:
 			/* TODO: verify battery on AC enough battery remaining */
@@ -902,6 +898,8 @@ int main(int argc, char *argv[])
 			lockfile = 0;
 			do_post_notification(NP_SYNC_DID_FINISH);
 		}
+		if (manifest_path)
+			g_free(manifest_path);
 	} else {
 		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP_SERVICE_NAME);
 		lockdownd_client_free(client);
