@@ -602,9 +602,19 @@ int main(int argc, char *argv[])
 					printf("Aborting backup. Backup is not compatible with the current device.\n");
 					cmd = CMD_LEAVE;
 				}
+			} else if (info_plist && (cmd == CMD_RESTORE)) {
+				if (!mobilebackup_info_is_current_device(info_plist)) {
+					printf("Aborting restore. Backup data is not compatible with the current device.\n");
+					cmd = CMD_LEAVE;
+				}
 			}
 		} else {
-			is_full_backup = 1;
+			if (cmd == CMD_RESTORE) {
+				printf("Aborting restore. Info.plist is missing.\n");
+				cmd = CMD_LEAVE;
+			} else {
+				is_full_backup = 1;
+			}
 		}
 
 		uint64_t lockfile = 0;
