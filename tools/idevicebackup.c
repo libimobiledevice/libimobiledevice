@@ -76,6 +76,62 @@ static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, 
 	return 1;
 }
 
+static void compute_datahash(const char *path, const char *destpath, uint8_t greylist, const char *domain, const char *appid, const char *version, unsigned char *hash_out)
+{
+	gcry_md_hd_t hd = NULL;
+	gcry_md_open(&hd, GCRY_MD_SHA1, 0);
+	if (!hd) {
+		printf("ERROR: Could not initialize libgcrypt/SHA1\n");
+		return;
+	}
+	gcry_md_reset(hd);
+
+	FILE *f = fopen(path, "rb");
+	if (f) {
+		unsigned char buf[16384];
+		size_t len;
+		while ((len = fread(buf, 1, 16384, f)) > 0) {
+			gcry_md_write(hd, buf, len);
+		}
+		fclose(f);
+		gcry_md_write(hd, destpath, strlen(destpath));
+		gcry_md_write(hd, ";", 1);
+		if (greylist == 1) {
+			gcry_md_write(hd, "true", 4);
+		} else {
+			gcry_md_write(hd, "false", 5);
+		}
+		gcry_md_write(hd, ";", 1);
+		if (domain) {
+			gcry_md_write(hd, domain, strlen(domain));
+		} else {
+			gcry_md_write(hd, "(null)", 6);
+		}
+		gcry_md_write(hd, ";", 1);
+		if (appid) {
+			gcry_md_write(hd, appid, strlen(appid));
+		} else {
+			gcry_md_write(hd, "(null)", 6);
+		}
+		gcry_md_write(hd, ";", 1);
+		if (version) {
+			gcry_md_write(hd, version, strlen(version));
+		} else {
+			gcry_md_write(hd, "(null)", 6);
+		}
+		unsigned char *newhash = gcry_md_read(hd, GCRY_MD_SHA1);
+		memcpy(hash_out, newhash, 20);
+	}
+	gcry_md_close(hd);
+}
+
+static void print_hash(const unsigned char *hash, int len)
+{
+	int i;
+	for (i = 0; i < len; i++) {
+		printf("%02x", hash[i]);
+	}
+}
 
 static void notify_cb(const char *notification, void *userdata)
 {
@@ -397,6 +453,157 @@ static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory,
 	g_free(path);
 
 	return ret;
+}
+
+static int mobilebackup_check_file_integrity(const char *backup_directory, const char *hash, plist_t filedata)
+{
+	char *datapath;
+	char *infopath;
+	plist_t mdinfo = NULL;
+	struct stat st;
+	unsigned char file_hash[20];
+
+	datapath = mobilebackup_build_path(backup_directory, hash, ".mddata");
+	if (stat(datapath, &st) != 0) {
+		printf("\r\n");
+		printf("ERROR: '%s.mddata' is missing!\n", hash);
+		free(datapath);
+		return 0;
+	}
+
+	infopath = mobilebackup_build_path(backup_directory, hash, ".mdinfo");
+	plist_read_from_filename(&mdinfo, infopath);
+	free(infopath);
+	if (!mdinfo) {
+		printf("\r\n");
+		printf("ERROR: '%s.mdinfo' is missing or corrupted!\n", hash);
+		free(datapath);
+		return 0;
+	}
+
+	/* sha1 hash verification */
+	plist_t node = plist_dict_get_item(filedata, "DataHash");
+	if (!node || (plist_get_node_type(node) != PLIST_DATA)) {
+		printf("\r\n");
+		printf("ERROR: Could not get DataHash for file entry '%s'\n", hash);
+		plist_free(mdinfo);
+		free(datapath);
+		return 0;
+	}
+
+	node = plist_dict_get_item(mdinfo, "Metadata");
+	if (!node && (plist_get_node_type(node) != PLIST_DATA)) {
+		printf("\r\n");
+		printf("ERROR: Could not find Metadata in plist '%s.mdinfo'\n", hash);
+		plist_free(mdinfo);
+		free(datapath);
+		return 0;
+	}
+
+	char *meta_bin = NULL;
+	uint64_t meta_bin_size = 0;
+	plist_get_data_val(node, &meta_bin, &meta_bin_size);
+	plist_t metadata = NULL;
+	if (meta_bin) {
+		plist_from_bin(meta_bin, (uint32_t)meta_bin_size, &metadata);
+	}
+	if (!metadata) {
+		printf("\r\n");
+		printf("ERROR: Could not get Metadata from plist '%s.mdinfo'\n", hash);
+		plist_free(mdinfo);
+		free(datapath);
+		return 0;
+	}
+
+	char *version = NULL;
+	node = plist_dict_get_item(metadata, "Version");
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+		plist_get_string_val(node, &version);
+	}
+
+	char *destpath = NULL;
+	node = plist_dict_get_item(metadata, "Path");
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+		plist_get_string_val(node, &destpath);
+	}
+
+	uint8_t greylist = 0;
+	node = plist_dict_get_item(metadata, "Greylist");
+	if (node && (plist_get_node_type(node) == PLIST_BOOLEAN)) {
+		plist_get_bool_val(node, &greylist);
+	}
+
+	char *domain = NULL;
+	node = plist_dict_get_item(metadata, "Domain");
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+		plist_get_string_val(node, &domain);
+	}
+
+	char *fnstr = malloc(strlen(domain) + 1 + strlen(destpath) + 1);
+	strcpy(fnstr, domain);
+	strcat(fnstr, "-");
+	strcat(fnstr, destpath);
+	unsigned char fnhash[20];
+	char fnamehash[41];
+	char *p = fnamehash;
+	sha1_of_data(fnstr, strlen(fnstr), fnhash);
+	free(fnstr);
+	int i;
+	for ( i = 0; i < 20; i++, p += 2 ) {
+		snprintf (p, 3, "%02x", (unsigned char)fnhash[i] );
+	}
+	if (strcmp(fnamehash, hash)) {
+		printf("\r\n"); 
+		printf("WARNING: filename hash does not match for entry '%s'\n", hash);
+	}
+
+	char *auth_version = NULL;
+	node = plist_dict_get_item(mdinfo, "AuthVersion");
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+		plist_get_string_val(node, &auth_version);
+	}
+
+	if (strcmp(auth_version, "1.0")) {
+		printf("\r\n");
+		printf("WARNING: Unknown AuthVersion '%s', DataHash cannot be verified!\n", auth_version);
+	}
+
+	node = plist_dict_get_item(filedata, "DataHash");
+	if (!node || (plist_get_node_type(node) != PLIST_DATA)) {
+		printf("\r\n");
+		printf("WARNING: Could not get DataHash key from file info data for entry '%s'\n", hash);
+	}
+
+	int res = 1;
+	unsigned char *data_hash = NULL;
+	uint64_t data_hash_len = 0;
+	plist_get_data_val(node, (char**)&data_hash, &data_hash_len);
+	int hash_ok = 0;
+	if (data_hash && (data_hash_len == 20)) {
+		compute_datahash(datapath, destpath, greylist, domain, NULL, version, file_hash);
+		hash_ok = compare_hash(data_hash, file_hash, 20);
+	} else if (data_hash_len == 0) {
+		/* no datahash present */
+		hash_ok = 1;
+	}
+
+	g_free(domain);
+	g_free(version);
+	g_free(destpath);
+
+	if (!hash_ok) {
+		printf("\r\n");
+		printf("ERROR: The hash for '%s.mddata' does not match DataHash entry in Manifest\n", hash);
+		printf("datahash: ");
+		print_hash(data_hash, 20);
+		printf("\nfilehash: ");
+		print_hash(file_hash, 20);
+		printf("\n");
+		res = 0;
+	}
+	g_free(data_hash);
+	plist_free(mdinfo);
+	return res;
 }
 
 static void do_post_notification(const char *notification)
@@ -983,8 +1190,40 @@ int main(int argc, char *argv[])
 				printf("Could not read plist from Manifest.plist Data key!\n");
 				break;
 			}
-				/* loop over Files entries in Manifest data plist */
-					/* make sure both .mddata/.mdinfo files are available for each entry */
+			plist_t files = plist_dict_get_item(backup_data, "Files");
+			if (files && (plist_get_node_type(files) == PLIST_DICT)) {
+				plist_dict_iter iter = NULL;
+				plist_dict_new_iter(files, &iter);
+				if (iter) {
+					/* loop over Files entries in Manifest data plist */
+					char *hash = NULL;
+					int file_ok = 0;
+					int total_files = plist_dict_get_size(files);
+					int cur_file = 1;
+					node = NULL;
+					plist_dict_next_item(files, iter, &hash, &node);
+					while (node) {
+						printf("Verifying files %d/%d (%d%%) \r", cur_file, total_files, (cur_file*100/total_files));
+						cur_file++;
+						/* make sure both .mddata/.mdinfo files are available for each entry */
+						file_ok = mobilebackup_check_file_integrity(backup_directory, hash, node);
+						node = NULL;
+						free(hash);
+						hash = NULL;
+						if (!file_ok) {
+							break;
+						}
+						plist_dict_next_item(files, iter, &hash, &node);
+					}
+					printf("\n");
+					free(iter);
+					if (!file_ok) {
+						plist_free(backup_data);
+						break;
+					}
+					printf("All backup files appear to be valid\n");
+				}
+			}
 			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
 			/* loop over Files entries in Manifest data plist */
 				/* read mddata/mdinfo files and send to device using DLSendFile */
