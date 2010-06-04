@@ -1442,7 +1442,7 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("Activate"));
-	plist_dict_insert_item(dict,"ActivationRecord", activation_record);
+	plist_dict_insert_item(dict,"ActivationRecord", plist_copy(activation_record));
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
