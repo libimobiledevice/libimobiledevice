@@ -31,6 +31,7 @@ struct restored_client_private {
 	property_list_service_client_t parent;
 	char *uuid;
 	char *label;
+	plist_t info;
 };
 
 #endif

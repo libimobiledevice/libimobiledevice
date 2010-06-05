@@ -119,6 +119,10 @@ restored_error_t restored_client_free(restored_client_t client)
 	if (client->label) {
 		free(client->label);
 	}
+	
+	if (client->info) {
+		plist_free(client->info);
+	}
 
 	free(client);
 	return ret;
@@ -154,6 +158,7 @@ restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 {
 	if (!client || !plist || (plist && *plist))
 		return RESTORE_E_INVALID_ARG;
+		
 	restored_error_t ret = RESTORE_E_SUCCESS;
 	property_list_service_error_t err;
 
@@ -229,6 +234,9 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 
 	ret = RESTORE_E_UNKNOWN_ERROR;
 	if (restored_check_result(dict) == RESULT_SUCCESS) {
+		/* save our device information info */
+		client->info = dict;
+		
 		/* return the type if requested */
 		if (type != NULL) {
 			plist_t type_node = plist_dict_get_item(dict, "Type");
@@ -247,9 +255,43 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 			ret = RESTORE_E_UNKNOWN_ERROR;
 
 	}
-	plist_free(dict);
-	dict = NULL;
 
+	return ret;
+}
+
+/**
+ * Retrieves a value from information plist specified by a key.
+ *
+ * @param client An initialized restored client.
+ * @param key The key name to request or NULL to query for all keys
+ * @param value A plist node representing the result value node
+ *
+ * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL, RESTORE_E_PLIST_ERROR if value for key can't be found
+ */
+restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value) 
+{
+	if (!client || !value || (value && *value))
+		return RESTORE_E_INVALID_ARG;
+		
+	if (!client->info)
+		return RESTORE_E_NOT_ENOUGH_DATA;
+		
+	restored_error_t ret = RESTORE_E_SUCCESS;
+	plist_t item = NULL;
+	
+	if (!key) {
+		*value = plist_copy(client->info);
+		return RESTORE_E_SUCCESS;
+	} else {
+		item = plist_dict_get_item(client->info, key);
+	}
+	
+	if (item) {
+		*value = plist_copy(item);
+	} else {
+		ret = RESTORE_E_PLIST_ERROR;
+	}
+	
 	return ret;
 }
 
