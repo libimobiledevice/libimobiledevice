@@ -857,6 +857,8 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		mobilebackup_error_t err;
+
 		/* Manifest.plist (backup manifest (backup state)) */
 		char *manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist");
 
@@ -906,7 +908,7 @@ int main(int argc, char *argv[])
 			/* request backup from device with manifest from last backup */
 			printf("Requesting backup from device...\n");
 
-			mobilebackup_error_t err = mobilebackup_request_backup(mobilebackup, manifest_plist, "/", "1.6");
+			err = mobilebackup_request_backup(mobilebackup, manifest_plist, "/", "1.6");
 			if (err == MOBILEBACKUP_E_SUCCESS) {
 				if (is_full_backup)
 					printf("Full backup mode.\n");
@@ -1225,16 +1227,67 @@ int main(int argc, char *argv[])
 				}
 			}
 			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
-			/* loop over Files entries in Manifest data plist */
-				/* read mddata/mdinfo files and send to device using DLSendFile */
-				/* if all hunks of a file are sent, device must send ack */
-			/* observe notification_proxy id com.apple.mobile.application_installed */
-			/* loop over Applications entries in Manifest data plist */
+			int restore_flags = MB_RESTORE_NOTIFY_SPRINGBOARD | MB_RESTORE_PRESERVE_SETTINGS | MB_RESTORE_PRESERVE_CAMERA_ROLL;
+			err = mobilebackup_request_restore(mobilebackup, manifest_plist, restore_flags, "1.6");
+			if (err != MOBILEBACKUP_E_SUCCESS) {
+				if (err == MOBILEBACKUP_E_BAD_VERSION) {
+					printf("ERROR: Could not start restore process: backup protocol version mismatch!\n");
+				} else if (err == MOBILEBACKUP_E_REPLY_NOT_OK) {
+					printf("ERROR: Could not start restore process: device refused to start the restore process.\n");
+				} else {
+					printf("ERROR: Could not start backup process: unspecified error occured (%d)\n", err);
+				}
+				plist_free(backup_data);
+				break;
+			}
+
+			if (files && (plist_get_node_type(files) == PLIST_DICT)) {
+				plist_dict_iter iter = NULL;
+				plist_dict_new_iter(files, &iter);
+				if (iter) {
+					/* loop over Files entries in Manifest data plist */
+					char *hash = NULL;
+					int file_ok = 0;
+					int total_files = plist_dict_get_size(files);
+					int cur_file = 1;
+					node = NULL;
+					plist_dict_next_item(files, iter, &hash, &node);
+					while (node) {
+						printf("Sending files %d/%d (%d%%) \r", cur_file, total_files, (cur_file*100/total_files));
+						cur_file++;
+						
+						/* TODO: read mddata/mdinfo files and send to device using DLSendFile */
+						/* TODO: if all hunks of a file are sent, device must send ack */
+						/* err = mobilebackup_receive_restore_file_received(mobilebackup, &result); */
+						node = NULL;
+						free(hash);
+						hash = NULL;
+						if (!file_ok) {
+							break;
+						}
+						plist_dict_next_item(files, iter, &hash, &node);
+					}
+					printf("\n");
+					free(iter);
+					if (!file_ok) {
+						plist_free(backup_data);
+						break;
+					}
+				}
+			}
+			/* TODO: observe notification_proxy id com.apple.mobile.application_installed */
+			/* TODO: loop over Applications entries in Manifest data plist */
 				/* send AppInfo entries */
 				/* receive com.apple.mobile.application_installed notification */
 				/* receive BackupMessageRestoreApplicationReceived from device */
+			plist_free(backup_data);
+
 			/* signal restore finished message to device; BackupMessageRestoreComplete */
-			/* close down notification_proxy connection */
+			err = mobilebackup_send_restore_complete(mobilebackup);
+			if (err != MOBILEBACKUP_E_SUCCESS) {
+				printf("ERROR: Could not send BackupMessageRestoreComplete, error code %d\n", err);
+			}
+			/* TODO: close down notification_proxy connection */
 			/* close down lockdown connection as it is no longer needed */
 			lockdownd_client_free(client);
 			client = NULL;
