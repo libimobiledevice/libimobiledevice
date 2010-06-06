@@ -30,6 +30,8 @@
 #define MBACKUP_VERSION_INT1 100
 #define MBACKUP_VERSION_INT2 0
 
+#define IS_FLAG_SET(x, y) ((x & y) == y)
+
 /**
  * Convert an device_link_service_error_t value to an mobilebackup_error_t value.
  * Used internally to get correct error codes when using device_link_service stuff.
@@ -350,6 +352,118 @@ leave:
 mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client)
 {
 	return mobilebackup_send_message(client, "kBackupMessageBackupFileReceived", NULL);
+}
+
+/**
+ * Request that a backup should be restored to the connected device.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param backup_manifest The backup manifest, a plist_t of type PLIST_DICT
+ *    containing the backup state to be restored.
+ * @param flags Flags to send with the request. Currently this is a combination
+ *    of the following mobilebackup_flags_t:
+ *    MB_RESTORE_NOTIFY_SPRINGBOARD - let SpringBoard show a 'Restore' screen
+ *    MB_RESTORE_PRESERVE_SETTINGS - do not overwrite any settings
+ *    MB_RESTORE_PRESERVE_CAMERA_ROLL - preserve the photos of the camera roll
+ * @param proto_version A string denoting the version of the backup protocol
+ *    to use. Latest known version is "1.6". Ideally this value should be
+ *    extracted from the given manifest plist.
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
+ *    one of the parameters is invalid, MOBILEBACKUP_E_PLIST_ERROR if
+ *    backup_manifest is not of type PLIST_DICT, MOBILEBACKUP_E_MUX_ERROR
+ *    if a communication error occurs, or MOBILEBACKUP_E_REPLY_NOT_OK
+ *    if the device did not accept the request.
+ */
+mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version)
+{
+	if (!client || !client->parent || !backup_manifest || !proto_version)
+		return MOBILEBACKUP_E_INVALID_ARG;
+
+	if (backup_manifest && (plist_get_node_type(backup_manifest) != PLIST_DICT))
+		return MOBILEBACKUP_E_PLIST_ERROR;
+
+	mobilebackup_error_t err;
+
+	/* construct request plist */
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
+	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageRestoreRequest"));
+	plist_dict_insert_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
+	/* add flags */
+	plist_dict_insert_item(dict, "BackupNotifySpringBoard", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_NOTIFY_SPRINGBOARD)));
+	plist_dict_insert_item(dict, "BackupPreserveSettings", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_SETTINGS)));
+	plist_dict_insert_item(dict, "BackupPreserveCameraRoll", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_CAMERA_ROLL)));
+
+	/* send request */
+	err = mobilebackup_send_message(client, NULL, dict);
+	plist_free(dict);
+	dict = NULL;
+	if (err != MOBILEBACKUP_E_SUCCESS) {
+		debug_info("ERROR: Could not send restore request message (%d)!", err);
+		goto leave;
+	}
+
+	/* now receive and hopefully get a BackupMessageRestoreReplyOK */
+	err = mobilebackup_receive_message(client, "BackupMessageRestoreReplyOK", &dict);
+	if (err != MOBILEBACKUP_E_SUCCESS) {
+		debug_info("ERROR: Could not receive RestoreReplyOK message (%d)!", err);
+		goto leave;
+	}
+
+	plist_t node = plist_dict_get_item(dict, "BackupProtocolVersion");
+	if (node) {
+		char *str = NULL;
+		plist_get_string_val(node, &str);
+		if (str) {
+			if (strcmp(str, proto_version) != 0) {
+				err = MOBILEBACKUP_E_BAD_VERSION;
+			}
+			free(str);
+		}
+	}
+
+leave:
+	if (dict)
+		plist_free(dict);
+	return err;
+}
+
+/**
+ * Receive a confirmation from the device that it successfully received
+ * a restore file.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param result Pointer to a plist_t that will be set to the received plist
+ *    for further processing. The caller has to free it using plist_free().
+ *    Note that it will be set to NULL if the operation itself fails due to
+ *    a communication or plist error.
+ *    If this parameter is NULL, it will be ignored. 
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
+ *    client is invalid, MOBILEBACKUP_E_REPLY_NOT_OK if the expected
+ *    'BackupMessageRestoreFileReceived' message could not be received,
+ *    MOBILEBACKUP_E_PLIST_ERROR if the received message is not a valid backup
+ *    message plist, or MOBILEBACKUP_E_MUX_ERROR if a communication error
+ *    occurs.
+ */
+mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result)
+{
+	return mobilebackup_receive_message(client, "BackupMessageRestoreFileReceived", result);
+}
+
+/**
+ * Tells the device that the restore process is complete.
+ *
+ * @param client The connected MobileBackup client to use.
+ * 
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
+ *    client is invalid, or MOBILEBACKUP_E_MUX_ERROR if a communication error
+ *    occurs.
+ */
+mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client)
+{
+	return mobilebackup_send_message(client, "BackupMessageRestoreComplete", NULL);
 }
 
 /**

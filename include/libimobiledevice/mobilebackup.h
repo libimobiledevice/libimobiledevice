@@ -47,12 +47,21 @@ typedef int16_t mobilebackup_error_t;
 typedef struct mobilebackup_client_private mobilebackup_client_private;
 typedef mobilebackup_client_private *mobilebackup_client_t; /**< The client handle. */
 
+typedef enum {
+	MB_RESTORE_NOTIFY_SPRINGBOARD = 1 << 0,
+	MB_RESTORE_PRESERVE_SETTINGS = 1 << 1,
+	MB_RESTORE_PRESERVE_CAMERA_ROLL = 1 << 2
+} mobilebackup_flags_t;
+
 mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mobilebackup_client_t * client);
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
 mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
 mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
+mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
+mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
+mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
 
 #ifdef __cplusplus
