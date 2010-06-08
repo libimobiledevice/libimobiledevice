@@ -113,8 +113,11 @@ mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
 {
 	if (!client)
 		return MOBILEBACKUP_E_INVALID_ARG;
-	device_link_service_disconnect(client->parent);
-	mobilebackup_error_t err = mobilebackup_error(device_link_service_client_free(client->parent));
+	mobilebackup_error_t err = MOBILEBACKUP_E_SUCCESS;
+	if (client->parent) {
+		device_link_service_disconnect(client->parent);
+		err = mobilebackup_error(device_link_service_client_free(client->parent));
+	}
 	free(client);
 	return err;
 }
@@ -453,17 +456,59 @@ mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_cli
 }
 
 /**
- * Tells the device that the restore process is complete.
+ * Tells the device that the restore process is complete and waits for the
+ * device to close the connection. After that, the device should reboot.
  *
  * @param client The connected MobileBackup client to use.
  * 
  * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
- *    client is invalid, or MOBILEBACKUP_E_MUX_ERROR if a communication error
- *    occurs.
+ *    client is invalid, MOBILEBACKUP_E_PLIST_ERROR if the received disconnect
+ *    message plist is invalid, or MOBILEBACKUP_E_MUX_ERROR if a communication
+ *    error occurs.
  */
 mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client)
 {
-	return mobilebackup_send_message(client, "BackupMessageRestoreComplete", NULL);
+	mobilebackup_error_t err = mobilebackup_send_message(client, "BackupMessageRestoreComplete", NULL);
+	if (err != MOBILEBACKUP_E_SUCCESS) {
+		return err;
+	}
+	plist_t dlmsg = NULL;
+	err = mobilebackup_receive(client, &dlmsg);
+	if ((err != MOBILEBACKUP_E_SUCCESS) || !dlmsg || (plist_get_node_type(dlmsg) != PLIST_ARRAY) || (plist_array_get_size(dlmsg) != 2)) {
+		if (dlmsg) {
+			debug_info("ERROR: Did not receive DLMessageDisconnect:");
+			debug_plist(dlmsg);
+			plist_free(dlmsg);
+		}
+		if (err == MOBILEBACKUP_E_SUCCESS) {
+			err = MOBILEBACKUP_E_PLIST_ERROR;
+		}
+		return err;
+	}
+	plist_t node = plist_array_get_item (dlmsg, 0);
+	char *msg = NULL;
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+		plist_get_string_val(node, &msg);
+	}
+
+	if (msg && !strcmp(msg, "DLMessageDisconnect")) {
+		err = MOBILEBACKUP_E_SUCCESS;
+		/* we need to do this here, otherwise mobilebackup_client_free
+		   will fail */
+		device_link_service_client_free(client->parent);
+		client->parent = NULL;
+	} else {
+		debug_info("ERROR: Malformed plist received:");
+		debug_plist(dlmsg);
+		err = MOBILEBACKUP_E_PLIST_ERROR;
+	}
+
+	plist_free(dlmsg);
+
+	if (msg)
+		free(msg);
+
+	return err;
 }
 
 /**
