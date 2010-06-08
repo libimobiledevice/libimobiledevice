@@ -103,6 +103,7 @@ restored_error_t restored_client_free(restored_client_t client)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
+		
 	restored_error_t ret = RESTORE_E_UNKNOWN_ERROR;
 
 	if (client->parent) {
@@ -238,22 +239,29 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 		client->info = dict;
 		
 		/* return the type if requested */
-		if (type != NULL) {
+		if (type) {
 			plist_t type_node = plist_dict_get_item(dict, "Type");
-			plist_get_string_val(type_node, type);
+			if (type_node && PLIST_STRING == plist_get_node_type(type_node)) {
+				plist_get_string_val(type_node, type);
+				debug_info("success with type %s", *type);
+				ret = RESTORE_E_SUCCESS;
+			} else {
+				return RESTORE_E_UNKNOWN_ERROR;
+			}
 		}
-		debug_info("success with type %s", *type);
-		ret = RESTORE_E_SUCCESS;
 
 		/* fetch the restore protocol version */
-		plist_t version_node = plist_dict_get_item(dict, "RestoreProtocolVersion");
-		if (version_node && version) {
-			plist_get_uint_val(version_node, version);
-			debug_info("restored protocol version %llu", *version);
-			ret = RESTORE_E_SUCCESS;
-		} else
-			ret = RESTORE_E_UNKNOWN_ERROR;
-
+		if (version) {
+			plist_t version_node = plist_dict_get_item(dict, "RestoreProtocolVersion");
+			if (version_node && PLIST_UINT == plist_get_node_type(version_node)) {
+				plist_get_uint_val(version_node, version);
+				debug_info("restored protocol version %llu", *version);
+				ret = RESTORE_E_SUCCESS;
+			} else {
+				return RESTORE_E_UNKNOWN_ERROR;
+			}
+		}
+		ret = RESTORE_E_SUCCESS;
 	}
 
 	return ret;
