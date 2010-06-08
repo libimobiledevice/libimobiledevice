@@ -388,7 +388,7 @@ mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, 
 	/* construct request plist */
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
-	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageRestoreRequest"));
+	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("kBackupMessageRestoreRequest"));
 	plist_dict_insert_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
 	/* add flags */
 	plist_dict_insert_item(dict, "BackupNotifySpringBoard", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_NOTIFY_SPRINGBOARD)));
