@@ -857,12 +857,6 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		/* close down the lockdown connection as it is no longer needed */
-		if (client) {
-			lockdownd_client_free(client);
-			client = NULL;
-		}
-
 		mobilebackup_error_t err;
 
 		/* Manifest.plist (backup manifest (backup state)) */
@@ -901,6 +895,12 @@ int main(int argc, char *argv[])
 
 			plist_free(info_plist);
 			info_plist = NULL;
+
+			/* close down the lockdown connection as it is no longer needed */
+			if (client) {
+				lockdownd_client_free(client);
+				client = NULL;
+			}
 
 			/* create Status.plist with failed status for now */
 			mobilebackup_write_status(backup_directory, 0);
@@ -1133,7 +1133,14 @@ int main(int argc, char *argv[])
 			}
 			break;
 			case CMD_RESTORE:
+			/* close down the lockdown connection as it is no longer needed */
+			if (client) {
+				lockdownd_client_free(client);
+				client = NULL;
+			}
+
 			/* TODO: verify battery on AC enough battery remaining */
+
 			/* verify if Status.plist says we read from an successful backup */
 			if (mobilebackup_read_status(backup_directory) <= 0) {
 				printf("ERROR: Cannot ensure we restore from a successful backup. Aborting.\n");
@@ -1287,8 +1294,6 @@ int main(int argc, char *argv[])
 			if (err != MOBILEBACKUP_E_SUCCESS) {
 				printf("ERROR: Could not send BackupMessageRestoreComplete, error code %d\n", err);
 			}
-			/* TODO: close down notification_proxy connection */
-			client = NULL;
 			break;
 			case CMD_LEAVE:
 			default:
