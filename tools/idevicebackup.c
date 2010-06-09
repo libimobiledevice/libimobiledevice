@@ -219,7 +219,7 @@ static void mobilebackup_info_update_last_backup_date(plist_t info_plist)
 	node = NULL;
 }
 
-static void buffer_read_from_filename(const char *filename, char **buffer, uint32_t *length)
+static void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length)
 {
 	FILE *f;
 	uint64_t size;
@@ -243,10 +243,10 @@ static void buffer_read_from_filename(const char *filename, char **buffer, uint3
 	fread(*buffer, sizeof(char), size, f);
 	fclose(f);
 
-	*length = (uint32_t)size;
+	*length = size;
 }
 
-static void buffer_write_to_filename(const char *filename, const char *buffer, uint32_t length)
+static void buffer_write_to_filename(const char *filename, const char *buffer, uint64_t length)
 {
 	FILE *f;
 
@@ -258,7 +258,7 @@ static void buffer_write_to_filename(const char *filename, const char *buffer, u
 static int plist_read_from_filename(plist_t *plist, const char *filename)
 {
 	char *buffer = NULL;
-	uint32_t length;
+	uint64_t length;
 
 	if (!filename)
 		return 0;
@@ -432,7 +432,7 @@ static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory,
 {
 	int ret = 0;
 	gchar *path = mobilebackup_build_path(backup_directory, hash, ".mddata");
-	printf("Removing \"%s\"... ", path);
+	printf("Removing \"%s\" ", path);
 	if (!remove( path ))
 		ret = 1;
 	else
@@ -444,7 +444,7 @@ static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory,
 		return ret;
 
 	path = mobilebackup_build_path(backup_directory, hash, ".mdinfo");
-	printf("Removing \"%s\"... ", path);
+	printf("and \"%s\"... ", path);
 	if (!remove( path ))
 		ret = 1;
 	else
@@ -670,9 +670,10 @@ int main(int argc, char *argv[])
 	plist_t manifest_plist = NULL;
 	plist_t info_plist = NULL;
 	char *buffer = NULL;
+	char *file_path = NULL;
 	uint64_t length = 0;
 	uint64_t backup_total_size = 0;
-	enum device_link_file_status_t file_status;
+	enum device_link_file_status_t file_status = DEVICE_LINK_FILE_STATUS_NONE;
 	uint64_t c = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
@@ -934,7 +935,6 @@ int main(int argc, char *argv[])
 			int file_index = 0;
 			int hunk_index = 0;
 			uint64_t backup_real_size = 0;
-			char *file_path = NULL;
 			char *file_ext = NULL;
 			char *filename_mdinfo = NULL;
 			char *filename_mddata = NULL;
@@ -1212,7 +1212,7 @@ int main(int argc, char *argv[])
 					node = NULL;
 					plist_dict_next_item(files, iter, &hash, &node);
 					while (node) {
-						printf("Verifying files %d/%d (%d%%) \r", cur_file, total_files, (cur_file*100/total_files));
+						printf("Verifying file %d/%d (%d%%) \r", cur_file, total_files, (cur_file*100/total_files));
 						cur_file++;
 						/* make sure both .mddata/.mdinfo files are available for each entry */
 						file_ok = mobilebackup_check_file_integrity(backup_directory, hash, node);
@@ -1233,6 +1233,9 @@ int main(int argc, char *argv[])
 					printf("All backup files appear to be valid\n");
 				}
 			}
+
+			printf("Requesting restore from device...\n");
+
 			/* request restore from device with manifest (BackupMessageRestoreMigrate) */
 			int restore_flags = MB_RESTORE_NOTIFY_SPRINGBOARD | MB_RESTORE_PRESERVE_SETTINGS | MB_RESTORE_PRESERVE_CAMERA_ROLL;
 			err = mobilebackup_request_restore(mobilebackup, manifest_plist, restore_flags, "1.6");
@@ -1248,38 +1251,129 @@ int main(int argc, char *argv[])
 				break;
 			}
 
+			printf("Entered restore mode.\n");
+
+			int restore_ok = 0;
+
 			if (files && (plist_get_node_type(files) == PLIST_DICT)) {
 				plist_dict_iter iter = NULL;
 				plist_dict_new_iter(files, &iter);
 				if (iter) {
 					/* loop over Files entries in Manifest data plist */
 					char *hash = NULL;
-					int file_ok = 0;
+					plist_t file_info = NULL;
+					char *file_info_path = NULL;
 					int total_files = plist_dict_get_size(files);
-					int cur_file = 1;
+					int cur_file = 0;
+					uint64_t file_offset = 0;
+					uint8_t is_encrypted = 0;
+					plist_t tmp_node = NULL;
+					plist_t file_path_node = NULL;
+					plist_t send_file_node = NULL;
 					node = NULL;
 					plist_dict_next_item(files, iter, &hash, &node);
 					while (node) {
-						printf("Sending files %d/%d (%d%%) \r", cur_file, total_files, (cur_file*100/total_files));
-						cur_file++;
-						
 						/* TODO: read mddata/mdinfo files and send to device using DLSendFile */
-						/* TODO: if all hunks of a file are sent, device must send ack */
-						/* err = mobilebackup_receive_restore_file_received(mobilebackup, &result); */
-						node = NULL;
+						file_info_path = mobilebackup_build_path(backup_directory, hash, ".mdinfo");
+						plist_read_from_filename(&file_info, file_info_path);
+
+						/* get encryption state */
+						tmp_node = plist_dict_get_item(file_info, "IsEncrypted");
+						plist_get_bool_val(tmp_node, &is_encrypted);
+						tmp_node = NULL;
+
+						/* get real file path from metadata */
+						tmp_node = plist_dict_get_item(file_info, "Metadata");
+						plist_get_data_val(tmp_node, &buffer, &length);
+						tmp_node = NULL;
+						plist_from_bin(buffer, length, &tmp_node);
+						file_path_node = plist_dict_get_item(tmp_node, "Path");
+						plist_get_string_val(file_path_node, &file_path);
+
+						printf("Sending file %s %d/%d (%d%%)... ", file_path, cur_file, total_files, (cur_file*100/total_files));
+
+						/* add additional device link file information keys */
+						plist_dict_insert_item(file_info, "DLFileAttributesKey", plist_copy(node));
+						plist_dict_insert_item(file_info, "DLFileSource", plist_new_string(file_info_path));
+						plist_dict_insert_item(file_info, "DLFileDest", plist_new_string("/tmp/RestoreFile.plist"));
+						plist_dict_insert_item(file_info, "DLFileIsEncrypted", plist_new_bool(is_encrypted));
+						plist_dict_insert_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
+						plist_dict_insert_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
+
+						/* read data from file */
+						free(file_info_path);
+						file_info_path = mobilebackup_build_path(backup_directory, hash, ".mddata");
+						buffer_read_from_filename(file_info_path, &buffer, &length);
+						free(file_info_path);
+
+						/* send DLSendFile messages */
+						file_offset = 0;
+						do {
+							if ((length-file_offset) <= 8192)
+								file_status = DEVICE_LINK_FILE_STATUS_LAST_HUNK;
+							else
+								file_status = DEVICE_LINK_FILE_STATUS_HUNK;
+							
+							plist_dict_remove_item(file_info, "DLFileOffsetKey");
+							plist_dict_insert_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
+
+							plist_dict_remove_item(file_info, "DLFileStatusKey");
+							plist_dict_insert_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
+
+							send_file_node = plist_new_array();
+
+							plist_array_append_item(send_file_node, plist_new_string("DLSendFile"));
+
+							if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK)
+								plist_array_append_item(send_file_node, plist_new_data(buffer+file_offset, length-file_offset));
+							else
+								plist_array_append_item(send_file_node, plist_new_data(buffer+file_offset, 8192));
+
+							plist_array_append_item(send_file_node, plist_copy(file_info));
+
+							err = mobilebackup_send(mobilebackup, send_file_node);
+							if (err != MOBILEBACKUP_E_SUCCESS) {
+								printf("ERROR: Unable to send file hunk due to error %d. Aborting...\n", err);
+								file_status = DEVICE_LINK_FILE_STATUS_NONE;
+							}
+
+							if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) {
+								/* TODO: if all hunks of a file are sent, device must send ack */
+								err = mobilebackup_receive_restore_file_received(mobilebackup, NULL);
+								if (err != MOBILEBACKUP_E_SUCCESS) {
+									printf("ERROR: Did not receive an ack for the sent file due to error %d. Aborting...\n", err);
+									file_status = DEVICE_LINK_FILE_STATUS_NONE;
+								}
+							}
+
+							file_offset += 8192;
+
+							if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK)
+								printf("DONE\n");
+
+							plist_free(send_file_node);
+							
+							if (file_status == DEVICE_LINK_FILE_STATUS_NONE)
+								break;
+
+						} while((file_offset < length));
+
 						free(hash);
+						node = NULL;
 						hash = NULL;
-						if (!file_ok) {
+
+						restore_ok = 1;
+						if (file_status == DEVICE_LINK_FILE_STATUS_NONE) {
+							restore_ok = 0;
 							break;
 						}
+
+						cur_file++;
 						plist_dict_next_item(files, iter, &hash, &node);
 					}
-					printf("\n");
 					free(iter);
-					if (!file_ok) {
-						plist_free(backup_data);
-						break;
-					}
+
+					printf("Restored %d files on device.\n", cur_file);
 				}
 			}
 			/* TODO: observe notification_proxy id com.apple.mobile.application_installed */
@@ -1290,9 +1384,17 @@ int main(int argc, char *argv[])
 			plist_free(backup_data);
 
 			/* signal restore finished message to device; BackupMessageRestoreComplete */
-			err = mobilebackup_send_restore_complete(mobilebackup);
-			if (err != MOBILEBACKUP_E_SUCCESS) {
-				printf("ERROR: Could not send BackupMessageRestoreComplete, error code %d\n", err);
+			if (restore_ok) {
+				err = mobilebackup_send_restore_complete(mobilebackup);
+				if (err != MOBILEBACKUP_E_SUCCESS) {
+					printf("ERROR: Could not send BackupMessageRestoreComplete, error code %d\n", err);
+					}
+			}
+
+			if (restore_ok) {
+				printf("Restore Successful.\n");
+			} else {
+				printf("Restore Failed.\n");
 			}
 			break;
 			case CMD_LEAVE:
