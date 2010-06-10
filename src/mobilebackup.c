@@ -456,6 +456,29 @@ mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_cli
 }
 
 /**
+ * Receive a confirmation from the device that it successfully received
+ * application data file.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param result Pointer to a plist_t that will be set to the received plist
+ *    for further processing. The caller has to free it using plist_free().
+ *    Note that it will be set to NULL if the operation itself fails due to
+ *    a communication or plist error.
+ *    If this parameter is NULL, it will be ignored. 
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, MOBILEBACKUP_E_INVALID_ARG if
+ *    client is invalid, MOBILEBACKUP_E_REPLY_NOT_OK if the expected
+ *    'BackupMessageRestoreApplicationReceived' message could not be received,
+ *    MOBILEBACKUP_E_PLIST_ERROR if the received message is not a valid backup
+ *    message plist, or MOBILEBACKUP_E_MUX_ERROR if a communication error
+ *    occurs.
+ */
+mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result)
+{
+	return mobilebackup_receive_message(client, "BackupMessageRestoreApplicationReceived", result);
+}
+
+/**
  * Tells the device that the restore process is complete and waits for the
  * device to close the connection. After that, the device should reboot.
  *

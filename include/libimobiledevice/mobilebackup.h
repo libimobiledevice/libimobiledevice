@@ -61,6 +61,7 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
 mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
 mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
+mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result);
 mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
 
