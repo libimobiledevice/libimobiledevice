@@ -1290,7 +1290,7 @@ int main(int argc, char *argv[])
 						file_path_node = plist_dict_get_item(tmp_node, "Path");
 						plist_get_string_val(file_path_node, &file_path);
 
-						printf("Sending file %s %d/%d (%d%%)... ", file_path, cur_file, total_files, (cur_file*100/total_files));
+						printf("Restoring file %s %d/%d (%d%%)... ", file_path, cur_file, total_files, (cur_file*100/total_files));
 
 						/* add additional device link file information keys */
 						plist_dict_insert_item(file_info, "DLFileAttributesKey", plist_copy(node));
