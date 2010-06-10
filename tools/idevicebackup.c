@@ -1378,9 +1378,74 @@ int main(int argc, char *argv[])
 			}
 			/* TODO: observe notification_proxy id com.apple.mobile.application_installed */
 			/* TODO: loop over Applications entries in Manifest data plist */
-				/* send AppInfo entries */
-				/* receive com.apple.mobile.application_installed notification */
-				/* receive BackupMessageRestoreApplicationReceived from device */
+			plist_t applications = plist_dict_get_item(backup_data, "Applications");
+			if (applications && (plist_get_node_type(applications) == PLIST_DICT) && restore_ok) {
+				plist_dict_iter iter = NULL;
+				plist_dict_new_iter(applications, &iter);
+				if (iter) {
+					/* loop over Application entries in Manifest data plist */
+					char *hash = NULL;
+					int total_files = plist_dict_get_size(applications);
+					int cur_file = 1;
+					plist_t tmp_node = NULL;
+					plist_t dict = NULL;
+					plist_t array = NULL;
+					node = NULL;
+					plist_dict_next_item(applications, iter, &hash, &node);
+					while (node) {
+						printf("Restoring Application %s %d/%d (%d%%)...", hash, cur_file, total_files, (cur_file*100/total_files));
+						/* FIXME: receive com.apple.mobile.application_installed notification */
+						/* send AppInfo entry */
+						tmp_node = plist_dict_get_item(node, "AppInfo");
+
+						dict = plist_new_dict();
+						plist_dict_insert_item(dict, "AppInfo", plist_copy(tmp_node));
+						plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageRestoreApplicationSent"));
+
+						array = plist_new_array();
+						plist_array_append_item(array, plist_new_string("DLMessageProcessMessage"));
+						plist_array_append_item(array, dict);
+
+						err = mobilebackup_send(mobilebackup, array);
+						if (err != MOBILEBACKUP_E_SUCCESS) {
+							printf("ERROR: Unable to restore application %s due to error %d. Aborting...\n", hash, err);
+							restore_ok = 0;
+						}
+
+						plist_free(array);
+						array = NULL;
+						dict = NULL;
+
+						/* receive BackupMessageRestoreApplicationReceived from device */
+						if (restore_ok) {
+							err = mobilebackup_receive_restore_application_received(mobilebackup, NULL);
+							if (err != MOBILEBACKUP_E_SUCCESS) {
+								printf("ERROR: Failed to receive an ack from the device for this application due to error %d. Aborting...\n", err);
+								restore_ok = 0;
+							}
+						}
+
+						tmp_node = NULL;
+						node = NULL;
+						free(hash);
+						hash = NULL;
+
+						if (restore_ok) {
+							printf("DONE\n");
+							cur_file++;
+							plist_dict_next_item(applications, iter, &hash, &node);
+						} else
+							break;
+					}
+					free(iter);
+
+					if (restore_ok)
+						printf("All applications restored.\n");
+					else
+						printf("Failed to restore applications.\n");
+				}
+			}
+
 			plist_free(backup_data);
 
 			/* signal restore finished message to device; BackupMessageRestoreComplete */
