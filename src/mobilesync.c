@@ -541,9 +541,14 @@ static plist_t create_process_changes_message(const char *data_class, plist_t en
 {
 	plist_t msg = plist_new_array();
 	plist_array_append_item(msg, plist_new_string("SDMessageProcessChanges"));
+	plist_array_append_item(msg, plist_new_string(data_class));
 	plist_array_append_item(msg, plist_copy(entities));
 	plist_array_append_item(msg, plist_new_bool(more_changes));
-	plist_array_append_item(msg, plist_copy(actions));
+
+	if (actions)
+		plist_array_append_item(msg, plist_copy(actions));
+	else
+		plist_array_append_item(msg, plist_new_string(EMPTY_PARAMETER_STRING));
 
 	return msg;
 }
@@ -631,7 +636,8 @@ mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_cli
  * @param client The mobilesync client
  * @param entities The changed entity records as a PLIST_DICT
  * @param is_last_record A flag indiciating if this submission is the last one
- * @param actions Additional flags for the device created with mobilesync_actions_new()
+ * @param actions Additional actions for the device created with mobilesync_actions_new()
+ *    or NULL if no actions should be passed
  *
  * @return MOBILESYNC_E_SUCCESS on success, MOBILESYNC_E_INVALID_ARG if
  *    one of the parameters is invalid, MOBILESYNC_E_WRONG_DIRECTION if the
