@@ -2,12 +2,14 @@ Version 1.1.0
 ~~~~~~~~~~~~~
 
 * Changes:
+  - Implement restoring backups using idevicebackup
   - Allow connecting without pairing with ideviceinfo
   - Add idevicepair tool to manage pairings
   - Add ideviceenterrecovery tool
   - Add mobilesync service implementation
-  - Add restored service implementation
+  - Add restored service implementation for restore mode
   - Silence some 64bit compiler warnings
+  - Fix various memory leaks
   - Update documentation
 
 Version 1.0.1
