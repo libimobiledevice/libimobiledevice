@@ -1,3 +1,13 @@
+Version 1.0.2
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Backport new idevicepair tool to manage pairings
+  - Fix a bug causing bad backup data
+  - Silence 64bit compiler warnings
+  - Plug some memory leaks
+
 Version 1.0.1
 ~~~~~~~~~~~~~
 
