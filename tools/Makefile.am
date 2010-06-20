@@ -11,7 +11,7 @@ ideviceinfo_LDFLAGS = $(AM_LDFLAGS)
 ideviceinfo_LDADD = ../src/libimobiledevice.la
 
 idevicepair_SOURCES = idevicepair.c
-idevicepair_CFLAGS = $(AM_CFLAGS) -I../src
+idevicepair_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/src
 idevicepair_LDFLAGS = $(AM_LDFLAGS)
 idevicepair_LDADD = ../src/libimobiledevice.la
 
