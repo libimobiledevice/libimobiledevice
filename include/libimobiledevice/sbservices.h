@@ -51,6 +51,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client);
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state);
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
 sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
+sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
 #ifdef __cplusplus
 }

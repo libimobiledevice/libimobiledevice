@@ -269,3 +269,52 @@ leave_unlock:
 
 }
 
+/**
+ * Get the home screen wallpaper as PNG data.
+ *
+ * @param client The connected sbservices client to use.
+ * @param pngdata Pointer that will point to a newly allocated buffer
+ *     containing the PNG data upon successful return. It is up to the caller
+ *     to free the memory.
+ * @param pngsize Pointer to a uint64_t that will be set to the size of the
+ *     buffer pngdata points to upon successful return.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client or pngdata are invalid, or an SBSERVICES_E_* error
+ *     code otherwise.
+ */
+sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize)
+{
+	if (!client || !client->parent || !pngdata)
+		return SBSERVICES_E_INVALID_ARG;
+
+	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict, "command", plist_new_string("getHomeScreenWallpaperPNGData"));
+
+	sbs_lock(client);
+
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+		goto leave_unlock;
+	}
+	plist_free(dict);
+
+	dict = NULL;
+	res = sbservices_error(property_list_service_receive_plist(client->parent, &dict));
+	if (res	== SBSERVICES_E_SUCCESS) {
+		plist_t node = plist_dict_get_item(dict, "pngData");
+		if (node) {
+			plist_get_data_val(node, pngdata, pngsize);
+		}
+	}
+
+leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
+	sbs_unlock(client);
+	return res;
+}
