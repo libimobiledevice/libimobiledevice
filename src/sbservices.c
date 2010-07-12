@@ -140,11 +140,15 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
  * @param client The connected sbservices client to use.
  * @param state Pointer that will point to a newly allocated plist containing
  *     the current icon state. It is up to the caller to free the memory.
+ * @param format_version A string to be passed as formatVersion along with
+ *     the request, or NULL if no formatVersion should be passed. This is only
+ *     supported since iOS 4.0 so for older firmware versions this must be set
+ *     to NULL.
  *
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client or state is invalid, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state)
+sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version)
 {
 	if (!client || !client->parent || !state)
 		return SBSERVICES_E_INVALID_ARG;
@@ -153,6 +157,9 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "command", plist_new_string("getIconState"));
+	if (format_version) {
+		plist_dict_insert_item(dict, "formatVersion", plist_new_string(format_version));
+	}
 
 	sbs_lock(client);
 
