@@ -49,6 +49,8 @@ static const char *domains[] = {
 	"com.apple.mobile.software_behavior",
 	"com.apple.mobile.iTunes.SQLMusicLibraryPostProcessCommands",
 	"com.apple.mobile.iTunes.accessories",
+	"com.apple.mobile.internal", /**< iOS 4.0+ */
+	"com.apple.mobile.wireless_lockdown", /**< iOS 4.0+ */
 	"com.apple.fairplay",
 	"com.apple.iTunes",
 	"com.apple.mobile.iTunes.store",
