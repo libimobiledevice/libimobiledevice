@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <glib.h>
+#include <unistd.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -681,6 +682,12 @@ int main(int argc, char *argv[])
 			/* process series of DLSendFile messages */
 			do {
 				mobilebackup_receive(mobilebackup, &message);
+				if (!message) {
+					printf("Device is not ready yet. Going to try again in 2 seconds...\n");
+					sleep(2);
+					continue;
+				}
+				
 				node = plist_array_get_item(message, 0);
 
 				/* get out if we don't get a DLSendFile */
