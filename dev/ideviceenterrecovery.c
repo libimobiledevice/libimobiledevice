@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* run query and output information */
-	printf("Telling device with uuid %s to enter recovery mode.}\n", uuid);
+	printf("Telling device with uuid %s to enter recovery mode.\n", uuid);
 	if(lockdownd_enter_recovery(client) != LOCKDOWN_E_SUCCESS)
 	{
 		printf("Failed to enter recovery mode.\n");
