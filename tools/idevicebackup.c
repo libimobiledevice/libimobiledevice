@@ -1033,7 +1033,7 @@ int main(int argc, char *argv[])
 
 				/* save <hash>.mddata */
 				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
-				if (node_tmp && file_path) {
+				if (node_tmp) {
 					node = plist_dict_get_item(node_tmp, "DLFileDest");
 					plist_get_string_val(node, &file_path);
 
