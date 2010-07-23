@@ -685,7 +685,7 @@ int main(int argc, char *argv[])
 				if (!message) {
 					printf("Device is not ready yet. Going to try again in 2 seconds...\n");
 					sleep(2);
-					continue;
+					goto files_out;
 				}
 				
 				node = plist_array_get_item(message, 0);
@@ -813,7 +813,7 @@ int main(int argc, char *argv[])
 					/* reset hunk_index */
 					hunk_index = 0;
 				}
-
+files_out:
 				if (quit_flag > 0) {
 					/* need to cancel the backup here */
 					mobilebackup_send_error(mobilebackup, "Cancelling DLSendFile");
