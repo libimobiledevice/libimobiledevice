@@ -381,6 +381,29 @@ static void do_post_notification(const char *notification)
 	}
 }
 
+static void print_progress(double progress)
+{
+	int i = 0;
+	if (progress < 0)
+		return;
+
+	if (progress > 100)
+		progress = 100;
+
+	printf("\r[");
+	for(i = 0; i < 50; i++) {
+		if(i < progress / 2) {
+			printf("=");
+		} else {
+			printf(" ");
+		}
+	}
+	printf("] %3.0f%%", progress);
+	fflush(stdout);
+	if (progress == 100)
+		printf("\n");
+}
+
 /**
  * signal handler function for cleaning up properly
  */
@@ -667,6 +690,8 @@ int main(int argc, char *argv[])
 			plist_t message = NULL;
 
 			/* receive and save DLSendFile files and metadata, ACK each */
+			uint64_t file_size = 0;
+			uint64_t file_size_current = 0;
 			int file_index = 0;
 			int hunk_index = 0;
 			uint64_t backup_real_size = 0;
@@ -720,8 +745,7 @@ int main(int argc, char *argv[])
 				}
 				is_manifest = (b == 1) ? TRUE: FALSE;
 
-				/* check if we completed a file */
-				if ((file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) && (!is_manifest)) {
+				if ((hunk_index == 0) && (!is_manifest)) {
 					/* get source filename */
 					node = plist_dict_get_item(node_tmp, "DLFileSource");
 					plist_get_string_val(node, &filename_source);
@@ -729,8 +753,8 @@ int main(int argc, char *argv[])
 					/* increase received size */
 					node = plist_dict_get_item(node_tmp, "DLFileAttributesKey");
 					node = plist_dict_get_item(node, "FileSize");
-					plist_get_uint_val(node, &length);
-					backup_real_size += length;
+					plist_get_uint_val(node, &file_size);
+					backup_real_size += file_size;
 
 					format_size = g_format_size_for_display(backup_real_size);
 					printf("(%s", format_size);
@@ -740,11 +764,16 @@ int main(int argc, char *argv[])
 					printf("/%s): ", format_size);
 					g_free(format_size);
 
-					printf("Received file %s... ", filename_source);
+					format_size = g_format_size_for_display(file_size);
+					printf("Receiving file %s (%s)... \n", filename_source, format_size);
+					g_free(format_size);
 
 					if (filename_source)
 						free(filename_source);
+				}
 
+				/* check if we completed a file */
+				if ((file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) && (!is_manifest)) {
 					/* save <hash>.mdinfo */
 					node = plist_dict_get_item(node_tmp, "BackupFileInfo");
 					if (node) {
@@ -783,6 +812,8 @@ int main(int argc, char *argv[])
 					plist_get_data_val(node_tmp, &buffer, &length);
 
 					buffer_write_to_filename(filename_mddata, buffer, length);
+					if (!is_manifest)
+						file_size_current += length;
 
 					/* activate currently sent manifest */
 					if ((file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) && (is_manifest)) {
@@ -795,6 +826,15 @@ int main(int argc, char *argv[])
 					g_free(filename_mddata);
 				}
 
+				if ((!is_manifest)) {
+					if (hunk_index == 0 && file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) {
+							print_progress(100);
+					} else {
+						if (file_size > 0)
+							print_progress((double)((file_size_current*100)/file_size));
+					}
+				}
+
 				hunk_index++;
 
 				if (file_ext)
@@ -805,13 +845,14 @@ int main(int argc, char *argv[])
 				message = NULL;
 
 				if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) {
-					if (!is_manifest)
-						printf("DONE\n");
-
 					/* acknowlegdge that we received the file */
 					mobilebackup_send_backup_file_received(mobilebackup);
 					/* reset hunk_index */
 					hunk_index = 0;
+					if (!is_manifest) {
+						file_size_current = 0;
+						file_size = 0;
+					}
 				}
 files_out:
 				if (quit_flag > 0) {
