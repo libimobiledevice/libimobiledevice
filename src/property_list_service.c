@@ -226,10 +226,10 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("initial read failed!");
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	} else {
-		if ((char)pktlen == 0) { /* prevent huge buffers */
+		pktlen = GUINT32_FROM_BE(pktlen);
+		if (pktlen < (1 << 24)) { /* prevent huge buffers */
 			uint32_t curlen = 0;
 			char *content = NULL;
-			pktlen = GUINT32_FROM_BE(pktlen);
 			debug_info("%d bytes following", pktlen);
 			content = (char*)malloc(pktlen);
 
