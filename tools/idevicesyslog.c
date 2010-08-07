@@ -118,6 +118,11 @@ int main(int argc, char *argv[])
 				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
 
 				ret = idevice_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
+				if (ret < 0) {
+					fprintf(stderr, "Error receiving data. Exiting...\n");
+					break;
+				}
+
 				datalen = GUINT32_FROM_BE(datalen);
 
 				if (datalen == 0)
