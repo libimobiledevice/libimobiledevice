@@ -36,12 +36,11 @@
  */
 static char *device_link_service_get_message(plist_t dl_msg)
 {
-	uint32_t cnt = 0;
 	plist_t cmd = 0;
 	char *cmd_str = NULL;
 
 	/* sanity check */
-	if ((plist_get_node_type(dl_msg) != PLIST_ARRAY) || ((cnt = plist_array_get_size(dl_msg)) < 1)) {
+	if ((plist_get_node_type(dl_msg) != PLIST_ARRAY) || (plist_array_get_size(dl_msg) < 1)) {
 		return NULL;
 	}
 
