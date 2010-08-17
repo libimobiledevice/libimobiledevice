@@ -38,6 +38,9 @@
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
+#define LOCK_ATTEMPTS 50
+#define LOCK_WAIT 200000
+
 static mobilebackup_client_t mobilebackup = NULL;
 static lockdownd_client_t client = NULL;
 static idevice_t phone = NULL;
@@ -873,12 +876,28 @@ int main(int argc, char *argv[])
 			afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 		}
 		if (lockfile) {
+			afc_error_t aerr;
 			do_post_notification(NP_SYNC_LOCK_REQUEST);
-			if (afc_file_lock(afc, lockfile, AFC_LOCK_EX) == AFC_E_SUCCESS) {
-				do_post_notification(NP_SYNC_DID_START);
-			} else {
+			for (i = 0; i < LOCK_ATTEMPTS; i++) {
+				aerr = afc_file_lock(afc, lockfile, AFC_LOCK_EX);
+				if (aerr == AFC_E_SUCCESS) {
+					do_post_notification(NP_SYNC_DID_START);
+					break;
+				} else if (aerr == AFC_E_OP_WOULD_BLOCK) {
+					usleep(LOCK_WAIT);
+					continue;
+				} else {
+					fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
+					afc_file_close(afc, lockfile);
+					lockfile = 0;
+					cmd = CMD_LEAVE;
+				}
+			}
+			if (i == LOCK_ATTEMPTS) {
+				fprintf(stderr, "ERROR: timeout while locking for sync\n");
 				afc_file_close(afc, lockfile);
 				lockfile = 0;
+				cmd = CMD_LEAVE;
 			}
 		}
 
