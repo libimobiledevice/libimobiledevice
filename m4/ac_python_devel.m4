@@ -172,7 +172,7 @@ $ac_distutils_result])
 		py_version=`$PYTHON -c "from distutils.sysconfig import *; \
 			from string import join; \
 			print join(get_config_vars('VERSION'))"`
-		if test "$py_version" == "[None]"; then
+		if test "$py_version" = "[None]"; then
 			if test -n "$PYTHON_VERSION"; then
 				py_version=$PYTHON_VERSION
 			else
