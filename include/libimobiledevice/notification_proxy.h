@@ -71,6 +71,7 @@ typedef int16_t np_error_t;
 #define NP_REGISTRATION_FAILED       "com.apple.mobile.lockdown.registration_failed"
 #define NP_ACTIVATION_STATE          "com.apple.mobile.lockdown.activation_state"
 #define NP_BRICK_STATE               "com.apple.mobile.lockdown.brick_state"
+#define NP_DISK_USAGE_CHANGED        "com.apple.mobile.lockdown.disk_usage_changed" /**< iOS 4.0+ */
 #define NP_DS_DOMAIN_CHANGED         "com.apple.mobile.data_sync.domain_changed"
 #define NP_BACKUP_DOMAIN_CHANGED     "com.apple.mobile.backup.domain_changed"
 #define NP_APP_INSTALLED             "com.apple.mobile.application_installed"
