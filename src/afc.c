@@ -176,6 +176,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
 		idevice_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		AFCPacket_from_LE(client->afc_packet);
 		if (sent == 0) {
 			/* FIXME: should this be handled as success?! */
 			return AFC_E_SUCCESS;
@@ -210,6 +211,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
 		idevice_connection_send(client->connection, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		AFCPacket_from_LE(client->afc_packet);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
 		}
