@@ -334,7 +334,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 	}
 
 	if (current_count >= sizeof(uint64_t)) {
-		param1 = *(uint64_t*)(*dump_here);
+		param1 = GUINT64_FROM_LE(*(uint64_t*)(*dump_here));
 	}
 
 	debug_info("packet data size = %i", current_count);
