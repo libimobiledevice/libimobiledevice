@@ -21,4 +21,5 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       mobilesync.c mobilesync.h\
 		       mobilebackup.c mobilebackup.h\
 		       house_arrest.c house_arrest.h\
+		       mobilebackup2.c mobilebackup2.h\
 		       restore.c restore.h
