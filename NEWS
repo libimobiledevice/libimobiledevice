@@ -1,3 +1,14 @@
+Version 1.0.3
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Terminate idevicesyslog on receive errors (like device unplug)
+  - Bugfixes for idevicebackup tool
+  - Hopefully the last fixes for big endian machines
+  - Build fixes for FreeBSD Python support
+  - Fix build on Mac OS X
+
 Version 1.0.2
 ~~~~~~~~~~~~~
 
