@@ -20,7 +20,7 @@ dnl libtool versioning
 #                 changes to the signature and the semantic)
 #  ? :+1 : ?   == just internal changes
 # CURRENT : REVISION : AGE
-LIBIMOBILEDEVICE_SO_VERSION=1:2:0
+LIBIMOBILEDEVICE_SO_VERSION=1:3:0
 
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 
