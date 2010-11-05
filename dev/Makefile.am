@@ -4,7 +4,7 @@ AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_C
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
 if ENABLE_DEVTOOLS
-noinst_PROGRAMS = ideviceclient lckd-client afccheck msyncclient filerelaytest
+noinst_PROGRAMS = ideviceclient lckd-client afccheck msyncclient filerelaytest housearresttest
 
 ideviceclient_SOURCES = ideviceclient.c
 ideviceclient_LDADD = ../src/libimobiledevice.la
@@ -28,6 +28,11 @@ filerelaytest_SOURCES = filerelaytest.c
 filerelaytest_CFLAGS = $(AM_CFLAGS)
 filerelaytest_LDFLAGS = $(AM_LDFLAGS)
 filerelaytest_LDADD = ../src/libimobiledevice.la
+
+housearresttest_SOURCES = housearresttest.c
+housearresttest_CFLAGS = $(AM_CFLAGS)
+housearresttest_LDFLAGS = $(AM_LDFLAGS)
+housearresttest_LDADD = ../src/libimobiledevice.la
 
 endif # ENABLE_DEVTOOLS
 

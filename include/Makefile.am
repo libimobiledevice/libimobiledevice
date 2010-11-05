@@ -9,4 +9,5 @@ nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
 			 libimobiledevice/screenshotr.h \
 			 libimobiledevice/mobilesync.h \
 			 libimobiledevice/mobilebackup.h \
+			 libimobiledevice/house_arrest.h \
 			 libimobiledevice/restore.h
