@@ -54,39 +54,35 @@ static void afc_unlock(afc_client_t client)
 }
 
 /**
- * Makes a connection to the AFC service on the phone.
- * 
- * @param device The device to connect to.
- * @param port The destination port.
+ * Makes a connection to the AFC service on the device using the given
+ * connection.
+ *
+ * @param connection An idevice_connection_t that must have been previously
+ *     connected using idevice_connect(). Note that this connection will
+ *     not be closed by calling afc_client_free().
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
  * 
- * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG when device or port is
- *  invalid, AFC_E_MUX_ERROR when the connection failed, or AFC_E_NO_MEM if
- *  there is a memory allocation problem.
+ * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if connection is
+ *  invalid, or AFC_E_NO_MEM if there is a memory allocation problem.
  */
-afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
+
+afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_client_t *client)
 {
 	/* makes sure thread environment is available */
 	if (!g_thread_supported())
 		g_thread_init(NULL);
 
-	if (!device || port==0)
+	if (!connection)
 		return AFC_E_INVALID_ARG;
-
-	/* attempt connection */
-	idevice_connection_t connection = NULL;
-	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
-		return AFC_E_MUX_ERROR;
-	}
 
 	afc_client_t client_loc = (afc_client_t) malloc(sizeof(struct afc_client_private));
 	client_loc->connection = connection;
+	client_loc->own_connection = 0;
 
 	/* allocate a packet */
 	client_loc->afc_packet = (AFCPacket *) malloc(sizeof(AFCPacket));
 	if (!client_loc->afc_packet) {
-		idevice_disconnect(client_loc->connection);
 		free(client_loc);
 		return AFC_E_NO_MEM;
 	}
@@ -104,16 +100,60 @@ afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * clien
 }
 
 /**
- * Disconnects an AFC client from the phone.
+ * Makes a connection to the AFC service on the device.
+ * This function calls afc_client_new_from_connection() after creating
+ * a connection to the specified device and port.
+ *
+ * @see afc_client_new_from_connection
  * 
- * @param client The client to disconnect.
+ * @param device The device to connect to.
+ * @param port The destination port.
+ * @param client Pointer that will be set to a newly allocated afc_client_t
+ *     upon successful return.
+ * 
+ * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if device or port is
+ *  invalid, AFC_E_MUX_ERROR if the connection cannot be established,
+ *  or AFC_E_NO_MEM if there is a memory allocation problem.
+ */
+afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
+{
+	/* makes sure thread environment is available */
+	if (!g_thread_supported())
+		g_thread_init(NULL);
+
+	if (!device || port==0)
+		return AFC_E_INVALID_ARG;
+
+	/* attempt connection */
+	idevice_connection_t connection = NULL;
+	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
+		return AFC_E_MUX_ERROR;
+	}
+
+	afc_error_t err = afc_client_new_from_connection(connection, client);
+	if (err != AFC_E_SUCCESS) {
+		idevice_disconnect(connection);
+	} else {
+		(*client)->own_connection = 1;
+	}
+	return err;
+}
+
+/**
+ * Frees up an AFC client. If the connection was created by the
+ * client itself, the connection will be closed.
+ * 
+ * @param client The client to free.
  */
 afc_error_t afc_client_free(afc_client_t client)
 {
-	if (!client || !client->connection || !client->afc_packet)
+	if (!client || !client->afc_packet)
 		return AFC_E_INVALID_ARG;
 
-	idevice_disconnect(client->connection);
+	if (client->own_connection && client->connection) {
+		idevice_disconnect(client->connection);
+		client->connection = NULL;
+	}
 	free(client->afc_packet);
 	if (client->mutex) {
 		g_mutex_free(client->mutex);

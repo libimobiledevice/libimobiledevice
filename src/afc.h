@@ -54,6 +54,7 @@ struct afc_client_private {
 	int file_handle;
 	int lock;
 	GMutex *mutex;
+	int own_connection;
 };
 
 /* AFC Operations */
