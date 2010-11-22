@@ -355,16 +355,32 @@ leave:
 }
 
 /**
- * TODO
+ * Send a request to the connected mobilebackup2 service.
+ *
+ * @param client
+ * @param request The request to send to the backup service.
+ *     Currently, this is one of "Backup", "Restore", "Info", or "List".
+ * @param target_identifier UUID of the target device.
+ * @param source_identifier UUID of backup data?
+ * @param options Additional options in a plist of type PLIST_DICT.
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if the request was successfully sent,
+ *     or a MOBILEBACKUP2_E_* error value otherwise.
  */
-mobilebackup2_error_t mobilebackup2_request_backup(mobilebackup2_client_t client, const char *uuid)
+mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options)
 {
-	if (!client || !client->parent)
+	if (!client || !client->parent || !request || !target_identifier)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "TargetIdentifier", plist_new_string(uuid));
-	mobilebackup2_error_t err = internal_mobilebackup2_send_message(client, "Backup", dict);
+	plist_dict_insert_item(dict, "TargetIdentifier", plist_new_string(target_identifier));
+	if (source_identifier) {
+		plist_dict_insert_item(dict, "SourceIdentifier", plist_new_string(source_identifier));
+	}
+	if (options) {
+		plist_dict_insert_item(dict, "Options", plist_copy(options));
+	}
+	mobilebackup2_error_t err = internal_mobilebackup2_send_message(client, request, dict);
 	plist_free(dict);
 
 	return err;

@@ -1381,7 +1381,7 @@ checkpoint:
 			/* request backup from device with manifest from last backup */
 			printf("Requesting backup from device...\n");
 
-			err = mobilebackup2_request_backup(mobilebackup2, uuid);
+			err = mobilebackup2_send_request(mobilebackup2, "Backup", uuid, NULL, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				/*if (is_full_backup)
 					printf("Full backup mode.\n");

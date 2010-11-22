@@ -53,7 +53,7 @@ mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t clien
 mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
 mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes);
 mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client);
-mobilebackup2_error_t mobilebackup2_request_backup(mobilebackup2_client_t client, const char *uuid);
+mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options);
 mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2);
 
 #ifdef __cplusplus
