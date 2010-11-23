@@ -1592,6 +1592,13 @@ checkpoint:
 					if (str) {
 						free(str);
 					}
+					nn = plist_dict_get_item(node_tmp, "Content");
+					if (nn && (plist_get_node_type(nn) == PLIST_STRING)) {
+						str = NULL;
+						plist_get_string_val(nn, &str);
+						printf("Content:\n%s\n", str);
+						free(str);
+					}
 					break;
 				}
 
