@@ -663,8 +663,11 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	char *host_id = NULL;
 	char *type = NULL;
 
-
 	ret = lockdownd_client_new(device, &client_loc, label);
+	if (LOCKDOWN_E_SUCCESS != ret) {
+		debug_info("failed to create lockdownd client.");
+		return ret;
+	}
 
 	/* perform handshake */
 	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
