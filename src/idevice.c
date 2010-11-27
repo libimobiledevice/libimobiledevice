@@ -445,7 +445,7 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
  */
 idevice_error_t idevice_get_uuid(idevice_t device, char **uuid)
 {
-	if (!device)
+	if (!device || !uuid)
 		return IDEVICE_E_INVALID_ARG;
 
 	*uuid = strdup(device->uuid);
