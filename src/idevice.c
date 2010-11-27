@@ -27,6 +27,7 @@
 #include <usbmuxd.h>
 #include <gnutls/gnutls.h>
 #include "idevice.h"
+#include "userpref.h"
 #include "debug.h"
 
 static idevice_event_cb_t event_cb = NULL;
@@ -523,6 +524,40 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (ssl_data->certificate) {
 		gnutls_certificate_free_credentials(ssl_data->certificate);
 	}
+	if (ssl_data->root_cert) {
+		gnutls_x509_crt_deinit(ssl_data->root_cert);
+	}
+	if (ssl_data->host_cert) {
+		gnutls_x509_crt_deinit(ssl_data->host_cert);
+	}
+	if (ssl_data->root_privkey) {
+		gnutls_x509_privkey_deinit(ssl_data->root_privkey);
+	}
+	if (ssl_data->host_privkey) {
+		gnutls_x509_privkey_deinit(ssl_data->host_privkey);
+	}
+}
+
+/**
+ * Internally used gnutls callback function that gets called during handshake.
+ */
+static int internal_cert_callback (gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr_st * st)
+{
+	int res = -1;
+	gnutls_certificate_type_t type = gnutls_certificate_type_get (session);
+	if (type == GNUTLS_CRT_X509) {
+		ssl_data_t ssl_data = (ssl_data_t)gnutls_session_get_ptr (session);
+		if (ssl_data && ssl_data->host_privkey && ssl_data->host_cert) {
+			debug_info("Passing certificate");
+			st->type = type;
+			st->ncerts = 1;
+			st->cert.x509 = &ssl_data->host_cert;
+			st->key.x509 = ssl_data->host_privkey;
+			st->deinit_all = 0;
+			res = 0;
+		}
+	}
+	return res;
 }
 
 /**
@@ -549,7 +584,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	errno = 0;
 	gnutls_global_init();
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
-	gnutls_certificate_set_x509_trust_file(ssl_data_loc->certificate, "hostcert.pem", GNUTLS_X509_FMT_PEM);
+	gnutls_certificate_client_set_retrieve_function (ssl_data_loc->certificate, internal_cert_callback);
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
 	{
 		int protocol_priority[16] = { GNUTLS_SSL3, 0 };
@@ -564,7 +599,18 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		gnutls_protocol_set_priority(ssl_data_loc->session, protocol_priority);
 		gnutls_mac_set_priority(ssl_data_loc->session, mac_priority);
 	}
-	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate); /* this part is killing me. */
+	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
+	gnutls_session_set_ptr(ssl_data_loc->session, ssl_data_loc);
+
+	gnutls_x509_crt_init(&ssl_data_loc->root_cert);
+	gnutls_x509_crt_init(&ssl_data_loc->host_cert);
+	gnutls_x509_privkey_init(&ssl_data_loc->root_privkey);
+	gnutls_x509_privkey_init(&ssl_data_loc->host_privkey);
+
+	userpref_error_t uerr = userpref_get_keys_and_certs(ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
+	if (uerr != USERPREF_E_SUCCESS) {
+		debug_info("Error %d when loading keys and certificates! %d", uerr);
+	}
 
 	debug_info("GnuTLS step 1...");
 	gnutls_transport_set_ptr(ssl_data_loc->session, (gnutls_transport_ptr_t)connection);

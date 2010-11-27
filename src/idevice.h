@@ -22,6 +22,7 @@
 #define IDEVICE_H
 
 #include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
 
 #include "libimobiledevice/libimobiledevice.h"
 
@@ -30,8 +31,12 @@ enum connection_type {
 };
 
 struct ssl_data_private {
-        gnutls_certificate_credentials_t certificate;
+	gnutls_certificate_credentials_t certificate;
 	gnutls_session_t session;
+	gnutls_x509_privkey_t root_privkey;
+	gnutls_x509_crt_t root_cert;
+	gnutls_x509_privkey_t host_privkey;
+	gnutls_x509_crt_t host_cert;
 };
 typedef struct ssl_data_private *ssl_data_t;
 
