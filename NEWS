@@ -1,3 +1,11 @@
+Version 1.0.4
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Pass host certificate with GNUTLS correctly
+  - Fix connecting to iOS 4.2.1+ devices
+
 Version 1.0.3
 ~~~~~~~~~~~~~
 
