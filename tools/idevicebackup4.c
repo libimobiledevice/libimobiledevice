@@ -47,6 +47,7 @@
 
 static mobilebackup2_client_t mobilebackup2 = NULL;
 static lockdownd_client_t client = NULL;
+static afc_client_t afc = NULL;
 static idevice_t phone = NULL;
 
 static int quit_flag = 0;
@@ -70,6 +71,7 @@ enum device_link_file_status_t {
 	DEVICE_LINK_FILE_STATUS_LAST_HUNK
 };
 
+#if 0
 static void sha1_of_data(const char *input, uint32_t size, unsigned char *hash_out)
 {
 	gcry_md_hash_buffer(GCRY_MD_SHA1, hash_out, input, size);
@@ -142,6 +144,7 @@ static void print_hash(const unsigned char *hash, int len)
 		printf("%02x", hash[i]);
 	}
 }
+#endif
 
 static void notify_cb(const char *notification, void *userdata)
 {
@@ -184,6 +187,71 @@ static void debug_buf(const char *data, const int length)
 	fprintf(stdout, "\n");
 }
 
+static void free_dictionary(char **dictionary)
+{
+	int i = 0;
+
+	if (!dictionary)
+		return;
+
+	for (i = 0; dictionary[i]; i++) {
+		free(dictionary[i]);
+	}
+	free(dictionary);
+}
+
+static void mobilebackup_afc_get_file_contents(const char *filename, char **data, uint64_t *size)
+{
+	if (!afc || !data || !size) {
+		return;
+	}
+
+	char **fileinfo;
+	uint32_t fsize = 0;
+		
+	afc_get_file_info(afc, filename, &fileinfo);
+	if (!fileinfo) {
+		return;
+	}
+	int i;
+	for (i = 0; fileinfo[i]; i+=2) {
+		if (!strcmp(fileinfo[i], "st_size")) {
+			fsize = atol(fileinfo[i+1]);
+			break;
+		}
+	}
+	free_dictionary(fileinfo);
+
+	if (fsize == 0) {
+		return;
+	}
+		
+	uint64_t f = 0;
+	afc_file_open(afc, filename, AFC_FOPEN_RDONLY, &f);
+	if (!f) {
+		return;
+	}
+	char *buf = (char*)malloc((uint32_t)fsize);
+	uint32_t done = 0;
+	while (done < fsize) {
+		uint32_t bread = 0;
+		afc_file_read(afc, f, buf+done, 65536, &bread);
+		if (bread > 0) {
+			
+		} else {
+			break;
+		}
+		done += bread;
+	}
+	if (done == fsize) {
+		*size = fsize;
+		*data = buf;
+	} else {
+		free(buf);
+	}
+	afc_file_close(afc, f);
+}
+
 static plist_t mobilebackup_factory_info_plist_new()
 {
 	/* gather data from lockdown */
@@ -209,12 +277,19 @@ static plist_t mobilebackup_factory_info_plist_new()
 	/* FIXME: How is the GUID generated? */
 	plist_dict_insert_item(ret, "GUID", plist_new_string("---"));
 
+	value_node = plist_dict_get_item(root_node, "IntegratedCircuitCardIdentity");
+	if (value_node)
+		plist_dict_insert_item(ret, "ICCID", plist_copy(value_node));
+
 	value_node = plist_dict_get_item(root_node, "InternationalMobileEquipmentIdentity");
 	if (value_node)
 		plist_dict_insert_item(ret, "IMEI", plist_copy(value_node));
 
 	g_get_current_time(&tv);
 	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(tv.tv_sec, tv.tv_usec));
+
+	value_node = plist_dict_get_item(root_node, "PhoneNumber");
+	plist_dict_insert_item(ret, "Phone Number", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
 	plist_dict_insert_item(ret, "Product Type", plist_copy(value_node));
@@ -225,9 +300,13 @@ static plist_t mobilebackup_factory_info_plist_new()
 	value_node = plist_dict_get_item(root_node, "SerialNumber");
 	plist_dict_insert_item(ret, "Serial Number", plist_copy(value_node));
 
+	/* FIXME Sync Settings? */
+
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
 	idevice_get_uuid(phone, &uuid);
 	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(uuid));
+
+	plist_dict_insert_item(ret, "Target Type", plist_new_string("Device"));
 
 	/* uppercase */
 	uuid_uppercase = g_ascii_strup(uuid, -1);
@@ -235,16 +314,54 @@ static plist_t mobilebackup_factory_info_plist_new()
 	free(uuid_uppercase);
 	free(uuid);
 
-	/* FIXME: Embed files as <data> nodes */
+	char *data_buf = NULL;
+	uint64_t data_size = 0;
+	mobilebackup_afc_get_file_contents("/Books/iBooksData2.plist", &data_buf, &data_size);
+	if (data_buf) {
+		plist_dict_insert_item(ret, "iBooks Data 2", plist_new_data(data_buf, data_size));
+		free(data_buf);
+	}
+
 	plist_t files = plist_new_dict();
+	const char *itunesfiles[] = {
+		"ApertureAlbumPrefs",
+		"IC-Info.sidb",
+		"IC-Info.sidv",
+		"PhotosFolderAlbums",
+		"PhotosFolderName",
+		"PhotosFolderPrefs",
+		"iPhotoAlbumPrefs",
+		"iTunesApplicationIDs",
+		"iTunesPrefs",
+		"iTunesPrefs.plist",
+		NULL
+	};
+	int i = 0;
+	for (i = 0; itunesfiles[i]; i++) {
+		data_buf = NULL;
+		data_size = 0;
+		gchar *fname = g_strconcat("/iTunes_Control/iTunes/", itunesfiles[i], NULL);
+		mobilebackup_afc_get_file_contents(fname, &data_buf, &data_size);
+		g_free(fname);
+		if (data_buf) {
+			plist_dict_insert_item(files, itunesfiles[i], plist_new_data(data_buf, data_size));
+			free(data_buf);
+		}
+	}
 	plist_dict_insert_item(ret, "iTunes Files", files);
-	plist_dict_insert_item(ret, "iTunes Version", plist_new_string("9.0.2"));
+
+	plist_t itunes_settings = plist_new_dict();
+	lockdownd_get_value(client, "com.apple.iTunes", NULL, &itunes_settings);
+	plist_dict_insert_item(ret, "iTunes Settings", itunes_settings);
+
+	plist_dict_insert_item(ret, "iTunes Version", plist_new_string("10.0.1"));
 
 	plist_free(root_node);
 
 	return ret;
 }
 
+#if 0
 static void mobilebackup_info_update_last_backup_date(plist_t info_plist)
 {
 	GTimeVal tv = {0, 0};
@@ -259,6 +376,7 @@ static void mobilebackup_info_update_last_backup_date(plist_t info_plist)
 
 	node = NULL;
 }
+#endif
 
 static void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length)
 {
@@ -505,6 +623,7 @@ static int mobilebackup_info_is_current_device(plist_t info)
 	return ret;
 }*/
 
+#if 0
 static int mobilebackup_check_file_integrity(const char *backup_directory, const char *hash, plist_t filedata)
 {
 	char *datapath;
@@ -655,6 +774,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 	plist_free(mdinfo);
 	return res;
 }
+#endif
 
 static void do_post_notification(const char *notification)
 {
@@ -1204,8 +1324,6 @@ int main(int argc, char *argv[])
 			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found.\n", backup_directory);
 			return -1;
 		}
-	} else if (cmd == CMD_BACKUP) {
-		is_full_backup = 1;
 	}
 
 	printf("Backup directory is \"%s\"\n", backup_directory);
@@ -1233,7 +1351,7 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
 	}
 
-	afc_client_t afc = NULL;
+	afc = NULL;
 	if (cmd == CMD_BACKUP) {
 		/* start AFC, we need this for the lock file */
 		port = 0;
@@ -1277,9 +1395,9 @@ int main(int argc, char *argv[])
 			if (info_plist && (cmd == CMD_BACKUP)) {
 				if (mobilebackup_info_is_current_device(info_plist)) {
 					/* update the last backup time within Info.plist */
-					mobilebackup_info_update_last_backup_date(info_plist);
-					remove(info_path);
-					plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+					//mobilebackup_info_update_last_backup_date(info_plist);
+					//remove(info_path);
+					//plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 				} else {
 					printf("Aborting backup. Backup is not compatible with the current device.\n");
 					cmd = CMD_LEAVE;
@@ -1361,17 +1479,14 @@ checkpoint:
 
 			/* Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 
-			/* create new Info.plist on new backups */
-			if (is_full_backup) {
-				if (info_plist) {
-					plist_free(info_plist);
-					info_plist = NULL;
-				}
-				remove(info_path);
-				printf("Creating Info.plist for new backup.\n");
-				info_plist = mobilebackup_factory_info_plist_new();
-				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+			/* re-create Info.plist */
+			if (info_plist) {
+				plist_free(info_plist);
+				info_plist = NULL;
 			}
+			info_plist = mobilebackup_factory_info_plist_new();
+			remove(info_path);
+			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			g_free(info_path);
 
 			plist_free(info_plist);
@@ -1385,10 +1500,10 @@ checkpoint:
 
 			err = mobilebackup2_send_request(mobilebackup2, "Backup", uuid, NULL, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
-				/*if (is_full_backup)
+				if (is_full_backup)
 					printf("Full backup mode.\n");
 				else
-					printf("Incremental backup mode.\n");*/
+					printf("Incremental backup mode.\n");
 				//printf("Please wait. Device is preparing backup data...\n");
 			} else {
 				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
