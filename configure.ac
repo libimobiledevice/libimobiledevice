@@ -9,11 +9,6 @@ AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_PATH_PYTHON(2.3)
-AC_PROG_SWIG(1.3.21)
-AX_SWIG_ENABLE_CXX
-SWIG_PYTHON
-
 dnl libtool versioning
 # +1 : 0 : +1  == adds new functions to the interface
 # +1 : 0 : 0   == changes or removes functions (changes include both
@@ -26,6 +21,7 @@ AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
@@ -37,7 +33,7 @@ PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3 )
 PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
-AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], ["libgcrypt is required to build libimobiledevice"])
+AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice])])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -63,6 +59,10 @@ AC_ARG_WITH([swig],
             [build_swig=false],
 	    [build_swig=true])
 if test "$build_swig" = "true" -a "$SWIG" != "false" ; then
+            AM_PATH_PYTHON(2.3)
+            AC_PROG_SWIG(1.3.21)
+            AX_SWIG_ENABLE_CXX
+            SWIG_PYTHON
             SWIG_SUB=swig
 else
             SWIG_SUB=
