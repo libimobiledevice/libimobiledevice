@@ -3,6 +3,8 @@ Version 1.0.4
 
 * Maintenance release of stable series
 * Changes:
+  - Do not not check for Swig/Python if --without-swig is set
+  - Fail with an error message if libgcrypt is not found
   - Pass host certificate with GNUTLS correctly
   - Fix connecting to iOS 4.2.1+ devices
 
