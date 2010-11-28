@@ -1642,6 +1642,28 @@ checkpoint:
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
+				} else if (!strcmp(dlmsg, "DLMessageCopyItem")) {
+					plist_t srcpath = plist_array_get_item(message, 1);
+					plist_t dstpath = plist_array_get_item(message, 2);
+					errcode = 0;
+					errdesc = NULL;
+					if ((plist_get_node_type(srcpath) == PLIST_STRING) && (plist_get_node_type(dstpath) == PLIST_STRING)) {
+						char *src = NULL;
+						char *dst = NULL;
+						plist_get_string_val(srcpath, &src);
+						plist_get_string_val(dstpath, &dst);
+						if (src && dst) {
+							printf("Copying '%s' to '%s', please wait (TODO: implemented)\n", src, dst);
+							// FIXME: implement
+						}
+						g_free(src);
+						g_free(dst);
+					}
+
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					if (err != MOBILEBACKUP2_E_SUCCESS) {
+						printf("Could not send status response, error %d\n", err);
+					}
 				} else if (!strcmp(dlmsg, "DLMessageProcessMessage")) {
 					node_tmp = plist_array_get_item(message, 1);
 					if (plist_get_node_type(node_tmp) != PLIST_DICT) {
