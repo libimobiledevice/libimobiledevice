@@ -482,14 +482,6 @@ static int plist_strcmp(plist_t node, const char *str)
 	return ret;
 }
 
-static gchar *mobilebackup_build_path(const char *backup_directory, const char *name, const char *extension)
-{
-	gchar *filename = g_strconcat(name, extension, NULL);
-	gchar *path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, filename, NULL);
-	g_free(filename);
-	return path;
-}
-
 /*static void mobilebackup_write_status(const char *path, int status)
 {
 	struct stat st;
@@ -507,35 +499,6 @@ static gchar *mobilebackup_build_path(const char *backup_directory, const char *
 
 	g_free(file_path);
 }*/
-
-static int mobilebackup_read_status(const char *path)
-{
-	int ret = -1;
-	plist_t status_plist = NULL;
-	gchar *file_path = mobilebackup_build_path(path, "Status", ".plist");
-
-	plist_read_from_filename(&status_plist, file_path);
-	g_free(file_path);
-	if (!status_plist) {
-		printf("Could not read Status.plist!\n");
-		return ret;
-	}
-	plist_t node = plist_dict_get_item(status_plist, "SnapshotState");
-	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
-		char *str = NULL;
-		plist_get_string_val(node, &str);
-		if (!strcmp(str, "finished")) {
-			ret = 1;
-		} else {
-			ret = 0;
-		}
-		g_free(str);
-	} else {
-		printf("%s: ERROR could not get SnapshotState key from Status.plist!\n", __func__);
-	}
-	plist_free(status_plist);
-	return ret;
-}
 
 static int mobilebackup_info_is_current_device(plist_t info)
 {
@@ -1460,13 +1423,6 @@ checkpoint:
 			printf("Starting backup...\n");
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
-			gchar *device_backup_dir = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, NULL);
-			if (mobilebackup_read_status(device_backup_dir) <= 0) {
-				gchar *status_plist = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, "Status.plist", NULL);
-				remove(status_plist);
-				g_free(status_plist);
-			}
-			g_free(device_backup_dir);
 
 			/* read the last Manifest.plist */
 			/*
