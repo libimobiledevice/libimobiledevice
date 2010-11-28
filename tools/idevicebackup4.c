@@ -1103,6 +1103,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen-1, &r);
 		debug_buf(fname, r);
 		free(fname);
+		remove(bname);
 	}
 	// TODO error handling?!
 	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
