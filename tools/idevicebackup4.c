@@ -1194,7 +1194,6 @@ int main(int argc, char *argv[])
 	//enum device_link_file_status_t file_status = DEVICE_LINK_FILE_STATUS_NONE;
 //	uint64_t c = 0;
 	mobilebackup2_error_t err;
-	char *manifest_path = NULL;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -1412,9 +1411,6 @@ int main(int argc, char *argv[])
 				cmd = CMD_LEAVE;
 			}
 		}
-
-		/* Manifest.plist (backup manifest (backup state)) */
-		manifest_path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, "Manifest.plist", NULL);
 
 checkpoint:
 
@@ -1834,8 +1830,6 @@ files_out:
 					//mobilebackup_send_error(mobilebackup, "Cancelling DLSendFile");
 
 					/* remove any atomic Manifest.plist.tmp */
-					if (manifest_path)
-						g_free(manifest_path);
 
 					/*manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist.tmp");
 					if (stat(manifest_path, &st) == 0)
@@ -1895,8 +1889,6 @@ files_out:
 			lockfile = 0;
 			do_post_notification(NP_SYNC_DID_FINISH);
 		}
-		if (manifest_path)
-			g_free(manifest_path);
 	} else {
 		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP2_SERVICE_NAME);
 		lockdownd_client_free(client);
