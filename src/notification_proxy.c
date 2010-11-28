@@ -178,6 +178,27 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 		debug_info("Error sending XML plist to device!");
 	}
 
+	// try to read an answer, we just ignore errors here
+	dict = NULL;
+	property_list_service_receive_plist(client->parent, &dict);
+	if (dict) {
+#ifndef STRIP_DEBUG_CODE
+		char *cmd_value = NULL;
+		plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
+		if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
+			plist_get_string_val(cmd_value_node, &cmd_value);
+		}
+
+		if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
+			// this is the expected answer
+		} else {
+			debug_plist(dict);
+		}
+		g_free(cmd_value);
+#endif
+		plist_free(dict);
+	}
+
 	np_unlock(client);
 	return res;
 }
