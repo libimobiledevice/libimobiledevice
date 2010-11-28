@@ -206,7 +206,7 @@ static void mobilebackup_afc_get_file_contents(const char *filename, char **data
 		return;
 	}
 
-	char **fileinfo;
+	char **fileinfo = NULL;
 	uint32_t fsize = 0;
 		
 	afc_get_file_info(afc, filename, &fileinfo);
