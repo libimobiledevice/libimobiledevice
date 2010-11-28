@@ -1881,7 +1881,10 @@ files_out:
 				printf("Backup Successful.\n");
 				//mobilebackup_write_status(backup_directory, 1);
 			} else {
-				printf("Backup Failed.\n");
+				if (quit_flag)
+					printf("Backup Aborted.\n");
+				else
+					printf("Backup Failed.\n");
 			}
 		}
 		if (lockfile) {
