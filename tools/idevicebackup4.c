@@ -764,9 +764,11 @@ static void do_post_notification(const char *notification)
 	}
 }
 
-static void print_progress(double progress)
+static void print_progress(uint64_t current, uint64_t total)
 {
+	gchar *format_size = NULL;
 	int i = 0;
+	double progress = ((double)current/(double)total)*100;
 	if (progress < 0)
 		return;
 
@@ -782,6 +784,14 @@ static void print_progress(double progress)
 		}
 	}
 	printf("] %3.0f%%", progress);
+
+	format_size = g_format_size_for_display(current);
+	printf(" (%s", format_size);
+	g_free(format_size);
+	format_size = g_format_size_for_display(total);
+	printf("/%s)", format_size);
+	g_free(format_size);
+
 	fflush(stdout);
 	if (progress == 100)
 		printf("\n");
@@ -1001,9 +1011,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 		plist_get_uint_val(node, &backup_total_size);
 	}
 	if (backup_total_size > 0) {
-		gchar *format_size = g_format_size_for_display(backup_total_size);
-		printf("Receiving backup data (%s)\n", format_size);
-		g_free(format_size);
+		printf("Receiving backup data\n");
 	}
 
 	do {
@@ -1067,6 +1075,9 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 			if (bdone == blocksize) {
 				backup_real_size += blocksize;
 			}
+			if (backup_total_size > 0) {
+				print_progress(backup_real_size, backup_total_size);
+			}
 			if (quit_flag)
 				break;
 			nlen = 0;
@@ -1082,7 +1093,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 
 		file_count++;
 		if (backup_total_size > 0)
-			print_progress(((double)backup_real_size/(double)backup_total_size)*100);
+			print_progress(backup_real_size, backup_total_size);
 		if (nlen == 0) {
 			break;
 		}
