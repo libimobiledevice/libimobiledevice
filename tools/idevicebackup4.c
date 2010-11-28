@@ -1012,6 +1012,10 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 	}
 	if (backup_total_size > 0) {
 		printf("Receiving backup data\n");
+	} else {
+		// TODO correct?
+		mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+		return 0;
 	}
 
 	do {
