@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gcrypt.h>
 #include <unistd.h>
 
@@ -1125,8 +1126,52 @@ static void handle_list_directory(plist_t message, const char *backup_dir)
 {
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || plist_array_get_size(message) < 2 || !backup_dir) return;
 
-	/* TODO implement, for now we just return an empty listing */
-	mobilebackup2_error_t err = mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+	plist_t node = plist_array_get_item(message, 1);
+	char *str = NULL;
+	if (plist_get_node_type(node) == PLIST_STRING) {
+		plist_get_string_val(node, &str);
+	}
+	if (!str) {
+		printf("ERROR: Malformed DLContentsOfDirectoryMessage\n");
+		// TODO error handling
+		return;
+	}
+
+	gchar *path = g_build_path(G_DIR_SEPARATOR_S, backup_dir, str, NULL);
+	free(str);
+
+	plist_t dirlist = plist_new_dict();
+
+	GDir *cur_dir = g_dir_open(path, 0, NULL);
+	if (cur_dir) {
+		gchar *dir_file;
+		while ((dir_file = g_dir_read_name(cur_dir))) {
+			gchar *fpath = g_build_filename(path, dir_file, NULL);
+			if (fpath) {
+				plist_t fdict = plist_new_dict();
+				GStatBuf st;
+				g_stat(fpath, &st);
+				if (g_file_test(fpath, G_FILE_TEST_IS_DIR)) {
+					plist_dict_insert_item(fdict, "DLFileType", plist_new_string("DLFileTypeDirectory"));
+				} else if (g_file_test(fpath, G_FILE_TEST_IS_REGULAR)) {
+					plist_dict_insert_item(fdict, "DLFileType", plist_new_string("DLFileTypeRegular"));
+				} else {
+					printf("%s: TODO implement other file types\n", __func__);
+				}
+				plist_dict_insert_item(fdict, "DLFileSize", plist_new_uint(st.st_size));
+				plist_dict_insert_item(fdict, "DLFileModificationDate", plist_new_date(st.st_mtime, 0));
+
+				plist_dict_insert_item(dirlist, dir_file, fdict);
+				g_free(fpath);
+			}
+		}
+		g_dir_close(cur_dir);
+	}
+	g_free(path);
+
+	/* TODO error handling */
+	mobilebackup2_error_t err = mobilebackup2_send_status_response(mobilebackup2, 0, NULL, dirlist);
+	plist_free(dirlist);
 	if (err != MOBILEBACKUP2_E_SUCCESS) {
 		printf("Could not send status response, error %d\n", err);
 	}
