@@ -1132,7 +1132,7 @@ static void handle_list_directory(plist_t message, const char *backup_dir)
 		plist_get_string_val(node, &str);
 	}
 	if (!str) {
-		printf("ERROR: Malformed DLContentsOfDirectoryMessage\n");
+		printf("ERROR: Malformed DLContentsOfDirectory message\n");
 		// TODO error handling
 		return;
 	}
@@ -1151,13 +1151,13 @@ static void handle_list_directory(plist_t message, const char *backup_dir)
 				plist_t fdict = plist_new_dict();
 				GStatBuf st;
 				g_stat(fpath, &st);
+				const char *ftype = "DLFileTypeUnknown";
 				if (g_file_test(fpath, G_FILE_TEST_IS_DIR)) {
-					plist_dict_insert_item(fdict, "DLFileType", plist_new_string("DLFileTypeDirectory"));
+					ftype = "DLFileTypeDirectory";
 				} else if (g_file_test(fpath, G_FILE_TEST_IS_REGULAR)) {
-					plist_dict_insert_item(fdict, "DLFileType", plist_new_string("DLFileTypeRegular"));
-				} else {
-					printf("%s: TODO implement other file types\n", __func__);
+					ftype = "DLFileTypeRegular";
 				}
+				plist_dict_insert_item(fdict, "DLFileType", plist_new_string(ftype));
 				plist_dict_insert_item(fdict, "DLFileSize", plist_new_uint(st.st_size));
 				plist_dict_insert_item(fdict, "DLFileModificationDate", plist_new_date(st.st_mtime, 0));
 
