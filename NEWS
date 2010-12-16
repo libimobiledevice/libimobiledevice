@@ -1,16 +1,58 @@
 Version 1.1.0
 ~~~~~~~~~~~~~
 
+* Development release
 * Changes:
   - Implement restoring backups using idevicebackup
-  - Allow connecting without pairing with ideviceinfo
-  - Add idevicepair tool to manage pairings
+  - Allow connecting without pairing using "ideviceinfo -s"
   - Add ideviceenterrecovery tool
   - Add mobilesync service implementation
   - Add restored service implementation for restore mode
+  - Add home_arrest service implementation for document sharing
+  - Add API afc_client_new_from_connection()
+  - Support to fetch wallpaper in sbservices
+  - Support for formatVersion 2 of iOS 4+ in sbservices
+  - Add new lockdownd domains to ideviceinfo
+  - Give the device time to prepare backup data to prevent abort
+  - Improve idevicebackup output
+  - notification_proxy fixes and new notification type
   - Silence some 64bit compiler warnings
   - Fix various memory leaks
   - Update documentation
+* Python Bindings will get refactored completely
+* API is UNSTABLE
+
+Version 1.0.4
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Fix a possible crash in lockdownd_client_new_with_handshake()
+  - Do not not check for Swig/Python if --without-swig is set
+  - Fail with an error message if libgcrypt is not found
+  - Pass host certificate with GNUTLS correctly
+  - Fix connecting to iOS 4.2.1+ devices
+
+Version 1.0.3
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Terminate idevicesyslog on receive errors (like device unplug)
+  - Bugfixes for idevicebackup tool
+  - Hopefully the last fixes for big endian machines
+  - Build fixes for FreeBSD Python support
+  - Fix build on Mac OS X
+
+Version 1.0.2
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Backport new idevicepair tool to manage pairings
+  - Fix a bug causing bad backup data
+  - Silence 64bit compiler warnings
+  - Plug some memory leaks
 
 Version 1.0.1
 ~~~~~~~~~~~~~
