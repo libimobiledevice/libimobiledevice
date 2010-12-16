@@ -287,7 +287,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 		plist_dict_insert_item(ret, "IMEI", plist_copy(value_node));
 
 	g_get_current_time(&tv);
-	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(tv.tv_sec, tv.tv_usec));
+	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(tv.tv_sec, 0));
 
 	value_node = plist_dict_get_item(root_node, "PhoneNumber");
 	if (value_node && (plist_get_node_type(value_node) == PLIST_STRING)) {
