@@ -1,0 +1,43 @@
+.TH "idevicepair" 1
+.SH NAME
+idevicepair \- Manage pairings with iPhone/iPod Touch/iPad devices and this host.
+.SH SYNOPSIS
+.B idevicepair
+[OPTIONS] COMMAND
+
+.SH DESCRIPTION
+
+Manage pairings with iPhone/iPod Touch/iPad devices and this host.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B hostid
+print the host id of this computer.
+.TP
+.B pair
+pair device with this computer.
+.TP
+.B validate
+validate if device is paired with this computer.
+.TP
+.B unpair
+unpair device with this computer.
+.TP
+.B list
+list devices paired with this computer.
+
+.SH AUTHORS
+Nikias Bassen
+
+Man page written to conform with Debian by Julien Lavergne.
