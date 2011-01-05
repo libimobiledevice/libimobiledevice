@@ -1474,6 +1474,12 @@ checkpoint:
 		switch(cmd) {
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
+
+			/* make sure backup device sub-directory exists */
+			gchar *devbackupdir = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, NULL);
+			g_mkdir(devbackupdir, 0755);
+			g_free(devbackupdir);
+
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
 
