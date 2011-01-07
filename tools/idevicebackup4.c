@@ -1056,7 +1056,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 
 		remove(bname);
 		f = fopen(bname, "wb");
-		while (code == CODE_FILE_DATA) {
+		while (f && (code == CODE_FILE_DATA)) {
 			blocksize = nlen-1;
 			bdone = 0;
 			rlen = 0;
@@ -1090,9 +1090,12 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 				break;
 			}
 		}
-		fclose(f);
-
-		file_count++;
+		if (f) {
+			fclose(f);
+			file_count++;
+		} else {
+			printf("Error opening '%s' for writing: %s\n", bname, strerror(errno));
+		}
 		if (backup_total_size > 0)
 			print_progress(backup_real_size, backup_total_size);
 		if (nlen == 0) {
