@@ -42,8 +42,9 @@
 #define LOCK_ATTEMPTS 50
 #define LOCK_WAIT 200000
 
-#define CODE_NULL 0x00
-#define CODE_ERROR_MSG 0x0b
+#define CODE_SUCCESS 0x00
+#define CODE_ERROR_LOCAL 0x06
+#define CODE_ERROR_REMOTE 0x0b
 #define CODE_FILE_DATA 0x0c
 
 static mobilebackup2_client_t mobilebackup2 = NULL;
@@ -823,35 +824,38 @@ static int handle_send_file(const char *backup_dir, const char *path, plist_t *e
 {
 	uint32_t nlen = 0;
 	uint32_t pathlen = strlen(path);
-	int bytes = 0;
+	uint32_t bytes = 0;
 	gchar *localfile = g_build_path(G_DIR_SEPARATOR_S, backup_dir, path, NULL);
-	char buf[16384];
+	char buf[32768];
 	struct stat fst;
 
 	FILE *f = NULL;
 	uint32_t slen = 0;
 	int errcode = -1;
-	int e = -1;
+	int result = -1;
+	uint32_t length;
+	off_t total;
+	off_t sent;
 
 	mobilebackup2_error_t err;
 
 	/* send path length */
 	nlen = GUINT32_TO_BE(pathlen);
-	err = mobilebackup2_send_raw(mobilebackup2, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	err = mobilebackup2_send_raw(mobilebackup2, (const char*)&nlen, sizeof(nlen), &bytes);
 	if (err != MOBILEBACKUP2_E_SUCCESS) {
 		goto leave_proto_err;
 	}
-	if (bytes != sizeof(nlen)) {
+	if (bytes != (uint32_t)sizeof(nlen)) {
 		err = MOBILEBACKUP2_E_MUX_ERROR;
 		goto leave_proto_err;
 	}
 
 	/* send path */
-	err = mobilebackup2_send_raw(mobilebackup2, path, pathlen, (uint32_t*)&bytes);
+	err = mobilebackup2_send_raw(mobilebackup2, path, pathlen, &bytes);
 	if (err != MOBILEBACKUP2_E_SUCCESS) {
 		goto leave_proto_err;
 	}
-	if ((uint32_t)bytes != pathlen) {
+	if (bytes != pathlen) {
 		err = MOBILEBACKUP2_E_MUX_ERROR;
 		goto leave_proto_err;
 	}
@@ -862,6 +866,17 @@ static int handle_send_file(const char *backup_dir, const char *path, plist_t *e
 		goto leave;
 	}
 
+	total = fst.st_size;
+
+	gchar *format_size = g_format_size_for_display(total);
+	printf("Sending file '%s': (%s)\n", path, format_size);
+	g_free(format_size);
+
+	if (total == 0) {
+		errcode = 0;
+		goto leave;
+	}
+
 	f = fopen(localfile, "rb");
 	if (!f) {
 		printf("%s: Error opening local file '%s': %d\n", __func__, localfile, errno);
@@ -869,53 +884,50 @@ static int handle_send_file(const char *backup_dir, const char *path, plist_t *e
 		goto leave;
 	}
 
-	printf("Sending file '%s'\n", path);
+	sent = 0;
+	do {
+		length = ((total-sent) < (off_t)sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
+		/* send data size (file size + 1) */
+		nlen = GUINT32_TO_BE(length+1);
+		memcpy(buf, &nlen, sizeof(nlen));
+		buf[4] = CODE_FILE_DATA;
+		err = mobilebackup2_send_raw(mobilebackup2, (const char*)buf, 5, &bytes);
+		if (err != MOBILEBACKUP2_E_SUCCESS) {
+			goto leave_proto_err;
+		}
+		if (bytes != 5) {
+			goto leave_proto_err;
+		}
 
-	/* send data size (file size + 1) */
-	uint32_t length = (uint32_t)fst.st_size;
-	nlen = GUINT32_TO_BE(length+1);
-	memcpy(buf, &nlen, sizeof(nlen));
-	/* unknown special byte */
-	buf[4] = 0x0C;
-	err = mobilebackup2_send_raw(mobilebackup2, (const char*)buf, 5, (uint32_t*)&bytes);
-	if (err != MOBILEBACKUP2_E_SUCCESS) {
-		goto leave_proto_err;
-	}
-	if (bytes != 5) {
-		goto leave_proto_err;
-	}
-
-	/* send file contents */
-	uint32_t sent = 0;
-	while (sent < length) {
+		/* send file contents */
 		size_t r = fread(buf, 1, sizeof(buf), f);
 		if (r <= 0) {
 			printf("%s: read error\n", __func__);
 			errcode = errno;
 			goto leave;
 		}
-		err = mobilebackup2_send_raw(mobilebackup2, buf, r, (uint32_t*)&bytes);
+		err = mobilebackup2_send_raw(mobilebackup2, buf, r, &bytes);
 		if (err != MOBILEBACKUP2_E_SUCCESS) {
 			goto leave_proto_err;
 		}
-		if ((uint32_t)bytes != r) {
-			printf("sent only %d from %d\n", bytes, r);
+		if (bytes != (uint32_t)r) {
+			printf("Error: sent only %d of %d bytes\n", bytes, (int)r);
 			goto leave_proto_err;
 		}
 		sent += r;
-	}
+	} while (sent < total);
 	fclose(f);
 	f = NULL;
 	errcode = 0;
 
 leave:
 	if (errcode == 0) {
-		e = 0;
+		result = 0;
 		nlen = 1;
 		nlen = GUINT32_TO_BE(nlen);
 		memcpy(buf, &nlen, 4);
-		buf[4] = 0;
-		mobilebackup2_send_raw(mobilebackup2, buf, 5, &sent);
+		buf[4] = CODE_SUCCESS;
+		mobilebackup2_send_raw(mobilebackup2, buf, 5, &bytes);
 	} else {
 		if (!*errplist) {
 			*errplist = plist_new_dict();
@@ -926,15 +938,15 @@ leave:
 		length = strlen(errdesc);
 		nlen = GUINT32_TO_BE(length+1);
 		memcpy(buf, &nlen, 4);
-		buf[4] = 0x06;
+		buf[4] = CODE_ERROR_LOCAL;
 		slen = 5;
 		memcpy(buf+slen, errdesc, length);
 		slen += length;
-		err = mobilebackup2_send_raw(mobilebackup2, (const char*)buf, slen, (uint32_t*)&bytes);
+		err = mobilebackup2_send_raw(mobilebackup2, (const char*)buf, slen, &bytes);
 		if (err != MOBILEBACKUP2_E_SUCCESS) {
 			printf("could not send message\n");
 		}
-		if ((uint32_t)bytes != slen) {
+		if (bytes != slen) {
 			printf("could only send %d from %d\n", bytes, slen);
 		}
 	}
@@ -943,7 +955,7 @@ leave_proto_err:
 	if (f)
 		fclose(f);
 	g_free(localfile);
-	return e;
+	return result;
 }
 
 static void handle_send_files(plist_t message, const char *backup_dir)
@@ -1050,7 +1062,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 		mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
 
 		/* TODO remove this */
-		if ((code != 0) && (code != CODE_FILE_DATA) && (code != CODE_ERROR_MSG)) {
+		if ((code != CODE_SUCCESS) && (code != CODE_FILE_DATA) && (code != CODE_ERROR_REMOTE)) {
 			printf("Found new flag %02x\n", code);
 		}
 
@@ -1103,7 +1115,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 		}
 
 		/* check if an error message was received */
-		if (code == CODE_ERROR_MSG) {
+		if (code == CODE_ERROR_REMOTE) {
 			/* error message */
 			char *msg = (char*)malloc(nlen);
 			mobilebackup2_receive_raw(mobilebackup2, msg, nlen-1, &r);
