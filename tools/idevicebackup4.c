@@ -1544,7 +1544,6 @@ checkpoint:
 					printf("Full backup mode.\n");
 				else
 					printf("Incremental backup mode.\n");
-				//printf("Please wait. Device is preparing backup data...\n");
 			} else {
 				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
 					printf("ERROR: Could not start backup process: backup protocol version mismatch!\n");
@@ -1553,7 +1552,7 @@ checkpoint:
 				} else {
 					printf("ERROR: Could not start backup process: unspecified error occured\n");
 				}
-				break;
+				cmd = CMD_LEAVE;
 			}
 			break;
 			case CMD_RESTORE:
@@ -1573,6 +1572,13 @@ checkpoint:
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", uuid, uuid, opts);
 			plist_free(opts);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
+				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
+					printf("ERROR: Could not start restore process: backup protocol version mismatch!\n");
+				} else if (err == MOBILEBACKUP2_E_REPLY_NOT_OK) {
+					printf("ERROR: Could not start restore process: device refused to start the restore process.\n");
+				} else {
+					printf("ERROR: Could not start restore process: unspecified error occured\n");
+				}
 				cmd = CMD_LEAVE;
 			}
 			break;
@@ -1580,6 +1586,7 @@ checkpoint:
 			printf("Requesting backup info from device...\n");
 			err = mobilebackup2_send_request(mobilebackup2, "Info", uuid, NULL, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
+				printf("Error requesting backup info from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
 			}
 			break;
@@ -1587,6 +1594,7 @@ checkpoint:
 			printf("Requesting backup list from device...\n");
 			err = mobilebackup2_send_request(mobilebackup2, "List", uuid, NULL, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
+				printf("Error requesting backup list from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
 			}
 			break;
