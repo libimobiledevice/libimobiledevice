@@ -484,23 +484,31 @@ static int plist_strcmp(plist_t node, const char *str)
 	return ret;
 }
 
-/*static void mobilebackup_write_status(const char *path, int status)
+static int mobilebackup_status_check_snapshot_state(const char *path, const char *uuid, const char *matches)
 {
-	struct stat st;
-	plist_t status_plist = plist_new_dict();
-	plist_dict_insert_item(status_plist, "Backup Success", plist_new_bool(status));
-	gchar *file_path = mobilebackup_build_path(path, "Status", ".plist");
+	int ret = -1;
+	plist_t status_plist = NULL;
+	gchar *file_path = g_build_path(G_DIR_SEPARATOR_S, path, uuid, "Status.plist", NULL);
 
-	if (stat(file_path, &st) == 0)
-		remove(file_path);
-
-	plist_write_to_filename(status_plist, file_path, PLIST_FORMAT_XML);
-
-	plist_free(status_plist);
-	status_plist = NULL;
-
+	plist_read_from_filename(&status_plist, file_path);
 	g_free(file_path);
-}*/
+	if (!status_plist) {
+		printf("Could not read Status.plist!\n");
+		return ret;
+	}
+	plist_t node = plist_dict_get_item(status_plist, "SnapshotState");
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+		char* sval = NULL;
+		plist_get_string_val(node, &sval);
+		if (sval) {
+			ret = (strcmp(sval, matches) == 0) ? 1 : 0;
+		}
+	} else {
+		printf("%s: ERROR could not get SnapshotState key from Status.plist!\n", __func__);
+	}
+	plist_free(status_plist);
+	return ret;
+}
 
 static int mobilebackup_info_is_current_device(plist_t info)
 {
@@ -1357,7 +1365,7 @@ int main(int argc, char *argv[])
 	if (cmd == CMD_RESTORE) {
 		if (stat(info_path, &st) != 0) {
 			g_free(info_path);
-			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found.\n", backup_directory);
+			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UUID %s.\n", backup_directory, uuid);
 			return -1;
 		}
 	}
@@ -1550,6 +1558,14 @@ checkpoint:
 			break;
 			case CMD_RESTORE:
 			/* TODO: verify battery on AC enough battery remaining */
+
+			/* verify if Status.plist says we read from an successful backup */
+			if (!mobilebackup_status_check_snapshot_state(backup_directory, uuid, "finished")) {
+				printf("ERROR: Cannot ensure we restore from a successful backup. Aborting.\n");
+				cmd = CMD_LEAVE;
+				break;
+			}
+
 			printf("Starting Restore...\n");
 
 			plist_t opts = plist_new_dict();
@@ -1938,7 +1954,6 @@ files_out:
 				}
 			} while (1);
 
-			printf("Received %d files from device.\n", file_count);
 #if 0
 			if (!quit_flag && !plist_strcmp(node, "DLMessageProcessMessage")) {
 				node_tmp = plist_array_get_item(message, 1);
@@ -1975,15 +1990,19 @@ files_out:
 				}
 			}
 #endif
-			if (backup_ok) {
-				// /* Status.plist (Info on how the backup process turned out) */
-				printf("Backup Successful.\n");
-				//mobilebackup_write_status(backup_directory, 1);
-			} else {
-				if (quit_flag)
-					printf("Backup Aborted.\n");
-				else
-					printf("Backup Failed.\n");
+			if (cmd == CMD_BACKUP) {
+				printf("Received %d files from device.\n", file_count);
+				if (mobilebackup_status_check_snapshot_state(backup_directory, uuid, "finished")) {
+					printf("Backup Successful.\n");
+				} else {
+					if (quit_flag)
+						printf("Backup Aborted.\n");
+					else
+						printf("Backup Failed.\n");
+				}
+			} else if (cmd == CMD_RESTORE) {
+				// TODO: check for success/failure
+				printf("Restore operation finished. The device should reboot now to complete the process.\n");
 			}
 		}
 		if (lockfile) {
