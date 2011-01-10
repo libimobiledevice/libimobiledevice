@@ -234,16 +234,47 @@ leave:
 }
 
 /**
- * TODO
+ * Receives a DL* message plist from the device.
+ * This function is a wrapper around device_link_service_receive_message.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param msg_plist Pointer to a plist that will be set to the contents of the
+ *    message plist upon successful return.
+ * @param dlmessage A pointer that will be set to a newly allocated char*
+ *     containing the DL* string from the given plist. It is up to the caller
+ *     to free the allocated memory. If this parameter is NULL
+ *     it will be ignored.
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if a DL* message was received,
+ *    MOBILEBACKUP2_E_INVALID_ARG if client or message is invalid,
+ *    MOBILEBACKUP2_E_PLIST_ERROR if the received plist is invalid
+ *    or is not a DL* message plist, or MOBILEBACKUP2_E_MUX_ERROR if
+ *    receiving from the device failed.
  */
 mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage)
 {
 	return mobilebackup2_error(device_link_service_receive_message(client->parent, msg_plist, dlmessage));
 }
 
+/**
+ * Send binary data to the device.
+ *
+ * @note This function returns MOBILEBACKUP2_E_SUCCESS even if less than the
+ *     requested length has been sent. The fourth parameter is required and
+ *     must be checked to ensure if the whole data has been sent.
+ *
+ * @param client The MobileBackup client to send to.
+ * @param data Pointer to the data to send
+ * @param length Number of bytes to send
+ * @param bytes Number of bytes actually sent
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if any data was successfully sent,
+ *     MOBILEBACKUP2_E_INVALID_ARG if one of the parameters is invalid,
+ *     or MOBILEBACKUP2_E_MUX_ERROR if sending of the data failed.
+ */
 mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes)
 {
-	if (!client || !client->parent)
+	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	*bytes = 0;
@@ -267,9 +298,27 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
 	}
 }
 
+/**
+ * Receive binary from the device.
+ *
+ * @note This function returns MOBILEBACKUP2_E_SUCCESS even if no data
+ *     has been received (unless a communication error occured).
+ *     The fourth parameter is required and must be checked to know how
+ *     many bytes were actually received.
+ *
+ * @param client The MobileBackup client to receive from.
+ * @param data Pointer to a buffer that will be filled with the received data.
+ * @param length Number of bytes to receive. The data buffer needs to be large
+ *     enough to store this amount of data.
+ * @paran bytes Number of bytes actually received.
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if any or no data was received,
+ *     MOBILEBACKUP2_E_INVALID_ARG if one of the parameters is invalid,
+ *     or MOBILEBACKUP2_E_MUX_ERROR if receiving the data failed.
+ */
 mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
 {
-	if (!client || !client->parent)
+	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	idevice_connection_t conn = client->parent->parent->connection;
@@ -295,7 +344,12 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 }
 
 /**
- * TODO
+ * Performs the mobilebackup2 protocol version exchange.
+ * 
+ * @param The MobileBackup client to use.
+ * 
+ * @return MOBILEBACKUP2_E_SUCCESS on success, or a MOBILEBACKUP2_E_* error
+ *     code otherwise.
  */
 mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client)
 {
@@ -386,6 +440,18 @@ mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, 
 	return err;
 }
 
+/**
+ * Sends a DLMessageStatusResponse to the device.
+ * 
+ * @param client The MobileBackup client to use.
+ * @param status_code The status code to send.
+ * @param status1 A status message to send. Can be NULL if not required.
+ * @param status2 An additional status plist to attach to the response.
+ *     Can be NULL if not required.
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS on success, MOBILEBACKUP2_E_INVALID_ARG
+ *     if client is invalid, or another MOBILEBACKUP2_E_* otherwise.
+ */
 mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2)
 {
 	if (!client || !client->parent)
