@@ -377,7 +377,7 @@ static int plist_write_to_filename(plist_t plist, const char *filename, enum pli
 	return 1;
 }
 
-static int mobilebackup_status_check_snapshot_state(const char *path, const char *uuid, const char *matches)
+static int mb2_status_check_snapshot_state(const char *path, const char *uuid, const char *matches)
 {
 	int ret = -1;
 	plist_t status_plist = NULL;
@@ -520,7 +520,7 @@ static void print_progress(uint64_t current, uint64_t total)
 		printf("\n");
 }
 
-static void multi_status_add_file_error(plist_t status_dict, const char *path, int error_code, const char *error_message)
+static void mb2_multi_status_add_file_error(plist_t status_dict, const char *path, int error_code, const char *error_message)
 {
 	if (!status_dict) return;
 	plist_t filedict = plist_new_dict();
@@ -541,7 +541,7 @@ static int errno_to_device_error(int errno_value)
 	}
 }
 
-static int handle_send_file(const char *backup_dir, const char *path, plist_t *errplist)
+static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_t *errplist)
 {
 	uint32_t nlen = 0;
 	uint32_t pathlen = strlen(path);
@@ -654,7 +654,7 @@ leave:
 			*errplist = plist_new_dict();
 		}
 		char *errdesc = strerror(errcode);
-		multi_status_add_file_error(*errplist, path, errno_to_device_error(errcode), errdesc);
+		mb2_multi_status_add_file_error(*errplist, path, errno_to_device_error(errcode), errdesc);
 		
 		length = strlen(errdesc);
 		nlen = GUINT32_TO_BE(length+1);
@@ -679,7 +679,7 @@ leave_proto_err:
 	return result;
 }
 
-static void handle_send_files(plist_t message, const char *backup_dir)
+static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 {
 	uint32_t cnt; 
 	uint32_t i = 0;
@@ -702,7 +702,7 @@ static void handle_send_files(plist_t message, const char *backup_dir)
 		if (!str)
 			continue;
 
-		if (handle_send_file(backup_dir, str, &errplist) < 0) {
+		if (mb2_handle_send_file(backup_dir, str, &errplist) < 0) {
 			//printf("Error when sending file '%s' to device\n", str);
 			// TODO: perhaps we can continue, we've got a multi status response?!
 			break;
@@ -721,7 +721,7 @@ static void handle_send_files(plist_t message, const char *backup_dir)
 	}
 }
 
-static int handle_receive_files(plist_t message, const char *backup_dir)
+static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 {
 	uint64_t backup_real_size = 0;
 	uint64_t backup_total_size = 0;
@@ -858,7 +858,7 @@ static int handle_receive_files(plist_t message, const char *backup_dir)
 	return file_count;
 }
 
-static void handle_list_directory(plist_t message, const char *backup_dir)
+static void mb2_handle_list_directory(plist_t message, const char *backup_dir)
 {
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || plist_array_get_size(message) < 2 || !backup_dir) return;
 
@@ -913,7 +913,7 @@ static void handle_list_directory(plist_t message, const char *backup_dir)
 	}
 }
 
-static void handle_make_directory(plist_t message, const char *backup_dir)
+static void mb2_handle_make_directory(plist_t message, const char *backup_dir)
 {
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || plist_array_get_size(message) < 2 || !backup_dir) return;
 
@@ -1248,7 +1248,7 @@ checkpoint:
 			/* TODO: verify battery on AC enough battery remaining */
 
 			/* verify if Status.plist says we read from an successful backup */
-			if (!mobilebackup_status_check_snapshot_state(backup_directory, uuid, "finished")) {
+			if (!mb2_status_check_snapshot_state(backup_directory, uuid, "finished")) {
 				printf("ERROR: Cannot ensure we restore from a successful backup. Aborting.\n");
 				cmd = CMD_LEAVE;
 				break;
@@ -1322,16 +1322,16 @@ checkpoint:
 				
 				if (!strcmp(dlmsg, "DLMessageDownloadFiles")) {
 					/* device wants to download files from the computer */
-					handle_send_files(message, backup_directory);
+					mb2_handle_send_files(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageUploadFiles")) {
 					/* device wants to send files to the computer */
-					file_count += handle_receive_files(message, backup_directory);
+					file_count += mb2_handle_receive_files(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
-					handle_list_directory(message, backup_directory);
+					mb2_handle_list_directory(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageCreateDirectory")) {
 					/* make a directory */
-					handle_make_directory(message, backup_directory);
+					mb2_handle_make_directory(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageMoveFiles")) {
 					/* perform a series of rename operations */
 					plist_t moves = plist_array_get_item(message, 1);
@@ -1500,7 +1500,7 @@ files_out:
 
 			if (cmd == CMD_BACKUP) {
 				printf("Received %d files from device.\n", file_count);
-				if (mobilebackup_status_check_snapshot_state(backup_directory, uuid, "finished")) {
+				if (mb2_status_check_snapshot_state(backup_directory, uuid, "finished")) {
 					printf("Backup Successful.\n");
 				} else {
 					if (quit_flag)
