@@ -757,10 +757,18 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		if (nlen == 0) {
 			// we're done here
 			break;
+		} else if (nlen > 4096) {
+			// too very long path
+			printf("ERROR: %s: too long device filename (%d)!\n", __func__, nlen);
+			break;
 		}
 		fname = (char*)malloc(nlen+1);
 		r = 0;
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen, &r);
+		if (r != nlen) {
+			printf("ERROR: %s: could not read device filename\n", __func__);
+			break;
+		}
 		fname[r] = 0;
 		// we don't need this name
 		//printf("\n%s\n", fname);
@@ -768,19 +776,35 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
 		nlen = GUINT32_FROM_BE(nlen);
+		if (nlen == 0) {
+			printf("ERROR: %s: zero-length backup filename!\n", __func__);
+			break;
+		} else if (nlen > 4096) {
+			printf("ERROR: %s: too long backup filename (%d)!\n", __func__, nlen);
+			break;
+		}
 		fname = (char*)malloc(nlen+1);
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen, &r);
 		if (r != nlen) {
-			fprintf(stderr, "hmmm.... received %d from %d\n", r, nlen);
+			printf("ERROR: %s: could not receive backup filename!\n", __func__);
+			break;
 		}
 		fname[r] = 0;
 		bname = g_build_path(G_DIR_SEPARATOR_S, backup_dir, fname, NULL);
 		free(fname);
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
+		if (r != 4) {
+			printf("ERROR: %s: could not receive code length!\n", __func__);
+			break;
+		}
 		nlen = GUINT32_FROM_BE(nlen);
 		code = 0;
 		mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
+		if (r != 1) {
+			printf("ERROR: %s: could not receive code!\n", __func__);
+			break;
+		}
 
 		/* TODO remove this */
 		if ((code != CODE_SUCCESS) && (code != CODE_FILE_DATA) && (code != CODE_ERROR_REMOTE)) {
