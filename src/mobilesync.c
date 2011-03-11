@@ -75,7 +75,7 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
  *     mobilesync_client_t upon successful return.
  *
  * @retval MOBILESYNC_E_SUCCESS on success
- * @retval MOBILESYNC_E_INVALID ARG if one or more parameters are invalid
+ * @retval MOBILESYNC_E_INVALID_ARG if one or more parameters are invalid
  * @retval DEVICE_LINK_SERVICE_E_BAD_VERSION if the mobilesync version on
  * the device is newer.
  */
