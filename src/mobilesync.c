@@ -42,7 +42,7 @@
  * Convert an device_link_service_error_t value to an mobilesync_error_t value.
  * Used internally to get correct error codes when using device_link_service stuff.
  *
- * @param err An device_link_service_error_t error code
+ * @param err A device_link_service_error_t error code
  *
  * @return A matching mobilesync_error_t error code,
  *     MOBILESYNC_E_UNKNOWN_ERROR otherwise.
@@ -440,7 +440,7 @@ mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client
  *
  * @param client The mobilesync client
  * @param entities A pointer to store the changed entity records as a PLIST_DICT
- * @param is_last_record A pointer to store a flag indiciating if this submission is the last one
+ * @param is_last_record A pointer to store a flag indicating if this submission is the last one
  * @param actions A pointer to additional flags the device is sending or NULL to ignore
  *
  * @retval MOBILESYNC_E_SUCCESS on success
@@ -638,11 +638,11 @@ mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_cli
 }
 
 /**
- * Sends changed entitites of the currently set data class to the device
+ * Sends changed entities of the currently set data class to the device
  *
  * @param client The mobilesync client
  * @param entities The changed entity records as a PLIST_DICT
- * @param is_last_record A flag indiciating if this submission is the last one
+ * @param is_last_record A flag indicating if this submission is the last one
  * @param actions Additional actions for the device created with mobilesync_actions_new()
  *    or NULL if no actions should be passed
  *
@@ -764,7 +764,7 @@ mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plis
 }
 
 /**
- * Cancells a running synchronization session with a device at any time.
+ * Cancels a running synchronization session with a device at any time.
  *
  * @param client The mobilesync client
  * @param reason The reason to supply to the device for cancelling
@@ -827,7 +827,7 @@ mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const cha
 /**
  * Free memory used by anchors.
  *
- * @param anchors The anchors free.
+ * @param anchors The anchors to free.
  */
 void mobilesync_anchors_free(mobilesync_anchors_t anchors)
 {
@@ -862,7 +862,7 @@ plist_t mobilesync_actions_new()
  * @note The known keys so far are "SyncDeviceLinkEntityNamesKey" which expects
  *       an array of entity names, followed by a count paramter as well as
  *       "SyncDeviceLinkAllRecordsOfPulledEntityTypeSentKey" which expects an
- *       integer to use as a boolean value indiciating that the device should
+ *       integer to use as a boolean value indicating that the device should
  *       link submitted changes and report remapped identifiers.
  */
 void mobilesync_actions_add(plist_t actions, ...)
