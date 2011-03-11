@@ -39,12 +39,12 @@
 #define EMPTY_PARAMETER_STRING "___EmptyParameterString___"
 
 /**
- * Convert an device_link_service_error_t value to an mobilesync_error_t value.
+ * Convert an #device_link_service_error_t value to an #mobilesync_error_t value.
  * Used internally to get correct error codes when using device_link_service stuff.
  *
- * @param err A device_link_service_error_t error code
+ * @param err A #device_link_service_error_t error code
  *
- * @return A matching mobilesync_error_t error code,
+ * @return A matching #mobilesync_error_t error code,
  *     MOBILESYNC_E_UNKNOWN_ERROR otherwise.
  */
 static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
@@ -70,9 +70,9 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
  * Connects to the mobilesync service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param port Destination port (usually given by lockdownd_start_service()).
  * @param client Pointer that will be set to a newly allocated
- *     mobilesync_client_t upon successful return.
+ *     #mobilesync_client_t upon successful return.
  *
  * @retval MOBILESYNC_E_SUCCESS on success
  * @retval MOBILESYNC_E_INVALID_ARG if one or more parameters are invalid
@@ -116,7 +116,7 @@ mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port,
  * @param client The mobilesync client to disconnect and free.
  *
  * @retval MOBILESYNC_E_SUCCESS on success
- * @retval MOBILESYNC_E_INVALID_ARG if client is NULL.
+ * @retval MOBILESYNC_E_INVALID_ARG if \a client is NULL.
  */
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
@@ -805,7 +805,7 @@ mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* rea
  *   if none is known yet which for instance is true on first synchronization.
  * @param computer_anchor An arbitrary string to use as anchor for the computer.
  * 
- * @return A new mobilesync_anchors_t struct. Must be freed using mobilesync_anchors_free().
+ * @return A new #mobilesync_anchors_t struct. Must be freed using mobilesync_anchors_free().
  */
 mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor)
 {
