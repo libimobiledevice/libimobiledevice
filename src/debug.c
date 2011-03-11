@@ -43,6 +43,7 @@ void idevice_set_debug_level(int level)
 	debug_level = level;
 }
 
+#ifndef STRIP_DEBUG_CODE
 static void debug_print_line(const char *func, const char *file, int line, const char *buffer)
 {
 	char *str_time = NULL;
@@ -70,6 +71,7 @@ static void debug_print_line(const char *func, const char *file, int line, const
 
 	free (header);
 }
+#endif
 
 inline void debug_info_real(const char *func, const char *file, int line, const char *format, ...)
 {
