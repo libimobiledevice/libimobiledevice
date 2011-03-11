@@ -52,24 +52,27 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
 
-python_bindings=yes
 AC_ARG_WITH([swig],
             [AS_HELP_STRING([--without-swig],
             [build Python bindings using swig (default is yes)])],
             [build_swig=false],
 	    [build_swig=true])
-if test "$build_swig" = "true" -a "$SWIG" != "false" ; then
+if test "$build_swig" = "true"; then
             AM_PATH_PYTHON(2.3)
             AC_PROG_SWIG(1.3.21)
             AX_SWIG_ENABLE_CXX
             SWIG_PYTHON
-            SWIG_SUB=swig
 else
-            SWIG_SUB=
-	    python_bindings=no
+            SWIG=false
 fi
 
-AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG_SUB" = "xswig"])
+if [test "x$SWIG" != "xfalse"]; then
+            python_bindings=yes
+else
+            python_bindings=no
+fi
+
+AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
 
 AC_SUBST([DEV_SUB])
 
