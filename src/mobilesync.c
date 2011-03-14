@@ -516,6 +516,78 @@ mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_
 }
 
 /**
+ * Requests the device to delete all records of the supplied data class
+ *
+ * @note The operation must be called outside of the regular synchronization loop.
+ *
+ * @param client The mobilesync client
+ * @param data_class The data class identifier
+ *
+ * @retval MOBILESYNC_E_SUCCESS on success
+ * @retval MOBILESYNC_E_INVALID_ARG if one of the parameters is invalid
+ * @retval MOBILESYNC_E_PLIST_ERROR if the received plist is not of valid form
+ */
+mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client, const char *data_class)
+{
+	if (!client || !client->data_class) {
+		return MOBILESYNC_E_INVALID_ARG;
+	}
+
+	mobilesync_error_t err = MOBILESYNC_E_UNKNOWN_ERROR;
+	plist_t msg = NULL;
+	plist_t response_type_node = NULL;
+	char *response_type = NULL;
+
+	msg = plist_new_array();
+	plist_array_append_item(msg, plist_new_string("SDMessageClearAllRecordsOnDevice"));
+	plist_array_append_item(msg, plist_new_string(data_class));
+	plist_array_append_item(msg, plist_new_string(EMPTY_PARAMETER_STRING));
+
+	err = mobilesync_send(client, msg);
+
+	if (err != MOBILESYNC_E_SUCCESS) {
+		goto out;
+	}
+
+	plist_free(msg);
+	msg = NULL;
+
+	err = mobilesync_receive(client, &msg);
+
+	if (err != MOBILESYNC_E_SUCCESS) {
+		goto out;
+	}
+
+	response_type_node = plist_array_get_item(msg, 0);
+	if (!response_type_node) {
+		err = MOBILESYNC_E_PLIST_ERROR;
+		goto out;
+	}
+
+	plist_get_string_val(response_type_node, &response_type);
+	if (!response_type) {
+		err = MOBILESYNC_E_PLIST_ERROR;
+		goto out;
+	}
+
+	if (!strcmp(response_type, "SDMessageDeviceWillClearAllRecords")) {
+		err = MOBILESYNC_E_SUCCESS;
+	}
+
+	out:
+	if (response_type) {
+		free(response_type);
+		response_type = NULL;
+	}
+	if (msg) {
+		plist_free(msg);
+		msg = NULL;
+	}
+
+	return err;
+}
+
+/**
  * Acknowledges to the device that the changes have been merged on the computer
  *
  * @param client The mobilesync client
