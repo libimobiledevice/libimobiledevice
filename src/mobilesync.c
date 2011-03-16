@@ -516,18 +516,17 @@ mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_
 }
 
 /**
- * Requests the device to delete all records of the supplied data class
+ * Requests the device to delete all records of the current data class
  *
- * @note The operation must be called outside of the regular synchronization loop.
+ * @note The operation must be called after starting synchronization.
  *
  * @param client The mobilesync client
- * @param data_class The data class identifier
  *
  * @retval MOBILESYNC_E_SUCCESS on success
  * @retval MOBILESYNC_E_INVALID_ARG if one of the parameters is invalid
  * @retval MOBILESYNC_E_PLIST_ERROR if the received plist is not of valid form
  */
-mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client, const char *data_class)
+mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -540,7 +539,7 @@ mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t cl
 
 	msg = plist_new_array();
 	plist_array_append_item(msg, plist_new_string("SDMessageClearAllRecordsOnDevice"));
-	plist_array_append_item(msg, plist_new_string(data_class));
+	plist_array_append_item(msg, plist_new_string(client->data_class));
 	plist_array_append_item(msg, plist_new_string(EMPTY_PARAMETER_STRING));
 
 	err = mobilesync_send(client, msg);
@@ -570,8 +569,17 @@ mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t cl
 		goto out;
 	}
 
-	if (!strcmp(response_type, "SDMessageDeviceWillClearAllRecords")) {
-		err = MOBILESYNC_E_SUCCESS;
+	if (!strcmp(response_type, "SDMessageCancelSession")) {
+		char *reason = NULL;
+		err = MOBILESYNC_E_CANCELLED;
+		plist_get_string_val(plist_array_get_item(msg, 2), &reason);
+		debug_info("Device cancelled: %s", reason);
+		free(reason);
+		goto out;
+	}
+
+	if (strcmp(response_type, "SDMessageDeviceWillClearAllRecords")) {
+		err = MOBILESYNC_E_PLIST_ERROR;
 	}
 
 	out:

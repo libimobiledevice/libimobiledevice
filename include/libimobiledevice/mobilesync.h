@@ -78,7 +78,7 @@ mobilesync_error_t mobilesync_finish(mobilesync_client_t client);
 
 mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client);
 mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client);
-mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client, const char *data_class);
+mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client);
 
 mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions);
 mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client);
