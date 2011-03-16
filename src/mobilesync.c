@@ -709,6 +709,10 @@ mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_cli
 	err = MOBILESYNC_E_SUCCESS;
 
 	out:
+	if (response_type) {
+		free(response_type);
+		response_type = NULL;
+	}
 	if (msg) {
 		plist_free(msg);
 		msg = NULL;
