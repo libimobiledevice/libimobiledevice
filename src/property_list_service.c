@@ -245,6 +245,11 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 			if (!memcmp(content, "bplist00", 8)) {
 				plist_from_bin(content, pktlen, plist);
 			} else {
+				/* iOS 4.3 hack: plist data might contain invalid null characters, thus we convert those to spaces */
+				for (bytes = 0; bytes < pktlen-1; bytes++) {
+					if (content[bytes] == 0x0)
+						content[bytes] = 0x20;
+				}
 				plist_from_xml(content, pktlen, plist);
 			}
 			if (*plist) {
