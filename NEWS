@@ -1,3 +1,15 @@
+Version 1.0.5
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Add a workaround for a bug in iOS 4.3 affecting lockdown_get_value() which
+    most prominently affected libgpod, gvfs, ideviceinfo and some other tools
+  - Read ProxyDeath message to preventing obsolete messages in device syslog
+  - Rework SWIG detection and includes
+  - Add manpages for ideviceenterrecovery and idevicepair
+  - Add missing libgen.h include to silence compiler warnings
+
 Version 1.0.4
 ~~~~~~~~~~~~~
 
