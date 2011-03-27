@@ -91,6 +91,7 @@ else
             swig_python_bindings=no
 fi
 AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
+AC_SUBST([SWIG_SUB])
 
 AC_ARG_ENABLE([openssl],
             [AS_HELP_STRING([--disable-openssl],
@@ -125,8 +126,6 @@ else
 fi
 
 # Cython Python Bindings
-AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
-
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
             [build Python bindings using Cython (default is yes)])],
@@ -143,13 +142,14 @@ fi
 if [test "x$CYTHON" != "xfalse"]; then
             CYTHON_SUB=cython
             CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist)/plist/cython
+            AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
+            cython_python_bindings=yes
 else
             CYTHON_SUB=
             cython_python_bindings=no
 fi
-AM_CONDITIONAL([HAVE_CYTHON],[test "x$CYTHON" = "xcython"])
-
-AC_SUBST([DEV_SUB])
+AM_CONDITIONAL([HAVE_CYTHON],[test "x$CYTHON_SUB" = "xcython"])
+AC_SUBST([CYTHON_SUB])
 
 AC_ARG_ENABLE([dev-tools],
             [AS_HELP_STRING([--enable-dev-tools],
@@ -169,7 +169,6 @@ else
 fi
 
 AM_CONDITIONAL([ENABLE_DEVTOOLS],[test "x$DEV_SUB" = "xdev"])
-
 AC_SUBST([DEV_SUB])
 
 AC_ARG_ENABLE([debug-code],
