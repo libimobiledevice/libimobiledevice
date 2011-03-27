@@ -7,6 +7,8 @@ if ENABLE_DEVTOOLS
 noinst_PROGRAMS = ideviceclient lckd-client afccheck msyncclient filerelaytest
 
 ideviceclient_SOURCES = ideviceclient.c
+ideviceclient_CFLAGS = $(AM_CFLAGS)
+ideviceclient_LDFLAGS = $(AM_LDFLAGS)
 ideviceclient_LDADD = ../src/libimobiledevice.la
 
 lckd_client_SOURCES = lckdclient.c
