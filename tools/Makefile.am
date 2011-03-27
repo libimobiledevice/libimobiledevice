@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog idevicebackup ideviceimagemounter idevicescreenshot ideviceenterrecovery
+bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog idevicebackup ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
@@ -44,3 +44,8 @@ ideviceenterrecovery_SOURCES = ideviceenterrecovery.c
 ideviceenterrecovery_CFLAGS = $(AM_CFLAGS)
 ideviceenterrecovery_LDFLAGS = $(AM_LDFLAGS)
 ideviceenterrecovery_LDADD = ../src/libimobiledevice.la
+
+idevicedate_SOURCES = idevicedate.c
+idevicedate_CFLAGS = $(AM_CFLAGS)
+idevicedate_LDFLAGS = $(AM_LDFLAGS)
+idevicedate_LDADD = ../src/libimobiledevice.la
