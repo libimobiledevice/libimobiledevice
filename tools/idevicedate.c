@@ -63,11 +63,9 @@ int main(int argc, char *argv[])
 	uuid[0] = 0;
 	uint64_t datetime = 0;
 	time_t rawtime;
-	double offset_from_utc = 0.0;
 	struct tm * tmp;
 	char const *format = NULL;
 	char buffer[80];
-	int tzshift = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -96,7 +94,6 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			tzshift = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--sync")) {
@@ -106,8 +103,7 @@ int main(int argc, char *argv[])
 			/* convert it to local time which sets timezone/daylight variables */
 			tmp = localtime(&setdate);
 			/* recalculate to make it UTC */
-			setdate = mktime(tmp) - timezone - (daylight ? 3600 : 0 );
-			tzshift = 0;
+			setdate = mktime(tmp);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -149,15 +145,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	/* read timezone offset of device, needed for conversions */
-	if (lockdownd_get_value(client, NULL, "TimeZoneOffsetFromUTC", &node) == LOCKDOWN_E_SUCCESS) {
-		if (node) {
-			plist_get_real_val(node, &offset_from_utc);
-			plist_free(node);
-			node = NULL;
-		}
-	}
-
 	/* get or set? */
 	if (setdate == 0) {
 		/* get time value from device */
@@ -170,7 +157,6 @@ int main(int argc, char *argv[])
 				/* date/time calculations */
 				rawtime = (time_t)datetime;
 				tmp = localtime(&rawtime);
-				tmp->tm_gmtoff = offset_from_utc;
 
 				/* finally we format and print the current date */
 				strftime(buffer, 80, format, tmp);
@@ -178,10 +164,6 @@ int main(int argc, char *argv[])
 			}
 		}
 	} else {
-		if (tzshift) {
-			/* if we had provided a timestamp and have to adjust according to the device's timezone */
-			setdate = setdate - offset_from_utc;
-		}
 		datetime = setdate;
 
 		if(lockdownd_set_value(client, NULL, "TimeIntervalSince1970", plist_new_uint(datetime)) == LOCKDOWN_E_SUCCESS) {
