@@ -328,8 +328,10 @@ static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 	g_free(filepath);
 
 	/* Add it to the gnutls_datnum_t structure */
-	data->data = (uint8_t*) content;
-	data->size = size;
+	if (success) {
+		data->data = (uint8_t*) content;
+		data->size = size;
+	}
 
 	return success;
 }
