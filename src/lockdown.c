@@ -850,7 +850,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			debug_info("device refused to send public key.");
 			return ret;
 		}
-		debug_info("device public key follows:\n%s", public_key.data);
+		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
 		/* get libimobiledevice pair_record */
 		ret = generate_pair_record_plist(public_key, NULL, &dict_record);
 		if (ret != LOCKDOWN_E_SUCCESS) {
