@@ -695,6 +695,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 	uint32_t r;
 	char buf[32768];
 	char *fname = NULL;
+	char *dname = NULL;
 	gchar *bname = NULL;
 	char code = 0;
 	char last_code = 0;
@@ -726,17 +727,16 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			printf("ERROR: %s: too long device filename (%d)!\n", __func__, nlen);
 			break;
 		}
-		fname = (char*)malloc(nlen+1);
+		if (dname != NULL)
+			free(dname);
+		dname = (char*)malloc(nlen+1);
 		r = 0;
-		mobilebackup2_receive_raw(mobilebackup2, fname, nlen, &r);
+		mobilebackup2_receive_raw(mobilebackup2, dname, nlen, &r);
 		if (r != nlen) {
 			printf("ERROR: %s: could not read device filename\n", __func__);
 			break;
 		}
-		fname[r] = 0;
-		// we don't need this name
-		//printf("\n%s\n", fname);
-		free(fname);
+		dname[r] = 0;
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
 		nlen = GUINT32_FROM_BE(nlen);
@@ -754,6 +754,8 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			break;
 		}
 		fname[r] = 0;
+		if (bname != NULL)
+			g_free(bname);
 		bname = g_build_path(G_DIR_SEPARATOR_S, backup_dir, fname, NULL);
 		free(fname);
 		nlen = 0;
@@ -847,6 +849,14 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		free(fname);
 		remove(bname);
 	}
+
+	/* clean up */
+	if (bname != NULL)
+		g_free(bname);
+
+	if (dname != NULL)
+		free(dname);
+
 	// TODO error handling?!
 	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
 	return file_count;
