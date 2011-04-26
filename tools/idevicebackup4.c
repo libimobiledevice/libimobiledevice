@@ -70,10 +70,10 @@ enum plist_format_t {
 static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
-		printf("User has aborted on-device\n");
+		printf("User has cancelled the backup process on the device.\n");
 		quit_flag++;
 	} else {
-		printf("unhandled notification '%s' (TODO: implement)\n", notification);
+		printf("Unhandled notification '%s' (TODO: implement)\n", notification);
 	}
 }
 
