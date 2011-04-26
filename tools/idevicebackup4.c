@@ -846,8 +846,6 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		} else {
 			printf("Error opening '%s' for writing: %s\n", bname, strerror(errno));
 		}
-		if (backup_total_size > 0)
-			print_progress(backup_real_size, backup_total_size);
 		if (nlen == 0) {
 			break;
 		}
