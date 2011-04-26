@@ -832,8 +832,10 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			free(msg);
 		}
 	} while (1);
+
+	/* if there are leftovers to read, finish up cleanly */
 	if ((int)nlen-1 > 0) {
-		printf("trashing padding\n");
+		printf("\nDiscarding current data hunk.\n");
 		fname = (char*)malloc(nlen-1);
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen-1, &r);
 		free(fname);
