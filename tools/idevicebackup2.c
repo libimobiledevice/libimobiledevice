@@ -1,5 +1,5 @@
 /*
- * idevicebackup4.c
+ * idevicebackup2.c
  * Command line interface to use the device's backup and restore service
  *
  * Copyright (c) 2009-2010 Martin Szulecki All Rights Reserved.

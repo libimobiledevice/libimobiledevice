@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog idevicebackup idevicebackup4 ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate
+bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog idevicebackup idevicebackup2 ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
@@ -30,10 +30,10 @@ idevicebackup_CFLAGS = $(AM_CFLAGS)
 idevicebackup_LDFLAGS = $(AM_LDFLAGS)
 idevicebackup_LDADD = ../src/libimobiledevice.la
 
-idevicebackup4_SOURCES = idevicebackup4.c
-idevicebackup4_CFLAGS = $(AM_CFLAGS)
-idevicebackup4_LDFLAGS = $(AM_LDFLAGS)
-idevicebackup4_LDADD = ../src/libimobiledevice.la
+idevicebackup2_SOURCES = idevicebackup2.c
+idevicebackup2_CFLAGS = $(AM_CFLAGS)
+idevicebackup2_LDFLAGS = $(AM_LDFLAGS)
+idevicebackup2_LDADD = ../src/libimobiledevice.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
 ideviceimagemounter_CFLAGS = $(AM_CFLAGS)
