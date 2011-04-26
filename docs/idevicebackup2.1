@@ -1,0 +1,40 @@
+.TH "idevicebackup2" 1
+.SH NAME
+idevicebackup2 \- Create or restore backup for iDevices running iOS4+.
+.SH SYNOPSIS
+.B idevicebackup2
+[OPTIONS] CMD DIRECTORY
+
+.SH DESCRIPTION
+
+Create or restore backup from the current or specified directory.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-uuid UUID
+target specific device by its 40-digit device UUID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B backup
+create backup for the device.
+.TP
+.B restore
+restore last backup to the device.
+.TP
+.B info
+show details about last completed backup of device.
+.TP
+.B list
+list files of last completed backup in CSV format.
+
+.SH AUTHORS
+Martin Szulecki
+
+Nikias Bassen
