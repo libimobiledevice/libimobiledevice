@@ -964,10 +964,10 @@ static void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS] CMD DIRECTORY\n", (name ? name + 1: argv[0]));
 	printf("Create or restore backup from the current or specified directory.\n\n");
 	printf("commands:\n");
-	printf("  backup\tSaves a device backup\n");
-	printf("  restore\tRestores a device backup\n");
-	printf("  info\t\tShows details about a completed device backup\n");
-	printf("  list\t\tList files of completed device backup in CSV format\n\n");
+	printf("  backup\tcreate backup for the device\n");
+	printf("  restore\trestore last backup to the device\n");
+	printf("  info\t\tshow details about last completed backup of device\n");
+	printf("  list\t\tlist files of last completed backup in CSV format\n\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
