@@ -697,6 +697,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 	char *fname = NULL;
 	gchar *bname = NULL;
 	char code = 0;
+	char last_code = 0;
 	plist_t node = NULL;
 	FILE *f = NULL;
 	unsigned int file_count = 0;
@@ -762,6 +763,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			break;
 		}
 		nlen = GUINT32_FROM_BE(nlen);
+		last_code = code;
 		code = 0;
 		mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
 		if (r != 1) {
@@ -805,6 +807,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
 			nlen = GUINT32_FROM_BE(nlen);
 			if (nlen > 0) {
+				last_code = code;
 				mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
 			} else {
 				break;
@@ -828,7 +831,10 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			char *msg = (char*)malloc(nlen);
 			mobilebackup2_receive_raw(mobilebackup2, msg, nlen-1, &r);
 			msg[r] = 0;
-			fprintf(stdout, "\nReceived an error message from device: %s\n", msg);
+			/* If sent using CODE_FILE_DATA, end marker will be CODE_ERROR_REMOTE which is not an error! */
+			if (last_code != CODE_FILE_DATA) {
+				fprintf(stdout, "\nReceived an error message from device: %s\n", msg);
+			}
 			free(msg);
 		}
 	} while (1);
