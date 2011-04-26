@@ -453,17 +453,9 @@ static void do_post_notification(const char *notification)
 	}
 }
 
-static void print_progress(uint64_t current, uint64_t total)
+static void print_progress_real(double progress, int flush)
 {
-	gchar *format_size = NULL;
 	int i = 0;
-	double progress = ((double)current/(double)total)*100;
-	if (progress < 0)
-		return;
-
-	if (progress > 100)
-		progress = 100;
-
 	PRINT_VERBOSE(1, "\r[");
 	for(i = 0; i < 50; i++) {
 		if(i < progress / 2) {
@@ -473,6 +465,25 @@ static void print_progress(uint64_t current, uint64_t total)
 		}
 	}
 	PRINT_VERBOSE(1, "] %3.0f%%", progress);
+
+	if (flush > 0) {
+		fflush(stdout);
+		if (progress == 100)
+			PRINT_VERBOSE(1, "\n");
+	}
+}
+
+static void print_progress(uint64_t current, uint64_t total)
+{
+	gchar *format_size = NULL;
+	double progress = ((double)current/(double)total)*100;
+	if (progress < 0)
+		return;
+
+	if (progress > 100)
+		progress = 100;
+
+	print_progress_real((double)progress, 0);
 
 	format_size = g_format_size_for_display(current);
 	PRINT_VERBOSE(1, " (%s", format_size);
@@ -652,6 +663,7 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	uint32_t i = 0;
 	uint32_t sent;
 	plist_t errplist = NULL;
+	double progress = 0;
 	
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || (plist_array_get_size(message) < 2) || !backup_dir) return;
 
@@ -659,8 +671,12 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	cnt = plist_array_get_size(files);
 	if (cnt == 0) return;
 
+	plist_t val = plist_array_get_item(message, 3);
+	plist_get_real_val(val, &progress);
+	val = NULL;
+
 	for (i = 0; i < cnt; i++) {
-		plist_t val = plist_array_get_item(files, i);
+		val = plist_array_get_item(files, i);
 		if (plist_get_node_type(val) != PLIST_STRING) {
 			continue;
 		}
@@ -685,6 +701,11 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	} else {
 		mobilebackup2_send_status_response(mobilebackup2, -13, "Multi status", errplist);
 		plist_free(errplist);
+	}
+
+	if (progress > 0) {
+		print_progress_real(progress, 1);
+		PRINT_VERBOSE(1, "\n");
 	}
 }
 
