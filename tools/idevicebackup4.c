@@ -869,7 +869,7 @@ static void mb2_handle_list_directory(plist_t message, const char *backup_dir)
 	GDir *cur_dir = g_dir_open(path, 0, NULL);
 	if (cur_dir) {
 		gchar *dir_file;
-		while ((dir_file = g_dir_read_name(cur_dir))) {
+		while ((dir_file = (gchar *)g_dir_read_name(cur_dir))) {
 			gchar *fpath = g_build_filename(path, dir_file, NULL);
 			if (fpath) {
 				plist_t fdict = plist_new_dict();
