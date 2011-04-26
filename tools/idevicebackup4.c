@@ -967,6 +967,88 @@ static void mb2_handle_make_directory(plist_t message, const char *backup_dir)
 	}
 }
 
+static void mb2_copy_file_by_path(const gchar *src, const gchar *dst)
+{
+	FILE *from, *to;
+	char ch;
+
+	/* open source file */
+	if ((from = fopen(src, "rb")) == NULL) {
+		printf("Cannot open source path '%s'.\n", src);
+		return;
+	}
+
+	/* open destination file */
+	if ((to = fopen(dst, "wb")) == NULL) {
+		printf("Cannot open destination file '%s'.\n", dst);
+		return;
+	}
+
+	/* copy the file */
+	while(!feof(from)) {
+		ch = fgetc(from);
+		if(ferror(from)) {
+			printf("Error reading source file.\n");
+			break;
+		}
+		if(!feof(from))
+			fputc(ch, to);
+
+		if(ferror(to)) {
+			printf("Error writing destination file.\n");
+			break;
+		}
+	}
+
+	if(fclose(from) == EOF) {
+		printf("Error closing source file.\n");
+	}
+
+	if(fclose(to) == EOF) {
+		printf("Error closing destination file.\n");
+	}
+}
+
+static void mb2_copy_directory_by_path(const gchar *src, const gchar *dst)
+{
+	if (!src || !dst) {
+		return;
+	}
+
+	/* if src does not exist */
+	if (!g_file_test(src, G_FILE_TEST_EXISTS)) {
+		printf("ERROR: Source directory does not exist '%s': %s (%d)\n", src, strerror(errno), errno);
+		return;
+	}
+
+	/* if dst directory does not exist */
+	if (!g_file_test(dst, G_FILE_TEST_IS_DIR)) {
+		/* create it */
+		if (g_mkdir_with_parents(dst, 0755) < 0) {
+			printf("ERROR: Unable to create destination directory '%s': %s (%d)\n", dst, strerror(errno), errno);
+			return;
+		}
+	}
+
+	/* loop over src directory contents */
+	GDir *cur_dir = g_dir_open(src, 0, NULL);
+	if (cur_dir) {
+		gchar *dir_file;
+		while ((dir_file = (gchar *)g_dir_read_name(cur_dir))) {
+			gchar *srcpath = g_build_filename(src, dir_file, NULL);
+			gchar *dstpath = g_build_filename(dst, dir_file, NULL);
+			if (srcpath && dstpath) {
+				/* copy file */
+				mb2_copy_file_by_path(srcpath, dstpath);
+
+				g_free(srcpath);
+				g_free(dstpath);
+			}
+		}
+		g_dir_close(cur_dir);
+	}
+}
+
 /**
  * signal handler function for cleaning up properly
  */
@@ -1450,8 +1532,20 @@ checkpoint:
 						plist_get_string_val(srcpath, &src);
 						plist_get_string_val(dstpath, &dst);
 						if (src && dst) {
-							printf("Copying '%s' to '%s', please wait (TODO: implemented)\n", src, dst);
-							// FIXME: implement
+							gchar *oldpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, src, NULL);
+							gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, dst, NULL);
+
+							PRINT_VERBOSE(1, "Copying '%s' to '%s'\n", src, dst);
+
+							/* check that src exists */
+							if (g_file_test(oldpath, G_FILE_TEST_IS_DIR)) {
+								mb2_copy_directory_by_path(oldpath, newpath);
+							} else if (g_file_test(oldpath, G_FILE_TEST_IS_REGULAR)) {
+								mb2_copy_file_by_path(oldpath, newpath);
+							}
+
+							g_free(newpath);
+							g_free(oldpath);
 						}
 						g_free(src);
 						g_free(dst);
