@@ -67,12 +67,6 @@ enum plist_format_t {
 	PLIST_FORMAT_BINARY
 };
 
-enum device_link_file_status_t {
-	DEVICE_LINK_FILE_STATUS_NONE = 0,
-	DEVICE_LINK_FILE_STATUS_HUNK,
-	DEVICE_LINK_FILE_STATUS_LAST_HUNK
-};
-
 static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
