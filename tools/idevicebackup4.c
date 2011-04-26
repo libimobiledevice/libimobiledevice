@@ -52,7 +52,10 @@ static lockdownd_client_t client = NULL;
 static afc_client_t afc = NULL;
 static idevice_t phone = NULL;
 
+static int verbose = 1;
 static int quit_flag = 0;
+
+#define PRINT_VERBOSE(min_level, ...) if (verbose >= min_level) { printf(__VA_ARGS__); };
 
 enum cmd_mode {
 	CMD_BACKUP,
@@ -70,10 +73,10 @@ enum plist_format_t {
 static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
-		printf("User has cancelled the backup process on the device.\n");
+		PRINT_VERBOSE(1, "User has cancelled the backup process on the device.\n");
 		quit_flag++;
 	} else {
-		printf("Unhandled notification '%s' (TODO: implement)\n", notification);
+		PRINT_VERBOSE(1, "Unhandled notification '%s' (TODO: implement)\n", notification);
 	}
 }
 
@@ -461,26 +464,26 @@ static void print_progress(uint64_t current, uint64_t total)
 	if (progress > 100)
 		progress = 100;
 
-	printf("\r[");
+	PRINT_VERBOSE(1, "\r[");
 	for(i = 0; i < 50; i++) {
 		if(i < progress / 2) {
-			printf("=");
+			PRINT_VERBOSE(1, "=");
 		} else {
-			printf(" ");
+			PRINT_VERBOSE(1, " ");
 		}
 	}
-	printf("] %3.0f%%", progress);
+	PRINT_VERBOSE(1, "] %3.0f%%", progress);
 
 	format_size = g_format_size_for_display(current);
-	printf(" (%s", format_size);
+	PRINT_VERBOSE(1, " (%s", format_size);
 	g_free(format_size);
 	format_size = g_format_size_for_display(total);
-	printf("/%s)     ", format_size);
+	PRINT_VERBOSE(1, "/%s)     ", format_size);
 	g_free(format_size);
 
 	fflush(stdout);
 	if (progress == 100)
-		printf("\n");
+		PRINT_VERBOSE(1, "\n");
 }
 
 static void mb2_multi_status_add_file_error(plist_t status_dict, const char *path, int error_code, const char *error_message)
@@ -553,7 +556,7 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	total = fst.st_size;
 
 	gchar *format_size = g_format_size_for_display(total);
-	printf("Sending file '%s': (%s)\n", path, format_size);
+	PRINT_VERBOSE(1, "Sending file '%s': (%s)\n", path, format_size);
 	g_free(format_size);
 
 	if (total == 0) {
@@ -710,7 +713,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		plist_get_uint_val(node, &backup_total_size);
 	}
 	if (backup_total_size > 0) {
-		printf("Receiving backup data\n");
+		PRINT_VERBOSE(1, "Receiving backup data\n");
 	}
 
 	do {
@@ -775,7 +778,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 
 		/* TODO remove this */
 		if ((code != CODE_SUCCESS) && (code != CODE_FILE_DATA) && (code != CODE_ERROR_REMOTE)) {
-			printf("Found new flag %02x\n", code);
+			PRINT_VERBOSE(1, "Found new flag %02x\n", code);
 		}
 
 		remove(bname);
@@ -843,7 +846,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 
 	/* if there are leftovers to read, finish up cleanly */
 	if ((int)nlen-1 > 0) {
-		printf("\nDiscarding current data hunk.\n");
+		PRINT_VERBOSE(1, "\nDiscarding current data hunk.\n");
 		fname = (char*)malloc(nlen-1);
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen-1, &r);
 		free(fname);
@@ -1019,9 +1022,11 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
+			verbose = 0;
 		}
 		else if (!strcmp(argv[i], "list")) {
 			cmd = CMD_LIST;
+			verbose = 0;
 		}
 		else if (backup_directory == NULL) {
 			backup_directory = argv[i];
@@ -1081,7 +1086,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	printf("Backup directory is \"%s\"\n", backup_directory);
+	PRINT_VERBOSE(1, "Backup directory is \"%s\"\n", backup_directory);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicebackup")) {
 		idevice_free(phone);
@@ -1120,7 +1125,7 @@ int main(int argc, char *argv[])
 	port = 0;
 	ret = lockdownd_start_service(client, MOBILEBACKUP2_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP2_SERVICE_NAME, port);
+		PRINT_VERBOSE(1, "Started \"%s\" service on port %d.\n", MOBILEBACKUP2_SERVICE_NAME, port);
 		mobilebackup2_client_new(phone, port, &mobilebackup2);
 
 		/* send Hello message */
@@ -1133,14 +1138,14 @@ int main(int argc, char *argv[])
 
 		/* check abort conditions */
 		if (quit_flag > 0) {
-			printf("Aborting backup. Cancelled by user.\n");
+			PRINT_VERBOSE(1, "Aborting as requested by user...\n");
 			cmd = CMD_LEAVE;
 			goto checkpoint;
 		}
 
 		/* verify existing Info.plist */
 		if (stat(info_path, &st) == 0) {
-			printf("Reading Info.plist from backup.\n");
+			PRINT_VERBOSE(1, "Reading Info.plist from backup.\n");
 			plist_read_from_filename(&info_plist, info_path);
 
 			if (!info_plist) {
@@ -1207,7 +1212,7 @@ checkpoint:
 
 		switch(cmd) {
 			case CMD_BACKUP:
-			printf("Starting backup...\n");
+			PRINT_VERBOSE(1, "Starting backup...\n");
 
 			/* make sure backup device sub-directory exists */
 			gchar *devbackupdir = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, NULL);
@@ -1231,14 +1236,15 @@ checkpoint:
 			info_plist = NULL;
 
 			/* request backup from device with manifest from last backup */
-			printf("Requesting backup from device...\n");
+			PRINT_VERBOSE(1, "Requesting backup from device...\n");
 
 			err = mobilebackup2_send_request(mobilebackup2, "Backup", uuid, NULL, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
-				if (is_full_backup)
-					printf("Full backup mode.\n");
-				else
-					printf("Incremental backup mode.\n");
+				if (is_full_backup) {
+					PRINT_VERBOSE(1, "Full backup mode.\n");
+				}	else {
+					PRINT_VERBOSE(1, "Incremental backup mode.\n");
+				}
 			} else {
 				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
 					printf("ERROR: Could not start backup process: backup protocol version mismatch!\n");
@@ -1260,7 +1266,7 @@ checkpoint:
 				break;
 			}
 
-			printf("Starting Restore...\n");
+			PRINT_VERBOSE(1, "Starting Restore...\n");
 
 			plist_t opts = plist_new_dict();
 			plist_dict_insert_item(opts, "shouldRestoreSystemFiles", plist_new_bool(0));
@@ -1278,7 +1284,7 @@ checkpoint:
 			}
 			break;
 			case CMD_INFO:
-			printf("Requesting backup info from device...\n");
+			PRINT_VERBOSE(1, "Requesting backup info from device...\n");
 			err = mobilebackup2_send_request(mobilebackup2, "Info", uuid, NULL, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting backup info from device, error code %d\n", err);
@@ -1286,7 +1292,7 @@ checkpoint:
 			}
 			break;
 			case CMD_LIST:
-			printf("Requesting backup list from device...\n");
+			PRINT_VERBOSE(1, "Requesting backup list from device...\n");
 			err = mobilebackup2_send_request(mobilebackup2, "List", uuid, NULL, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting backup list from device, error code %d\n", err);
@@ -1321,7 +1327,7 @@ checkpoint:
 				}
 				mobilebackup2_receive_message(mobilebackup2, &message, &dlmsg);
 				if (!message || !dlmsg) {
-					printf("Device is not ready yet. Going to try again in 2 seconds...\n");
+					PRINT_VERBOSE(1, "Device is not ready yet. Going to try again in 2 seconds...\n");
 					sleep(2);
 					goto files_out;
 				}
@@ -1342,7 +1348,7 @@ checkpoint:
 					/* perform a series of rename operations */
 					plist_t moves = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_dict_get_size(moves);
-					printf("Moving %d file%s\n", cnt, (cnt == 1) ? "" : "s");
+					PRINT_VERBOSE(1, "Moving %d file%s\n", cnt, (cnt == 1) ? "" : "s");
 					plist_dict_iter iter = NULL;
 					plist_dict_new_iter(moves, &iter);
 					errcode = 0;
@@ -1388,7 +1394,7 @@ checkpoint:
 				} else if (!strcmp(dlmsg, "DLMessageRemoveFiles")) {
 					plist_t removes = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_array_get_size(removes);
-					printf("Removing %d file%s\n", cnt, (cnt == 1) ? "" : "s");
+					PRINT_VERBOSE(1, "Removing %d file%s\n", cnt, (cnt == 1) ? "" : "s");
 					uint32_t ii = 0;
 					errcode = 0;
 					errdesc = NULL;
@@ -1470,7 +1476,8 @@ checkpoint:
 					if (nn && (plist_get_node_type(nn) == PLIST_STRING)) {
 						str = NULL;
 						plist_get_string_val(nn, &str);
-						printf("Content:\n%s\n", str);
+						PRINT_VERBOSE(1, "Content:\n");
+						printf("%s", str);
 						free(str);
 					}
 					break;
@@ -1505,18 +1512,19 @@ files_out:
 			} while (1);
 
 			if (cmd == CMD_BACKUP) {
-				printf("Received %d files from device.\n", file_count);
+				PRINT_VERBOSE(1, "Received %d files from device.\n", file_count);
 				if (mb2_status_check_snapshot_state(backup_directory, uuid, "finished")) {
-					printf("Backup Successful.\n");
+					PRINT_VERBOSE(1, "Backup Successful.\n");
 				} else {
-					if (quit_flag)
-						printf("Backup Aborted.\n");
-					else
-						printf("Backup Failed.\n");
+					if (quit_flag) {
+						PRINT_VERBOSE(1, "Backup Aborted.\n");
+					} else {
+						PRINT_VERBOSE(1, "Backup Failed.\n");
+					}
 				}
 			} else if (cmd == CMD_RESTORE) {
 				// TODO: check for success/failure
-				printf("Restore operation finished. The device should reboot now to complete the process.\n");
+				PRINT_VERBOSE(1, "Restore operation finished. The device should reboot now to complete the process.\n");
 			}
 		}
 		if (lockfile) {
