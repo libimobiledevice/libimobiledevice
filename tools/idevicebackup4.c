@@ -1465,7 +1465,7 @@ checkpoint:
 					}
 					if (error_code != 0) {
 						if (str) {
-							printf("ErrorCode %d: Description: %s\n", error_code, str);
+							printf("ErrorCode %d: %s\n", error_code, str);
 						} else {
 							printf("ErrorCode %d: (Unknown)\n", error_code);
 						}
