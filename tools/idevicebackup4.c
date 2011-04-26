@@ -548,7 +548,8 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	}
 
 	if (stat(localfile, &fst) < 0) {
-		printf("%s: stat failed on '%s': %d\n", __func__, localfile, errno);
+		if (errno != ENOENT)
+			printf("%s: stat failed on '%s': %d\n", __func__, localfile, errno);
 		errcode = errno;
 		goto leave;
 	}
