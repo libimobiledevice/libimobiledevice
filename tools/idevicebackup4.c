@@ -77,37 +77,6 @@ static void notify_cb(const char *notification, void *userdata)
 	}
 }
 
-static void debug_buf(const char *data, const int length)
-{
-	int i;
-	int j;
-	unsigned char c;
-
-	for (i = 0; i < length; i += 16) {
-		fprintf(stdout, "%04x: ", i);
-		for (j = 0; j < 16; j++) {
-			if (i + j >= length) {
-				fprintf(stdout, "   ");
-				continue;
-			}
-			fprintf(stdout, "%02hhx ", *(data + i + j));
-		}
-		fprintf(stdout, "  | ");
-		for (j = 0; j < 16; j++) {
-			if (i + j >= length)
-				break;
-			c = *(data + i + j);
-			if ((c < 32) || (c > 127)) {
-				fprintf(stdout, ".");
-				continue;
-			}
-			fprintf(stdout, "%c", c);
-		}
-		fprintf(stdout, "\n");
-	}
-	fprintf(stdout, "\n");
-}
-
 static void free_dictionary(char **dictionary)
 {
 	int i = 0;
@@ -867,7 +836,6 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		printf("trashing padding\n");
 		fname = (char*)malloc(nlen-1);
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen-1, &r);
-		debug_buf(fname, r);
 		free(fname);
 		remove(bname);
 	}
