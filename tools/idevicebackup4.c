@@ -475,7 +475,7 @@ static void print_progress(uint64_t current, uint64_t total)
 	printf(" (%s", format_size);
 	g_free(format_size);
 	format_size = g_format_size_for_display(total);
-	printf("/%s)", format_size);
+	printf("/%s)     ", format_size);
 	g_free(format_size);
 
 	fflush(stdout);
