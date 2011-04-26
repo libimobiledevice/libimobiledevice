@@ -1544,7 +1544,7 @@ files_out:
 				}
 			} else if (cmd == CMD_RESTORE) {
 				// TODO: check for success/failure
-				PRINT_VERBOSE(1, "Restore operation finished. The device should reboot now to complete the process.\n");
+				PRINT_VERBOSE(1, "The device should reboot now to complete the process.\nRestore Successful.\n");
 			}
 		}
 		if (lockfile) {
