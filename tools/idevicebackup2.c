@@ -1258,19 +1258,9 @@ int main(int argc, char *argv[])
 				printf("Could not read Info.plist\n");
 				is_full_backup = 1;
 			}
-			if (info_plist && (cmd == CMD_BACKUP)) {
-				if (mobilebackup_info_is_current_device(info_plist)) {
-					/* update the last backup time within Info.plist */
-					//mobilebackup_info_update_last_backup_date(info_plist);
-					//remove(info_path);
-					//plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
-				} else {
-					printf("Aborting backup. Backup is not compatible with the current device.\n");
-					cmd = CMD_LEAVE;
-				}
-			} else if (info_plist && (cmd == CMD_RESTORE)) {
+			if (info_plist && ((cmd == CMD_BACKUP) || (cmd == CMD_RESTORE))) {
 				if (!mobilebackup_info_is_current_device(info_plist)) {
-					printf("Aborting restore. Backup data is not compatible with the current device.\n");
+					printf("Aborting. Backup data is not compatible with the current device.\n");
 					cmd = CMD_LEAVE;
 				}
 			}
