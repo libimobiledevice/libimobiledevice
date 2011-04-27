@@ -71,6 +71,13 @@ enum plist_format_t {
 	PLIST_FORMAT_BINARY
 };
 
+enum cmd_flags {
+	CMD_FLAG_RESTORE_SYSTEM_FILES       = 0,
+	CMD_FLAG_RESTORE_REBOOT             = (1 << 1),
+	CMD_FLAG_RESTORE_DONT_COPY_BACKUP   = (1 << 2),
+	CMD_FLAG_RESTORE_SETTINGS           = (1 << 3)
+};
+
 static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
@@ -1063,11 +1070,15 @@ static void print_usage(int argc, char **argv)
 {
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] CMD DIRECTORY\n", (name ? name + 1: argv[0]));
+	printf("Usage: %s [OPTIONS] CMD [CMDOPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
 	printf("Create or restore backup from the current or specified directory.\n\n");
 	printf("commands:\n");
 	printf("  backup\tcreate backup for the device\n");
 	printf("  restore\trestore last backup to the device\n");
+	printf("    --system\trestore system files, too.\n");
+	printf("    --reboot\treboot the system when done.\n");
+	printf("    --nocopy\tdo not copy backup folder before restoring.\n");
+	printf("    --settings\trestore device settings from the backup.\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tUnpack a completed backup in DIRECTORY/_unback_/\n\n");
@@ -1086,11 +1097,13 @@ int main(int argc, char *argv[])
 	uint16_t port = 0;
 	uuid[0] = 0;
 	int cmd = -1;
+	int cmd_flags = 0;
 	int is_full_backup = 0;
 	char *backup_directory = NULL;
 	struct stat st;
 	plist_t node_tmp = NULL;
 	plist_t info_plist = NULL;
+	plist_t opts = NULL;
 	mobilebackup2_error_t err;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
@@ -1123,6 +1136,18 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "restore")) {
 			cmd = CMD_RESTORE;
+		}
+		else if (!strcmp(argv[i], "--system")) {
+			cmd_flags |= CMD_FLAG_RESTORE_SYSTEM_FILES;
+		}
+		else if (!strcmp(argv[i], "--reboot")) {
+			cmd_flags |= CMD_FLAG_RESTORE_REBOOT;
+		}
+		else if (!strcmp(argv[i], "--nocopy")) {
+			cmd_flags |= CMD_FLAG_RESTORE_DONT_COPY_BACKUP;
+		}
+		else if (!strcmp(argv[i], "--settings")) {
+			cmd_flags |= CMD_FLAG_RESTORE_SETTINGS;
 		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
@@ -1369,8 +1394,18 @@ checkpoint:
 
 			PRINT_VERBOSE(1, "Starting Restore...\n");
 
-			plist_t opts = plist_new_dict();
-			plist_dict_insert_item(opts, "shouldRestoreSystemFiles", plist_new_bool(0));
+			opts = plist_new_dict();
+			plist_dict_insert_item(opts, "RestoreSystemFiles", plist_new_bool(cmd_flags & CMD_FLAG_RESTORE_SYSTEM_FILES));
+			PRINT_VERBOSE(1, "Restoring system files: %s\n", (cmd_flags & CMD_FLAG_RESTORE_SYSTEM_FILES ? "Yes":"No"));
+			if ((cmd_flags & CMD_FLAG_RESTORE_REBOOT) == 0)
+				plist_dict_insert_item(opts, "RestoreShouldReboot", plist_new_bool(0));
+			PRINT_VERBOSE(1, "Rebooting after restore: %s\n", (cmd_flags & CMD_FLAG_RESTORE_REBOOT ? "Yes":"No"));
+			if (cmd_flags & CMD_FLAG_RESTORE_DONT_COPY_BACKUP)
+				plist_dict_insert_item(opts, "RestoreDontCopyBackup", plist_new_bool(1));
+			PRINT_VERBOSE(1, "Don't copy backup: %s\n", (cmd_flags & CMD_FLAG_RESTORE_DONT_COPY_BACKUP ? "Yes":"No"));
+			plist_dict_insert_item(opts, "RestorePreserveSettings", plist_new_bool((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0));
+			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0  ? "Yes":"No"));
+
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", uuid, uuid, opts);
 			plist_free(opts);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
