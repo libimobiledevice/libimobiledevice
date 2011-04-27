@@ -671,20 +671,15 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	uint32_t i = 0;
 	uint32_t sent;
 	plist_t errplist = NULL;
-	double progress = 0;
-	
+
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || (plist_array_get_size(message) < 2) || !backup_dir) return;
 
 	plist_t files = plist_array_get_item(message, 1);
 	cnt = plist_array_get_size(files);
 	if (cnt == 0) return;
 
-	plist_t val = plist_array_get_item(message, 3);
-	plist_get_real_val(val, &progress);
-	val = NULL;
-
 	for (i = 0; i < cnt; i++) {
-		val = plist_array_get_item(files, i);
+		plist_t val = plist_array_get_item(files, i);
 		if (plist_get_node_type(val) != PLIST_STRING) {
 			continue;
 		}
@@ -709,11 +704,6 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	} else {
 		mobilebackup2_send_status_response(mobilebackup2, -13, "Multi status", errplist);
 		plist_free(errplist);
-	}
-
-	if (progress > 0) {
-		print_progress_real(progress, 1);
-		PRINT_VERBOSE(1, "\n");
 	}
 }
 
@@ -1640,14 +1630,17 @@ checkpoint:
 				}
 
 				/* print status */
-				/*if (plist_array_get_size(message) >= 4) {
-					plist_t pnode = plist_array_get_item(message, 4);
+				if (plist_array_get_size(message) >= 3) {
+					plist_t pnode = plist_array_get_item(message, 3);
 					if (pnode && (plist_get_node_type(pnode) == PLIST_REAL)) {
 						double progress = 0.0;
 						plist_get_real_val(pnode, &progress);
-						printf("Progress: %f\n", progress);
+						if (progress > 0) {
+							print_progress_real(progress, 0);
+							PRINT_VERBOSE(1, " Finished\n");
+						}
 					}
-				}*/
+				}
 
 				if (message)
 					plist_free(message);
