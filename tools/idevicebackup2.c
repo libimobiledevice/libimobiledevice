@@ -951,7 +951,7 @@ static void mb2_handle_make_directory(plist_t message, const char *backup_dir)
 	gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_dir, str, NULL);
 	g_free(str);
 
-	if (mkdir(newpath, 0755) < 0) {
+	if (g_mkdir_with_parents(newpath, 0755) < 0) {
 		errdesc = strerror(errno);
 		if (errno != EEXIST) {
 			printf("mkdir: %s (%d)\n", errdesc, errno);
