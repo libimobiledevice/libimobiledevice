@@ -74,7 +74,7 @@ enum plist_format_t {
 enum cmd_flags {
 	CMD_FLAG_RESTORE_SYSTEM_FILES       = 0,
 	CMD_FLAG_RESTORE_REBOOT             = (1 << 1),
-	CMD_FLAG_RESTORE_DONT_COPY_BACKUP   = (1 << 2),
+	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 2),
 	CMD_FLAG_RESTORE_SETTINGS           = (1 << 3)
 };
 
@@ -1067,7 +1067,7 @@ static void print_usage(int argc, char **argv)
 	printf("  restore\trestore last backup to the device\n");
 	printf("    --system\trestore system files, too.\n");
 	printf("    --reboot\treboot the system when done.\n");
-	printf("    --nocopy\tdo not copy backup folder before restoring.\n");
+	printf("    --copy\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\trestore device settings from the backup.\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
@@ -1133,8 +1133,8 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "--reboot")) {
 			cmd_flags |= CMD_FLAG_RESTORE_REBOOT;
 		}
-		else if (!strcmp(argv[i], "--nocopy")) {
-			cmd_flags |= CMD_FLAG_RESTORE_DONT_COPY_BACKUP;
+		else if (!strcmp(argv[i], "--copy")) {
+			cmd_flags |= CMD_FLAG_RESTORE_COPY_BACKUP;
 		}
 		else if (!strcmp(argv[i], "--settings")) {
 			cmd_flags |= CMD_FLAG_RESTORE_SETTINGS;
@@ -1390,9 +1390,9 @@ checkpoint:
 			if ((cmd_flags & CMD_FLAG_RESTORE_REBOOT) == 0)
 				plist_dict_insert_item(opts, "RestoreShouldReboot", plist_new_bool(0));
 			PRINT_VERBOSE(1, "Rebooting after restore: %s\n", (cmd_flags & CMD_FLAG_RESTORE_REBOOT ? "Yes":"No"));
-			if (cmd_flags & CMD_FLAG_RESTORE_DONT_COPY_BACKUP)
+			if ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0)
 				plist_dict_insert_item(opts, "RestoreDontCopyBackup", plist_new_bool(1));
-			PRINT_VERBOSE(1, "Don't copy backup: %s\n", (cmd_flags & CMD_FLAG_RESTORE_DONT_COPY_BACKUP ? "Yes":"No"));
+			PRINT_VERBOSE(1, "Don't copy backup: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0 ? "Yes":"No"));
 			plist_dict_insert_item(opts, "RestorePreserveSettings", plist_new_bool((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0));
 			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0  ? "Yes":"No"));
 
