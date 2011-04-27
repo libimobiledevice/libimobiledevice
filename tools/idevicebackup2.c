@@ -968,7 +968,8 @@ static void mb2_handle_make_directory(plist_t message, const char *backup_dir)
 static void mb2_copy_file_by_path(const gchar *src, const gchar *dst)
 {
 	FILE *from, *to;
-	char ch;
+	char buf[BUFSIZ];
+	size_t length;
 
 	/* open source file */
 	if ((from = fopen(src, "rb")) == NULL) {
@@ -983,19 +984,8 @@ static void mb2_copy_file_by_path(const gchar *src, const gchar *dst)
 	}
 
 	/* copy the file */
-	while(!feof(from)) {
-		ch = fgetc(from);
-		if(ferror(from)) {
-			printf("Error reading source file.\n");
-			break;
-		}
-		if(!feof(from))
-			fputc(ch, to);
-
-		if(ferror(to)) {
-			printf("Error writing destination file.\n");
-			break;
-		}
+	while ((length = fread(buf, 1, BUFSIZ, from)) != 0) {
+		fwrite(buf, 1, length, to);
 	}
 
 	if(fclose(from) == EOF) {
