@@ -1444,8 +1444,8 @@ checkpoint:
 		}
 
 		if (cmd != CMD_LEAVE) {
-			/* reset backup status */
-			int backup_ok = 0;
+			/* reset operation success status */
+			int operation_ok = 0;
 			plist_t message = NULL;
 
 			char *dlmsg = NULL;
@@ -1600,7 +1600,7 @@ checkpoint:
 						plist_get_uint_val(nn, &ec);
 						error_code = (uint32_t)ec;
 						if (error_code == 0) {
-							backup_ok = 1;
+							operation_ok = 1;
 						}
 					}
 					nn = plist_dict_get_item(node_tmp, "ErrorDescription");
@@ -1660,20 +1660,50 @@ files_out:
 				}
 			} while (1);
 
-			if (cmd == CMD_BACKUP) {
-				PRINT_VERBOSE(1, "Received %d files from device.\n", file_count);
-				if (mb2_status_check_snapshot_state(backup_directory, uuid, "finished")) {
-					PRINT_VERBOSE(1, "Backup Successful.\n");
-				} else {
-					if (quit_flag) {
-						PRINT_VERBOSE(1, "Backup Aborted.\n");
+			/* report operation status to user */
+			switch (cmd) {
+				case CMD_BACKUP:
+					PRINT_VERBOSE(1, "Received %d files from device.\n", file_count);
+					if (mb2_status_check_snapshot_state(backup_directory, uuid, "finished")) {
+						PRINT_VERBOSE(1, "Backup Successful.\n");
 					} else {
-						PRINT_VERBOSE(1, "Backup Failed.\n");
+						if (quit_flag) {
+							PRINT_VERBOSE(1, "Backup Aborted.\n");
+						} else {
+							PRINT_VERBOSE(1, "Backup Failed.\n");
+						}
 					}
+				break;
+				case CMD_UNBACK:
+				if (quit_flag) {
+					PRINT_VERBOSE(1, "Unback Aborted.\n");
+				} else {
+					PRINT_VERBOSE(1, "The files can now be found in the \"_unback_\" directory.\n");
+					PRINT_VERBOSE(1, "Unback Successful.\n");
 				}
-			} else if (cmd == CMD_RESTORE) {
-				// TODO: check for success/failure
-				PRINT_VERBOSE(1, "The device should reboot now to complete the process.\nRestore Successful.\n");
+				break;
+				case CMD_RESTORE:
+				if (cmd_flags & CMD_FLAG_RESTORE_REBOOT)
+					PRINT_VERBOSE(1, "The device should reboot now.\n");
+				if (operation_ok) {
+					PRINT_VERBOSE(1, "Restore Successful.\n");
+				} else {
+					PRINT_VERBOSE(1, "Restore Failed.\n");
+				}
+				
+				break;
+				case CMD_INFO:
+				case CMD_LIST:
+				case CMD_LEAVE:
+				default:
+				if (quit_flag) {
+					PRINT_VERBOSE(1, "Operation Aborted.\n");
+				} else if (cmd == CMD_LEAVE) {
+					PRINT_VERBOSE(1, "Operation Failed.\n");
+				} else {
+					PRINT_VERBOSE(1, "Operation Successful.\n");
+				}
+				break;
 			}
 		}
 		if (lockfile) {
