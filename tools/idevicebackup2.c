@@ -62,6 +62,7 @@ enum cmd_mode {
 	CMD_RESTORE,
 	CMD_INFO,
 	CMD_LIST,
+	CMD_UNBACK,
 	CMD_LEAVE
 };
 
@@ -1068,7 +1069,8 @@ static void print_usage(int argc, char **argv)
 	printf("  backup\tcreate backup for the device\n");
 	printf("  restore\trestore last backup to the device\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
-	printf("  list\t\tlist files of last completed backup in CSV format\n\n");
+	printf("  list\t\tlist files of last completed backup in CSV format\n");
+	printf("  unback\tUnpack a completed backup in DIRECTORY/_unback_/\n\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
@@ -1129,6 +1131,9 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "list")) {
 			cmd = CMD_LIST;
 			verbose = 0;
+		}
+		else if (!strcmp(argv[i], "unback")) {
+			cmd = CMD_UNBACK;
 		}
 		else if (backup_directory == NULL) {
 			backup_directory = argv[i];
@@ -1392,6 +1397,14 @@ checkpoint:
 			err = mobilebackup2_send_request(mobilebackup2, "List", uuid, NULL, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting backup list from device, error code %d\n", err);
+				cmd = CMD_LEAVE;
+			}
+			break;
+			case CMD_UNBACK:
+			PRINT_VERBOSE(1, "Starting to unpack backup...\n");
+			err = mobilebackup2_send_request(mobilebackup2, "Unback", uuid, NULL, NULL);
+			if (err != MOBILEBACKUP2_E_SUCCESS) {
+				printf("Error requesting unback operation from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
 			}
 			break;
