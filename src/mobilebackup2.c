@@ -346,20 +346,26 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 /**
  * Performs the mobilebackup2 protocol version exchange.
  * 
- * @param The MobileBackup client to use.
+ * @param client The MobileBackup client to use.
+ * @param local_versions An array of supported versions to send to the remote.
+ * @param count The number of items in local_versions.
+ * @param remote_version Holds the protocol version of the remote on success.
  * 
  * @return MOBILEBACKUP2_E_SUCCESS on success, or a MOBILEBACKUP2_E_* error
  *     code otherwise.
  */
-mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client)
+mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version)
 {
+	int i;
+
 	if (!client || !client->parent)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	plist_t dict = plist_new_dict();
 	plist_t array = plist_new_array();
-	plist_array_append_item(array, plist_new_real(2.0));
-	plist_array_append_item(array, plist_new_real(2.1));
+	for (i = 0; i < count; i++) {
+		plist_array_append_item(array, plist_new_real(local_versions[i]));
+	}
 	plist_dict_insert_item(dict, "SupportedProtocolVersions", array);
 
 	mobilebackup2_error_t err = internal_mobilebackup2_send_message(client, "Hello", dict);
@@ -373,6 +379,7 @@ mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t clie
 	if (err != MOBILEBACKUP2_E_SUCCESS)
 		goto leave;
 
+	/* check if we received an error */
 	plist_t node = plist_dict_get_item(dict, "ErrorCode");
 	if (!node || (plist_get_node_type(node) != PLIST_UINT)) {
 		err = MOBILEBACKUP2_E_PLIST_ERROR;
@@ -381,27 +388,24 @@ mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t clie
 
 	uint64_t val = 0;
 	plist_get_uint_val(node, &val);
-
 	if (val != 0) {
-		err = MOBILEBACKUP2_E_REPLY_NOT_OK;
+		if (val == 1) {
+			err = MOBILEBACKUP2_E_NO_COMMON_VERSION;
+		} else {
+			err = MOBILEBACKUP2_E_REPLY_NOT_OK;
+		}
 		goto leave;
 	}
 
+	/* retrieve the protocol version of the device */
 	node = plist_dict_get_item(dict, "ProtocolVersion");
 	if (!node || (plist_get_node_type(node) != PLIST_REAL)) {
 		err = MOBILEBACKUP2_E_PLIST_ERROR;
 		goto leave;
 	}
 
-	double rval = 0.0;
-	plist_get_real_val(node, &rval);
-
-	debug_info("using protocol version %f\n", rval);
-
-	// TODO version check ??
-	// if version does not match
-	//	err = MOBILEBACKUP2_E_BAD_VERSION
-
+	*remote_version = 0.0;
+	plist_get_real_val(node, remote_version);
 leave:
 	if (dict)
 		plist_free(dict);

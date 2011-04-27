@@ -1231,12 +1231,16 @@ int main(int argc, char *argv[])
 		mobilebackup2_client_new(phone, port, &mobilebackup2);
 
 		/* send Hello message */
-		err = mobilebackup2_version_exchange(mobilebackup2);
+		double local_versions[2] = {2.0, 2.1};
+		double remote_version = 0.0;
+		err = mobilebackup2_version_exchange(mobilebackup2, local_versions, 2, &remote_version);
 		if (err != MOBILEBACKUP2_E_SUCCESS) {
 			printf("Could not perform backup protocol version exchange, error code %d\n", err);
 			cmd = CMD_LEAVE;
 			goto checkpoint;
 		}
+
+		PRINT_VERBOSE(1, "Negotiated Protocol Version %.1f\n", remote_version);
 
 		/* check abort conditions */
 		if (quit_flag > 0) {

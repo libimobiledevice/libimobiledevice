@@ -37,6 +37,7 @@ extern "C" {
 #define MOBILEBACKUP2_E_MUX_ERROR             -3
 #define MOBILEBACKUP2_E_BAD_VERSION           -4
 #define MOBILEBACKUP2_E_REPLY_NOT_OK          -5
+#define MOBILEBACKUP2_E_NO_COMMON_VERSION     -6
 
 #define MOBILEBACKUP2_E_UNKNOWN_ERROR       -256
 /*@}*/
@@ -52,7 +53,7 @@ mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client);
 mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage);
 mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
 mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes);
-mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client);
+mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version);
 mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options);
 mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2);
 
