@@ -576,7 +576,7 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	total = fst.st_size;
 
 	gchar *format_size = g_format_size_for_display(total);
-	PRINT_VERBOSE(1, "Sending file '%s': (%s)\n", path, format_size);
+	PRINT_VERBOSE(1, "Sending '%s' (%s)\n", path, format_size);
 	g_free(format_size);
 
 	if (total == 0) {
@@ -733,7 +733,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		plist_get_uint_val(node, &backup_total_size);
 	}
 	if (backup_total_size > 0) {
-		PRINT_VERBOSE(1, "Receiving backup data\n");
+		PRINT_VERBOSE(1, "Receiving files\n");
 	}
 
 	do {
