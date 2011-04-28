@@ -116,6 +116,7 @@ mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 	mobilebackup2_error_t err = MOBILEBACKUP2_E_SUCCESS;
 	if (client->parent) {
+		device_link_service_disconnect(client->parent, NULL);
 		err = mobilebackup2_error(device_link_service_client_free(client->parent));
 	}
 	free(client);

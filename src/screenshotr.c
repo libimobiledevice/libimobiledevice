@@ -114,7 +114,7 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
 {
 	if (!client)
 		return SCREENSHOTR_E_INVALID_ARG;
-	device_link_service_disconnect(client->parent);
+	device_link_service_disconnect(client->parent, NULL);
 	screenshotr_error_t err = screenshotr_error(device_link_service_client_free(client->parent));
 	free(client);
 	return err;

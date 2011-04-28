@@ -235,20 +235,24 @@ leave:
  * Performs a disconnect with the connected device link service client.
  *
  * @param client The device link service client to disconnect.
+ * @param message Optional message to send send to the device or NULL.
  * 
  * @return DEVICE_LINK_SERVICE_E_SUCCESS on success,
  *     DEVICE_LINK_SERVICE_E_INVALID_ARG if client is NULL,
  *     or DEVICE_LINK_SERVICE_E_MUX_ERROR when there's an error when sending
  *     the the disconnect message.
  */
-device_link_service_error_t device_link_service_disconnect(device_link_service_client_t client)
+device_link_service_error_t device_link_service_disconnect(device_link_service_client_t client, const char *message)
 {
 	if (!client)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
 
 	plist_t array = plist_new_array();
 	plist_array_append_item(array, plist_new_string("DLMessageDisconnect"));
-	plist_array_append_item(array, plist_new_string("All done, thanks for the memories"));
+	if (message)
+		plist_array_append_item(array, plist_new_string(message));
+	else
+		plist_array_append_item(array, plist_new_string("___EmptyParameterString___"));
 
 	device_link_service_error_t err = DEVICE_LINK_SERVICE_E_SUCCESS;
 	if (property_list_service_send_binary_plist(client->parent, array) != PROPERTY_LIST_SERVICE_E_SUCCESS) {

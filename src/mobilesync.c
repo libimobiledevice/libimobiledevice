@@ -122,7 +122,7 @@ mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
-	device_link_service_disconnect(client->parent);
+	device_link_service_disconnect(client->parent, "All done, thanks for the memories");
 	mobilesync_error_t err = mobilesync_error(device_link_service_client_free(client->parent));
 	free(client);
 	return err;
