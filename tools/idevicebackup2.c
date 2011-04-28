@@ -1491,10 +1491,9 @@ checkpoint:
 									gchar *oldpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, key, NULL);
 
 									remove(newpath);
-									//fprintf(stderr, "Moving '%s' to '%s'\n", oldpath, newpath);
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
-										errcode = -errno;
+										errcode = errno_to_device_error(errno);
 										errdesc = strerror(errno);
 										break;
 									}
@@ -1532,8 +1531,8 @@ checkpoint:
 								g_free(str);
 								if (remove(newpath) < 0) {
 									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
-									//errcode = -errno;
-									//errdesc = strerror(errno);
+									errcode = errno_to_device_error(errno);
+									errdesc = strerror(errno);
 								}
 								g_free(newpath);
 							}
