@@ -1577,6 +1577,8 @@ checkpoint:
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
+				} else if (!strcmp(dlmsg, "DLMessageDisconnect")) {
+					break;
 				} else if (!strcmp(dlmsg, "DLMessageProcessMessage")) {
 					node_tmp = plist_array_get_item(message, 1);
 					if (plist_get_node_type(node_tmp) != PLIST_DICT) {
@@ -1616,7 +1618,11 @@ checkpoint:
 						printf("%s", str);
 						free(str);
 					}
-					break;
+
+					err = mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+					if (err != MOBILEBACKUP2_E_SUCCESS) {
+						printf("Could not send status response, error %d\n", err);
+					}
 				}
 
 				/* print status */
@@ -1713,14 +1719,14 @@ files_out:
 		client = NULL;
 	}
 
+	if (mobilebackup2)
+		mobilebackup2_client_free(mobilebackup2);
+
 	if (afc)
 		afc_client_free(afc);
 
 	if (np)
 		np_client_free(np);
-
-	if (mobilebackup2)
-		mobilebackup2_client_free(mobilebackup2);
 
 	idevice_free(phone);
 
