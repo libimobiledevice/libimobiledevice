@@ -1061,7 +1061,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --settings\trestore device settings from the backup.\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
-	printf("  unback\tUnpack a completed backup in DIRECTORY/_unback_/\n\n");
+	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");

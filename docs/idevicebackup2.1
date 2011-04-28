@@ -3,7 +3,7 @@
 idevicebackup2 \- Create or restore backup for iDevices running iOS4+.
 .SH SYNOPSIS
 .B idevicebackup2
-[OPTIONS] CMD DIRECTORY
+[OPTIONS] CMD [CMDOPTIONS] DIRECTORY
 
 .SH DESCRIPTION
 
@@ -28,13 +28,31 @@ create backup for the device.
 .B restore
 restore last backup to the device.
 .TP
+.B \t\-\-system
+restore system files, too.
+.TP
+.BI \t\-\-reboot
+reboot the system when done.
+.TP
+.B \t\-\-copy
+create a copy of backup folder before restoring.
+.TP
+.B \t\-\-settings
+restore device settings from the backup.
+.TP
 .B info
 show details about last completed backup of device.
 .TP
 .B list
 list files of last completed backup in CSV format.
+.TP
+.B unback
+unpack a completed backup in DIRECTORY/_unback_/.
 
 .SH AUTHORS
 Martin Szulecki
 
 Nikias Bassen
+
+.SH SEE ALSO
+idevicebackup(1)
