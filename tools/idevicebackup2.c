@@ -1706,7 +1706,8 @@ files_out:
 			afc_file_lock(afc, lockfile, AFC_LOCK_UN);
 			afc_file_close(afc, lockfile);
 			lockfile = 0;
-			do_post_notification(NP_SYNC_DID_FINISH);
+			if (cmd == CMD_BACKUP)
+				do_post_notification(NP_SYNC_DID_FINISH);
 		}
 	} else {
 		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP2_SERVICE_NAME);
