@@ -1618,10 +1618,7 @@ checkpoint:
 						free(str);
 					}
 
-					err = mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
-					if (err != MOBILEBACKUP2_E_SUCCESS) {
-						printf("Could not send status response, error %d\n", err);
-					}
+					break;
 				}
 
 				/* print status */
