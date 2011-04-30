@@ -30,6 +30,10 @@
 #include <gcrypt.h>
 #include <unistd.h>
 
+#if !GLIB_CHECK_VERSION(2,25,0)
+typedef struct stat GStatBuf;
+#endif
+
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/mobilebackup2.h>
