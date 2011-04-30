@@ -29,7 +29,7 @@ AC_PROG_LIBTOOL
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.4)
 PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgthread2, gthread-2.0 >= 2.14.1)
-PKG_CHECK_MODULES(libgnutls, gnutls >= 1.6.3 )
+PKG_CHECK_MODULES(libgnutls, gnutls >= 2.2.0)
 PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)

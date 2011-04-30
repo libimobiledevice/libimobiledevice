@@ -586,19 +586,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
 	gnutls_certificate_client_set_retrieve_function (ssl_data_loc->certificate, internal_cert_callback);
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
-	{
-		int protocol_priority[16] = { GNUTLS_SSL3, 0 };
-		int kx_priority[16] = { GNUTLS_KX_ANON_DH, GNUTLS_KX_RSA, 0 };
-		int cipher_priority[16] = { GNUTLS_CIPHER_AES_128_CBC, GNUTLS_CIPHER_AES_256_CBC, 0 };
-		int mac_priority[16] = { GNUTLS_MAC_SHA1, GNUTLS_MAC_MD5, 0 };
-		int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
-
-		gnutls_cipher_set_priority(ssl_data_loc->session, cipher_priority);
-		gnutls_compression_set_priority(ssl_data_loc->session, comp_priority);
-		gnutls_kx_set_priority(ssl_data_loc->session, kx_priority);
-		gnutls_protocol_set_priority(ssl_data_loc->session, protocol_priority);
-		gnutls_mac_set_priority(ssl_data_loc->session, mac_priority);
-	}
+	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
 	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
 	gnutls_session_set_ptr(ssl_data_loc->session, ssl_data_loc);
 
