@@ -76,10 +76,10 @@ enum plist_format_t {
 };
 
 enum cmd_flags {
-	CMD_FLAG_RESTORE_SYSTEM_FILES       = 0,
-	CMD_FLAG_RESTORE_REBOOT             = (1 << 1),
-	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 2),
-	CMD_FLAG_RESTORE_SETTINGS           = (1 << 3)
+	CMD_FLAG_RESTORE_SYSTEM_FILES       = (1 << 1),
+	CMD_FLAG_RESTORE_REBOOT             = (1 << 2),
+	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 3),
+	CMD_FLAG_RESTORE_SETTINGS           = (1 << 4)
 };
 
 static void notify_cb(const char *notification, void *userdata)
