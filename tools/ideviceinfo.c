@@ -160,10 +160,14 @@ static void plist_node_to_string(plist_t node)
 
 	case PLIST_DATA:
 		plist_get_data_val(node, &data, &u);
-		s = g_base64_encode((guchar *)data, u);
-		free(data);
-		printf("%s\n", s);
-		g_free(s);
+		if (u > 0) {
+			s = g_base64_encode((guchar *)data, u);
+			free(data);
+			printf("%s\n", s);
+			g_free(s);
+		} else {
+			printf("\n");
+		}
 		break;
 
 	case PLIST_DATE:
