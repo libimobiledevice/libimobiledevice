@@ -194,7 +194,9 @@ np_error_t np_post_notification(np_client_t client, const char *notification)
 		} else {
 			debug_plist(dict);
 		}
-		g_free(cmd_value);
+		if (cmd_value) {
+			free(cmd_value);
+		}
 #endif
 		plist_free(dict);
 	}
