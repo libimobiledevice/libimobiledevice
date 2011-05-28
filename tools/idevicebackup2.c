@@ -704,7 +704,9 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	mobilebackup2_send_raw(mobilebackup2, (char*)&zero, 4, &sent);
 
 	if (!errplist) {
-		mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+		plist_t emptydict = plist_new_dict();
+		mobilebackup2_send_status_response(mobilebackup2, 0, NULL, emptydict);
+		plist_free(emptydict);
 	} else {
 		mobilebackup2_send_status_response(mobilebackup2, -13, "Multi status", errplist);
 		plist_free(errplist);
