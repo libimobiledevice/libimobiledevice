@@ -210,7 +210,6 @@ static void plist_node_to_string(plist_t node)
 		}
 		free(data);
 		printf("\n");
-		g_free(s);
 		break;
 
 	case PLIST_DATE:
