@@ -86,7 +86,9 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 
 	plist_t result_node = plist_dict_get_item(dict, "Result");
 	if (!result_node) {
-		return ret;
+		/* iOS 5: the 'Result' key is not present anymore.
+		   Just assume success here */
+		return RESULT_SUCCESS;
 	}
 
 	plist_type result_type = plist_get_node_type(result_node);
