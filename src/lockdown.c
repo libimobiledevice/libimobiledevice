@@ -630,7 +630,12 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	client_loc->parent = plistclient;
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
-	client_loc->uuid = NULL;
+
+	if (idevice_get_uuid(device, &client_loc->uuid) != IDEVICE_E_SUCCESS) {
+		debug_info("failed to get device uuid.");
+	}
+	debug_info("device uuid: %s", client_loc->uuid);
+
 	client_loc->label = label ? strdup(label) : NULL;
 
 	*client = client_loc;
@@ -682,12 +687,6 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 		if (type)
 			free(type);
 	}
-
-	ret = idevice_get_uuid(device, &client_loc->uuid);
-	if (LOCKDOWN_E_SUCCESS != ret) {
-		debug_info("failed to get device uuid.");
-	}
-	debug_info("device uuid: %s", client_loc->uuid);
 
 	userpref_get_host_id(&host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
