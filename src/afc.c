@@ -39,7 +39,7 @@ static const int MAXIMUM_PACKET_SIZE = (2 << 15);
 static void afc_lock(afc_client_t client)
 {
 	debug_info("Locked");
-	g_mutex_lock(client->mutex);
+	pthread_mutex_lock(&client->mutex);
 }
 
 /**
@@ -50,7 +50,7 @@ static void afc_lock(afc_client_t client)
 static void afc_unlock(afc_client_t client)
 {
 	debug_info("Unlocked");
-	g_mutex_unlock(client->mutex);
+	pthread_mutex_unlock(&client->mutex);
 }
 
 /**
@@ -69,10 +69,6 @@ static void afc_unlock(afc_client_t client)
 
 afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_client_t *client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!connection)
 		return AFC_E_INVALID_ARG;
 
@@ -93,7 +89,7 @@ afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_
 	memcpy(client_loc->afc_packet->magic, AFC_MAGIC, AFC_MAGIC_LEN);
 	client_loc->file_handle = 0;
 	client_loc->lock = 0;
-	client_loc->mutex = g_mutex_new();
+	pthread_mutex_init(&client_loc->mutex, NULL);
 
 	*client = client_loc;
 	return AFC_E_SUCCESS;
@@ -117,10 +113,6 @@ afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_
  */
 afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!device || port==0)
 		return AFC_E_INVALID_ARG;
 
@@ -155,9 +147,7 @@ afc_error_t afc_client_free(afc_client_t client)
 		client->connection = NULL;
 	}
 	free(client->afc_packet);
-	if (client->mutex) {
-		g_mutex_free(client->mutex);
-	}
+	pthread_mutex_destroy(&client->mutex);
 	free(client);
 	return AFC_E_SUCCESS;
 }

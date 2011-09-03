@@ -36,7 +36,7 @@
 static void sbs_lock(sbservices_client_t client)
 {
 	debug_info("SBServices: Locked");
-	g_mutex_lock(client->mutex);
+	pthread_mutex_lock(&client->mutex);
 }
 
 /**
@@ -47,7 +47,7 @@ static void sbs_lock(sbservices_client_t client)
 static void sbs_unlock(sbservices_client_t client)
 {
 	debug_info("SBServices: Unlocked");
-	g_mutex_unlock(client->mutex);
+	pthread_mutex_unlock(&client->mutex);
 }
 
 /**
@@ -89,10 +89,6 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
  */
 sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbservices_client_t *client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!device)
 		return SBSERVICES_E_INVALID_ARG;
 
@@ -104,7 +100,7 @@ sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbserv
 
 	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_private));
 	client_loc->parent = plistclient;
-	client_loc->mutex = g_mutex_new();
+	pthread_mutex_init(&client_loc->mutex, NULL);
 
 	*client = client_loc;
 	return SBSERVICES_E_SUCCESS;
@@ -126,9 +122,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 
 	sbservices_error_t err = sbservices_error(property_list_service_client_free(client->parent));
 	client->parent = NULL;
-	if (client->mutex) {
-		g_mutex_free(client->mutex);
-	}
+	pthread_mutex_destroy(&client->mutex);
 	free(client);
 
 	return err;

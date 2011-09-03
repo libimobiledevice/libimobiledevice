@@ -21,15 +21,15 @@
 #ifndef IINSTALLATION_PROXY_H
 #define IINSTALLATION_PROXY_H
 
-#include <glib.h>
+#include <pthread.h>
 
 #include "libimobiledevice/installation_proxy.h"
 #include "property_list_service.h"
 
 struct instproxy_client_private {
 	property_list_service_client_t parent;
-	GMutex *mutex;
-	GThread *status_updater;
+	pthread_mutex_t mutex;
+	pthread_t status_updater;
 };
 
 #endif

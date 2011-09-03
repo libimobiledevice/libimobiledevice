@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <pthread.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -38,7 +38,7 @@ typedef struct {
 } param;
 
 
-static void check_afc(gpointer data)
+static void* check_afc(void *data)
 {
 	//prepare a buffer
 	unsigned int buffersize = BUFFER_SIZE * sizeof(unsigned int);
@@ -85,14 +85,13 @@ static void check_afc(gpointer data)
 
 	//cleanup
 	afc_remove_path(((param *) data)->afc, path);
-	g_thread_exit(0);
+	pthread_exit(0);
 }
 
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
 	idevice_t phone = NULL;
-	GError *err;
 	uint16_t port = 0;
 	afc_client_t afc = NULL;
 
@@ -121,22 +120,18 @@ int main(int argc, char *argv[])
 
 	afc_client_new(phone, port, &afc);
 
-	//makes sure thread environment is available
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
-	GThread *threads[NB_THREADS];
+	pthread_t threads[NB_THREADS];
 	param data[NB_THREADS];
 
 	int i = 0;
 	for (i = 0; i < NB_THREADS; i++) {
 		data[i].afc = afc;
 		data[i].id = i + 1;
-		threads[i] = g_thread_create((GThreadFunc) check_afc, data + i, TRUE, &err);
+		pthread_create(&threads[i], NULL, check_afc, data + i);
 	}
 
 	for (i = 0; i < NB_THREADS; i++) {
-		g_thread_join(threads[i]);
+		pthread_join(threads[i], NULL);
 	}
 
 	lockdownd_client_free(client);

@@ -21,14 +21,14 @@
 #ifndef ISBSERVICES_H
 #define ISBSERVICES_H
 
-#include <glib.h>
+#include <pthread.h>
 
 #include "libimobiledevice/sbservices.h"
 #include "property_list_service.h"
 
 struct sbservices_client_private {
 	property_list_service_client_t parent;
-	GMutex *mutex;
+	pthread_mutex_t mutex;
 };
 
 #endif

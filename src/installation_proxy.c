@@ -43,7 +43,7 @@ struct instproxy_status_data {
 static void instproxy_lock(instproxy_client_t client)
 {
 	debug_info("InstallationProxy: Locked");
-	g_mutex_lock(client->mutex);
+	pthread_mutex_lock(&client->mutex);
 }
 
 /**
@@ -54,7 +54,7 @@ static void instproxy_lock(instproxy_client_t client)
 static void instproxy_unlock(instproxy_client_t client)
 {
 	debug_info("InstallationProxy: Unlocked");
-	g_mutex_unlock(client->mutex);
+	pthread_mutex_unlock(&client->mutex);
 }
 
 /**
@@ -96,10 +96,6 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
  */
 instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!device)
 		return INSTPROXY_E_INVALID_ARG;
 
@@ -110,8 +106,8 @@ instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instprox
 
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));
 	client_loc->parent = plistclient;
-	client_loc->mutex = g_mutex_new();
-	client_loc->status_updater = NULL;
+	pthread_mutex_init(&client_loc->mutex, NULL);
+	client_loc->status_updater = (pthread_t)NULL;
 
 	*client = client_loc;
 	return INSTPROXY_E_SUCCESS;
@@ -135,11 +131,9 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 	client->parent = NULL;
 	if (client->status_updater) {
 		debug_info("joining status_updater");
-		g_thread_join(client->status_updater);
+		pthread_join(client->status_updater, NULL);
 	}
-	if (client->mutex) {
-		g_mutex_free(client->mutex);
-	}
+	pthread_mutex_destroy(&client->mutex);
 	free(client);
 
 	return INSTPROXY_E_SUCCESS;
@@ -349,7 +343,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
  *
  * @return Always NULL.
  */
-static gpointer instproxy_status_updater(gpointer arg)
+static void* instproxy_status_updater(void* arg)
 {	
 	struct instproxy_status_data *data = (struct instproxy_status_data*)arg;
 
@@ -362,7 +356,7 @@ static gpointer instproxy_status_updater(gpointer arg)
 	if (data->operation) {
 	    free(data->operation);
 	}
-	data->client->status_updater = NULL;
+	data->client->status_updater = (pthread_t)NULL;
 	instproxy_unlock(data->client);
 	free(data);
 
@@ -397,8 +391,7 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
 			data->operation = strdup(operation);
 			data->user_data = user_data;
 
-			client->status_updater = g_thread_create(instproxy_status_updater, data, TRUE, NULL);
-			if (client->status_updater) {
+			if (pthread_create(&client->status_updater, NULL, instproxy_status_updater, data) == 0) {
 				res = INSTPROXY_E_SUCCESS;
 			}
 		}

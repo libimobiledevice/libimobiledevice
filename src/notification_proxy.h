@@ -21,17 +21,17 @@
 #ifndef INOTIFICATION_PROXY_H
 #define INOTIFICATION_PROXY_H
 
-#include <glib.h>
+#include <pthread.h>
 
 #include "libimobiledevice/notification_proxy.h"
 #include "property_list_service.h"
 
 struct np_client_private {
 	property_list_service_client_t parent;
-	GMutex *mutex;
-	GThread *notifier;
+	pthread_mutex_t mutex;
+	pthread_t notifier;
 };
 
-gpointer np_notifier(gpointer arg);
+void* np_notifier(void* arg);
 
 #endif

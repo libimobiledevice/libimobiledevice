@@ -42,7 +42,7 @@ struct np_thread {
 static void np_lock(np_client_t client)
 {
 	debug_info("NP: Locked");
-	g_mutex_lock(client->mutex);
+	pthread_mutex_lock(&client->mutex);
 }
 
 /**
@@ -53,7 +53,7 @@ static void np_lock(np_client_t client)
 static void np_unlock(np_client_t client)
 {
 	debug_info("NP: Unlocked");
-	g_mutex_unlock(client->mutex);
+	pthread_mutex_unlock(&client->mutex);
 }
 
 /**
@@ -96,10 +96,6 @@ static np_error_t np_error(property_list_service_error_t err)
  */
 np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!device)
 		return NP_E_INVALID_ARG;
 
@@ -111,9 +107,9 @@ np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client)
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_private));
 	client_loc->parent = plistclient;
 
-	client_loc->mutex = g_mutex_new();
+	pthread_mutex_init(&client_loc->mutex, NULL);
 
-	client_loc->notifier = NULL;
+	client_loc->notifier = (pthread_t)NULL;
 
 	*client = client_loc;
 	return NP_E_SUCCESS;
@@ -136,11 +132,9 @@ np_error_t np_client_free(np_client_t client)
 	client->parent = NULL;
 	if (client->notifier) {
 		debug_info("joining np callback");
-		g_thread_join(client->notifier);
+		pthread_join(client->notifier, NULL);
 	}
-	if (client->mutex) {
-		g_mutex_free(client->mutex);
-	}
+	pthread_mutex_destroy(&client->mutex);
 	free(client);
 
 	return NP_E_SUCCESS;
@@ -344,7 +338,7 @@ static int np_get_notification(np_client_t client, char **notification)
 /**
  * Internally used thread function.
  */
-gpointer np_notifier( gpointer arg )
+void* np_notifier( void* arg )
 {
 	char *notification = NULL;
 	struct np_thread *npt = (struct np_thread*)arg;
@@ -399,8 +393,8 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 		debug_info("callback already set, removing\n");
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
-		g_thread_join(client->notifier);
-		client->notifier = NULL;
+		pthread_join(client->notifier, NULL);
+		client->notifier = (pthread_t)NULL;
 		client->parent = parent;
 	}
 
@@ -411,8 +405,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 			npt->cbfunc = notify_cb;
 			npt->user_data = user_data;
 
-			client->notifier = g_thread_create(np_notifier, npt, TRUE, NULL);
-			if (client->notifier) {
+			if (pthread_create(&client->notifier, NULL, np_notifier, npt) == 0) {
 				res = NP_E_SUCCESS;
 			}
 		}

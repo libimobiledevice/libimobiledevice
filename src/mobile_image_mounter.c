@@ -35,7 +35,7 @@
  */
 static void mobile_image_mounter_lock(mobile_image_mounter_client_t client)
 {
-	g_mutex_lock(client->mutex);
+	pthread_mutex_lock(&client->mutex);
 }
 
 /**
@@ -45,7 +45,7 @@ static void mobile_image_mounter_lock(mobile_image_mounter_client_t client)
  */
 static void mobile_image_mounter_unlock(mobile_image_mounter_client_t client)
 {
-	g_mutex_unlock(client->mutex);
+	pthread_mutex_unlock(&client->mutex);
 }
 
 /**
@@ -90,10 +90,6 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
  */
 mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t port, mobile_image_mounter_client_t *client)
 {
-	/* makes sure thread environment is available */
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
 	if (!device)
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
 
@@ -105,7 +101,7 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t
 	mobile_image_mounter_client_t client_loc = (mobile_image_mounter_client_t) malloc(sizeof(struct mobile_image_mounter_client_private));
 	client_loc->parent = plistclient;
 
-	client_loc->mutex = g_mutex_new();
+	pthread_mutex_init(&client_loc->mutex, NULL);
 
 	*client = client_loc;
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;
@@ -127,9 +123,7 @@ mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_clie
 
 	property_list_service_client_free(client->parent);
 	client->parent = NULL;
-	if (client->mutex) {
-		g_mutex_free(client->mutex);
-	}
+	pthread_mutex_destroy(&client->mutex);
 	free(client);
 
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;

@@ -21,14 +21,14 @@
 #ifndef IMOBILE_IMAGE_MOUNTER_H
 #define IMOBILE_IMAGE_MOUNTER_H
 
-#include <glib.h>
+#include <pthread.h>
 
 #include "libimobiledevice/mobile_image_mounter.h"
 #include "property_list_service.h"
 
 struct mobile_image_mounter_client_private {
 	property_list_service_client_t parent;
-	GMutex *mutex;
+	pthread_mutex_t mutex;
 };
 
 #endif

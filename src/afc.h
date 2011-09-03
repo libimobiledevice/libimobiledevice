@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#include <glib.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include "libimobiledevice/afc.h"
 
@@ -53,7 +53,7 @@ struct afc_client_private {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
-	GMutex *mutex;
+	pthread_mutex_t mutex;
 	int own_connection;
 };
 
