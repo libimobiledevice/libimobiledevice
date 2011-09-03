@@ -23,7 +23,8 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <glib.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -57,6 +58,36 @@ static const char *domains[] = {
 	"com.apple.mobile.iTunes",
 	NULL
 };
+
+static const char base64_str[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64_pad = '=';
+
+static char *base64encode(const unsigned char *buf, size_t size)
+{
+	if (!buf || !(size > 0)) return NULL;
+	int outlen = (size / 3) * 4;
+	char *outbuf = (char*)malloc(outlen+5); // 4 spare bytes + 1 for '\0'
+	size_t n = 0;
+	size_t m = 0;
+	unsigned char input[3];
+	unsigned int output[4];
+	while (n < size) {
+		input[0] = buf[n];
+		input[1] = (n+1 < size) ? buf[n+1] : 0;
+		input[2] = (n+2 < size) ? buf[n+2] : 0;
+		output[0] = input[0] >> 2;
+		output[1] = ((input[0] & 3) << 4) + (input[1] >> 4);
+		output[2] = ((input[1] & 15) << 2) + (input[2] >> 6);
+		output[3] = input[2] & 63;
+		outbuf[m++] = base64_str[(int)output[0]];
+		outbuf[m++] = base64_str[(int)output[1]];
+		outbuf[m++] = (n+1 < size) ? base64_str[(int)output[2]] : base64_pad;
+		outbuf[m++] = (n+2 < size) ? base64_str[(int)output[3]] : base64_pad;
+		n+=3;
+	}
+	outbuf[m] = 0; // 0-termination!
+	return outbuf;
+}
 
 static int indent_level = 0;
 
@@ -121,7 +152,7 @@ static void plist_node_to_string(plist_t node)
 	double d;
 	uint8_t b;
 	uint64_t u = 0;
-	GTimeVal tv = { 0, 0 };
+	struct timeval tv = { 0, 0 };
 
 	plist_type t;
 
@@ -161,10 +192,14 @@ static void plist_node_to_string(plist_t node)
 	case PLIST_DATA:
 		plist_get_data_val(node, &data, &u);
 		if (u > 0) {
-			s = g_base64_encode((guchar *)data, u);
+			s = base64encode((unsigned char*)data, u);
 			free(data);
-			printf("%s\n", s);
-			g_free(s);
+			if (s) {
+				printf("%s\n", s);
+				free(s);
+			} else {
+				printf("\n");
+			}
 		} else {
 			printf("\n");
 		}
@@ -172,9 +207,24 @@ static void plist_node_to_string(plist_t node)
 
 	case PLIST_DATE:
 		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
-		s = g_time_val_to_iso8601(&tv);
-		printf("%s\n", s);
-		free(s);
+		{
+			time_t ti = (time_t)tv.tv_sec;
+			struct tm *btime = localtime(&ti);
+			if (btime) {
+				s = (char*)malloc(24);
+ 				memset(s, 0, 24);
+				if (strftime(s, 24, "%Y-%m-%dT%H:%M:%SZ", btime) <= 0) {
+					free (s);
+					s = NULL;
+				}
+			}
+		}
+		if (s) {
+			printf("%s\n", s);
+			free(s);
+		} else {
+			printf("\n");
+		}
 		break;
 
 	case PLIST_ARRAY:

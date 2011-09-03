@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <glib.h>
 #include <plist/plist.h>
 
 #include "property_list_service.h"

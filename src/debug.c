@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "debug.h"
 #include "libimobiledevice/libimobiledevice.h"
@@ -54,7 +55,7 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	time_t the_time;
 
 	time(&the_time);
-	str_time = g_new0 (gchar, 255);
+	str_time = (char*)malloc(255);
 	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
 
 	/* generate header text */

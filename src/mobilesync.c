@@ -27,7 +27,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <glib.h>
 
 #include "mobilesync.h"
 #include "device_link_service.h"

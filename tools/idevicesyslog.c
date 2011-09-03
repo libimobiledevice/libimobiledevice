@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <glib.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -123,7 +122,7 @@ int main(int argc, char *argv[])
 					break;
 				}
 
-				datalen = GUINT32_FROM_BE(datalen);
+				datalen = be32toh(datalen);
 
 				if (datalen == 0)
 					continue;

@@ -24,7 +24,14 @@
 #define DEBUG_H
 
 #include <plist/plist.h>
-#include <glib.h>
+
+#ifndef LIBIMOBILEDEVICE_INTERNAL
+#ifdef WIN32
+#define LIBIMOBILEDEVICE_INTERNAL
+#else
+#define LIBIMOBILEDEVICE_INTERNAL __attribute__((visibility("hidden")))
+#endif
+#endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && !defined(STRIP_DEBUG_CODE)
 #define debug_info(...) debug_info_real (__func__, __FILE__, __LINE__, __VA_ARGS__)
@@ -37,14 +44,14 @@
 #define debug_plist(a)
 #endif
 
-G_GNUC_INTERNAL inline void debug_info_real(const char *func,
+LIBIMOBILEDEVICE_INTERNAL inline void debug_info_real(const char *func,
 											const char *file,
 											int	line,
 											const char *format, ...);
 
-G_GNUC_INTERNAL inline void debug_buffer(const char *data, const int length);
-G_GNUC_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
-G_GNUC_INTERNAL inline void debug_plist_real(const char *func,
+LIBIMOBILEDEVICE_INTERNAL inline void debug_buffer(const char *data, const int length);
+LIBIMOBILEDEVICE_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
+LIBIMOBILEDEVICE_INTERNAL inline void debug_plist_real(const char *func,
 											const char *file,
 											int	line,
 											plist_t plist);

@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <glib.h>
-#include <glib/gstdio.h>
-#include <glib/gprintf.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,6 +26,15 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #include <gcrypt.h>
+
+#include <dirent.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#include <errno.h>
+
+#ifdef WIN32
+#include <shlobj.h>
+#endif
 
 #include "userpref.h"
 #include "debug.h"
@@ -41,18 +47,239 @@
 #define LIBIMOBILEDEVICE_ROOT_CERTIF "RootCertificate.pem"
 #define LIBIMOBILEDEVICE_HOST_CERTIF "HostCertificate.pem"
 
+#ifdef WIN32
+#define DIR_SEP '\\'
+#define DIR_SEP_S "\\"
+#else
+#define DIR_SEP '/'
+#define DIR_SEP_S "/"
+#endif
+
+static char __config_dir[512] = {0, };
+
+#ifdef WIN32
+static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read, long *items_written)
+{
+	if (!unistr || (len <= 0)) return NULL;
+	char *outbuf = (char*)malloc(3*(len+1));
+	int p = 0;
+	int i = 0;
+
+	wchar_t wc;
+
+	while (i < len) {
+		wc = unistr[i++];
+		if (wc >= 0x800) {
+			outbuf[p++] = (char)(0xE0 + ((wc >> 12) & 0xF));
+			outbuf[p++] = (char)(0x80 + ((wc >> 6) & 0x3F));
+			outbuf[p++] = (char)(0x80 + (wc & 0x3F));
+		} else if (wc >= 0x80) {
+			outbuf[p++] = (char)(0xC0 + ((wc >> 6) & 0x1F));
+			outbuf[p++] = (char)(0x80 + (wc & 0x3F));
+		} else {
+			outbuf[p++] = (char)(wc & 0x7F);
+		}
+	}
+	if (items_read) {
+		*items_read = i;
+	}
+	if (items_written) {
+		*items_written = p;
+	}
+	outbuf[p] = 0;
+
+	return outbuf;
+}
+#endif
+
+static const char *userpref_get_config_dir()
+{
+	if (__config_dir[0]) return __config_dir;
+#ifdef WIN32
+	wchar_t path[MAX_PATH+1];
+	HRESULT hr;
+	LPITEMIDLIST pidl = NULL;
+	BOOL b = FALSE;
+
+	hr = SHGetSpecialFolderLocation (NULL, CSIDL_LOCAL_APPDATA, &pidl);
+	if (hr == S_OK) {
+		b = SHGetPathFromIDListW (pidl, path);
+		if (b) {
+			char *cdir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
+			strcpy(__config_dir, cdir);
+			free(cdir);
+			CoTaskMemFree (pidl);
+		}
+	}
+#else
+	const char *cdir = getenv("XDG_CONFIG_HOME");
+	if (!cdir) {
+		cdir = getenv("HOME");
+		strcpy(__config_dir, cdir);
+		strcat(__config_dir, DIR_SEP_S);
+		strcat(__config_dir, ".config");
+	} else {
+		strcpy(__config_dir, cdir);
+	}
+#endif
+	strcat(__config_dir, DIR_SEP_S);
+	strcat(__config_dir, LIBIMOBILEDEVICE_CONF_DIR);
+
+	int i = strlen(__config_dir)-1;	
+	while ((i > 0) && (__config_dir[i] == DIR_SEP)) {
+		__config_dir[i--] = '\0';
+	}
+
+	return __config_dir;
+}
+
+static int mkdir_with_parents(const char *dir, int mode)
+{
+	if (!dir) return -1;
+	if (mkdir(dir, mode) == 0) {
+		return 0;
+	} else {
+		if (errno == EEXIST) return 0;	
+	}
+	int res;
+	char *parent = strdup(dir);
+	parent = dirname(parent);
+	if (parent) {
+		res = mkdir_with_parents(parent, mode);
+	} else {
+		res = -1;	
+	}
+	free(parent);
+	if (res == 0) {
+		mkdir_with_parents(dir, mode);
+	}
+	return res;
+}
+
+static int config_write(const char *cfgfile, plist_t dict)
+{
+	if (!cfgfile || !dict || (plist_get_node_type(dict) != PLIST_DICT)) {
+		return -1;
+	}
+	int res = -1;
+
+#if 1 // old style config
+	plist_t hostid = plist_dict_get_item(dict, "HostID");
+	if (hostid && (plist_get_node_type(hostid) == PLIST_STRING)) {
+		char *hostidstr = NULL;
+		plist_get_string_val(hostid, &hostidstr);
+		if (hostidstr) {
+			FILE *fd = fopen(cfgfile, "w");
+			if (fd) {
+				fprintf(fd, "\n[Global]\nHostID=%s\n", hostidstr);
+				fclose(fd);
+				res = 0;
+			}
+			free(hostidstr);
+		}
+	}
+#endif
+#if 0
+	char *xml = NULL;
+	uint32_t length = 0;
+
+	plist_to_xml(dict, &xml, &length);
+	if (!xml) {
+		return res;
+	}
+
+	FILE *fd = fopen(cfgfile, "w");
+	if (!fd) {
+		free(xml);
+		return res;
+	}
+
+	if (fwrite(xml, 1, length, fd) == length) {
+		res = 0;
+	} else {
+		fprintf(stderr, "%s: ERROR: failed to write configuration to '%s'\n", __func__, cfgfile);
+	}
+	fclose(fd);
+
+	free(xml);
+#endif
+	return res;
+}
+
+static int config_read(const char *cfgfile, plist_t *dict)
+{
+	if (!cfgfile || !dict) {
+		return -1;
+	}
+
+	int res = -1;
+	FILE *fd = fopen(cfgfile, "r+");
+	if (!fd) {
+		return -1;
+	}
+
+	fseek(fd, 0, SEEK_END);
+	unsigned long int size = ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+	unsigned char *contents = NULL;
+
+	contents = malloc(size);
+	if (fread(contents, 1, size, fd) != size) {
+		free(contents);
+		fclose(fd);
+		return -1;
+	}
+	plist_t plist = NULL;
+
+	if (!memcmp(contents, "bplist00", 8)) {
+		plist_from_bin((const char*)contents, (uint32_t)size, &plist);
+		fclose(fd);
+	} else {
+		if (memchr(contents, '<', size)) {
+			plist_from_xml((const char*)contents, (uint32_t)size, &plist);
+		}
+		if (plist) {
+			fclose(fd);
+		} else {
+			// try parsing old format config file
+			char line[256];
+			fseek(fd, 0, SEEK_SET);
+			while (fgets(line, 256, fd)) {
+				size_t llen = strlen(line)-1;
+				while ((llen > 0) && ((line[llen] == '\n') || (line[llen] == '\r'))) {
+					line[llen] = '\0';
+				}
+				if (!strncmp(line, "HostID=", 7)) {
+					plist = plist_new_dict();
+					plist_dict_insert_item(plist, "HostID", plist_new_string(line+7));
+					break;
+				}
+			}
+			fclose(fd);
+			if (plist) {
+				// write new format config
+				config_write(cfgfile, plist);
+			}
+		}
+	}
+	free(contents);
+	if (plist) {
+		*dict = plist;
+		res = 0;
+	}
+	return res;
+}
 
 /**
  * Creates a freedesktop compatible configuration directory.
  */
 static void userpref_create_config_dir(void)
 {
-	gchar *config_dir = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, NULL);
-
-	if (!g_file_test(config_dir, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
-		g_mkdir_with_parents(config_dir, 0755);
-
-	g_free(config_dir);
+	const char *config_path = userpref_get_config_dir();
+	struct stat st;
+	if (stat(config_path, &st) != 0) {
+		mkdir_with_parents(config_path, 0755);
+	}
 }
 
 static int get_rand(int min, int max)
@@ -94,10 +321,8 @@ static char *userpref_generate_host_id()
  */
 static int userpref_set_host_id(const char *host_id)
 {
-	GKeyFile *key_file;
-	gsize length;
-	gchar *buf, *config_file;
-	GIOChannel *file;
+	const char *config_path;
+	char *config_file;
 
 	if (!host_id)
 		return 0;
@@ -105,24 +330,34 @@ static int userpref_set_host_id(const char *host_id)
 	/* Make sure config directory exists */
 	userpref_create_config_dir();
 
+	config_path = userpref_get_config_dir();
+	config_file = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_CONF_FILE)+1);
+	strcpy(config_file, config_path);
+	strcat(config_file, DIR_SEP_S);
+	strcat(config_file, LIBIMOBILEDEVICE_CONF_FILE);
+
 	/* Now parse file to get the HostID */
-	key_file = g_key_file_new();
+	plist_t config = NULL;
+	config_read(config_file, &config);
+	if (!config) {
+		config = plist_new_dict();
+		plist_dict_insert_item(config, "HostID", plist_new_string(host_id));
+	} else {
+		plist_t n = plist_dict_get_item(config, "HostID");
+		if (n) {
+			plist_set_string_val(n, host_id);
+		} else {
+			plist_dict_insert_item(config, "HostID", plist_new_string(host_id));
+		}
+	}
 
 	/* Store in config file */
 	debug_info("setting hostID to %s", host_id);
-	g_key_file_set_value(key_file, "Global", "HostID", host_id);
 
-	/* Write config file on disk */
-	buf = g_key_file_to_data(key_file, &length, NULL);
-	config_file =
-		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_CONF_FILE, NULL);
-	file = g_io_channel_new_file(config_file, "w", NULL);
-	g_free(config_file);
-	g_io_channel_write_chars(file, buf, length, NULL, NULL);
-	g_io_channel_shutdown(file, TRUE, NULL);
-	g_io_channel_unref(file);
+	config_write(config_file, config);
+	plist_free(config);
 
-	g_key_file_free(key_file);
+	free(config_file);
 	return 1;
 }
 
@@ -135,23 +370,25 @@ static int userpref_set_host_id(const char *host_id)
  */
 void userpref_get_host_id(char **host_id)
 {
-	gchar *config_file;
-	GKeyFile *key_file;
-	gchar *loc_host_id;
+	const char *config_path;
+	char *config_file;
 
-	config_file =
-		g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_CONF_FILE, NULL);
+	config_path = userpref_get_config_dir();
+	config_file = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_CONF_FILE)+1);
+	strcpy(config_file, config_path);
+	strcat(config_file, DIR_SEP_S);
+	strcat(config_file, LIBIMOBILEDEVICE_CONF_FILE);
 
 	/* now parse file to get the HostID */
-	key_file = g_key_file_new();
-	if (g_key_file_load_from_file(key_file, config_file, G_KEY_FILE_KEEP_COMMENTS, NULL)) {
-		loc_host_id = g_key_file_get_value(key_file, "Global", "HostID", NULL);
-		if (loc_host_id)
-			*host_id = strdup((char *) loc_host_id);
-		g_free(loc_host_id);
+	plist_t config = NULL;
+	if (config_read(config_file, &config) == 0) {
+		plist_t n_host_id = plist_dict_get_item(config, "HostID");
+		if (n_host_id && (plist_get_node_type(n_host_id) == PLIST_STRING)) {
+			plist_get_string_val(n_host_id, host_id);
+		}
 	}
-	g_key_file_free(key_file);
-	g_free(config_file);
+	plist_free(config);
+	free(config_file);
 
 	if (!*host_id) {
 		/* no config, generate host_id */
@@ -173,15 +410,23 @@ void userpref_get_host_id(char **host_id)
 int userpref_has_device_public_key(const char *uuid)
 {
 	int ret = 0;
-	gchar *config_file;
+	const char *config_path;
+	char *config_file;
+	struct stat st;
+
+	if (!uuid) return 0;
 
 	/* first get config file */
-	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	config_file = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
-	if (g_file_test(config_file, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)))
+	config_path = userpref_get_config_dir();
+	config_file = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	strcpy(config_file, config_path);
+	strcat(config_file, DIR_SEP_S);
+	strcat(config_file, uuid);
+	strcat(config_file, ".pem");
+
+	if ((stat(config_file, &st) == 0) && S_ISREG(st.st_mode))
 		ret = 1;
-	g_free(config_file);
-	g_free(device_file);
+	free(config_file);
 	return ret;
 }
 
@@ -202,10 +447,13 @@ int userpref_has_device_public_key(const char *uuid)
  */
 userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 {
-	GDir *config_dir;
-	gchar *config_path;
-	const gchar *dir_file;
-	GList *uuids = NULL;
+	struct slist_t {
+		char *name;
+		void *next;
+	};
+	DIR *config_dir;
+	const char *config_path;
+	struct slist_t *uuids = NULL;
 	unsigned int i;
 	unsigned int found = 0;
 
@@ -218,29 +466,44 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 		*count = 0;
 	}
 
-	config_path = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, NULL);
-
-	config_dir = g_dir_open(config_path,0,NULL);
+	config_path = userpref_get_config_dir();
+	config_dir = opendir(config_path);
 	if (config_dir) {
-		while ((dir_file = g_dir_read_name(config_dir))) {
-			if (g_str_has_suffix(dir_file, ".pem") && (strlen(dir_file) == 44)) {
-				uuids = g_list_append(uuids, g_strndup(dir_file, strlen(dir_file)-4));
+		struct dirent *entry;
+		struct slist_t *listp = uuids;
+		while ((entry = readdir(config_dir))) {
+			char *ext = strstr(entry->d_name, ".pem");
+			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == 44)) {
+				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
+				ne->name = (char*)malloc(41);
+				strncpy(ne->name, entry->d_name, 40);
+				ne->name[40] = 0;
+				ne->next = NULL;
+				if (!listp) {
+					listp = ne;
+					uuids = listp;
+				} else {
+					listp->next = ne;
+					listp = listp->next;
+				}
 				found++;
 			}
 		}
-		g_dir_close(config_dir);
+		closedir(config_dir);
 	}
 	*list = (char**)malloc(sizeof(char*) * (found+1));
-	for (i = 0; i < found; i++) {
-		(*list)[i] = g_list_nth_data(uuids, i);
+	i = 0;
+	while (uuids) {
+		(*list)[i++] = uuids->name;
+		struct slist_t *old = uuids;
+		uuids = uuids->next;
+		free(old);
 	}
 	(*list)[i] = NULL;
 
 	if (count) {
 		*count = found;
 	}
-	g_list_free(uuids);
-	g_free(config_path);
 
 	return USERPREF_E_SUCCESS;
 }
@@ -266,15 +529,18 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t
 	userpref_create_config_dir();
 
 	/* build file path */
-	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
+	const char *config_path = userpref_get_config_dir();
+	char *pem = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, uuid);
+	strcat(pem, ".pem");
 
 	/* store file */
 	FILE *pFile = fopen(pem, "wb");
 	fwrite(public_key.data, 1, public_key.size, pFile);
 	fclose(pFile);
-	g_free(pem);
-	g_free(device_file);
+	free(pem);
 
 	return USERPREF_E_SUCCESS;
 }
@@ -292,14 +558,17 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
 		return USERPREF_E_SUCCESS;
 
 	/* build file path */
-	gchar *device_file = g_strconcat(uuid, ".pem", NULL);
-	gchar *pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, device_file, NULL);
+	const char *config_path = userpref_get_config_dir();
+	char *pem = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, uuid);
+	strcat(pem, ".pem");
 
 	/* remove file */
-	g_remove(pem);
+	remove(pem);
 
-	g_free(pem);
-	g_free(device_file);
+	free(pem);
 
 	return USERPREF_E_SUCCESS;
 }
@@ -314,18 +583,50 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
  */
 static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 {
-	gboolean success;
-	gsize size;
-	char *content;
-	gchar *filepath;
+	int success;
+	unsigned long int size = 0;
+	unsigned char *content = NULL;
+	const char *config_path;
+	char *filepath;
+	FILE *fd;
 
 	if (NULL == file || NULL == data)
 		return 0;
 
 	/* Read file */
-	filepath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, file, NULL);
-	success = g_file_get_contents(filepath, &content, &size, NULL);
-	g_free(filepath);
+	config_path = userpref_get_config_dir();
+	filepath = (char*)malloc(strlen(config_path)+1+strlen(file)+1);
+	strcpy(filepath, config_path);
+	strcat(filepath, DIR_SEP_S);
+	strcat(filepath, file);
+
+	fd = fopen(filepath, "rb");
+	if (fd) {
+		fseek(fd, 0, SEEK_END);
+		size = ftell(fd);
+		fseek(fd, 0, SEEK_SET);
+
+		// prevent huge files
+		if (size > 0xFFFFFF) {
+			fprintf(stderr, "%s: file is too big (> 16MB). Refusing to read the contents to memory!", __func__);
+		} else {
+			size_t p = 0;
+			content = (unsigned char*)malloc(size);
+			while (!feof(fd)) {
+				p += fread(content+p, 1, size-p, fd);
+				if (ferror(fd) != 0) {
+					break;
+				}
+				if (p >= size) {
+					success = 1;
+					break;
+				}
+			}
+		}
+		fclose(fd);
+	}
+
+	free(filepath);
 
 	/* Add it to the gnutls_datnum_t structure */
 	if (success) {
@@ -549,8 +850,8 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
 	if (userpref_get_file_contents(LIBIMOBILEDEVICE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIMOBILEDEVICE_HOST_CERTIF, pem_host_cert))
 		return USERPREF_E_SUCCESS;
 	else {
-		g_free(pem_root_cert->data);
-		g_free(pem_host_cert->data);
+		gnutls_free(pem_root_cert->data);
+		gnutls_free(pem_host_cert->data);
 	}
 	return USERPREF_E_INVALID_CONF;
 }
@@ -570,7 +871,8 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
 userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert)
 {
 	FILE *pFile;
-	gchar *pem;
+	char *pem;
+	const char *config_path;
 
 	if (!root_key || !host_key || !root_cert || !host_cert)
 		return USERPREF_E_INVALID_ARG;
@@ -578,30 +880,44 @@ userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_d
 	/* Make sure config directory exists */
 	userpref_create_config_dir();
 
+	config_path = userpref_get_config_dir();
+
 	/* Now write keys and certificates to disk */
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_ROOT_PRIVKEY, NULL);
+	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_ROOT_PRIVKEY)+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, LIBIMOBILEDEVICE_ROOT_PRIVKEY);
 	pFile = fopen(pem, "wb");
 	fwrite(root_key->data, 1, root_key->size, pFile);
 	fclose(pFile);
-	g_free(pem);
+	free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_HOST_PRIVKEY, NULL);
+	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_PRIVKEY)+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, LIBIMOBILEDEVICE_HOST_PRIVKEY);
 	pFile = fopen(pem, "wb");
 	fwrite(host_key->data, 1, host_key->size, pFile);
 	fclose(pFile);
-	g_free(pem);
+	free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_ROOT_CERTIF, NULL);
+	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_ROOT_CERTIF)+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, LIBIMOBILEDEVICE_ROOT_CERTIF);
 	pFile = fopen(pem, "wb");
 	fwrite(root_cert->data, 1, root_cert->size, pFile);
 	fclose(pFile);
-	g_free(pem);
+	free(pem);
 
-	pem = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), LIBIMOBILEDEVICE_CONF_DIR, LIBIMOBILEDEVICE_HOST_CERTIF, NULL);
+	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_CERTIF)+1);
+	strcpy(pem, config_path);
+	strcat(pem, DIR_SEP_S);
+	strcat(pem, LIBIMOBILEDEVICE_HOST_CERTIF);
 	pFile = fopen(pem, "wb");
 	fwrite(host_cert->data, 1, host_cert->size, pFile);
 	fclose(pFile);
-	g_free(pem);
+	free(pem);
 
 	return USERPREF_E_SUCCESS;
 }

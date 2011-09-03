@@ -23,7 +23,14 @@
 #define USERPREF_H
 
 #include <gnutls/gnutls.h>
-#include <glib.h>
+
+#ifndef LIBIMOBILEDEVICE_INTERNAL
+#ifdef WIN32
+#define LIBIMOBILEDEVICE_INTERNAL
+#else
+#define LIBIMOBILEDEVICE_INTERNAL __attribute__((visibility("hidden")))
+#endif
+#endif
 
 #define USERPREF_E_SUCCESS             0
 #define USERPREF_E_INVALID_ARG        -1
@@ -34,12 +41,12 @@
 
 typedef int16_t userpref_error_t;
 
-G_GNUC_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
-G_GNUC_INTERNAL userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
-G_GNUC_INTERNAL userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
-G_GNUC_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
 userpref_error_t userpref_remove_device_public_key(const char *uuid);
-G_GNUC_INTERNAL int userpref_has_device_public_key(const char *uuid);
+LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_public_key(const char *uuid);
 userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count);
 void userpref_get_host_id(char **host_id);
 

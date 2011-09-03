@@ -1,10 +1,14 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(LFS_CFLAGS)
+AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libpthread_LIBS)
 
 if ENABLE_DEVTOOLS
-noinst_PROGRAMS = ideviceclient lckd-client afccheck filerelaytest housearresttest
+noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest
+
+if HAVE_GLIB2
+noinst_PROGRAMS += lckd-client
+endif
 
 ideviceclient_SOURCES = ideviceclient.c
 ideviceclient_CFLAGS = $(AM_CFLAGS)
@@ -12,8 +16,8 @@ ideviceclient_LDFLAGS = $(AM_LDFLAGS)
 ideviceclient_LDADD = ../src/libimobiledevice.la
 
 lckd_client_SOURCES = lckdclient.c
-lckd_client_CFLAGS = $(AM_CFLAGS)
-lckd_client_LDFLAGS = -lreadline $(AM_LDFLAGS)
+lckd_client_CFLAGS = $(AM_CFLAGS) $(libglib2_CFLAGS)
+lckd_client_LDFLAGS = -lreadline $(AM_LDFLAGS) $(libglib2_LIBS)
 lckd_client_LDADD = ../src/libimobiledevice.la
 
 afccheck_SOURCES = afccheck.c

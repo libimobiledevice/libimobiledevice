@@ -21,8 +21,6 @@
 #ifndef IHOUSE_ARREST_H
 #define IHOUSE_ARREST_H
 
-#include <glib.h>
-
 #include "libimobiledevice/house_arrest.h"
 #include "property_list_service.h"
 

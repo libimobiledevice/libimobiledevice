@@ -33,16 +33,16 @@ typedef struct {
 } AFCPacket;
 
 #define AFCPacket_to_LE(x) \
- 	(x)->entire_length = GUINT64_TO_LE((x)->entire_length); \
-	(x)->this_length   = GUINT64_TO_LE((x)->this_length); \
-	(x)->packet_num    = GUINT64_TO_LE((x)->packet_num); \
-	(x)->operation     = GUINT64_TO_LE((x)->operation);
+ 	(x)->entire_length = htole64((x)->entire_length); \
+	(x)->this_length   = htole64((x)->this_length); \
+	(x)->packet_num    = htole64((x)->packet_num); \
+	(x)->operation     = htole64((x)->operation);
 
 #define AFCPacket_from_LE(x) \
-	(x)->entire_length = GUINT64_FROM_LE((x)->entire_length); \
-	(x)->this_length   = GUINT64_FROM_LE((x)->this_length); \
-	(x)->packet_num    = GUINT64_FROM_LE((x)->packet_num); \
-	(x)->operation     = GUINT64_FROM_LE((x)->operation);
+	(x)->entire_length = le64toh((x)->entire_length); \
+	(x)->this_length   = le64toh((x)->this_length); \
+	(x)->packet_num    = le64toh((x)->packet_num); \
+	(x)->operation     = le64toh((x)->operation);
 
 typedef struct {
 	uint64_t filehandle, size;

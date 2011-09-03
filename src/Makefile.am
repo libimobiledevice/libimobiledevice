@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libglib2_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgthread2_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libglib2_LIBS) $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgthread2_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
+AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS) ${libpthread_LIBS}
 
 lib_LTLIBRARIES = libimobiledevice.la
 libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined

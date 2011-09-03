@@ -27,12 +27,15 @@ AC_PROG_LIBTOOL
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.4)
-PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1)
 PKG_CHECK_MODULES(libgnutls, gnutls >= 2.2.0)
 PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
 AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice])])
+AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
+
+PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1, enable_glib2=yes, enable_glib2=no)
+AM_CONDITIONAL([HAVE_GLIB2],[test "x$enable_glib2" == "xyes"])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -50,6 +53,17 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
+
+AC_DEFINE(LITTLE_ENDIAN,0,[little endian])
+AC_DEFINE(BIG_ENDIAN,1,[big endian])
+AC_C_BIGENDIAN([ac_cv_c_bigendian="yes"], [ac_cv_c_bigendian="no"], [], [])
+if test "x$ac_cv_c_bigendian" = "xyes"; then
+    AC_DEFINE(BYTE_ORDER,1,[big endian byte order])
+else
+    AC_DEFINE(BYTE_ORDER,0,[little endian byte order])
+fi
+
+
 
 AC_ARG_WITH([swig],
             [AS_HELP_STRING([--without-swig],

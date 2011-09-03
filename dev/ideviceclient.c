@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <glib.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -138,18 +137,20 @@ int main(int argc, char *argv[])
 			printf("Directory time.\n");
 			for (i = 0; dirs[i]; i++) {
 				printf("/%s\n", dirs[i]);
+				free(dirs[i]);
 			}
-
-			g_strfreev(dirs);
+			if (dirs)
+				free(dirs);
 
 			dirs = NULL;
 			afc_get_device_info(afc, &dirs);
 			if (dirs) {
 				for (i = 0; dirs[i]; i += 2) {
 					printf("%s: %s\n", dirs[i], dirs[i + 1]);
+					free(dirs[i]);
 				}
+				free(dirs);
 			}
-			g_strfreev(dirs);
 
 			uint64_t my_file = 0;
 			char **info = NULL;

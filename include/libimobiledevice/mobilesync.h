@@ -29,7 +29,6 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
-#include <glib.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -93,7 +92,7 @@ mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const cha
 void mobilesync_anchors_free(mobilesync_anchors_t anchors);
 
 plist_t mobilesync_actions_new();
-void mobilesync_actions_add(plist_t actions, ...) G_GNUC_NULL_TERMINATED;
+void mobilesync_actions_add(plist_t actions, ...);
 void mobilesync_actions_free(plist_t actions);
 
 #ifdef __cplusplus

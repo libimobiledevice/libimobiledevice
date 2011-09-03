@@ -148,9 +148,10 @@ int main(int argc, char **argv)
 		userpref_get_paired_uuids(&uuids, &count);
 		for (i = 0; i < count; i++) {
 			printf("%s\n", uuids[i]);
+			free(uuids[i]);
 		}
 		if (uuids)
-			g_strfreev(uuids);
+			free(uuids);
 		if (uuid)
 			free(uuid);
 		return EXIT_SUCCESS;

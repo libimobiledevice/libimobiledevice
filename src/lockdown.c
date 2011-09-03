@@ -26,7 +26,6 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
-#include <glib.h>
 #include <libtasn1.h>
 #include <gnutls/x509.h>
 #include <plist/plist.h>
@@ -1200,8 +1199,8 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 						memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
 						oroot_cert->size = pem_root_cert.size;
 
-						g_free(pem_root_cert.data);
-						g_free(pem_host_cert.data);
+						free(pem_root_cert.data);
+						free(pem_host_cert.data);
 
 						if (dev_pem.data)
 							gnutls_free(dev_pem.data);

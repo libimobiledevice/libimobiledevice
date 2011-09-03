@@ -28,7 +28,6 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
-#include <glib.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -66,7 +65,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
 plist_t instproxy_client_options_new();
-void instproxy_client_options_add(plist_t client_options, ...) G_GNUC_NULL_TERMINATED;
+void instproxy_client_options_add(plist_t client_options, ...);
 void instproxy_client_options_free(plist_t client_options);
 
 #ifdef __cplusplus

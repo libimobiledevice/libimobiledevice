@@ -20,7 +20,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <glib.h>
 
 #include "property_list_service.h"
 #include "idevice.h"
@@ -138,7 +137,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 		return PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
 
-	nlen = GUINT32_TO_BE(length);
+	nlen = htobe32(length);
 	debug_info("sending %d bytes", length);
 	idevice_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
@@ -226,7 +225,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("initial read failed!");
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	} else {
-		pktlen = GUINT32_FROM_BE(pktlen);
+		pktlen = be32toh(pktlen);
 		if (pktlen < (1 << 24)) { /* prevent huge buffers */
 			uint32_t curlen = 0;
 			char *content = NULL;

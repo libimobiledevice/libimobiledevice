@@ -28,8 +28,9 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
-#include <glib.h>
 #include <libgen.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -165,7 +166,7 @@ static void plist_node_to_string(plist_t node)
 	double d;
 	uint8_t b;
 	uint64_t u = 0;
-	GTimeVal tv = { 0, 0 };
+	struct timeval tv = { 0, 0 };
 
 	plist_type t;
 
@@ -214,9 +215,23 @@ static void plist_node_to_string(plist_t node)
 
 	case PLIST_DATE:
 		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
-		s = g_time_val_to_iso8601(&tv);
-		printf("%s\n", s);
-		free(s);
+		{
+			time_t ti = (time_t)tv.tv_sec;
+			struct tm *btime = localtime(&ti);
+			if (btime) {
+				s = (char*)malloc(24);
+ 				memset(s, 0, 24);
+				if (strftime(s, 24, "%Y-%m-%dT%H:%M:%SZ", btime) <= 0) {
+					free (s);
+					s = NULL;
+				}
+			}
+		}
+		if (s) {
+			puts(s);
+			free(s);
+		}
+		puts("\n");
 		break;
 
 	case PLIST_ARRAY:
