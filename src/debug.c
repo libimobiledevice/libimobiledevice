@@ -34,6 +34,10 @@
 #include "debug.h"
 #include "libimobiledevice/libimobiledevice.h"
 
+#ifndef STRIP_DEBUG_CODE
+#include "asprintf.h"
+#endif
+
 int debug_level = 0;
 
 /**

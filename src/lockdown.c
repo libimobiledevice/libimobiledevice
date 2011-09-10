@@ -35,6 +35,7 @@
 #include "idevice.h"
 #include "debug.h"
 #include "userpref.h"
+#include "asprintf.h"
 
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
