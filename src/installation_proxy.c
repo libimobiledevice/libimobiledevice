@@ -43,7 +43,11 @@ struct instproxy_status_data {
 static void instproxy_lock(instproxy_client_t client)
 {
 	debug_info("InstallationProxy: Locked");
+#ifdef WIN32
+	EnterCriticalSection(&client->mutex);
+#else
 	pthread_mutex_lock(&client->mutex);
+#endif
 }
 
 /**
@@ -54,7 +58,11 @@ static void instproxy_lock(instproxy_client_t client)
 static void instproxy_unlock(instproxy_client_t client)
 {
 	debug_info("InstallationProxy: Unlocked");
+#ifdef WIN32
+	LeaveCriticalSection(&client->mutex);
+#else
 	pthread_mutex_unlock(&client->mutex);
+#endif
 }
 
 /**
@@ -106,8 +114,13 @@ instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instprox
 
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));
 	client_loc->parent = plistclient;
+#ifdef WIN32
+	InitializeCriticalSection(&client_loc->mutex);
+	client_loc->status_updater = NULL;
+#else
 	pthread_mutex_init(&client_loc->mutex, NULL);
 	client_loc->status_updater = (pthread_t)NULL;
+#endif
 
 	*client = client_loc;
 	return INSTPROXY_E_SUCCESS;
@@ -131,9 +144,17 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client)
 	client->parent = NULL;
 	if (client->status_updater) {
 		debug_info("joining status_updater");
+#ifdef WIN32
+		WaitForSingleObject(client->status_updater, INFINITE);
+#else
 		pthread_join(client->status_updater, NULL);
+#endif
 	}
+#ifdef WIN32
+	DeleteCriticalSection(&client->mutex);
+#else
 	pthread_mutex_destroy(&client->mutex);
+#endif
 	free(client);
 
 	return INSTPROXY_E_SUCCESS;
@@ -356,7 +377,11 @@ static void* instproxy_status_updater(void* arg)
 	if (data->operation) {
 	    free(data->operation);
 	}
+#ifdef WIN32
+	data->client->status_updater = NULL;
+#else
 	data->client->status_updater = (pthread_t)NULL;
+#endif
 	instproxy_unlock(data->client);
 	free(data);
 
@@ -391,9 +416,18 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
 			data->operation = strdup(operation);
 			data->user_data = user_data;
 
+#ifdef WIN32
+			client->status_updater = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)instproxy_status_updater, data, 0, NULL);
+			if (client->status_updater != INVALID_HANDLE_VALUE) {
+				res = INSTPROXY_E_SUCCESS;
+			} else {
+				client->status_updater = NULL;
+			}
+#else
 			if (pthread_create(&client->status_updater, NULL, instproxy_status_updater, data) == 0) {
 				res = INSTPROXY_E_SUCCESS;
 			}
+#endif
 		}
 	} else {
 		/* sync mode */

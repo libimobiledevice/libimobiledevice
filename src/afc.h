@@ -20,7 +20,11 @@
  */
 
 #include <stdint.h>
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
+#endif
 
 #include "libimobiledevice/afc.h"
 
@@ -53,7 +57,11 @@ struct afc_client_private {
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
+#ifdef WIN32
+	CRITICAL_SECTION mutex;
+#else
 	pthread_mutex_t mutex;
+#endif
 	int own_connection;
 };
 

@@ -42,7 +42,11 @@ static const int MAXIMUM_PACKET_SIZE = (2 << 15);
 static void afc_lock(afc_client_t client)
 {
 	debug_info("Locked");
+#ifdef WIN32
+	EnterCriticalSection(&client->mutex);
+#else
 	pthread_mutex_lock(&client->mutex);
+#endif
 }
 
 /**
@@ -53,7 +57,11 @@ static void afc_lock(afc_client_t client)
 static void afc_unlock(afc_client_t client)
 {
 	debug_info("Unlocked");
+#ifdef WIN32
+	LeaveCriticalSection(&client->mutex);
+#else
 	pthread_mutex_unlock(&client->mutex);
+#endif
 }
 
 /**
@@ -92,7 +100,11 @@ afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_
 	memcpy(client_loc->afc_packet->magic, AFC_MAGIC, AFC_MAGIC_LEN);
 	client_loc->file_handle = 0;
 	client_loc->lock = 0;
+#ifdef WIN32
+	InitializeCriticalSection(&client_loc->mutex);
+#else
 	pthread_mutex_init(&client_loc->mutex, NULL);
+#endif
 
 	*client = client_loc;
 	return AFC_E_SUCCESS;
@@ -150,7 +162,11 @@ afc_error_t afc_client_free(afc_client_t client)
 		client->connection = NULL;
 	}
 	free(client->afc_packet);
+#ifdef WIN32
+	DeleteCriticalSection(&client->mutex);
+#else
 	pthread_mutex_destroy(&client->mutex);
+#endif
 	free(client);
 	return AFC_E_SUCCESS;
 }
@@ -402,7 +418,9 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 		*bytes_recv = 0;
 
 		debug_info("WARNING: Unknown operation code received 0x%llx param1=%lld", header.operation, param1);
+#ifndef WIN32
 		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld", __func__, (long long)header.operation, (long long)param1);
+#endif
 
 		return AFC_E_OP_NOT_SUPPORTED;
 	}
