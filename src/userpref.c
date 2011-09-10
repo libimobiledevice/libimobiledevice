@@ -133,10 +133,19 @@ static const char *userpref_get_config_dir()
 	return __config_dir;
 }
 
+static int __mkdir(const char *dir, int mode)
+{
+#ifdef WIN32
+	return mkdir(dir);
+#else
+	return mkdir(dir, mode);
+#endif
+}
+
 static int mkdir_with_parents(const char *dir, int mode)
 {
 	if (!dir) return -1;
-	if (mkdir(dir, mode) == 0) {
+	if (__mkdir(dir, mode) == 0) {
 		return 0;
 	} else {
 		if (errno == EEXIST) return 0;	
