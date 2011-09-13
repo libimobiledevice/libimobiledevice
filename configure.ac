@@ -54,6 +54,15 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
 
+AC_CHECK_FUNC(asprintf, [have_asprintf="yes"], [have_asprintf="no"])
+if test "x$have_asprintf" = "xyes"; then
+  AC_DEFINE(HAVE_ASPRINTF,1,[define if asprintf is available])
+fi
+AC_CHECK_FUNC(vasprintf, [have_vasprintf="yes"], [have_vasprintf="no"])
+if test "x$have_vasprintf" = "xyes"; then
+  AC_DEFINE(HAVE_VASPRINTF,1,[define if vasprintf is available])
+fi
+
 AC_DEFINE(LITTLE_ENDIAN,0,[little endian])
 AC_DEFINE(BIG_ENDIAN,1,[big endian])
 AC_C_BIGENDIAN([ac_cv_c_bigendian="yes"], [ac_cv_c_bigendian="no"], [], [])

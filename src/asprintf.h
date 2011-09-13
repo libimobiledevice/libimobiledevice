@@ -1,15 +1,24 @@
 #ifndef ASPRINTF_H
 #define ASPRINTF_H
-#ifndef vasprintf
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifndef HAVE_VASPRINTF
 static inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
 {
 	int res;
-	*PTR = (char*)malloc(512);
-	res = vsnprintf(*PTR, 512, TEMPLATE, AP);
+	res = vsnprintf(NULL, 32768, TEMPLATE, AP);
+	if (res > 0) {
+		*PTR = (char*)malloc(res+1);
+		res = vsnprintf(*PTR, res, TEMPLATE, AP);
+	}
 	return res;
 }
 #endif
-#ifndef asprintf
+
+#ifndef HAVE_ASPRINTF
 static inline int asprintf(char **PTR, const char *TEMPLATE, ...)
 {
 	int res;
@@ -20,4 +29,5 @@ static inline int asprintf(char **PTR, const char *TEMPLATE, ...)
 	return res;
 }
 #endif
-#endif
+
+#endif /* ASPRINTF_H */
