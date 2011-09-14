@@ -36,6 +36,8 @@ typedef struct {
 typedef gnutls_datum_t key_data_t;
 #endif
 
+#include <stdint.h>
+
 #ifndef LIBIMOBILEDEVICE_INTERNAL
 #ifdef WIN32
 #define LIBIMOBILEDEVICE_INTERNAL
