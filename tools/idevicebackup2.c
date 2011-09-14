@@ -27,7 +27,6 @@
 #include <signal.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <gcrypt.h>
 #include <unistd.h>
 
 #if !GLIB_CHECK_VERSION(2,25,0)

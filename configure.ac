@@ -27,11 +27,8 @@ AC_PROG_LIBTOOL
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.4)
-PKG_CHECK_MODULES(libgnutls, gnutls >= 2.2.0)
-PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
 PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
-AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice])])
 AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
 PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1, enable_glib2=yes, enable_glib2=no)
@@ -97,6 +94,39 @@ else
 fi
 
 AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
+
+AC_ARG_ENABLE([openssl],
+            [AS_HELP_STRING([--disable-openssl],
+            [Do not look for OpenSSL])],
+            [use_openssl=no],
+            [use_openssl=yes])
+
+PKG_CHECK_MODULES(openssl, openssl >= 0.9.8, have_openssl=yes, have_openssl=no)
+if test "x$have_openssl" = "xyes"; then
+  if test "x$use_openssl" != "xyes"; then
+    enable_openssl=no
+    echo "*** Note: OpenSSL support explicitly disabled ***"
+  else
+    enable_openssl=yes
+  fi
+else
+  if test "x$use_openssl" == "xyes" -a "x$have_openssl" != "xyes"; then
+    AC_MSG_ERROR([OpenSSL support explicitly requested but OpenSSL could not be found])
+  fi
+fi
+
+if test "x$enable_openssl" = "xyes"; then
+  AC_DEFINE(HAVE_OPENSSL, 1, [Define if you have OpenSSL support])
+  AC_SUBST(openssl_CFLAGS)
+  AC_SUBST(openssl_LIBS)
+  ssl_provider="OpenSSL";
+else
+  PKG_CHECK_MODULES(libgnutls, gnutls >= 2.2.0)
+  AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice with GnuTLS])])
+  PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
+  ssl_provider="GnuTLS"
+fi
+
 
 AC_SUBST([DEV_SUB])
 
@@ -186,6 +216,7 @@ Configuration for $PACKAGE $VERSION:
   Debug code ..............: $building_debug_code
   Dev tools ...............: $building_dev_tools
   Python bindings .........: $python_bindings
+  SSL support .............: $ssl_provider
 
   Now type 'make' to build $PACKAGE $VERSION,
   and then 'make install' for installation.

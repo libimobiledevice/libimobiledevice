@@ -20,13 +20,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <glib.h>
+#ifdef HAVE_OPENSSL
+#include <openssl/sha.h>
+#else
 #include <gcrypt.h>
+#endif
 #include <unistd.h>
 
 #include <libimobiledevice/libimobiledevice.h>
@@ -66,7 +74,11 @@ enum device_link_file_status_t {
 
 static void sha1_of_data(const char *input, uint32_t size, unsigned char *hash_out)
 {
+#ifdef HAVE_OPENSSL
+	SHA1((const unsigned char*)input, size, hash_out);
+#else
 	gcry_md_hash_buffer(GCRY_MD_SHA1, hash_out, input, size);
+#endif
 }
 
 static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, int hash_len)
@@ -82,6 +94,10 @@ static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, 
 
 static void compute_datahash(const char *path, const char *destpath, uint8_t greylist, const char *domain, const char *appid, const char *version, unsigned char *hash_out)
 {
+#ifdef HAVE_OPENSSL
+	SHA_CTX sha1;
+	SHA1_Init(&sha1);
+#else
 	gcry_md_hd_t hd = NULL;
 	gcry_md_open(&hd, GCRY_MD_SHA1, 0);
 	if (!hd) {
@@ -89,44 +105,103 @@ static void compute_datahash(const char *path, const char *destpath, uint8_t gre
 		return;
 	}
 	gcry_md_reset(hd);
-
+#endif
 	FILE *f = fopen(path, "rb");
 	if (f) {
 		unsigned char buf[16384];
 		size_t len;
 		while ((len = fread(buf, 1, 16384, f)) > 0) {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, buf, len);
+#else
 			gcry_md_write(hd, buf, len);
+#endif
 		}
 		fclose(f);
+#ifdef HAVE_OPENSSL
+		SHA1_Update(&sha1, destpath, strlen(destpath));
+		SHA1_Update(&sha1, ";", 1);
+#else
 		gcry_md_write(hd, destpath, strlen(destpath));
 		gcry_md_write(hd, ";", 1);
+#endif
 		if (greylist == 1) {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, "true", 4);
+#else
 			gcry_md_write(hd, "true", 4);
+#endif
 		} else {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, "false", 5);
+#else
 			gcry_md_write(hd, "false", 5);
+#endif
 		}
+#ifdef HAVE_OPENSSL
+		SHA1_Update(&sha1, ";", 1);
+#else
 		gcry_md_write(hd, ";", 1);
+#endif
 		if (domain) {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, domain, strlen(domain));
+#else
 			gcry_md_write(hd, domain, strlen(domain));
+#endif
 		} else {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, "(null)", 6);
+#else
 			gcry_md_write(hd, "(null)", 6);
+#endif
 		}
+#ifdef HAVE_OPENSSL
+		SHA1_Update(&sha1, ";", 1);
+#else
 		gcry_md_write(hd, ";", 1);
+#endif
 		if (appid) {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, appid, strlen(appid));
+#else
 			gcry_md_write(hd, appid, strlen(appid));
+#endif
 		} else {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, "(null)", 6);
+#else
 			gcry_md_write(hd, "(null)", 6);
+#endif
 		}
+#ifdef HAVE_OPENSSL
+		SHA1_Update(&sha1, ";", 1);
+#else
 		gcry_md_write(hd, ";", 1);
+#endif
 		if (version) {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, version, strlen(version));
+#else
 			gcry_md_write(hd, version, strlen(version));
+#endif
 		} else {
+#ifdef HAVE_OPENSSL
+			SHA1_Update(&sha1, "(null)", 6);
+#else
 			gcry_md_write(hd, "(null)", 6);
+#endif
 		}
+#ifdef HAVE_OPENSSL
+		SHA1_Final(hash_out, &sha1);
+#else
 		unsigned char *newhash = gcry_md_read(hd, GCRY_MD_SHA1);
 		memcpy(hash_out, newhash, 20);
+#endif
 	}
+#ifndef HAVE_OPENSSL
 	gcry_md_close(hd);
+#endif
 }
 
 static void print_hash(const unsigned char *hash, int len)

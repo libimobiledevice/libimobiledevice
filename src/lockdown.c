@@ -20,14 +20,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #define _GNU_SOURCE 1
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+#ifdef HAVE_OPENSSL
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#else
 #include <libtasn1.h>
 #include <gnutls/x509.h>
+#endif
 #include <plist/plist.h>
 
 #include "property_list_service.h"
@@ -40,6 +50,7 @@
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
 
+#ifndef HAVE_OPENSSL
 const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{"PKCS1", 536872976, 0},
 	{0, 1073741836, 0},
@@ -48,6 +59,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 	{"publicExponent", 3, 0},
 	{0, 0, 0}
 };
+#endif
 
 /**
  * Internally used function for checking the result from lockdown's answer
@@ -567,7 +579,7 @@ lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **uu
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key)
+lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, key_data_t * public_key)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t value = NULL;
@@ -783,13 +795,13 @@ static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_recor
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-static lockdownd_error_t generate_pair_record_plist(gnutls_datum_t public_key, char *host_id, plist_t *pair_record_plist)
+static lockdownd_error_t generate_pair_record_plist(key_data_t public_key, char *host_id, plist_t *pair_record_plist)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	gnutls_datum_t device_cert = { NULL, 0 };
-	gnutls_datum_t host_cert = { NULL, 0 };
-	gnutls_datum_t root_cert = { NULL, 0 };
+	key_data_t device_cert = { NULL, 0 };
+	key_data_t host_cert = { NULL, 0 };
+	key_data_t root_cert = { NULL, 0 };
 
 	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != LOCKDOWN_E_SUCCESS) {
@@ -844,7 +856,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
 	plist_t dict_record = NULL;
-	gnutls_datum_t public_key = { NULL, 0 };
+	key_data_t public_key = { NULL, 0 };
 	int pairing_mode = 0; /* 0 = libimobiledevice, 1 = external */
 
 	if (pair_record && pair_record->host_id) {
@@ -1096,14 +1108,145 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
  *  LOCKDOWN_E_INVALID_CONF if the internal configuration system failed,
  *  LOCKDOWN_E_SSL_ERROR if the certificates could not be generated
  */
-lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * odevice_cert,
-									   gnutls_datum_t * ohost_cert, gnutls_datum_t * oroot_cert)
+lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * odevice_cert,
+									   key_data_t * ohost_cert, key_data_t * oroot_cert)
 {
 	if (!public_key.data || !odevice_cert || !ohost_cert || !oroot_cert)
 		return LOCKDOWN_E_INVALID_ARG;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	userpref_error_t uret = USERPREF_E_UNKNOWN_ERROR;
 
+#ifdef HAVE_OPENSSL
+	BIO *membio = BIO_new_mem_buf(public_key.data, public_key.size);
+	RSA *pubkey = NULL;
+	if (!PEM_read_bio_RSAPublicKey(membio, &pubkey, NULL, NULL)) {
+		debug_info("%s: Could not read public key", __func__);	
+	}
+	BIO_free(membio);
+
+	/* now generate certificates */
+	key_data_t root_privkey, host_privkey;
+	key_data_t root_cert, host_cert;
+	X509* dev_cert;
+
+	root_cert.data = NULL;
+	root_cert.size = 0;
+	host_cert.data = NULL;
+	host_cert.size = 0;
+
+	dev_cert = X509_new();
+
+	root_privkey.data = NULL;
+	root_privkey.size = 0;
+	host_privkey.data = NULL;
+	host_privkey.size = 0;
+
+	uret = userpref_get_keys_and_certs(&root_privkey, &root_cert, &host_privkey, &host_cert);
+	if (USERPREF_E_SUCCESS == uret) {
+		/* generate device certificate */
+		ASN1_INTEGER* sn = ASN1_INTEGER_new();
+		ASN1_INTEGER_set(sn, 0);
+		X509_set_serialNumber(dev_cert, sn);
+		ASN1_INTEGER_free(sn);
+		X509_set_version(dev_cert, 2);
+
+		X509_EXTENSION* ext;
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		}
+		X509_add_ext(dev_cert, ext, -1);
+
+		ASN1_TIME* asn1time = ASN1_TIME_new();
+		ASN1_TIME_set(asn1time, time(NULL));
+		X509_set_notBefore(dev_cert, asn1time);
+		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		X509_set_notAfter(dev_cert, asn1time);
+		ASN1_TIME_free(asn1time);
+	
+		BIO* membp;
+
+		X509* rootCert = NULL;
+		membp = BIO_new_mem_buf(root_cert.data, root_cert.size);
+		PEM_read_bio_X509(membp, &rootCert, NULL, NULL);
+		BIO_free(membp);
+		if (!rootCert) {
+			debug_info("Could not read RootCertificate%*s");
+		} else {
+			debug_info("RootCertificate loaded");
+			EVP_PKEY* pkey = EVP_PKEY_new();
+			EVP_PKEY_assign_RSA(pkey, pubkey);
+			X509_set_pubkey(dev_cert, pkey);
+			EVP_PKEY_free(pkey);
+			X509_free(rootCert);
+		}
+
+		EVP_PKEY* rootPriv = NULL;
+		membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
+		PEM_read_bio_PrivateKey(membp, &rootPriv, NULL, NULL);
+		BIO_free(membp);
+		if (!rootPriv) {
+			debug_info("Could not read RootPrivateKey");
+		} else {
+			debug_info("RootPrivateKey loaded");
+			if (X509_sign(dev_cert, rootPriv, EVP_sha1())) {
+				ret = LOCKDOWN_E_SUCCESS;
+			} else {
+				debug_info("signing failed");
+			}
+			EVP_PKEY_free(rootPriv);
+		}
+
+		if (LOCKDOWN_E_SUCCESS == ret) {
+			/* if everything went well, export in PEM format */
+			key_data_t pem_root_cert = { NULL, 0 };
+			key_data_t pem_host_cert = { NULL, 0 };
+
+			uret = userpref_get_certs_as_pem(&pem_root_cert, &pem_host_cert);
+			if (USERPREF_E_SUCCESS == uret) {
+				/* copy buffer for output */
+				membp = BIO_new(BIO_s_mem());
+				if (PEM_write_bio_X509(membp, dev_cert) > 0) {
+					odevice_cert->size = BIO_get_mem_data(membp, &odevice_cert->data);
+				}
+
+				ohost_cert->data = malloc(pem_host_cert.size);
+				memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
+				ohost_cert->size = pem_host_cert.size;
+
+				oroot_cert->data = malloc(pem_root_cert.size);
+				memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
+				oroot_cert->size = pem_root_cert.size;
+
+				free(pem_root_cert.data);
+				free(pem_host_cert.data);
+			}
+		}
+	}
+	X509V3_EXT_cleanup();
+	X509_free(dev_cert);
+
+	switch(uret) {
+	case USERPREF_E_INVALID_ARG:
+		ret = LOCKDOWN_E_INVALID_ARG;
+		break;
+	case USERPREF_E_INVALID_CONF:
+		ret = LOCKDOWN_E_INVALID_CONF;
+		break;
+	case USERPREF_E_SSL_ERROR:
+		ret = LOCKDOWN_E_SSL_ERROR;
+	default:
+		break;
+	}
+
+	if (root_cert.data)
+		free(root_cert.data);
+	if (host_cert.data)
+		free(host_cert.data);
+	if (root_privkey.data)
+		free(root_privkey.data);
+	if (host_privkey.data)
+		free(host_privkey.data);
+#else
 	gnutls_datum_t modulus = { NULL, 0 };
 	gnutls_datum_t exponent = { NULL, 0 };
 
@@ -1200,8 +1343,8 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 						memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
 						oroot_cert->size = pem_root_cert.size;
 
-						free(pem_root_cert.data);
-						free(pem_host_cert.data);
+						gnutls_free(pem_root_cert.data);
+						gnutls_free(pem_host_cert.data);
 
 						if (dev_pem.data)
 							gnutls_free(dev_pem.data);
@@ -1238,6 +1381,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datu
 	gnutls_free(exponent.data);
 
 	gnutls_free(der_pub_key.data);
+#endif
 
 	return ret;
 }

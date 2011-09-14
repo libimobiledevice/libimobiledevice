@@ -19,13 +19,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_OPENSSL
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#else
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #include <gcrypt.h>
+#endif
 
 #include <dirent.h>
 #include <libgen.h>
@@ -526,7 +536,7 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key)
+userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t public_key)
 {
 	if (NULL == public_key.data)
 		return USERPREF_E_INVALID_ARG;
@@ -583,14 +593,14 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
 }
 
 /**
- * Private function which reads the given file into a gnutls structure.
+ * Private function which reads the given file into a key_data_t structure.
  *
  * @param file The filename of the file to read
  * @param data The pointer at which to store the data.
  *
  * @return 1 if the file contents where read successfully and 0 otherwise.
  */
-static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
+static int userpref_get_file_contents(const char *file, key_data_t * data)
 {
 	int success;
 	unsigned long int size = 0;
@@ -637,7 +647,7 @@ static int userpref_get_file_contents(const char *file, gnutls_datum_t * data)
 
 	free(filepath);
 
-	/* Add it to the gnutls_datnum_t structure */
+	/* Add it to the key_data_t structure */
 	if (success) {
 		data->data = (uint8_t*) content;
 		data->size = size;
@@ -655,6 +665,121 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 {
 	userpref_error_t ret = USERPREF_E_SSL_ERROR;
 
+	key_data_t root_key_pem = { NULL, 0 };
+	key_data_t root_cert_pem = { NULL, 0 };
+	key_data_t host_key_pem = { NULL, 0 };
+	key_data_t host_cert_pem = { NULL, 0 };
+
+#ifdef HAVE_OPENSSL
+	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
+	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
+
+	EVP_PKEY* root_pkey = EVP_PKEY_new();
+	EVP_PKEY_assign_RSA(root_pkey, root_keypair);
+
+	EVP_PKEY* host_pkey = EVP_PKEY_new();
+	EVP_PKEY_assign_RSA(host_pkey, host_keypair);
+
+	/* generate root certificate */
+	X509* root_cert = X509_new();
+	{
+		/* set serial number */
+		ASN1_INTEGER* sn = ASN1_INTEGER_new();
+		ASN1_INTEGER_set(sn, 0);
+		X509_set_serialNumber(root_cert, sn);
+		ASN1_INTEGER_free(sn);
+
+		/* set version */
+		X509_set_version(root_cert, 2);
+
+		/* set x509v3 basic constraints */
+		X509_EXTENSION* ext;
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:TRUE"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		}
+		X509_add_ext(root_cert, ext, -1);
+
+		/* set key validity */
+		ASN1_TIME* asn1time = ASN1_TIME_new();
+		ASN1_TIME_set(asn1time, time(NULL));
+		X509_set_notBefore(root_cert, asn1time);
+		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		X509_set_notAfter(root_cert, asn1time);
+		ASN1_TIME_free(asn1time);
+
+		/* use root public key for root cert */
+		X509_set_pubkey(root_cert, root_pkey);
+		/* sign root cert with root private key */
+		X509_sign(root_cert, root_pkey, EVP_sha1());
+	}
+
+	/* create host certificate */
+	X509* host_cert = X509_new();
+	{
+		/* set serial number */
+		ASN1_INTEGER* sn = ASN1_INTEGER_new();
+		ASN1_INTEGER_set(sn, 0);
+		X509_set_serialNumber(host_cert, sn);
+		ASN1_INTEGER_free(sn);
+
+		/* set version */
+		X509_set_version(host_cert, 2);
+
+		/* set x509v3 basic constraints */
+		X509_EXTENSION* ext;
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		}
+		X509_add_ext(host_cert, ext, -1);
+
+		/* set x509v3 key usage */
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"digitalSignature,keyEncipherment"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		}
+		X509_add_ext(host_cert, ext, -1);
+
+		/* set key validity */
+		ASN1_TIME* asn1time = ASN1_TIME_new();
+		ASN1_TIME_set(asn1time, time(NULL));
+		X509_set_notBefore(host_cert, asn1time);
+		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		X509_set_notAfter(host_cert, asn1time);
+		ASN1_TIME_free(asn1time);
+
+		/* use host public key for host cert */	
+		X509_set_pubkey(host_cert, host_pkey);
+
+		/* sign host cert with root private key */
+		X509_sign(host_cert, root_pkey, EVP_sha1());
+	}
+
+	if (root_cert && root_pkey && host_cert && host_pkey) {
+		BIO* membp;
+
+		membp = BIO_new(BIO_s_mem());
+		if (PEM_write_bio_X509(membp, root_cert) > 0) {
+			root_cert_pem.size = BIO_get_mem_data(membp, &root_cert_pem.data);
+		}
+		membp = BIO_new(BIO_s_mem());
+		if (PEM_write_bio_PrivateKey(membp, root_pkey, NULL, NULL, 0, 0, NULL) > 0) {
+			root_key_pem.size = BIO_get_mem_data(membp, &root_key_pem.data);
+		}
+		membp = BIO_new(BIO_s_mem());
+		if (PEM_write_bio_X509(membp, host_cert) > 0) {
+			host_cert_pem.size = BIO_get_mem_data(membp, &host_cert_pem.data);
+		}
+		membp = BIO_new(BIO_s_mem());
+		if (PEM_write_bio_PrivateKey(membp, host_pkey, NULL, NULL, 0, 0, NULL) > 0) {
+			host_key_pem.size = BIO_get_mem_data(membp, &host_key_pem.data);
+		}
+	}
+
+	EVP_PKEY_free(root_pkey);
+	EVP_PKEY_free(host_pkey);
+
+	X509_free(host_cert);
+	X509_free(root_cert);
+#else
 	gnutls_x509_privkey_t root_privkey;
 	gnutls_x509_crt_t root_cert;
 	gnutls_x509_privkey_t host_privkey;
@@ -697,8 +822,6 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	/* export to PEM format */
 	size_t root_key_export_size = 0;
 	size_t host_key_export_size = 0;
-	gnutls_datum_t root_key_pem = { NULL, 0 };
-	gnutls_datum_t host_key_pem = { NULL, 0 };
 
 	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_export_size);
 	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_export_size);
@@ -713,8 +836,6 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 
 	size_t root_cert_export_size = 0;
 	size_t host_cert_export_size = 0;
-	gnutls_datum_t root_cert_pem = { NULL, 0 };
-	gnutls_datum_t host_cert_pem = { NULL, 0 };
 
 	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_export_size);
 	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_export_size);
@@ -727,6 +848,10 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
 	host_cert_pem.size = host_cert_export_size;
 
+	//restore gnutls env
+	gnutls_global_deinit();
+	gnutls_global_init();
+#endif
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
 		ret = USERPREF_E_SUCCESS;
@@ -734,14 +859,14 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	/* store values in config file */
 	userpref_set_keys_and_certs( &root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem);
 
-	gnutls_free(root_key_pem.data);
-	gnutls_free(root_cert_pem.data);
-	gnutls_free(host_key_pem.data);
-	gnutls_free(host_cert_pem.data);
-
-	//restore gnutls env
-	gnutls_global_deinit();
-	gnutls_global_init();
+	if (root_key_pem.data)
+		free(root_key_pem.data);
+	if (root_cert_pem.data)
+		free(root_cert_pem.data);
+	if (host_key_pem.data)
+		free(host_key_pem.data);
+	if (host_cert_pem.data)
+		free(host_cert_pem.data);
 
 	return ret;
 }
@@ -754,18 +879,33 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
  *
  * @return 1 if the key was successfully imported.
  */
+#ifdef HAVE_OPENSSL
+static userpref_error_t userpref_import_key(const char* key_name, key_data_t* key)
+#else
 static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_privkey_t key)
+#endif
 {
+#ifdef HAVE_OPENSSL
+	if (!key)
+		return USERPREF_E_SUCCESS;
+#endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	gnutls_datum_t pem_key = { NULL, 0 };
-
+	key_data_t pem_key = { NULL, 0 };
 	if (userpref_get_file_contents(key_name, &pem_key)) {
-			if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem_key, GNUTLS_X509_FMT_PEM))
-				ret = USERPREF_E_SUCCESS;
-			else
-				ret = USERPREF_E_SSL_ERROR;
+#ifdef HAVE_OPENSSL
+		key->data = (unsigned char*)malloc(pem_key.size);
+		memcpy(key->data, pem_key.data, pem_key.size);
+		key->size = pem_key.size;
+		ret = USERPREF_E_SUCCESS;
+#else
+		if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem_key, GNUTLS_X509_FMT_PEM))
+			ret = USERPREF_E_SUCCESS;
+		else
+			ret = USERPREF_E_SSL_ERROR;
+#endif
 	}
-	gnutls_free(pem_key.data);
+	if (pem_key.data)
+		free(pem_key.data);
 	return ret;
 }
 
@@ -777,18 +917,34 @@ static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_pr
  *
  * @return IDEVICE_E_SUCCESS if the certificate was successfully imported.
  */
+#ifdef HAVE_OPENSSL
+static userpref_error_t userpref_import_crt(const char* crt_name, key_data_t* cert)
+#else
 static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_crt_t cert)
+#endif
 {
+#ifdef HAVE_OPENSSL
+	if (!cert)
+		return USERPREF_E_SUCCESS;
+#endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	gnutls_datum_t pem_cert = { NULL, 0 };
+	key_data_t pem_cert = { NULL, 0 };
 
 	if (userpref_get_file_contents(crt_name, &pem_cert)) {
-			if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem_cert, GNUTLS_X509_FMT_PEM))
-				ret = USERPREF_E_SUCCESS;
-			else
-				ret = USERPREF_E_SSL_ERROR;
+#ifdef HAVE_OPENSSL
+		cert->data = (unsigned char*)malloc(pem_cert.size);
+		memcpy(cert->data, pem_cert.data, pem_cert.size);
+		cert->size = pem_cert.size;
+		ret = USERPREF_E_SUCCESS;
+#else
+		if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem_cert, GNUTLS_X509_FMT_PEM))
+			ret = USERPREF_E_SUCCESS;
+		else
+			ret = USERPREF_E_SSL_ERROR;
+#endif
 	}
-	gnutls_free(pem_cert.data);
+	if (pem_cert.data)
+		free(pem_cert.data);
 	return ret;
 }
 
@@ -805,7 +961,11 @@ static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_cr
  *
  * @return 1 if the keys and certificates were successfully retrieved, 0 otherwise
  */
+#ifdef HAVE_OPENSSL
+userpref_error_t userpref_get_keys_and_certs(key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt)
+#else
 userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
+#endif
 {
 	userpref_error_t ret = USERPREF_E_SUCCESS;
 
@@ -820,7 +980,6 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
 
 	if (ret == USERPREF_E_SUCCESS)
 		ret = userpref_import_crt(LIBIMOBILEDEVICE_HOST_CERTIF, host_crt);
-
 
 	if (USERPREF_E_SUCCESS != ret) {
 		//we had problem reading or importing root cert
@@ -851,7 +1010,7 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
  *
  * @return 1 if the certificates were successfully retrieved, 0 otherwise
  */
-userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert)
+userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t *pem_host_cert)
 {
 	if (!pem_root_cert || !pem_host_cert)
 		return USERPREF_E_INVALID_ARG;
@@ -859,8 +1018,14 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
 	if (userpref_get_file_contents(LIBIMOBILEDEVICE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIMOBILEDEVICE_HOST_CERTIF, pem_host_cert))
 		return USERPREF_E_SUCCESS;
 	else {
-		gnutls_free(pem_root_cert->data);
-		gnutls_free(pem_host_cert->data);
+		if (pem_root_cert->data) {
+			free(pem_root_cert->data);
+			pem_root_cert->size = 0;
+		}
+		if (pem_host_cert->data) {
+			free(pem_host_cert->data);
+			pem_host_cert->size = 0;
+		}
 	}
 	return USERPREF_E_INVALID_CONF;
 }
@@ -877,7 +1042,7 @@ userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls
  *
  * @return 1 on success and 0 otherwise.
  */
-userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert)
+userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
 {
 	FILE *pFile;
 	char *pem;

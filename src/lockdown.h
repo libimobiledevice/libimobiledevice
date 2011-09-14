@@ -22,7 +22,7 @@
 #ifndef LOCKDOWND_H
 #define LOCKDOWND_H
 
-#include <gnutls/gnutls.h>
+#include "userpref.h"
 
 #include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"
@@ -35,8 +35,7 @@ struct lockdownd_client_private {
 	char *label;
 };
 
-lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, gnutls_datum_t * public_key);
-lockdownd_error_t lockdownd_gen_pair_cert(gnutls_datum_t public_key, gnutls_datum_t * device_cert,
-									   gnutls_datum_t * host_cert, gnutls_datum_t * root_cert);
+lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, key_data_t * public_key);
+lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * device_cert, key_data_t * host_cert, key_data_t * root_cert);
 
 #endif

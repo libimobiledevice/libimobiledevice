@@ -20,15 +20,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 #include <usbmuxd.h>
+#ifdef HAVE_OPENSSL
+#include <openssl/ssl.h>
+#else
 #include <gnutls/gnutls.h>
+#endif
 #include "idevice.h"
 #include "userpref.h"
 #include "debug.h"
+
+#ifdef HAVE_OPENSSL
+static int openssl_init_done = 0;
+#endif
 
 static idevice_event_cb_t event_cb = NULL;
 
@@ -303,7 +315,12 @@ idevice_error_t idevice_connection_send(idevice_connection_t connection, const c
 	}
 
 	if (connection->ssl_data) {
+#ifdef HAVE_OPENSSL
+		int sent = SSL_write(connection->ssl_data->session, (const void*)data, (int)len);
+		debug_info("SSL_write %d, sent %d", len, sent);
+#else
 		ssize_t sent = gnutls_record_send(connection->ssl_data->session, (void*)data, (size_t)len);
+#endif
 		if ((uint32_t)sent == (uint32_t)len) {
 			*sent_bytes = sent;
 			return IDEVICE_E_SUCCESS;
@@ -359,7 +376,12 @@ idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connecti
 	}
 
 	if (connection->ssl_data) {
+#ifdef HAVE_OPENSSL
+		int received = SSL_read(connection->ssl_data->session, (void*)data, (int)len);
+		debug_info("SSL_read %d, received %d", len, received);
+#else
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
+#endif
 		if (received > 0) {
 			*recv_bytes = received;
 			return IDEVICE_E_SUCCESS;
@@ -413,7 +435,12 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	}
 
 	if (connection->ssl_data) {
+#ifdef HAVE_OPENSSL
+		int received = SSL_read(connection->ssl_data->session, (void*)data, (int)len);
+		debug_info("SSL_read %d, received %d", len, received);
+#else
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
+#endif
 		if (received > 0) {
 			*recv_bytes = received;
 			return IDEVICE_E_SUCCESS;
@@ -453,6 +480,7 @@ idevice_error_t idevice_get_uuid(idevice_t device, char **uuid)
 	return IDEVICE_E_SUCCESS;
 }
 
+#ifndef HAVE_OPENSSL
 /**
  * Internally used gnutls callback function for receiving encrypted data.
  */
@@ -514,6 +542,7 @@ static ssize_t internal_ssl_write(gnutls_transport_ptr_t transport, char *buffer
 	debug_info("post-send sent %i bytes", bytes);
 	return bytes;
 }
+#endif
 
 /**
  * Internally used function for cleaning up SSL stuff.
@@ -523,6 +552,14 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (!ssl_data)
 		return;
 
+#ifdef HAVE_OPENSSL
+	if (ssl_data->session) {
+		SSL_free(ssl_data->session);
+	}
+	if (ssl_data->ctx) {
+		SSL_CTX_free(ssl_data->ctx);
+	}
+#else
 	if (ssl_data->session) {
 		gnutls_deinit(ssl_data->session);
 	}
@@ -541,8 +578,45 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (ssl_data->host_privkey) {
 		gnutls_x509_privkey_deinit(ssl_data->host_privkey);
 	}
+#endif
 }
 
+#ifdef HAVE_OPENSSL
+static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
+{
+	return 1;
+}
+
+#ifndef STRIP_DEBUG_CODE
+static const char *errorstring(int e)
+{
+    switch(e) {
+	case SSL_ERROR_NONE:
+	    return "SSL_ERROR_NONE";
+	case SSL_ERROR_SSL:
+	    return "SSL_ERROR_SSL";
+	case SSL_ERROR_WANT_READ:
+	    return "SSL_ERROR_WANT_READ";
+	case SSL_ERROR_WANT_WRITE:
+	    return "SSL_ERROR_WANT_WRITE";
+	case SSL_ERROR_WANT_X509_LOOKUP:
+	    return "SSL_ERROR_WANT_X509_LOOKUP";
+	case SSL_ERROR_SYSCALL:
+	    return "SSL_ERROR_SYSCALL";
+	case SSL_ERROR_ZERO_RETURN:
+	    return "SSL_ERROR_ZERO_RETURN";
+        case SSL_ERROR_WANT_CONNECT:
+	    return "SSL_ERROR_WANT_CONNECT";
+	case SSL_ERROR_WANT_ACCEPT:
+	    return "SSL_ERROR_WANT_ACCEPT";
+	default:
+	    return "UNKOWN_ERROR_VALUE";
+    }
+}
+#endif
+#endif
+
+#ifndef HAVE_OPENSSL
 /**
  * Internally used gnutls callback function that gets called during handshake.
  */
@@ -564,6 +638,7 @@ static int internal_cert_callback (gnutls_session_t session, const gnutls_datum_
 	}
 	return res;
 }
+#endif
 
 /**
  * Enables SSL for the given connection.
@@ -582,6 +657,76 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
 	uint32_t return_me = 0;
 
+#ifdef HAVE_OPENSSL
+	key_data_t root_cert = { NULL, 0 };
+	key_data_t root_privkey = { NULL, 0 };
+
+	userpref_error_t uerr = userpref_get_keys_and_certs(&root_privkey, &root_cert, NULL, NULL);
+	if (uerr != USERPREF_E_SUCCESS) {
+		debug_info("Error %d when loading keys and certificates! %d", uerr);
+	}
+
+	/* Set up OpenSSL */
+	BIO *ssl_bio = BIO_new(BIO_s_socket());
+	if (!ssl_bio) {
+		debug_info("ERROR: Could not create SSL bio.");
+		return ret;
+	}
+	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
+
+	if (openssl_init_done == 0) {
+		SSL_library_init();
+		openssl_init_done = 1;
+	}
+	SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv3_method());
+
+	BIO* membp;
+	X509* rootCert = NULL;
+	membp = BIO_new_mem_buf(root_cert.data, root_cert.size);
+	PEM_read_bio_X509(membp, &rootCert, NULL, NULL);
+	BIO_free(membp);
+	if (SSL_CTX_use_certificate(ssl_ctx, rootCert) != 1) {
+		debug_info("WARNING: Could not load RootCertificate");
+	}
+	X509_free(rootCert);
+	free(root_cert.data);
+
+	RSA* rootPrivKey = NULL;
+	membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
+	PEM_read_bio_RSAPrivateKey(membp, &rootPrivKey, NULL, NULL);
+	BIO_free(membp);
+	if (SSL_CTX_use_RSAPrivateKey(ssl_ctx, rootPrivKey) != 1) {
+		debug_info("WARNING: Could not load RootPrivateKey");
+	}
+	RSA_free(rootPrivKey);
+	free(root_privkey.data);
+
+	SSL *ssl = SSL_new(ssl_ctx);
+	if (!ssl) {
+		debug_info("ERROR: Could not create SSL object");
+		BIO_free(ssl_bio);
+		SSL_CTX_free(ssl_ctx);
+		return ret;
+	}
+	SSL_set_connect_state(ssl);
+	SSL_set_verify(ssl, 0, ssl_verify_callback);
+	SSL_set_bio(ssl, ssl_bio, ssl_bio);
+
+	return_me = SSL_do_handshake(ssl);
+        if (return_me != 1) {
+		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
+		BIO_free(ssl_bio);
+		SSL_CTX_free(ssl_ctx);
+	} else {
+		ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
+		ssl_data_loc->session = ssl;
+		ssl_data_loc->ctx = ssl_ctx;
+		ssl_data_loc->bio = ssl_bio;
+		connection->ssl_data = ssl_data_loc;
+		ret = IDEVICE_E_SUCCESS;
+		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
+	}
+#else
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
 	/* Set up GnuTLS... */
@@ -612,8 +757,9 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	debug_info("GnuTLS step 3...");
 	gnutls_transport_set_pull_function(ssl_data_loc->session, (gnutls_pull_func) & internal_ssl_read);
 	debug_info("GnuTLS step 4 -- now handshaking...");
-	if (errno)
+	if (errno) {
 		debug_info("WARN: errno says %s before handshake!", strerror(errno));
+	}
 	return_me = gnutls_handshake(ssl_data_loc->session);
 	debug_info("GnuTLS handshake done...");
 
@@ -628,6 +774,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled");
 	}
+#endif
 	return ret;
 }
 
@@ -649,9 +796,15 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 		return IDEVICE_E_SUCCESS;
 	}
 
+#ifdef HAVE_OPENSSL
+	if (connection->ssl_data->session) {
+		SSL_shutdown(connection->ssl_data->session);
+	}
+#else
 	if (connection->ssl_data->session) {
 		gnutls_bye(connection->ssl_data->session, GNUTLS_SHUT_RDWR);
 	}
+#endif
 	internal_ssl_cleanup(connection->ssl_data);
 	free(connection->ssl_data);
 	connection->ssl_data = NULL;

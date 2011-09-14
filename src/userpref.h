@@ -22,7 +22,19 @@
 #ifndef USERPREF_H
 #define USERPREF_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_OPENSSL
+typedef struct {
+	unsigned char *data;
+	unsigned int size;
+} key_data_t;
+#else
 #include <gnutls/gnutls.h>
+typedef gnutls_datum_t key_data_t;
+#endif
 
 #ifndef LIBIMOBILEDEVICE_INTERNAL
 #ifdef WIN32
@@ -41,10 +53,14 @@
 
 typedef int16_t userpref_error_t;
 
+#ifdef HAVE_OPENSSL
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt);
+#else
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_keys_and_certs(gnutls_datum_t * root_key, gnutls_datum_t * root_cert, gnutls_datum_t * host_key, gnutls_datum_t * host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_certs_as_pem(gnutls_datum_t *pem_root_cert, gnutls_datum_t *pem_host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, gnutls_datum_t public_key);
+#endif
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t *pem_host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t public_key);
 userpref_error_t userpref_remove_device_public_key(const char *uuid);
 LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_public_key(const char *uuid);
 userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count);
