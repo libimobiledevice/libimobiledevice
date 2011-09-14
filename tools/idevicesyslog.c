@@ -53,9 +53,11 @@ int main(int argc, char *argv[])
 	uuid[0] = 0;
 
 	signal(SIGINT, clean_exit);
-	signal(SIGQUIT, clean_exit);
 	signal(SIGTERM, clean_exit);
+#ifndef WIN32
+	signal(SIGQUIT, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
