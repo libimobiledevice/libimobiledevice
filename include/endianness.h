@@ -1,0 +1,66 @@
+#ifndef ENDIANNESS_H
+#define ENDIANNESS_H
+
+#ifndef be16toh
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define be16toh(x) (x)
+#else
+#define be16toh(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#endif
+#endif
+
+#ifndef __bswap_32
+#define __bswap_32(x) ((((x) & 0xFF000000) >> 24) \
+                    | (((x) & 0x00FF0000) >> 8) \
+                    | (((x) & 0x0000FF00) << 8) \
+                    | (((x) & 0x000000FF) << 24))
+#endif
+
+#ifndef be32toh
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define be32toh(x) (x)
+#else
+#define be32toh(x) __bswap_32(x)
+#endif
+#endif
+
+#ifndef htobe32
+#define htobe32 be32toh
+#endif
+
+#ifndef __bswap_64
+#define __bswap_64(x) ((((x) & 0xFF00000000000000ull) >> 56) \
+                    | (((x) & 0x00FF000000000000ull) >> 40) \
+                    | (((x) & 0x0000FF0000000000ull) >> 24) \
+                    | (((x) & 0x000000FF00000000ull) >> 8) \
+                    | (((x) & 0x00000000FF000000ull) << 8) \
+                    | (((x) & 0x0000000000FF0000ull) << 24) \
+                    | (((x) & 0x000000000000FF00ull) << 40) \
+                    | (((x) & 0x00000000000000FFull) << 56)) 
+#endif
+
+#ifndef htobe64
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define htobe64(x) (x)
+#else
+#define htobe64(x) __bswap_64(x)
+#endif
+#endif
+
+#ifndef be64toh
+#define be64toh htobe64
+#endif
+
+#ifndef le64toh
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define le64toh(x) (x)
+#else
+#define le64toh(x) __bswap_64(x)
+#endif
+#endif
+
+#ifndef htole64
+#define htole64 le64toh
+#endif
+
+#endif /* ENDIANNESS_H */

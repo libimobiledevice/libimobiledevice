@@ -27,6 +27,7 @@
 #include "property_list_service.h"
 #include "idevice.h"
 #include "debug.h"
+#include "endianness.h"
 
 /**
  * Convert an idevice_error_t value to an property_list_service_error_t value.

@@ -63,15 +63,17 @@ if test "x$have_vasprintf" = "xyes"; then
   AC_DEFINE(HAVE_VASPRINTF,1,[define if vasprintf is available])
 fi
 
-AC_DEFINE(LITTLE_ENDIAN,0,[little endian])
-AC_DEFINE(BIG_ENDIAN,1,[big endian])
-AC_C_BIGENDIAN([ac_cv_c_bigendian="yes"], [ac_cv_c_bigendian="no"], [], [])
-if test "x$ac_cv_c_bigendian" = "xyes"; then
-    AC_DEFINE(BYTE_ORDER,1,[big endian byte order])
-else
-    AC_DEFINE(BYTE_ORDER,0,[little endian byte order])
+AC_CHECK_HEADER(endian.h, [ac_cv_have_endian_h="yes"], [ac_cv_have_endian_h="no"])
+if test "x$ac_cv_have_endian" = "xno"; then
+  AC_DEFINE(__LITTLE_ENDIAN,1234,[little endian])
+  AC_DEFINE(__BIG_ENDIAN,4321,[big endian])
+  AC_C_BIGENDIAN([ac_cv_c_bigendian="yes"], [ac_cv_c_bigendian="no"], [], [])
+  if test "x$ac_cv_c_bigendian" = "xyes"; then
+    AC_DEFINE(__BYTE_ORDER,4321,[big endian byte order])
+  else
+    AC_DEFINE(__BYTE_ORDER,1234,[little endian byte order])
+  fi
 fi
-
 
 
 AC_ARG_WITH([swig],

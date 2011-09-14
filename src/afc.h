@@ -27,6 +27,7 @@
 #endif
 
 #include "libimobiledevice/afc.h"
+#include "endianness.h"
 
 #define AFC_MAGIC "CFA6LPAA"
 #define AFC_MAGIC_LEN (8)
