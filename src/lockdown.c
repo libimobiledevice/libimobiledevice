@@ -1205,9 +1205,11 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 			if (USERPREF_E_SUCCESS == uret) {
 				/* copy buffer for output */
 				membp = BIO_new(BIO_s_mem());
-				if (PEM_write_bio_X509(membp, dev_cert) > 0) {
+				if (membp && PEM_write_bio_X509(membp, dev_cert) > 0) {
 					odevice_cert->size = BIO_get_mem_data(membp, &odevice_cert->data);
 				}
+				if (membp)
+					free(membp);
 
 				ohost_cert->data = malloc(pem_host_cert.size);
 				memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
