@@ -275,10 +275,12 @@ static int config_read(const char *cfgfile, plist_t *dict)
 				}
 			}
 			fclose(fd);
+#if 0
 			if (plist) {
 				// write new format config
 				config_write(cfgfile, plist);
 			}
+#endif
 		}
 	}
 	free(contents);
