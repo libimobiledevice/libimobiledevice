@@ -188,7 +188,7 @@ static int config_write(const char *cfgfile, plist_t dict)
 		char *hostidstr = NULL;
 		plist_get_string_val(hostid, &hostidstr);
 		if (hostidstr) {
-			FILE *fd = fopen(cfgfile, "w");
+			FILE *fd = fopen(cfgfile, "wb");
 			if (fd) {
 				fprintf(fd, "\n[Global]\nHostID=%s\n", hostidstr);
 				fclose(fd);
@@ -207,7 +207,7 @@ static int config_write(const char *cfgfile, plist_t dict)
 		return res;
 	}
 
-	FILE *fd = fopen(cfgfile, "w");
+	FILE *fd = fopen(cfgfile, "wb");
 	if (!fd) {
 		free(xml);
 		return res;
@@ -232,7 +232,7 @@ static int config_read(const char *cfgfile, plist_t *dict)
 	}
 
 	int res = -1;
-	FILE *fd = fopen(cfgfile, "r+");
+	FILE *fd = fopen(cfgfile, "rb");
 	if (!fd) {
 		return -1;
 	}
