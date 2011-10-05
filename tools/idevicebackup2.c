@@ -43,6 +43,10 @@
 #define LOCK_ATTEMPTS 50
 #define LOCK_WAIT 200000
 
+#ifdef WIN32
+#define sleep(x) Sleep(x*1000)
+#endif
+
 #define CODE_SUCCESS 0x00
 #define CODE_ERROR_LOCAL 0x06
 #define CODE_ERROR_REMOTE 0x0b
@@ -1181,9 +1185,11 @@ int main(int argc, char *argv[])
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
-	signal(SIGQUIT, clean_exit);
 	signal(SIGTERM, clean_exit);
+#ifndef WIN32	
+	signal(SIGQUIT, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
