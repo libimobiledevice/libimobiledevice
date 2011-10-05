@@ -240,6 +240,8 @@ static char* format_size_for_display(uint64_t size)
 	} else if (size >= 1000LL) {
 		sz = ((double)size / 1000.0f);
 		sprintf(buf, "%0.1f kB", sz);
+	} else {
+		sprintf(buf, "%d Bytes", (int)size);
 	}
 	return strdup(buf);
 }
