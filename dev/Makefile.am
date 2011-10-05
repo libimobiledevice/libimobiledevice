@@ -4,11 +4,7 @@ AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(LFS_CFLAGS
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libpthread_LIBS)
 
 if ENABLE_DEVTOOLS
-noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest
-
-if HAVE_GLIB2
-noinst_PROGRAMS += lckd-client
-endif
+noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest lckd-client
 
 ideviceclient_SOURCES = ideviceclient.c
 ideviceclient_CFLAGS = $(AM_CFLAGS)

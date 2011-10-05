@@ -31,9 +31,6 @@ PKG_CHECK_MODULES(libplist, libplist >= 0.15)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
 AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
-PKG_CHECK_MODULES(libglib2, glib-2.0 >= 2.14.1, enable_glib2=yes, enable_glib2=no)
-AM_CONDITIONAL([HAVE_GLIB2],[test "x$enable_glib2" == "xyes"])
-
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h gcrypt.h])

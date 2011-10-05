@@ -22,12 +22,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
+
+static char** get_tokens(const char *str)
+{
+	char *strcp = strdup(str);
+	char *p;
+	char res_max = 8;
+	char **result = NULL;
+	int cnt = 0;
+
+	p = strtok(strcp, " ");
+	if (!p) {
+		result = (char**)malloc(2 * sizeof(char*));
+		result[0] = strdup(str);
+		result[1] = NULL;
+		return result;
+	}
+
+	result = (char**)malloc(res_max * sizeof(char*));
+	memset(result, 0, res_max * sizeof(char*));
+
+	while (p) {
+		if (cnt >= res_max) {
+			res_max += 8;
+			result = (char**)realloc(result, res_max * sizeof(char*));
+		}
+		result[cnt] = strdup(p);
+		cnt++;
+		p = strtok(NULL, " ");
+	}
+
+	if (cnt >= res_max) {
+		res_max += 1;
+		result = (char**)realloc(result, res_max * sizeof(char*));
+		result[cnt] = NULL;
+	}
+
+	return result;
+}
+
+static void strfreev(char **strs)
+{
+	int i = 0;
+	while (strs && strs[i]) {
+		free(strs[i]);
+		i++;
+	}
+	free(strs);
+}
 
 int main(int argc, char *argv[])
 {
@@ -54,25 +101,22 @@ int main(int argc, char *argv[])
 	}
 
 	using_history();
-	int loop = TRUE;
+	int loop = 1;
 	while (loop) {
 		char *cmd = readline("> ");
 		if (cmd) {
 
-			gchar **args = g_strsplit(cmd, " ", 0);
+			char **args = get_tokens(cmd);
 
 			int len = 0;
-			if (args) {
-				while (*(args + len)) {
-					g_strstrip(*(args + len));
-					len++;
-				}
+			while (args && args[len]) {
+				len++;
 			}
 
 			if (len > 0) {
 				add_history(cmd);
 				if (!strcmp(*args, "quit"))
-					loop = FALSE;
+					loop = 0;
 
 				if (!strcmp(*args, "get") && len >= 2) {
 					plist_t value = NULL;
@@ -102,7 +146,7 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			g_strfreev(args);
+			strfreev(args);
 		}
 		free(cmd);
 		cmd = NULL;

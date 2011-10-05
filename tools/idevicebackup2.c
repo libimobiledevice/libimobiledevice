@@ -25,19 +25,17 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <glib.h>
-#include <glib/gstdio.h>
 #include <unistd.h>
-
-#if !GLIB_CHECK_VERSION(2,25,0)
-typedef struct stat GStatBuf;
-#endif
+#include <dirent.h>
+#include <libgen.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/mobilebackup2.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
+
+#include <endianness.h>
 
 #define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
@@ -156,10 +154,95 @@ static void mobilebackup_afc_get_file_contents(const char *filename, char **data
 	afc_file_close(afc, f);
 }
 
+static char *str_toupper(char* str)
+{
+	char *res = strdup(str);
+	int i;
+	for (i = 0; i < strlen(res); i++) {
+		res[i] = toupper(res[i]);
+	}
+	return res;
+}
+
+static int __mkdir(const char* path, int mode)
+{
+#ifdef WIN32
+	return mkdir(path);
+#else
+	return mkdir(path, mode);
+#endif
+}
+
+int mkdir_with_parents(const char *dir, int mode)
+{
+	if (!dir) return -1;
+	if (__mkdir(dir, mode) == 0) {
+		return 0;
+	} else {
+		if (errno == EEXIST) return 0;	
+	}
+	int res;
+	char *parent = strdup(dir);
+	parent = dirname(parent);
+	if (parent) {
+		res = mkdir_with_parents(parent, mode);
+	} else {
+		res = -1;	
+	}
+	free(parent);
+	if (res == 0) {
+		mkdir_with_parents(dir, mode);
+	}
+	return res;
+}
+
+char* build_path(const char* elem, ...)
+{
+	if (!elem) return NULL;
+	va_list args;
+	int len = strlen(elem)+1;
+	va_start(args, elem);
+	char *arg = va_arg(args, char*);
+	while (arg) {
+		len += strlen(arg)+1;
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+
+	char* out = (char*)malloc(len);
+	strcpy(out, elem);
+
+	va_start(args, elem);
+	arg = va_arg(args, char*);
+	while (arg) {
+		strcat(out, "/");
+		strcat(out, arg);
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+	return out;
+}
+
+static char* format_size_for_display(uint64_t size)
+{
+	char buf[32];
+	double sz;
+	if (size >= 1000000000LL) {
+		sz = ((double)size / 1000000000.0f);
+		sprintf(buf, "%0.1f GB", sz);
+	} else if (size >= 1000000LL) {
+		sz = ((double)size / 1000000.0f);
+		sprintf(buf, "%0.1f MB", sz);
+	} else if (size >= 1000LL) {
+		sz = ((double)size / 1000.0f);
+		sprintf(buf, "%0.1f kB", sz);
+	}
+	return strdup(buf);
+}
+
 static plist_t mobilebackup_factory_info_plist_new()
 {
 	/* gather data from lockdown */
-	GTimeVal tv = {0, 0};
 	plist_t value_node = NULL;
 	plist_t root_node = NULL;
 	char *uuid = NULL;
@@ -189,8 +272,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 	if (value_node)
 		plist_dict_insert_item(ret, "IMEI", plist_copy(value_node));
 
-	g_get_current_time(&tv);
-	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(tv.tv_sec, 0));
+	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
 
 	value_node = plist_dict_get_item(root_node, "PhoneNumber");
 	if (value_node && (plist_get_node_type(value_node) == PLIST_STRING)) {
@@ -215,7 +297,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 	plist_dict_insert_item(ret, "Target Type", plist_new_string("Device"));
 
 	/* uppercase */
-	uuid_uppercase = g_ascii_strup(uuid, -1);
+	uuid_uppercase = str_toupper(uuid);
 	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(uuid_uppercase));
 	free(uuid_uppercase);
 	free(uuid);
@@ -246,9 +328,11 @@ static plist_t mobilebackup_factory_info_plist_new()
 	for (i = 0; itunesfiles[i]; i++) {
 		data_buf = NULL;
 		data_size = 0;
-		gchar *fname = g_strconcat("/iTunes_Control/iTunes/", itunesfiles[i], NULL);
+		char *fname = (char*)malloc(strlen("/iTunes_Control/iTunes/") + strlen(itunesfiles[i]) + 1);
+		strcpy(fname, "/iTunes_Control/iTunes/");
+		strcat(fname, itunesfiles[i]);
 		mobilebackup_afc_get_file_contents(fname, &data_buf, &data_size);
-		g_free(fname);
+		free(fname);
 		if (data_buf) {
 			plist_dict_insert_item(files, itunesfiles[i], plist_new_data(data_buf, data_size));
 			free(data_buf);
@@ -358,10 +442,10 @@ static int mb2_status_check_snapshot_state(const char *path, const char *uuid, c
 {
 	int ret = -1;
 	plist_t status_plist = NULL;
-	gchar *file_path = g_build_path(G_DIR_SEPARATOR_S, path, uuid, "Status.plist", NULL);
+	char *file_path = build_path(path, uuid, "Status.plist", NULL);
 
 	plist_read_from_filename(&status_plist, file_path);
-	g_free(file_path);
+	free(file_path);
 	if (!status_plist) {
 		printf("Could not read Status.plist!\n");
 		return ret;
@@ -486,7 +570,7 @@ static void print_progress_real(double progress, int flush)
 
 static void print_progress(uint64_t current, uint64_t total)
 {
-	gchar *format_size = NULL;
+	char *format_size = NULL;
 	double progress = ((double)current/(double)total)*100;
 	if (progress < 0)
 		return;
@@ -496,12 +580,12 @@ static void print_progress(uint64_t current, uint64_t total)
 
 	print_progress_real((double)progress, 0);
 
-	format_size = g_format_size_for_display(current);
+	format_size = format_size_for_display(current);
 	PRINT_VERBOSE(1, " (%s", format_size);
-	g_free(format_size);
-	format_size = g_format_size_for_display(total);
+	free(format_size);
+	format_size = format_size_for_display(total);
 	PRINT_VERBOSE(1, "/%s)     ", format_size);
-	g_free(format_size);
+	free(format_size);
 
 	fflush(stdout);
 	if (progress == 100)
@@ -534,7 +618,7 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	uint32_t nlen = 0;
 	uint32_t pathlen = strlen(path);
 	uint32_t bytes = 0;
-	gchar *localfile = g_build_path(G_DIR_SEPARATOR_S, backup_dir, path, NULL);
+	char *localfile = build_path(backup_dir, path, NULL);
 	char buf[32768];
 	struct stat fst;
 
@@ -549,7 +633,7 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	mobilebackup2_error_t err;
 
 	/* send path length */
-	nlen = GUINT32_TO_BE(pathlen);
+	nlen = htobe32(pathlen);
 	err = mobilebackup2_send_raw(mobilebackup2, (const char*)&nlen, sizeof(nlen), &bytes);
 	if (err != MOBILEBACKUP2_E_SUCCESS) {
 		goto leave_proto_err;
@@ -578,9 +662,9 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 
 	total = fst.st_size;
 
-	gchar *format_size = g_format_size_for_display(total);
+	char *format_size = format_size_for_display(total);
 	PRINT_VERBOSE(1, "Sending '%s' (%s)\n", path, format_size);
-	g_free(format_size);
+	free(format_size);
 
 	if (total == 0) {
 		errcode = 0;
@@ -598,7 +682,7 @@ static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_
 	do {
 		length = ((total-sent) < (off_t)sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
 		/* send data size (file size + 1) */
-		nlen = GUINT32_TO_BE(length+1);
+		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, sizeof(nlen));
 		buf[4] = CODE_FILE_DATA;
 		err = mobilebackup2_send_raw(mobilebackup2, (const char*)buf, 5, &bytes);
@@ -634,7 +718,7 @@ leave:
 	if (errcode == 0) {
 		result = 0;
 		nlen = 1;
-		nlen = GUINT32_TO_BE(nlen);
+		nlen = htobe32(nlen);
 		memcpy(buf, &nlen, 4);
 		buf[4] = CODE_SUCCESS;
 		mobilebackup2_send_raw(mobilebackup2, buf, 5, &bytes);
@@ -646,7 +730,7 @@ leave:
 		mb2_multi_status_add_file_error(*errplist, path, errno_to_device_error(errcode), errdesc);
 		
 		length = strlen(errdesc);
-		nlen = GUINT32_TO_BE(length+1);
+		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, 4);
 		buf[4] = CODE_ERROR_LOCAL;
 		slen = 5;
@@ -664,7 +748,7 @@ leave:
 leave_proto_err:
 	if (f)
 		fclose(f);
-	g_free(localfile);
+	free(localfile);
 	return result;
 }
 
@@ -726,7 +810,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 	char buf[32768];
 	char *fname = NULL;
 	char *dname = NULL;
-	gchar *bname = NULL;
+	char *bname = NULL;
 	char code = 0;
 	char last_code = 0;
 	plist_t node = NULL;
@@ -748,7 +832,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			break;
 		r = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
-		nlen = GUINT32_FROM_BE(nlen);
+		nlen = be32toh(nlen);
 		if (nlen == 0) {
 			// we're done here
 			break;
@@ -769,7 +853,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		dname[r] = 0;
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
-		nlen = GUINT32_FROM_BE(nlen);
+		nlen = be32toh(nlen);
 		if (nlen == 0) {
 			printf("ERROR: %s: zero-length backup filename!\n", __func__);
 			break;
@@ -785,8 +869,8 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 		}
 		fname[r] = 0;
 		if (bname != NULL)
-			g_free(bname);
-		bname = g_build_path(G_DIR_SEPARATOR_S, backup_dir, fname, NULL);
+			free(bname);
+		bname = build_path(backup_dir, fname, NULL);
 		free(fname);
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
@@ -794,7 +878,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			printf("ERROR: %s: could not receive code length!\n", __func__);
 			break;
 		}
-		nlen = GUINT32_FROM_BE(nlen);
+		nlen = be32toh(nlen);
 		last_code = code;
 		code = 0;
 		mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
@@ -837,7 +921,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 				break;
 			nlen = 0;
 			mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
-			nlen = GUINT32_FROM_BE(nlen);
+			nlen = be32toh(nlen);
 			if (nlen > 0) {
 				last_code = code;
 				mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
@@ -880,7 +964,7 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 
 	/* clean up */
 	if (bname != NULL)
-		g_free(bname);
+		free(bname);
 
 	if (dname != NULL)
 		free(dname);
@@ -905,37 +989,37 @@ static void mb2_handle_list_directory(plist_t message, const char *backup_dir)
 		return;
 	}
 
-	gchar *path = g_build_path(G_DIR_SEPARATOR_S, backup_dir, str, NULL);
+	char *path = build_path(backup_dir, str, NULL);
 	free(str);
 
 	plist_t dirlist = plist_new_dict();
 
-	GDir *cur_dir = g_dir_open(path, 0, NULL);
+	DIR* cur_dir = opendir(path);
 	if (cur_dir) {
-		gchar *dir_file;
-		while ((dir_file = (gchar *)g_dir_read_name(cur_dir))) {
-			gchar *fpath = g_build_filename(path, dir_file, NULL);
+		struct dirent* ep;
+		while ((ep = readdir(cur_dir))) {
+			char *fpath = build_path(path, ep->d_name, NULL);
 			if (fpath) {
 				plist_t fdict = plist_new_dict();
-				GStatBuf st;
-				g_stat(fpath, &st);
+				struct stat st;
+				stat(fpath, &st);
 				const char *ftype = "DLFileTypeUnknown";
-				if (g_file_test(fpath, G_FILE_TEST_IS_DIR)) {
+				if (S_ISDIR(st.st_mode)) {
 					ftype = "DLFileTypeDirectory";
-				} else if (g_file_test(fpath, G_FILE_TEST_IS_REGULAR)) {
+				} else if (S_ISREG(st.st_mode)) {
 					ftype = "DLFileTypeRegular";
 				}
 				plist_dict_insert_item(fdict, "DLFileType", plist_new_string(ftype));
 				plist_dict_insert_item(fdict, "DLFileSize", plist_new_uint(st.st_size));
 				plist_dict_insert_item(fdict, "DLFileModificationDate", plist_new_date(st.st_mtime, 0));
 
-				plist_dict_insert_item(dirlist, dir_file, fdict);
-				g_free(fpath);
+				plist_dict_insert_item(dirlist, ep->d_name, fdict);
+				free(fpath);
 			}
 		}
-		g_dir_close(cur_dir);
+		closedir(cur_dir);
 	}
-	g_free(path);
+	free(path);
 
 	/* TODO error handling */
 	mobilebackup2_error_t err = mobilebackup2_send_status_response(mobilebackup2, 0, NULL, dirlist);
@@ -955,24 +1039,24 @@ static void mb2_handle_make_directory(plist_t message, const char *backup_dir)
 	char *errdesc = NULL;
 	plist_get_string_val(dir, &str);
 
-	gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_dir, str, NULL);
-	g_free(str);
+	char *newpath = build_path(backup_dir, str, NULL);
+	free(str);
 
-	if (g_mkdir_with_parents(newpath, 0755) < 0) {
+	if (mkdir_with_parents(newpath, 0755) < 0) {
 		errdesc = strerror(errno);
 		if (errno != EEXIST) {
 			printf("mkdir: %s (%d)\n", errdesc, errno);
 		}
 		errcode = errno_to_device_error(errno);
 	}
-	g_free(newpath);
+	free(newpath);
 	mobilebackup2_error_t err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, NULL);
 	if (err != MOBILEBACKUP2_E_SUCCESS) {
 		printf("Could not send status response, error %d\n", err);
 	}
 }
 
-static void mb2_copy_file_by_path(const gchar *src, const gchar *dst)
+static void mb2_copy_file_by_path(const char *src, const char *dst)
 {
 	FILE *from, *to;
 	char buf[BUFSIZ];
@@ -1004,43 +1088,45 @@ static void mb2_copy_file_by_path(const gchar *src, const gchar *dst)
 	}
 }
 
-static void mb2_copy_directory_by_path(const gchar *src, const gchar *dst)
+static void mb2_copy_directory_by_path(const char *src, const char *dst)
 {
 	if (!src || !dst) {
 		return;
 	}
 
+	struct stat st;
+
 	/* if src does not exist */
-	if (!g_file_test(src, G_FILE_TEST_EXISTS)) {
+	if ((stat(src, &st) < 0) || !S_ISDIR(st.st_mode)) {
 		printf("ERROR: Source directory does not exist '%s': %s (%d)\n", src, strerror(errno), errno);
 		return;
 	}
 
 	/* if dst directory does not exist */
-	if (!g_file_test(dst, G_FILE_TEST_IS_DIR)) {
+	if ((stat(dst, &st) < 0) || !S_ISDIR(st.st_mode)) {
 		/* create it */
-		if (g_mkdir_with_parents(dst, 0755) < 0) {
+		if (mkdir_with_parents(dst, 0755) < 0) {
 			printf("ERROR: Unable to create destination directory '%s': %s (%d)\n", dst, strerror(errno), errno);
 			return;
 		}
 	}
 
 	/* loop over src directory contents */
-	GDir *cur_dir = g_dir_open(src, 0, NULL);
+	DIR *cur_dir = opendir(src);
 	if (cur_dir) {
-		gchar *dir_file;
-		while ((dir_file = (gchar *)g_dir_read_name(cur_dir))) {
-			gchar *srcpath = g_build_filename(src, dir_file, NULL);
-			gchar *dstpath = g_build_filename(dst, dir_file, NULL);
+		struct dirent* ep;
+		while ((ep = readdir(cur_dir))) {
+			char *srcpath = build_path(src, ep->d_name, NULL);
+			char *dstpath = build_path(dst, ep->d_name, NULL);
 			if (srcpath && dstpath) {
 				/* copy file */
 				mb2_copy_file_by_path(srcpath, dstpath);
 
-				g_free(srcpath);
-				g_free(dstpath);
+				free(srcpath);
+				free(dstpath);
 			}
 		}
-		g_dir_close(cur_dir);
+		closedir(cur_dir);
 	}
 }
 
@@ -1196,10 +1282,10 @@ int main(int argc, char *argv[])
 	}
 
 	/* backup directory must contain an Info.plist */
-	gchar *info_path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, "Info.plist", NULL);
+	char *info_path = build_path(backup_directory, uuid, "Info.plist", NULL);
 	if (cmd == CMD_RESTORE) {
 		if (stat(info_path, &st) != 0) {
-			g_free(info_path);
+			free(info_path);
 			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UUID %s.\n", backup_directory, uuid);
 			return -1;
 		}
@@ -1328,9 +1414,9 @@ checkpoint:
 			PRINT_VERBOSE(1, "Starting backup...\n");
 
 			/* make sure backup device sub-directory exists */
-			gchar *devbackupdir = g_build_path(G_DIR_SEPARATOR_S, backup_directory, uuid, NULL);
-			g_mkdir(devbackupdir, 0755);
-			g_free(devbackupdir);
+			char *devbackupdir = build_path(backup_directory, uuid, NULL);
+			__mkdir(devbackupdir, 0755);
+			free(devbackupdir);
 
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
@@ -1343,7 +1429,7 @@ checkpoint:
 			info_plist = mobilebackup_factory_info_plist_new();
 			remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
-			g_free(info_path);
+			free(info_path);
 
 			plist_free(info_plist);
 			info_plist = NULL;
@@ -1493,9 +1579,9 @@ checkpoint:
 								char *str = NULL;
 								plist_get_string_val(val, &str);
 								if (str) {
-									gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, str, NULL);
-									g_free(str);
-									gchar *oldpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, key, NULL);
+									char *newpath = build_path(backup_directory, str, NULL);
+									free(str);
+									char *oldpath = build_path(backup_directory, key, NULL);
 
 									remove(newpath);
 									if (rename(oldpath, newpath) < 0) {
@@ -1504,8 +1590,8 @@ checkpoint:
 										errdesc = strerror(errno);
 										break;
 									}
-									g_free(oldpath);
-									g_free(newpath);
+									free(oldpath);
+									free(newpath);
 								}
 								free(key);
 								key = NULL;
@@ -1534,14 +1620,14 @@ checkpoint:
 							char *str = NULL;
 							plist_get_string_val(val, &str);
 							if (str) {
-								gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, str, NULL);
-								g_free(str);
+								char *newpath = build_path(backup_directory, str, NULL);
+								free(str);
 								if (remove(newpath) < 0) {
 									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
 									errcode = errno_to_device_error(errno);
 									errdesc = strerror(errno);
 								}
-								g_free(newpath);
+								free(newpath);
 							}
 						}
 					}
@@ -1560,23 +1646,24 @@ checkpoint:
 						plist_get_string_val(srcpath, &src);
 						plist_get_string_val(dstpath, &dst);
 						if (src && dst) {
-							gchar *oldpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, src, NULL);
-							gchar *newpath = g_build_path(G_DIR_SEPARATOR_S, backup_directory, dst, NULL);
+							char *oldpath = build_path(backup_directory, src, NULL);
+							char *newpath = build_path(backup_directory, dst, NULL);
+							struct stat st;
 
 							PRINT_VERBOSE(1, "Copying '%s' to '%s'\n", src, dst);
 
 							/* check that src exists */
-							if (g_file_test(oldpath, G_FILE_TEST_IS_DIR)) {
+							if ((stat(oldpath, &st) == 0) && S_ISDIR(st.st_mode)) {
 								mb2_copy_directory_by_path(oldpath, newpath);
-							} else if (g_file_test(oldpath, G_FILE_TEST_IS_REGULAR)) {
+							} else if ((stat(oldpath, &st) == 0) && S_ISREG(st.st_mode)) {
 								mb2_copy_file_by_path(oldpath, newpath);
 							}
 
-							g_free(newpath);
-							g_free(oldpath);
+							free(newpath);
+							free(oldpath);
 						}
-						g_free(src);
-						g_free(dst);
+						free(src);
+						free(dst);
 					}
 
 					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());

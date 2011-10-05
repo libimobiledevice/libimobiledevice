@@ -3,11 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(openssl_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(openssl_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate
-
-if HAVE_GLIB2
-bin_PROGRAMS += idevicebackup idevicebackup2
-endif
+bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate idevicebackup idevicebackup2
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)

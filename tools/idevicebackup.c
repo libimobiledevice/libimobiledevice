@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <glib.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/sha.h>
 #else
@@ -222,10 +221,63 @@ static void notify_cb(const char *notification, void *userdata)
 	}
 }
 
+static char *str_toupper(char* str)
+{
+	char *res = strdup(str);
+	int i;
+	for (i = 0; i < strlen(res); i++) {
+		res[i] = toupper(res[i]);
+	}
+	return res;
+}
+
+char* build_path(const char* elem, ...)
+{
+	if (!elem) return NULL;
+	va_list args;
+	int len = strlen(elem)+1;
+	va_start(args, elem);
+	char *arg = va_arg(args, char*);
+	while (arg) {
+		len += strlen(arg)+1;
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+
+	char* out = (char*)malloc(len);
+	strcpy(out, elem);
+
+	va_start(args, elem);
+	arg = va_arg(args, char*);
+	while (arg) {
+		strcat(out, "/");
+		strcat(out, arg);
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+	return out;
+}
+
+static char* format_size_for_display(uint64_t size)
+{
+	char buf[32];
+	double sz;
+	if (size >= 1000000000LL) {
+		sz = ((double)size / 1000000000.0f);
+		sprintf(buf, "%0.1f GB", sz);
+	} else if (size >= 1000000LL) {
+		sz = ((double)size / 1000000.0f);
+		sprintf(buf, "%0.1f MB", sz);
+	} else if (size >= 1000LL) {
+		sz = ((double)size / 1000.0f);
+		sprintf(buf, "%0.1f kB", sz);
+	}
+	return strdup(buf);
+}
+
 static plist_t mobilebackup_factory_info_plist_new()
 {
 	/* gather data from lockdown */
-	GTimeVal tv = {0, 0};
 	plist_t value_node = NULL;
 	plist_t root_node = NULL;
 	char *uuid = NULL;
@@ -251,8 +303,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 	if (value_node)
 		plist_dict_insert_item(ret, "IMEI", plist_copy(value_node));
 
-	g_get_current_time(&tv);
-	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(tv.tv_sec, tv.tv_usec));
+	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
 	plist_dict_insert_item(ret, "Product Type", plist_copy(value_node));
@@ -268,7 +319,7 @@ static plist_t mobilebackup_factory_info_plist_new()
 	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(uuid));
 
 	/* uppercase */
-	uuid_uppercase = g_ascii_strup(uuid, -1);
+	uuid_uppercase = str_toupper(uuid);
 	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(uuid_uppercase));
 	free(uuid_uppercase);
 	free(uuid);
@@ -285,15 +336,13 @@ static plist_t mobilebackup_factory_info_plist_new()
 
 static void mobilebackup_info_update_last_backup_date(plist_t info_plist)
 {
-	GTimeVal tv = {0, 0};
 	plist_t node = NULL;
 
 	if (!info_plist)
 		return;
 
-	g_get_current_time(&tv);
 	node = plist_dict_get_item(info_plist, "Last Backup Date");
-	plist_set_date_val(node, tv.tv_sec, tv.tv_usec);
+	plist_set_date_val(node, time(NULL), 0);
 
 	node = NULL;
 }
@@ -396,11 +445,13 @@ static int plist_strcmp(plist_t node, const char *str)
 	return ret;
 }
 
-static gchar *mobilebackup_build_path(const char *backup_directory, const char *name, const char *extension)
+static char *mobilebackup_build_path(const char *backup_directory, const char *name, const char *extension)
 {
-	gchar *filename = g_strconcat(name, extension, NULL);
-	gchar *path = g_build_path(G_DIR_SEPARATOR_S, backup_directory, filename, NULL);
-	g_free(filename);
+	char* filename = (char*)malloc(strlen(name)+strlen(extension)+1);
+	strcpy(filename, name);
+	strcat(filename, extension);
+	char *path = build_path(backup_directory, filename, NULL);
+	free(filename);
 	return path;
 }
 
@@ -409,7 +460,7 @@ static void mobilebackup_write_status(const char *path, int status)
 	struct stat st;
 	plist_t status_plist = plist_new_dict();
 	plist_dict_insert_item(status_plist, "Backup Success", plist_new_bool(status));
-	gchar *file_path = mobilebackup_build_path(path, "Status", ".plist");
+	char *file_path = mobilebackup_build_path(path, "Status", ".plist");
 
 	if (stat(file_path, &st) == 0)
 		remove(file_path);
@@ -419,17 +470,17 @@ static void mobilebackup_write_status(const char *path, int status)
 	plist_free(status_plist);
 	status_plist = NULL;
 
-	g_free(file_path);
+	free(file_path);
 }
 
 static int mobilebackup_read_status(const char *path)
 {
 	int ret = -1;
 	plist_t status_plist = NULL;
-	gchar *file_path = mobilebackup_build_path(path, "Status", ".plist");
+	char *file_path = mobilebackup_build_path(path, "Status", ".plist");
 
 	plist_read_from_filename(&status_plist, file_path);
-	g_free(file_path);
+	free(file_path);
 	if (!status_plist) {
 		printf("Could not read Status.plist!\n");
 		return ret;
@@ -510,14 +561,14 @@ static int mobilebackup_info_is_current_device(plist_t info)
 static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory, const char *hash)
 {
 	int ret = 0;
-	gchar *path = mobilebackup_build_path(backup_directory, hash, ".mddata");
+	char *path = mobilebackup_build_path(backup_directory, hash, ".mddata");
 	printf("Removing \"%s\" ", path);
 	if (!remove( path ))
 		ret = 1;
 	else
 		ret = 0;
 
-	g_free(path);
+	free(path);
 
 	if (!ret)
 		return ret;
@@ -529,7 +580,7 @@ static int mobilebackup_delete_backup_file_by_hash(const char *backup_directory,
 	else
 		ret = 0;
 
-	g_free(path);
+	free(path);
 
 	return ret;
 }
@@ -666,9 +717,9 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 		hash_ok = 1;
 	}
 
-	g_free(domain);
-	g_free(version);
-	g_free(destpath);
+	free(domain);
+	free(version);
+	free(destpath);
 
 	if (!hash_ok) {
 		printf("\r\n");
@@ -680,7 +731,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 		printf("\n");
 		res = 0;
 	}
-	g_free(data_hash);
+	free(data_hash);
 	plist_free(mdinfo);
 	return res;
 }
@@ -841,7 +892,7 @@ int main(int argc, char *argv[])
 	char *info_path = mobilebackup_build_path(backup_directory, "Info", ".plist");
 	if (cmd == CMD_RESTORE) {
 		if (stat(info_path, &st) != 0) {
-			g_free(info_path);
+			free(info_path);
 			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found.\n", backup_directory);
 			return -1;
 		}
@@ -1010,7 +1061,7 @@ int main(int argc, char *argv[])
 				info_plist = mobilebackup_factory_info_plist_new();
 				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			}
-			g_free(info_path);
+			free(info_path);
 
 			plist_free(info_plist);
 			info_plist = NULL;
@@ -1060,7 +1111,7 @@ int main(int argc, char *argv[])
 			char *filename_mddata = NULL;
 			char *filename_source = NULL;
 			char *format_size = NULL;
-			gboolean is_manifest = FALSE;
+			int is_manifest = 0;
 			uint8_t b = 0;
 
 			/* process series of DLSendFile messages */
@@ -1085,9 +1136,9 @@ int main(int argc, char *argv[])
 					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
 					if (node) {
 						plist_get_uint_val(node, &backup_total_size);
-						format_size = g_format_size_for_display(backup_total_size);
+						format_size = format_size_for_display(backup_total_size);
 						printf("Backup data requires %s on the disk.\n", format_size);
-						g_free(format_size);
+						free(format_size);
 					}
 				}
 
@@ -1102,7 +1153,7 @@ int main(int argc, char *argv[])
 				if (node) {
 					plist_get_bool_val(node, &b);
 				}
-				is_manifest = (b == 1) ? TRUE: FALSE;
+				is_manifest = (b == 1) ? 1 : 0;
 
 				if ((hunk_index == 0) && (!is_manifest)) {
 					/* get source filename */
@@ -1115,17 +1166,17 @@ int main(int argc, char *argv[])
 					plist_get_uint_val(node, &file_size);
 					backup_real_size += file_size;
 
-					format_size = g_format_size_for_display(backup_real_size);
+					format_size = format_size_for_display(backup_real_size);
 					printf("(%s", format_size);
-					g_free(format_size);
+					free(format_size);
 
-					format_size = g_format_size_for_display(backup_total_size);
+					format_size = format_size_for_display(backup_total_size);
 					printf("/%s): ", format_size);
-					g_free(format_size);
+					free(format_size);
 
-					format_size = g_format_size_for_display(file_size);
+					format_size = format_size_for_display(file_size);
 					printf("Receiving file %s (%s)... \n", filename_source, format_size);
-					g_free(format_size);
+					free(format_size);
 
 					if (filename_source)
 						free(filename_source);
@@ -1148,7 +1199,7 @@ int main(int argc, char *argv[])
 						node = plist_dict_get_item(node_tmp, "BackupFileInfo");
 						plist_write_to_filename(node, filename_mdinfo, PLIST_FORMAT_BINARY);
 
-						g_free(filename_mdinfo);
+						free(filename_mdinfo);
 					}
 
 					file_index++;
@@ -1182,7 +1233,7 @@ int main(int argc, char *argv[])
 					free(buffer);
 					buffer = NULL;
 
-					g_free(filename_mddata);
+					free(filename_mddata);
 				}
 
 				if ((!is_manifest)) {
@@ -1220,7 +1271,7 @@ files_out:
 
 					/* remove any atomic Manifest.plist.tmp */
 					if (manifest_path)
-						g_free(manifest_path);
+						free(manifest_path);
 
 					manifest_path = mobilebackup_build_path(backup_directory, "Manifest", ".plist.tmp");
 					if (stat(manifest_path, &st) == 0)
@@ -1330,12 +1381,12 @@ files_out:
 					} else {
 						printf("Could not get AuthSignature from manifest!\n");
 					}
-					g_free(auth_sig);
+					free(auth_sig);
 				} else if (auth_ver) {
 					printf("Unknown AuthVersion '%s', cannot verify AuthSignature\n", auth_ver); 
 				}
 				plist_from_bin(bin, (uint32_t)binsize, &backup_data);
-				g_free(bin);
+				free(bin);
 			}
 			if (!backup_data) {
 				printf("Could not read plist from Manifest.plist Data key!\n");
@@ -1615,7 +1666,7 @@ files_out:
 			do_post_notification(NP_SYNC_DID_FINISH);
 		}
 		if (manifest_path)
-			g_free(manifest_path);
+			free(manifest_path);
 	} else {
 		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP_SERVICE_NAME);
 		lockdownd_client_free(client);
