@@ -1004,6 +1004,9 @@ static void mb2_handle_list_directory(plist_t message, const char *backup_dir)
 	if (cur_dir) {
 		struct dirent* ep;
 		while ((ep = readdir(cur_dir))) {
+			if ((strcmp(ep->d_name, ".") == 0) || (strcmp(ep->d_name, "..") == 0)) {
+				continue;
+			}
 			char *fpath = build_path(path, ep->d_name, NULL);
 			if (fpath) {
 				plist_t fdict = plist_new_dict();
@@ -1122,6 +1125,9 @@ static void mb2_copy_directory_by_path(const char *src, const char *dst)
 	if (cur_dir) {
 		struct dirent* ep;
 		while ((ep = readdir(cur_dir))) {
+			if ((strcmp(ep->d_name, ".") == 0) || (strcmp(ep->d_name, "..") == 0)) {
+				continue;
+			}
 			char *srcpath = build_path(src, ep->d_name, NULL);
 			char *dstpath = build_path(dst, ep->d_name, NULL);
 			if (srcpath && dstpath) {
