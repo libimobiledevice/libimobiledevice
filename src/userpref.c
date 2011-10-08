@@ -604,7 +604,7 @@ userpref_error_t userpref_remove_device_public_key(const char *uuid)
  */
 static int userpref_get_file_contents(const char *file, key_data_t * data)
 {
-	int success;
+	int success = 0;
 	unsigned long int size = 0;
 	unsigned char *content = NULL;
 	const char *config_path;
