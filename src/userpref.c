@@ -264,13 +264,19 @@ static int config_read(const char *cfgfile, plist_t *dict)
 			char line[256];
 			fseek(fd, 0, SEEK_SET);
 			while (fgets(line, 256, fd)) {
-				size_t llen = strlen(line)-1;
-				while ((llen > 0) && ((line[llen] == '\n') || (line[llen] == '\r'))) {
-					line[llen] = '\0';
+				char *p = &line[0];
+				size_t llen = strlen(p)-1;
+				while ((llen > 0) && ((p[llen] == '\n') || (p[llen] == '\r'))) {
+					p[llen] = '\0';
+					llen--;
 				}
-				if (!strncmp(line, "HostID=", 7)) {
+				if (llen == 0) continue;
+				while ((p[0] == '\n') || (p[0] == '\r')) {
+					p++;
+				}
+				if (!strncmp(p, "HostID=", 7)) {
 					plist = plist_new_dict();
-					plist_dict_insert_item(plist, "HostID", plist_new_string(line+7));
+					plist_dict_insert_item(plist, "HostID", plist_new_string(p+7));
 					break;
 				}
 			}
