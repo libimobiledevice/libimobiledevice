@@ -693,10 +693,12 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 			continue;
 
 		if (mb2_handle_send_file(backup_dir, str, &errplist) < 0) {
+			free(str);
 			//printf("Error when sending file '%s' to device\n", str);
 			// TODO: perhaps we can continue, we've got a multi status response?!
 			break;
 		}
+		free(str);
 	}
 
 	/* send terminating 0 dword */
