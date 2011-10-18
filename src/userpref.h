@@ -50,6 +50,8 @@ typedef gnutls_datum_t key_data_t;
 #define USERPREF_E_INVALID_ARG        -1
 #define USERPREF_E_INVALID_CONF       -2
 #define USERPREF_E_SSL_ERROR          -3
+#define USERPREF_E_READ_ERROR         -4
+#define USERPREF_E_WRITE_ERROR        -5
 
 #define USERPREF_E_UNKNOWN_ERROR    -256
 

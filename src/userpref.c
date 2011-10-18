@@ -193,6 +193,8 @@ static int config_write(const char *cfgfile, plist_t dict)
 				fprintf(fd, "\n[Global]\nHostID=%s\n", hostidstr);
 				fclose(fd);
 				res = 0;
+			} else {
+				debug_info("could not open '%s' for writing: %s", cfgfile, strerror(errno));
 			}
 			free(hostidstr);
 		}
@@ -234,6 +236,7 @@ static int config_read(const char *cfgfile, plist_t *dict)
 	int res = -1;
 	FILE *fd = fopen(cfgfile, "rb");
 	if (!fd) {
+		debug_info("could not open '%s' for reading: %s", cfgfile, strerror(errno));
 		return -1;
 	}
 
@@ -565,8 +568,12 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t pub
 
 	/* store file */
 	FILE *pFile = fopen(pem, "wb");
-	fwrite(public_key.data, 1, public_key.size, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fwrite(public_key.data, 1, public_key.size, pFile);
+		fclose(pFile);
+	} else {
+		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+	}
 	free(pem);
 
 	return USERPREF_E_SUCCESS;
@@ -678,6 +685,7 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
 
+	debug_info("Generating keys and certificates");
 #ifdef HAVE_OPENSSL
 	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
 	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
@@ -1035,6 +1043,7 @@ userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t
 			pem_host_cert->size = 0;
 		}
 	}
+	debug_info("configuration invalid");
 	return USERPREF_E_INVALID_CONF;
 }
 
@@ -1055,9 +1064,14 @@ userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t *
 	FILE *pFile;
 	char *pem;
 	const char *config_path;
+	userpref_error_t ret = USERPREF_E_SUCCESS;
 
-	if (!root_key || !host_key || !root_cert || !host_cert)
+	debug_info("saving keys and certs");
+
+	if (!root_key || !host_key || !root_cert || !host_cert) {
+		debug_info("missing key or cert (root_key=%p, host_key=%p, root=cert=%p, host_cert=%p", root_key, host_key, root_cert, host_cert);
 		return USERPREF_E_INVALID_ARG;
+	}
 
 	/* Make sure config directory exists */
 	userpref_create_config_dir();
@@ -1070,8 +1084,13 @@ userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t *
 	strcat(pem, DIR_SEP_S);
 	strcat(pem, LIBIMOBILEDEVICE_ROOT_PRIVKEY);
 	pFile = fopen(pem, "wb");
-	fwrite(root_key->data, 1, root_key->size, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fwrite(root_key->data, 1, root_key->size, pFile);
+		fclose(pFile);
+	} else {
+		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+		ret = USERPREF_E_WRITE_ERROR;
+	}
 	free(pem);
 
 	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_PRIVKEY)+1);
@@ -1079,8 +1098,13 @@ userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t *
 	strcat(pem, DIR_SEP_S);
 	strcat(pem, LIBIMOBILEDEVICE_HOST_PRIVKEY);
 	pFile = fopen(pem, "wb");
-	fwrite(host_key->data, 1, host_key->size, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fwrite(host_key->data, 1, host_key->size, pFile);
+		fclose(pFile);
+	} else {
+		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+		ret = USERPREF_E_WRITE_ERROR;
+	}
 	free(pem);
 
 	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_ROOT_CERTIF)+1);
@@ -1088,8 +1112,13 @@ userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t *
 	strcat(pem, DIR_SEP_S);
 	strcat(pem, LIBIMOBILEDEVICE_ROOT_CERTIF);
 	pFile = fopen(pem, "wb");
-	fwrite(root_cert->data, 1, root_cert->size, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fwrite(root_cert->data, 1, root_cert->size, pFile);
+		fclose(pFile);
+	} else {
+		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+		ret = USERPREF_E_WRITE_ERROR;
+	}
 	free(pem);
 
 	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_CERTIF)+1);
@@ -1097,9 +1126,14 @@ userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t *
 	strcat(pem, DIR_SEP_S);
 	strcat(pem, LIBIMOBILEDEVICE_HOST_CERTIF);
 	pFile = fopen(pem, "wb");
-	fwrite(host_cert->data, 1, host_cert->size, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fwrite(host_cert->data, 1, host_cert->size, pFile);
+		fclose(pFile);
+	} else {
+		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+		ret = USERPREF_E_WRITE_ERROR;
+	}
 	free(pem);
 
-	return USERPREF_E_SUCCESS;
+	return ret;
 }
