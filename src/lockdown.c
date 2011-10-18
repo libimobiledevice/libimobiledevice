@@ -1120,7 +1120,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 	BIO *membio = BIO_new_mem_buf(public_key.data, public_key.size);
 	RSA *pubkey = NULL;
 	if (!PEM_read_bio_RSAPublicKey(membio, &pubkey, NULL, NULL)) {
-		debug_info("%s: Could not read public key", __func__);	
+		debug_info("Could not read public key");
 	}
 	BIO_free(membio);
 
@@ -1170,7 +1170,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 		PEM_read_bio_X509(membp, &rootCert, NULL, NULL);
 		BIO_free(membp);
 		if (!rootCert) {
-			debug_info("Could not read RootCertificate%*s");
+			debug_info("Could not read RootCertificate");
 		} else {
 			debug_info("RootCertificate loaded");
 			EVP_PKEY* pkey = EVP_PKEY_new();
