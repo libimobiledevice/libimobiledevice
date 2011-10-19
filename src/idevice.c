@@ -134,8 +134,9 @@ idevice_error_t idevice_device_list_free(char **devices)
 {
 	if (devices) {
 		int i = 0;
-		while (devices[i++]) {
+		while (devices[i]) {
 			free(devices[i]);
+			i++;
 		}
 		free(devices);
 	}
