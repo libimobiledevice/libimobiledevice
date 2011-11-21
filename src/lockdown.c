@@ -82,7 +82,21 @@ static int lockdown_check_result(plist_t dict, const char *query_match)
 	plist_t result_node = plist_dict_get_item(dict, "Result");
 	if (!result_node) {
 		/* iOS 5: the 'Result' key is not present anymore.
-		   Just assume success here */
+		   But we need to check for the 'Error' key. */
+		plist_t err_node = plist_dict_get_item(dict, "Error");
+		if (err_node) {
+			if (plist_get_node_type(err_node) == PLIST_STRING) {
+				char *err_value = NULL;
+				plist_get_string_val(err_node, &err_value);
+				if (err_value) {
+					debug_info("ERROR: %s", err_value);
+					free(err_value);
+				} else {
+					debug_info("ERROR: unknown error occured");
+				}
+			}
+			return RESULT_FAILURE;
+		}
 		return RESULT_SUCCESS;
 	}
 
