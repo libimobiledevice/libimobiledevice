@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	uint32_t cnt = 0;
 	uint32_t len = 0;
 	char buf[4096];
-	FILE *f = fopen("dump.cpio.gz", "w");
+	FILE *f = fopen("dump.cpio.gz", "wb");
 	setbuf(stdout, NULL);
 	printf("receiving ");
 	while (idevice_connection_receive(dump, buf, 4096, &len) == IDEVICE_E_SUCCESS) {

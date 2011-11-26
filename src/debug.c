@@ -140,7 +140,7 @@ inline void debug_buffer_to_file(const char *file, const char *data, const int l
 {
 #ifndef STRIP_DEBUG_CODE
 	if (debug_level) {
-		FILE *f = fopen(file, "w+");
+		FILE *f = fopen(file, "wb");
 		fwrite(data, 1, length, f);
 		fflush(f);
 		fclose(f);

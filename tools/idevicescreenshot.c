@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 			time_t now = time(NULL);
 			strftime(filename, 36, "screenshot-%Y-%m-%d-%H-%M-%S.tiff", gmtime(&now));
 			if (screenshotr_take_screenshot(shotr, &imgdata, &imgsize) == SCREENSHOTR_E_SUCCESS) {
-				FILE *f = fopen(filename, "w");
+				FILE *f = fopen(filename, "wb");
 				if (f) {
 					if (fwrite(imgdata, 1, (size_t)imgsize, f) == (size_t)imgsize) {
 						printf("Screenshot saved to %s\n", filename);

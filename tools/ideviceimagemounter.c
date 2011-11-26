@@ -365,7 +365,7 @@ int main(int argc, char **argv)
 	} else {
 		char sig[8192];
 		size_t sig_length = 0;
-		FILE *f = fopen(image_sig_path, "r");
+		FILE *f = fopen(image_sig_path, "rb");
 		if (!f) {
 			fprintf(stderr, "Error opening signature file '%s': %s\n", image_sig_path, strerror(errno));
 			goto leave;
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
 			goto leave;
 		}
 
-		f = fopen(image_path, "r");
+		f = fopen(image_path, "rb");
 		if (!f) {
 			fprintf(stderr, "Error opening image file '%s': %s\n", image_path, strerror(errno));
 			goto leave;
