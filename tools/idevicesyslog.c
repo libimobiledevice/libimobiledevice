@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 					recv_bytes += bytes;
 
 					fwrite(receive, sizeof(char), bytes, stdout);
+					fflush(stdout);
 				}
 
 				free(receive);
