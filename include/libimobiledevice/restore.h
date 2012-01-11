@@ -59,7 +59,7 @@ restored_error_t restored_send(restored_client_t client, plist_t plist);
 restored_error_t restored_receive(restored_client_t client, plist_t *plist);
 restored_error_t restored_goodbye(restored_client_t client);
 
-restored_error_t restored_start_restore(restored_client_t client);
+restored_error_t restored_start_restore(restored_client_t client, plist_t options, uint64_t version);
 restored_error_t restored_reboot(restored_client_t client);
 
 /* Helper */

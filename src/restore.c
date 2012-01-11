@@ -391,11 +391,13 @@ restored_error_t restored_goodbye(restored_client_t client)
  * Requests to start a restore and retrieve it's port on success.
  *
  * @param client The restored client
+ * @param options PLIST_DICT with options for the restore process or NULL
+ * @param version the restore protocol version, see restored_query_type()
  *
  * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
  *  is NULL, RESTORE_E_START_RESTORE_FAILED if the request fails
  */
-restored_error_t restored_start_restore(restored_client_t client)
+restored_error_t restored_start_restore(restored_client_t client, plist_t options, uint64_t version)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -406,7 +408,10 @@ restored_error_t restored_start_restore(restored_client_t client)
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartRestore"));
-	plist_dict_insert_item(dict,"RestoreProtocolVersion", plist_new_uint(2));
+	if (options) {
+		plist_dict_insert_item(dict, "RestoreOptions", plist_copy(options));
+	}
+	plist_dict_insert_item(dict,"RestoreProtocolVersion", plist_new_uint(version));
 
 	/* send to device */
 	ret = restored_send(client, dict);
