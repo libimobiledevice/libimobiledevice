@@ -504,9 +504,13 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 static ssize_t internal_ssl_write(gnutls_transport_ptr_t transport, char *buffer, size_t length)
 {
 	uint32_t bytes = 0;
+	idevice_error_t res;
 	idevice_connection_t connection = (idevice_connection_t)transport;
 	debug_info("pre-send length = %zi", length);
-	internal_connection_send(connection, buffer, length, &bytes);
+	if ((res = internal_connection_send(connection, buffer, length, &bytes)) != IDEVICE_E_SUCCESS) {
+		debug_info("ERROR: internal_connection_send returned %d", res);
+		return -1;
+	}
 	debug_info("post-send sent %i bytes", bytes);
 	return bytes;
 }
