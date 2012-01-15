@@ -135,7 +135,7 @@ mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client)
  *     will be inserted into this plist before sending it. This parameter
  *     can be NULL if message is not NULL.
  */
-static mobilebackup2_error_t internal_mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options)
+mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options)
 {
 	if (!client || !client->parent || (!message && !options))
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -368,7 +368,7 @@ mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t clie
 	}
 	plist_dict_insert_item(dict, "SupportedProtocolVersions", array);
 
-	mobilebackup2_error_t err = internal_mobilebackup2_send_message(client, "Hello", dict);
+	mobilebackup2_error_t err = mobilebackup2_send_message(client, "Hello", dict);
 	plist_free(dict);
 
 	if (err != MOBILEBACKUP2_E_SUCCESS)
@@ -438,7 +438,7 @@ mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, 
 	if (options) {
 		plist_dict_insert_item(dict, "Options", plist_copy(options));
 	}
-	mobilebackup2_error_t err = internal_mobilebackup2_send_message(client, request, dict);
+	mobilebackup2_error_t err = mobilebackup2_send_message(client, request, dict);
 	plist_free(dict);
 
 	return err;

@@ -50,6 +50,7 @@ typedef mobilebackup2_client_private *mobilebackup2_client_t; /**< The client ha
 
 mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, uint16_t port, mobilebackup2_client_t * client);
 mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client);
+mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options);
 mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage);
 mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
 mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes);
