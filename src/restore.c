@@ -268,6 +268,57 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 }
 
 /**
+ * Queries a value from the device specified by a key.
+ *
+ * @param client An initialized restored client.
+ * @param key The key name to request
+ * @param value A plist node representing the result value node
+ *
+ * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL, RESTORE_E_PLIST_ERROR if value for key can't be found
+ */
+restored_error_t restored_query_value(restored_client_t client, const char *key, plist_t *value)
+{
+	if (!client || !key)
+		return RESTORE_E_INVALID_ARG;
+
+	plist_t dict = NULL;
+	restored_error_t ret = RESTORE_E_UNKNOWN_ERROR;
+
+	/* setup request plist */
+	dict = plist_new_dict();
+	plist_dict_add_label(dict, client->label);
+	if (key) {
+		plist_dict_insert_item(dict,"QueryKey", plist_new_string(key));
+	}
+	plist_dict_insert_item(dict,"Request", plist_new_string("QueryValue"));
+
+	/* send to device */
+	ret = restored_send(client, dict);
+
+	plist_free(dict);
+	dict = NULL;
+
+	if (ret != RESTORE_E_SUCCESS)
+		return ret;
+
+	/* Now get device's answer */
+	ret = restored_receive(client, &dict);
+	if (ret != RESTORE_E_SUCCESS)
+		return ret;
+
+	plist_t value_node = plist_dict_get_item(dict, key);
+	if (value_node) {
+		debug_info("has a value");
+		*value = plist_copy(value_node);
+	} else {
+		ret = RESTORE_E_PLIST_ERROR;
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+/**
  * Retrieves a value from information plist specified by a key.
  *
  * @param client An initialized restored client.

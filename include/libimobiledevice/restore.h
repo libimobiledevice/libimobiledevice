@@ -54,6 +54,7 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 restored_error_t restored_client_free(restored_client_t client);
 
 restored_error_t restored_query_type(restored_client_t client, char **type, uint64_t *version);
+restored_error_t restored_query_value(restored_client_t client, const char *key, plist_t *value);
 restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value) ;
 restored_error_t restored_send(restored_client_t client, plist_t plist);
 restored_error_t restored_receive(restored_client_t client, plist_t *plist);
