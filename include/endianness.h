@@ -1,6 +1,24 @@
 #ifndef ENDIANNESS_H
 #define ENDIANNESS_H
 
+#ifndef __LITTLE_ENDIAN
+#define __LITTLE_ENDIAN 1234
+#endif
+
+#ifndef __BIG_ENDIAN
+#define __BIG_ENDIAN 4321
+#endif
+
+#ifndef __BYTE_ORDER
+#ifdef __LITTLE_ENDIAN__
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#else
+#ifdef __BIG_ENDIAN__
+#define __BYTE_ORDER __BIG_ENDIAN
+#endif
+#endif
+#endif
+
 #ifndef be16toh
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define be16toh(x) (x)
