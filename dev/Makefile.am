@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libpthread_LIBS)
+AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libpthread_LIBS) $(libplist_LIBS)
 
 if ENABLE_DEVTOOLS
 noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest lckd-client
