@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libimobiledevice, 1.1.1, nospam@nowhere.com)
+AC_INIT(libimobiledevice, 1.1.2, nospam@nowhere.com)
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -15,7 +15,7 @@ dnl libtool versioning
 #                 changes to the signature and the semantic)
 #  ? :+1 : ?   == just internal changes
 # CURRENT : REVISION : AGE
-LIBIMOBILEDEVICE_SO_VERSION=2:1:0
+LIBIMOBILEDEVICE_SO_VERSION=3:0:0
 
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 
