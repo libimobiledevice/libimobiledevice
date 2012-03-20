@@ -93,6 +93,31 @@ fi
 AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
 AC_SUBST([SWIG_SUB])
 
+# Cython Python Bindings
+AC_ARG_WITH([cython],
+            [AS_HELP_STRING([--without-cython],
+            [build Python bindings using Cython (default is yes)])],
+            [build_cython=false],
+            [build_cython=true])
+if test "$build_cython" = "true"; then
+            AM_PATH_PYTHON(2.3)
+            AC_PROG_CYTHON(0.12.1)
+            CYTHON_PYTHON
+else
+            CYTHON=false
+fi
+if [test "x$CYTHON" != "xfalse"]; then
+            CYTHON_SUB=cython
+            CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist)/plist/cython
+            AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
+            cython_python_bindings=yes
+else
+            CYTHON_SUB=
+            cython_python_bindings=no
+fi
+AM_CONDITIONAL([HAVE_CYTHON],[test "x$CYTHON_SUB" = "xcython"])
+AC_SUBST([CYTHON_SUB])
+
 AC_ARG_ENABLE([openssl],
             [AS_HELP_STRING([--disable-openssl],
             [Do not look for OpenSSL])],
@@ -124,32 +149,6 @@ else
   PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
   ssl_provider="GnuTLS"
 fi
-
-# Cython Python Bindings
-AC_ARG_WITH([cython],
-            [AS_HELP_STRING([--without-cython],
-            [build Python bindings using Cython (default is yes)])],
-            [build_cython=false],
-            [build_cython=true])
-if test "$build_cython" = "true"; then
-            AM_PATH_PYTHON(2.3)
-            AC_PROG_CYTHON(0.12.1)
-            CYTHON_PYTHON
-else
-            CYTHON=false
-
-fi
-if [test "x$CYTHON" != "xfalse"]; then
-            CYTHON_SUB=cython
-            CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist)/plist/cython
-            AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
-            cython_python_bindings=yes
-else
-            CYTHON_SUB=
-            cython_python_bindings=no
-fi
-AM_CONDITIONAL([HAVE_CYTHON],[test "x$CYTHON_SUB" = "xcython"])
-AC_SUBST([CYTHON_SUB])
 
 AC_ARG_ENABLE([dev-tools],
             [AS_HELP_STRING([--enable-dev-tools],
