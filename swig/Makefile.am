@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(libglib2_CFLAGS) $(libplist_CFLAGS) $(SWIG_PYTHON_CPPFLAGS) -I$(oldincludedir)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(libplist_CFLAGS) $(SWIG_PYTHON_CPPFLAGS) -I$(oldincludedir)
 
 if HAVE_SWIG
 BUILT_SOURCES = imobiledevice_wrap.cxx
