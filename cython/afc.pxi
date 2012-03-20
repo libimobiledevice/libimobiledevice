@@ -142,7 +142,7 @@ cdef class AfcFile(Base):
         except BaseError, e:
             raise
         finally:
-            stdlib.free(c_data)
+            free(c_data)
 
         return bytes_written
 
@@ -182,9 +182,9 @@ cdef class AfcClient(BaseService):
                 while infos[i]:
                     info = infos[i]
                     result.append(info)
-                    stdlib.free(infos[i])
+                    free(infos[i])
                     i = i + 1
-                stdlib.free(infos)
+                free(infos)
 
         return result
 
@@ -205,13 +205,13 @@ cdef class AfcClient(BaseService):
                 while dir_list[i]:
                     f = dir_list[i]
                     result.append(f)
-                    stdlib.free(dir_list[i])
+                    free(dir_list[i])
                     i = i + 1
-                stdlib.free(dir_list)
+                free(dir_list)
 
         return result
 
-    cpdef AfcFile open(self, bytes filename, bytes mode='r'):
+    cpdef AfcFile open(self, bytes filename, bytes mode=b'r'):
         cdef:
             afc_file_mode_t c_mode
             uint64_t handle
@@ -241,7 +241,7 @@ cdef class AfcClient(BaseService):
 
     cpdef get_file_info(self, bytes path):
         cdef:
-            list result
+            list result = []
             char** c_result
             int i = 0
             bytes info
@@ -254,9 +254,9 @@ cdef class AfcClient(BaseService):
                 while c_result[i]:
                     info = c_result[i]
                     result.append(info)
-                    stdlib.free(c_result[i])
+                    free(c_result[i])
                     i = i + 1
-                stdlib.free(c_result)
+                free(c_result)
 
         return result
 

@@ -35,7 +35,7 @@ cdef extern from "libimobiledevice/mobilesync.h":
 
     mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client)
     mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client)
-    mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist.plist_t *entities, uint8_t *is_last_record)
+    mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist.plist_t *entities, uint8_t *is_last_record, plist.plist_t *actions)
     mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client)
 
     mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client)
@@ -114,13 +114,15 @@ cdef class MobileSyncClient(DeviceLinkService):
         cdef:
             plist.plist_t entities = NULL
             uint8_t is_last_record = 0
-
+            plist.plist_t actions = NULL
         try:
-            self.handle_error(mobilesync_receive_changes(self._c_client, &entities, &is_last_record))
-            return (plist.plist_t_to_node(entities), <bint>is_last_record)
+            self.handle_error(mobilesync_receive_changes(self._c_client, &entities, &is_last_record, &actions))
+            return (plist.plist_t_to_node(entities), <bint>is_last_record, plist.plist_t_to_node(actions))
         except Exception, e:
             if entities != NULL:
                 plist.plist_free(entities)
+            if actions != NULL:
+                plist.plist_free(actions)
             raise
 
     cpdef acknowledge_changes_from_device(self):

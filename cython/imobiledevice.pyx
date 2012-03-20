@@ -134,7 +134,7 @@ cdef class iDeviceConnection(Base):
     cdef inline BaseError _error(self, int16_t ret):
         return iDeviceError(ret)
 
-cimport stdlib
+from libc.stdlib cimport *
 
 cdef class iDevice(Base):
     def __cinit__(self, object uuid=None, *args, **kwargs):
@@ -180,7 +180,7 @@ cdef class iDevice(Base):
                 return uuid
             except Exception, e:
                 if uuid != NULL:
-                    stdlib.free(uuid)
+                    free(uuid)
     property handle:
         def __get__(self):
             cdef uint32_t handle

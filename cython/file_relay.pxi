@@ -31,7 +31,7 @@ cdef class FileRelayError(BaseError):
         }
         BaseError.__init__(self, *args, **kwargs)
 
-cimport stdlib
+from libc.stdlib cimport *
 
 cdef class FileRelayClient(PropertyListService):
     __service_name__ = "com.apple.mobile.file_relay"
@@ -50,7 +50,7 @@ cdef class FileRelayClient(PropertyListService):
         cdef:
             file_relay_error_t err
             Py_ssize_t count = len(sources)
-            char** c_sources = <char**>stdlib.malloc(sizeof(char*) * (count + 1))
+            char** c_sources = <char**>malloc(sizeof(char*) * (count + 1))
             iDeviceConnection conn = iDeviceConnection.__new__(iDeviceConnection)
 
         for i, value in enumerate(sources):
@@ -58,7 +58,7 @@ cdef class FileRelayClient(PropertyListService):
         c_sources[count] = NULL
 
         err = file_relay_request_sources(self._c_client, <const_sources_t>c_sources, &conn._c_connection)
-        stdlib.free(c_sources)
+        free(c_sources)
         self.handle_error(err)
         return conn
 

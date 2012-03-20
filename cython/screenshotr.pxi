@@ -55,7 +55,7 @@ cdef class ScreenshotrClient(DeviceLinkService):
             return result
         except Exception, e:
             if c_data != NULL:
-                stdlib.free(c_data)
+                free(c_data)
             raise
 
     cdef inline BaseError _error(self, int16_t ret):

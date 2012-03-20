@@ -10,7 +10,7 @@ cdef extern from "libimobiledevice/sbservices.h":
         SBSERVICES_E_UNKNOWN_ERROR = -256
     sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbservices_client_t *client)
     sbservices_error_t sbservices_client_free(sbservices_client_t client)
-    sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist.plist_t *state)
+    sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist.plist_t *state, char *format_version)
     sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist.plist_t newstate)
     sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, char *bundleId, char **pngdata, uint64_t *pngsize)
 
@@ -45,7 +45,7 @@ cdef class SpringboardServicesClient(PropertyListService):
             cdef:
                 plist.plist_t c_node = NULL
                 sbservices_error_t err
-            err = sbservices_get_icon_state(self._c_client, &c_node)
+            err = sbservices_get_icon_state(self._c_client, &c_node, NULL)
             try:
                 self.handle_error(err)
 
@@ -68,5 +68,5 @@ cdef class SpringboardServicesClient(PropertyListService):
 
             return pngdata[:pngsize]
         except BaseError, e:
-            stdlib.free(pngdata)
+            free(pngdata)
             raise

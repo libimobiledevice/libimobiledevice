@@ -90,7 +90,7 @@ cdef class LockdownPairRecord:
             return result
 
 cdef class LockdownClient(PropertyListService):
-    def __cinit__(self, iDevice device not None, bytes label="", bool handshake=True, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, bytes label=b'', bint handshake=True, *args, **kwargs):
         cdef:
             lockdownd_error_t err
             char* c_label = NULL
@@ -125,7 +125,7 @@ cdef class LockdownClient(PropertyListService):
             raise
         finally:
             if c_type != NULL:
-                stdlib.free(c_type)
+                free(c_type)
 
     cpdef plist.Node get_value(self, bytes domain=None, bytes key=None):
         cdef:
@@ -212,7 +212,7 @@ cdef class LockdownClient(PropertyListService):
             raise
         finally:
             if c_session_id != NULL:
-                stdlib.free(c_session_id)
+                free(c_session_id)
 
     cpdef stop_session(self, bytes session_id):
         self.handle_error(lockdownd_stop_session(self._c_client, session_id))
