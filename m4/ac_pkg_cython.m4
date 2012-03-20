@@ -41,11 +41,17 @@ AC_DEFUN([AC_PROG_CYTHON],[
                         if test -z "$available_patch" ; then
                                 [available_patch=0]
                         fi
-                        if test $available_major -ne $required_major \
-                                -o $available_minor -ne $required_minor \
-                                -o $available_patch -lt $required_patch ; then
+                        if test $available_major -gt $required_major || \
+                                ( test $available_major -eq $required_major && \
+                                      test $available_minor -gt $required_minor ) || \
+                                ( test $available_major -eq $required_major && \
+                                        test $available_minor -eq $required_minor && \
+                                        test $available_patch -ge $required_patch ) ; then
+
+                                AC_MSG_NOTICE([Cython executable is '$CYTHON'])
+                        else
                                 AC_MSG_WARN([Cython version >= $1 is required.  You have $cython_version.  You should look at http://www.cython.org])
-                                CYTHON=false
+                                CYTHON='echo "Error: Cython version >= $1 is required.  You have '"$cython_version"'.  You should look at http://www.cython.org" ; false'
                         fi
                 else
                         AC_MSG_WARN([cannot determine Cython version])
