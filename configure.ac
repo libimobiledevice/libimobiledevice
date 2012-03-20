@@ -172,11 +172,11 @@ if test "$enable_largefile" != no; then
 	LFS_CFLAGS="$LFS_CFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
     else
 	AC_MSG_CHECKING(for native large file support)
-	AC_RUN_IFELSE([#include <unistd.h>
+	AC_RUN_IFELSE([AC_LANG_SOURCE([#include <unistd.h>
 	  int main (int argc, char **argv)
 	  {
 	      exit(!(sizeof(off_t) == 8));
-	  }],
+	  }])],
 	[ac_cv_sys_file_offset_bits=64; AC_DEFINE(_FILE_OFFSET_BITS,64)
 	 AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)])
