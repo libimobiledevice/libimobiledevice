@@ -26,13 +26,13 @@ idevice_id_LDFLAGS = $(AM_LDFLAGS)
 idevice_id_LDADD = ../src/libimobiledevice.la
 
 idevicebackup_SOURCES = idevicebackup.c
-idevicebackup_CFLAGS = $(AM_CFLAGS) $(libglib2_CFLAGS)
-idevicebackup_LDFLAGS = $(AM_LDFLAGS) $(libglib2_LIBS)
+idevicebackup_CFLAGS = $(AM_CFLAGS)
+idevicebackup_LDFLAGS = $(AM_LDFLAGS)
 idevicebackup_LDADD = ../src/libimobiledevice.la
 
 idevicebackup2_SOURCES = idevicebackup2.c
-idevicebackup2_CFLAGS = $(AM_CFLAGS) $(libglib2_CFLAGS)
-idevicebackup2_LDFLAGS = $(AM_LDFLAGS) $(libglib2_LIBS)
+idevicebackup2_CFLAGS = $(AM_CFLAGS)
+idevicebackup2_LDFLAGS = $(AM_LDFLAGS)
 idevicebackup2_LDADD = ../src/libimobiledevice.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
