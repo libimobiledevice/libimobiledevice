@@ -25,6 +25,13 @@
 #include <errno.h>
 #include <glib.h>
 
+#ifdef WIN32
+#include <windows.h>
+#define sleep(x) Sleep(x*1000)
+#else
+#include <unistd.h>
+#endif
+
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/afc.h>
