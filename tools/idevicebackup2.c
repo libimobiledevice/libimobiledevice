@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <libgen.h>
+#include <ctype.h>
+#include <time.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -161,7 +163,7 @@ static void mobilebackup_afc_get_file_contents(const char *filename, char **data
 static char *str_toupper(char* str)
 {
 	char *res = strdup(str);
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(res); i++) {
 		res[i] = toupper(res[i]);
 	}
@@ -177,7 +179,7 @@ static int __mkdir(const char* path, int mode)
 #endif
 }
 
-int mkdir_with_parents(const char *dir, int mode)
+static int mkdir_with_parents(const char *dir, int mode)
 {
 	if (!dir) return -1;
 	if (__mkdir(dir, mode) == 0) {
@@ -200,7 +202,7 @@ int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
-char* build_path(const char* elem, ...)
+static char* build_path(const char* elem, ...)
 {
 	if (!elem) return NULL;
 	va_list args;
@@ -1662,7 +1664,6 @@ checkpoint:
 						if (src && dst) {
 							char *oldpath = build_path(backup_directory, src, NULL);
 							char *newpath = build_path(backup_directory, dst, NULL);
-							struct stat st;
 
 							PRINT_VERBOSE(1, "Copying '%s' to '%s'\n", src, dst);
 

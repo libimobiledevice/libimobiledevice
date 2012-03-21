@@ -35,6 +35,8 @@
 #include <gcrypt.h>
 #endif
 #include <unistd.h>
+#include <ctype.h>
+#include <time.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -228,14 +230,14 @@ static void notify_cb(const char *notification, void *userdata)
 static char *str_toupper(char* str)
 {
 	char *res = strdup(str);
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(res); i++) {
 		res[i] = toupper(res[i]);
 	}
 	return res;
 }
 
-char* build_path(const char* elem, ...)
+static char* build_path(const char* elem, ...)
 {
 	if (!elem) return NULL;
 	va_list args;
