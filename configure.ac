@@ -69,30 +69,6 @@ if test "x$ac_cv_have_endian" = "xno"; then
   fi
 fi
 
-# SWIG Python Bindings
-AC_ARG_WITH([swig],
-            [AS_HELP_STRING([--without-swig],
-            [build Python bindings using SWIG (default is yes)])],
-            [build_swig=false],
-            [build_swig=true])
-if test "$build_swig" = "true"; then
-            AM_PATH_PYTHON(2.3)
-            AC_PROG_SWIG(1.3.21)
-            AX_SWIG_ENABLE_CXX
-            SWIG_PYTHON
-else
-            SWIG=false
-fi
-if [test "x$SWIG" != "xfalse"]; then
-            SWIG_SUB=swig
-            swig_python_bindings=yes
-else
-            SWIG_SUB=
-            swig_python_bindings=no
-fi
-AM_CONDITIONAL([HAVE_SWIG],[test "x$SWIG" != "xfalse"])
-AC_SUBST([SWIG_SUB])
-
 # Cython Python Bindings
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
@@ -227,7 +203,6 @@ src/Makefile
 include/Makefile
 dev/Makefile
 tools/Makefile
-swig/Makefile
 cython/Makefile
 docs/Makefile
 libimobiledevice-1.0.pc
@@ -241,8 +216,7 @@ Configuration for $PACKAGE $VERSION:
   Install prefix: .........: $prefix
   Debug code ..............: $building_debug_code
   Dev tools ...............: $building_dev_tools
-  SWIG Python bindings ....: $swig_python_bindings
-  Cython Python bindgins ..: $cython_python_bindings
+  Python bindings .........: $cython_python_bindings
   SSL support .............: $ssl_provider
 
   Now type 'make' to build $PACKAGE $VERSION,
