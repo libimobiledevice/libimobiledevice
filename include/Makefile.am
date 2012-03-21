@@ -1,3 +1,5 @@
+EXTRA_DIST = asprintf.h endianness.h
+
 nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
 			 libimobiledevice/lockdown.h \
 			 libimobiledevice/afc.h \
