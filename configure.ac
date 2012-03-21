@@ -124,7 +124,8 @@ AC_ARG_ENABLE([openssl],
             [use_openssl=no],
             [use_openssl=yes])
 
-PKG_CHECK_MODULES(openssl, openssl >= 0.9.8, have_openssl=yes, have_openssl=no)
+pkg_req_openssl="openssl >= 0.9.8"
+PKG_CHECK_MODULES(openssl, $pkg_req_openssl, have_openssl=yes, have_openssl=no)
 if test "x$have_openssl" = "xyes"; then
   if test "x$use_openssl" != "xyes"; then
     enable_openssl=no
@@ -143,11 +144,17 @@ if test "x$enable_openssl" = "xyes"; then
   AC_SUBST(openssl_CFLAGS)
   AC_SUBST(openssl_LIBS)
   ssl_provider="OpenSSL";
+  ssl_requires="$pkg_req_openssl"
+  AC_SUBST(ssl_requires)
 else
-  PKG_CHECK_MODULES(libgnutls, gnutls >= 2.2.0)
+  pkg_req_gnutls="gnutls >= 2.2.0"
+  pkg_req_libtasn1="libtasn1 >= 1.1"
+  PKG_CHECK_MODULES(libgnutls, $pkg_req_gnutls)
   AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice with GnuTLS])])
-  PKG_CHECK_MODULES(libtasn1, libtasn1 >= 1.1)
+  PKG_CHECK_MODULES(libtasn1, $pkg_req_libtasn1)
   ssl_provider="GnuTLS"
+  ssl_requires="$pkg_req_gnutls $pkg_req_libtasn1"
+  AC_SUBST(ssl_requires)
 fi
 
 AC_ARG_ENABLE([dev-tools],

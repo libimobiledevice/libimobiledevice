@@ -6,7 +6,7 @@ includedir=@includedir@
 Name: libimobiledevice
 Description: A library to communicate with services running on Apple iPhone/iPod Touch devices.
 Version: @VERSION@
-Requires: libplist >= 0.12 libusbmuxd >= 0.1.0 gnutls >= 1.6.3 libtasn1 >= 1.1
+Requires: libplist >= 0.12 libusbmuxd >= 0.1.0 @ssl_requires@
 Libs: -L${libdir} -limobiledevice
 Cflags: -I${includedir}
 
