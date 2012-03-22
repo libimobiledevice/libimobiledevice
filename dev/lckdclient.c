@@ -88,12 +88,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	char *uuid = NULL;
-	if (IDEVICE_E_SUCCESS == idevice_get_uuid(phone, &uuid)) {
-		printf("DeviceUniqueID : %s\n", uuid);
+	char *udid = NULL;
+	if (IDEVICE_E_SUCCESS == idevice_get_udid(phone, &udid)) {
+		printf("DeviceUniqueID : %s\n", udid);
 	}
-	if (uuid)
-		free(uuid);
+	if (udid)
+		free(udid);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "lckdclient")) {
 		idevice_free(phone);

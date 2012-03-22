@@ -44,9 +44,9 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     idevice_error_t idevice_get_device_list(char ***devices, int *count)
     idevice_error_t idevice_device_list_free(char **devices)
     void idevice_set_debug_level(int level)
-    idevice_error_t idevice_new(idevice_t *device, char *uuid)
+    idevice_error_t idevice_new(idevice_t *device, char *udid)
     idevice_error_t idevice_free(idevice_t device)
-    idevice_error_t idevice_get_uuid(idevice_t device, char** uuid)
+    idevice_error_t idevice_get_udid(idevice_t device, char** udid)
     idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
     idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
     idevice_error_t idevice_disconnect(idevice_connection_t connection)
@@ -75,14 +75,14 @@ cdef class iDeviceEvent:
         raise TypeError("iDeviceEvent cannot be instantiated")
 
     def __str__(self):
-        return 'iDeviceEvent: %s (%s)' % (self.event == IDEVICE_DEVICE_ADD and 'Add' or 'Remove', self.uuid)
+        return 'iDeviceEvent: %s (%s)' % (self.event == IDEVICE_DEVICE_ADD and 'Add' or 'Remove', self.udid)
 
     property event:
         def __get__(self):
             return self._c_event.event
-    property uuid:
+    property udid:
         def __get__(self):
-            return self._c_event.uuid
+            return self._c_event.udid
     property conn_type:
         def __get__(self):
             return self._c_event.conn_type
@@ -137,13 +137,13 @@ cdef class iDeviceConnection(Base):
 from libc.stdlib cimport *
 
 cdef class iDevice(Base):
-    def __cinit__(self, object uuid=None, *args, **kwargs):
-        cdef char* c_uuid = NULL
-        if isinstance(uuid, basestring):
-            c_uuid = <bytes>uuid
-        elif uuid is not None:
-            raise TypeError("iDevice's constructor takes a string or None as the uuid argument")
-        self.handle_error(idevice_new(&self._c_dev, c_uuid))
+    def __cinit__(self, object udid=None, *args, **kwargs):
+        cdef char* c_udid = NULL
+        if isinstance(udid, basestring):
+            c_udid = <bytes>udid
+        elif udid is not None:
+            raise TypeError("iDevice's constructor takes a string or None as the udid argument")
+        self.handle_error(idevice_new(&self._c_dev, c_udid))
 
     def __dealloc__(self):
         if self._c_dev is not NULL:
@@ -169,18 +169,18 @@ cdef class iDevice(Base):
             if c_conn != NULL:
                 idevice_disconnect(c_conn)
 
-    property uuid:
+    property udid:
         def __get__(self):
             cdef:
-                char* uuid
+                char* udid
                 idevice_error_t err
-            err = idevice_get_uuid(self._c_dev, &uuid)
+            err = idevice_get_udid(self._c_dev, &udid)
             try:
                 self.handle_error(err)
-                return uuid
+                return udid
             except Exception, e:
-                if uuid != NULL:
-                    free(uuid)
+                if udid != NULL:
+                    free(udid)
     property handle:
         def __get__(self):
             cdef uint32_t handle

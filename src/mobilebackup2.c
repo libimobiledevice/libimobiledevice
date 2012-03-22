@@ -418,8 +418,8 @@ leave:
  * @param client
  * @param request The request to send to the backup service.
  *     Currently, this is one of "Backup", "Restore", "Info", or "List".
- * @param target_identifier UUID of the target device.
- * @param source_identifier UUID of backup data?
+ * @param target_identifier UDID of the target device.
+ * @param source_identifier UDID of backup data?
  * @param options Additional options in a plist of type PLIST_DICT.
  *
  * @return MOBILEBACKUP2_E_SUCCESS if the request was successfully sent,

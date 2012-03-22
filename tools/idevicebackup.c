@@ -288,8 +288,8 @@ static plist_t mobilebackup_factory_info_plist_new()
 	/* gather data from lockdown */
 	plist_t value_node = NULL;
 	plist_t root_node = NULL;
-	char *uuid = NULL;
-	char *uuid_uppercase = NULL;
+	char *udid = NULL;
+	char *udid_uppercase = NULL;
 
 	plist_t ret = plist_new_dict();
 
@@ -323,14 +323,14 @@ static plist_t mobilebackup_factory_info_plist_new()
 	plist_dict_insert_item(ret, "Serial Number", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
-	idevice_get_uuid(phone, &uuid);
-	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(uuid));
+	idevice_get_udid(phone, &udid);
+	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(udid));
 
 	/* uppercase */
-	uuid_uppercase = str_toupper(uuid);
-	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(uuid_uppercase));
-	free(uuid_uppercase);
-	free(uuid);
+	udid_uppercase = str_toupper(udid);
+	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
+	free(udid_uppercase);
+	free(udid);
 
 	/* FIXME: Embed files as <data> nodes */
 	plist_t files = plist_new_dict();
@@ -521,7 +521,7 @@ static int mobilebackup_info_is_current_device(plist_t info)
 	/* get basic device information in one go */
 	lockdownd_get_value(client, NULL, NULL, &root_node);
 
-	/* verify UUID */
+	/* verify UDID */
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
 	node = plist_dict_get_item(info, "Target Identifier");
 
@@ -810,7 +810,7 @@ static void print_usage(int argc, char **argv)
 	printf("  restore\tRestores a device backup from DIRECTORY.\n\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }
@@ -819,9 +819,9 @@ int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char uuid[41];
+	char udid[41];
 	uint16_t port = 0;
-	uuid[0] = 0;
+	udid[0] = 0;
 	int cmd = -1;
 	int is_full_backup = 0;
 	char *backup_directory = NULL;
@@ -851,13 +851,13 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(uuid, argv[i]);
+			strcpy(udid, argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -910,10 +910,10 @@ int main(int argc, char *argv[])
 
 	printf("Backup directory is \"%s\"\n", backup_directory);
 
-	if (uuid[0] != 0) {
-		ret = idevice_new(&phone, uuid);
+	if (udid[0] != 0) {
+		ret = idevice_new(&phone, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with uuid %s, is it plugged in?\n", uuid);
+			printf("No device found with udid %s, is it plugged in?\n", udid);
 			return -1;
 		}
 	}

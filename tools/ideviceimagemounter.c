@@ -43,7 +43,7 @@ static int indent_level = 0;
 
 static int list_mode = 0;
 static int xml_mode = 0;
-static char *uuid = NULL;
+static char *udid = NULL;
 static char *imagetype = NULL;
 
 static const char PKG_PATH[] = "PublicStaging";
@@ -56,7 +56,7 @@ static void print_usage(int argc, char **argv)
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n\n", (name ? name + 1: argv[0]));
 	printf("Mounts the specified disk image on the device.\n\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -l, --list\t\tList mount information\n");
 	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
 	printf("  -x, --xml\t\tUse XML output\n");
@@ -69,7 +69,7 @@ static void parse_opts(int argc, char **argv)
 {
 	static struct option longopts[] = {
 		{"help", 0, NULL, 'h'},
-		{"uuid", 0, NULL, 'u'},
+		{"udid", 0, NULL, 'u'},
 		{"list", 0, NULL, 'l'},
 		{"imagetype", 0, NULL, 't'},
 		{"xml", 0, NULL, 'x'},
@@ -91,12 +91,12 @@ static void parse_opts(int argc, char **argv)
 			exit(0);
 		case 'u':
 			if (strlen(optarg) != 40) {
-				printf("%s: invalid UUID specified (length != 40)\n",
+				printf("%s: invalid UDID specified (length != 40)\n",
 					   argv[0]);
 				print_usage(argc, argv);
 				exit(2);
 			}
-			uuid = strdup(optarg);
+			udid = strdup(optarg);
 			break;
 		case 'l':
 			list_mode = 1;
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, uuid)) {
+	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
 		printf("No device found, is it plugged in?\n");
 		return -1;
 	}

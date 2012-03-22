@@ -256,7 +256,7 @@ static void print_usage(int argc, char **argv)
 	printf("Show information about a connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -s, --simple\t\tuse a simple connection to avoid auto-pairing with the device\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
 	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
 	printf("  -x, --xml\t\toutput information as xml plist instead of key/value pairs\n");
@@ -277,14 +277,14 @@ int main(int argc, char *argv[])
 	int i;
 	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
-	char uuid[41];
+	char udid[41];
 	char *domain = NULL;
 	char *key = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
 	plist_type node_type;
-	uuid[0] = 0;
+	udid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -292,13 +292,13 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(uuid, argv[i]);
+			strcpy(udid, argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--domain")) {
@@ -340,10 +340,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (uuid[0] != 0) {
-		ret = idevice_new(&phone, uuid);
+	if (udid[0] != 0) {
+		ret = idevice_new(&phone, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with uuid %s, is it plugged in?\n", uuid);
+			printf("No device found with udid %s, is it plugged in?\n", udid);
 			return -1;
 		}
 	}

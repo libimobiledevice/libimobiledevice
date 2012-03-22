@@ -35,7 +35,7 @@ static void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS] APPID\n", (name ? name + 1: argv[0]));
 	printf("Test the house_arrest service.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -t, --test\t\ttest creating, writing, and deleting a file\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	house_arrest_client_t hac = NULL;
 	house_arrest_error_t res;
 	int i;
-	char *uuid = NULL;
+	char *udid = NULL;
 	const char *appid = NULL;
 	int test_file_io = 0;
 
@@ -58,13 +58,13 @@ int main(int argc, char **argv)
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
-			uuid = strdup(argv[i]);
+			udid = strdup(argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--test")) {
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if (idevice_new(&dev, uuid) != IDEVICE_E_SUCCESS) {
+	if (idevice_new(&dev, udid) != IDEVICE_E_SUCCESS) {
 		printf("no device connected?!\n");
 		goto leave_cleanup;
 	}

@@ -28,7 +28,7 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
         IDEVICE_DEVICE_REMOVE
     ctypedef struct idevice_event_t:
         idevice_event_type event
-        char *uuid
+        char *udid
         int conn_type
     ctypedef idevice_event_t* const_idevice_event_t "const idevice_event_t*"
 

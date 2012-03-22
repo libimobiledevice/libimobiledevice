@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	uint16_t port = 0;
 	int result = -1;
 	int i;
-	char *uuid = NULL;
+	char *udid = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -49,13 +49,13 @@ int main(int argc, char **argv)
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
-			uuid = strdup(argv[i]);
+			udid = strdup(argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -68,15 +68,15 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, uuid)) {
+	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
 		printf("No device found, is it plugged in?\n");
-		if (uuid) {
-			free(uuid);
+		if (udid) {
+			free(udid);
 		}
 		return -1;
 	}
-	if (uuid) {
-		free(uuid);
+	if (udid) {
+		free(udid);
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
@@ -133,7 +133,7 @@ void print_usage(int argc, char **argv)
         printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
         printf("the screenshotr service is not available.\n\n");
         printf("  -d, --debug\t\tenable communication debugging\n");
-        printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+        printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
         printf("  -h, --help\t\tprints usage information\n");
         printf("\n");
 }

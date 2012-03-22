@@ -13,11 +13,11 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] [UUID]\n", (name ? name + 1: argv[0]));
+	printf("Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
 	printf("Prints device name or a list of attached iPhone/iPod Touch devices.\n\n");
-	printf("  The UUID is a 40-digit hexadecimal number of the device\n");
+	printf("  The UDID is a 40-digit hexadecimal number of the device\n");
 	printf("  for which the name should be retrieved.\n\n");
-	printf("  -l, --list\t\tlist UUID of all attached devices\n");
+	printf("  -l, --list\t\tlist UDID of all attached devices\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
@@ -32,8 +32,8 @@ int main(int argc, char **argv)
 	int ret = 0;
 	int i;
 	int mode = MODE_SHOW_ID;
-	char uuid[41];
-	uuid[0] = 0;
+	char udid[41];
+	udid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -51,21 +51,21 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* check if uuid was passed */
+	/* check if udid was passed */
 	if (mode == MODE_SHOW_ID) {
 		i--;
 		if (!argv[i] || (strlen(argv[i]) != 40)) {
 			print_usage(argc, argv);
 			return 0;
 		}
-		strcpy(uuid, argv[i]);
+		strcpy(udid, argv[i]);
 	}
 
 	switch (mode) {
 	case MODE_SHOW_ID:
-		idevice_new(&phone, uuid);
+		idevice_new(&phone, udid);
 		if (!phone) {
-			fprintf(stderr, "ERROR: No device with UUID=%s attached.\n", uuid);
+			fprintf(stderr, "ERROR: No device with UDID=%s attached.\n", udid);
 			return -2;
 		}
 

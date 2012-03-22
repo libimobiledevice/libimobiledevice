@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
 	idevice_t phone = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char uuid[41];
+	char udid[41];
 	uint16_t port = 0;
-	uuid[0] = 0;
+	udid[0] = 0;
 
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
@@ -65,13 +65,13 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--uuid")) {
+		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(uuid, argv[i]);
+			strcpy(udid, argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -84,10 +84,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (uuid[0] != 0) {
-		ret = idevice_new(&phone, uuid);
+	if (udid[0] != 0) {
+		ret = idevice_new(&phone, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with uuid %s, is it plugged in?\n", uuid);
+			printf("No device found with udid %s, is it plugged in?\n", udid);
 			return -1;
 		}
 	}
@@ -166,7 +166,7 @@ void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	printf("Relay syslog of a connected iPhone/iPod Touch.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --uuid UUID\ttarget specific device by its 40-digit device UUID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }

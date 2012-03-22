@@ -64,10 +64,10 @@ LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x5
 #endif
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t *pem_host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t public_key);
-userpref_error_t userpref_remove_device_public_key(const char *uuid);
-LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_public_key(const char *uuid);
-userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *udid, key_data_t public_key);
+userpref_error_t userpref_remove_device_public_key(const char *udid);
+LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_public_key(const char *udid);
+userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
 void userpref_get_host_id(char **host_id);
 
 #endif

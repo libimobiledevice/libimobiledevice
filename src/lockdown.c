@@ -236,8 +236,8 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		}
 	}
 
-	if (client->uuid) {
-		free(client->uuid);
+	if (client->udid) {
+		free(client->udid);
 	}
 	if (client->label) {
 		free(client->label);
@@ -549,12 +549,12 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
  * Returns the unique id of the device from lockdownd.
  *
  * @param client An initialized lockdownd client.
- * @param uuid Holds the unique id of the device. The caller is responsible
+ * @param udid Holds the unique id of the device. The caller is responsible
  *  for freeing the memory.
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **uuid)
+lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t client, char **udid)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t value = NULL;
@@ -563,7 +563,7 @@ lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **uu
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		return ret;
 	}
-	plist_get_string_val(value, uuid);
+	plist_get_string_val(value, udid);
 
 	plist_free(value);
 	value = NULL;
@@ -648,7 +648,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("could not connect to lockdownd (device %s)", device->uuid);
+		debug_info("could not connect to lockdownd (device %s)", device->udid);
 		return LOCKDOWN_E_MUX_ERROR;
 	}
 
@@ -657,10 +657,10 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
 
-	if (idevice_get_uuid(device, &client_loc->uuid) != IDEVICE_E_SUCCESS) {
-		debug_info("failed to get device uuid.");
+	if (idevice_get_udid(device, &client_loc->udid) != IDEVICE_E_SUCCESS) {
+		debug_info("failed to get device udid.");
 	}
-	debug_info("device uuid: %s", client_loc->uuid);
+	debug_info("device udid: %s", client_loc->udid);
 
 	client_loc->label = label ? strdup(label) : NULL;
 
@@ -719,7 +719,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
 
-	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->uuid))
+	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->udid))
 		ret = lockdownd_pair(client_loc, NULL);
 
 	/* in any case, we need to validate pairing to receive trusted host status */
@@ -925,10 +925,10 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		if (!pairing_mode) {
 			if (!strcmp("Unpair", verb)) {
 				/* remove public key from config */
-				userpref_remove_device_public_key(client->uuid);
+				userpref_remove_device_public_key(client->udid);
 			} else {
 				/* store public key in config */
-				userpref_set_device_public_key(client->uuid, public_key);
+				userpref_set_device_public_key(client->udid, public_key);
 			}
 		}
 	} else {

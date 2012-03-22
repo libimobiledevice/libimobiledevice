@@ -29,7 +29,7 @@
 
 struct restored_client_private {
 	property_list_service_client_t parent;
-	char *uuid;
+	char *udid;
 	char *label;
 	plist_t info;
 };

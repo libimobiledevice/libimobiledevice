@@ -49,7 +49,7 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 	idevice_event_t ev;
 
 	ev.event = event->event;
-	ev.uuid = event->device.uuid;
+	ev.udid = event->device.uuid;
 	ev.conn_type = CONNECTION_USBMUXD;
 
 	if (event_cb) {
@@ -99,7 +99,7 @@ idevice_error_t idevice_event_unsubscribe()
 /**
  * Get a list of currently available devices.
  *
- * @param devices List of uuids of devices that are currently available.
+ * @param devices List of udids of devices that are currently available.
  *   This list is terminated by a NULL pointer.
  * @param count Number of devices found.
  *
@@ -136,9 +136,9 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 }
 
 /**
- * Free a list of device uuids.
+ * Free a list of device udids.
  *
- * @param devices List of uuids to free.
+ * @param devices List of udids to free.
  *
  * @return Always returnes IDEVICE_E_SUCCESS.
  */
@@ -156,7 +156,7 @@ idevice_error_t idevice_device_list_free(char **devices)
 }
 
 /**
- * Creates an idevice_t structure for the device specified by uuid,
+ * Creates an idevice_t structure for the device specified by udid,
  *  if the device is available.
  *
  * @note The resulting idevice_t structure has to be freed with
@@ -164,17 +164,17 @@ idevice_error_t idevice_device_list_free(char **devices)
  *
  * @param device Upon calling this function, a pointer to a location of type
  *  idevice_t. On successful return, this location will be populated.
- * @param uuid The UUID to match.
+ * @param udid The UDID to match.
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_new(idevice_t * device, const char *uuid)
+idevice_error_t idevice_new(idevice_t * device, const char *udid)
 {
 	usbmuxd_device_info_t muxdev;
-	int res = usbmuxd_get_device_by_uuid(uuid, &muxdev);
+	int res = usbmuxd_get_device_by_uuid(udid, &muxdev);
 	if (res > 0) {
 		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_private));
-		phone->uuid = strdup(muxdev.uuid);
+		phone->udid = strdup(muxdev.uuid);
 		phone->conn_type = CONNECTION_USBMUXD;
 		phone->conn_data = (void*)(long)muxdev.handle;
 		*device = phone;
@@ -200,7 +200,7 @@ idevice_error_t idevice_free(idevice_t device)
 
 	ret = IDEVICE_E_SUCCESS;
 
-	free(device->uuid);
+	free(device->udid);
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
 		device->conn_data = 0;
@@ -471,12 +471,12 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 /**
  * Gets the unique id for the device.
  */
-idevice_error_t idevice_get_uuid(idevice_t device, char **uuid)
+idevice_error_t idevice_get_udid(idevice_t device, char **udid)
 {
-	if (!device || !uuid)
+	if (!device || !udid)
 		return IDEVICE_E_INVALID_ARG;
 
-	*uuid = strdup(device->uuid);
+	*udid = strdup(device->udid);
 	return IDEVICE_E_SUCCESS;
 }
 

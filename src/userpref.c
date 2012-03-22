@@ -432,26 +432,26 @@ void userpref_get_host_id(char **host_id)
 /**
  * Determines whether this device has been connected to this system before.
  *
- * @param uid The device uid as given by the device.
+ * @param udid The device UDID as given by the device.
  *
  * @return 1 if the device has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int userpref_has_device_public_key(const char *uuid)
+int userpref_has_device_public_key(const char *udid)
 {
 	int ret = 0;
 	const char *config_path;
 	char *config_file;
 	struct stat st;
 
-	if (!uuid) return 0;
+	if (!udid) return 0;
 
 	/* first get config file */
 	config_path = userpref_get_config_dir();
-	config_file = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	config_file = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
 	strcpy(config_file, config_path);
 	strcat(config_file, DIR_SEP_S);
-	strcat(config_file, uuid);
+	strcat(config_file, udid);
 	strcat(config_file, ".pem");
 
 	if ((stat(config_file, &st) == 0) && S_ISREG(st.st_mode))
@@ -461,21 +461,21 @@ int userpref_has_device_public_key(const char *uuid)
 }
 
 /**
- * Fills a list with UUIDs of devices that have been connected to this
+ * Fills a list with UDIDs of devices that have been connected to this
  * system before, i.e. for which a public key file exists.
  *
  * @param list A pointer to a char** initially pointing to NULL that will
- *        hold a newly allocated list of UUIDs upon successful return.
+ *        hold a newly allocated list of UDIDs upon successful return.
  *        The caller is responsible for freeing the memory. Note that if
  *        no public key file was found the list has to be freed too as it
  *        points to a terminating NULL element.
- * @param count The number of UUIDs found. This parameter can be NULL if it
+ * @param count The number of UDIDs found. This parameter can be NULL if it
  *        is not required.
  *
  * @return USERPREF_E_SUCCESS on success, or USERPREF_E_INVALID_ARG if the 
  *         list parameter is not pointing to NULL.
  */
-userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
+userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 {
 	struct slist_t {
 		char *name;
@@ -483,7 +483,7 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 	};
 	DIR *config_dir;
 	const char *config_path;
-	struct slist_t *uuids = NULL;
+	struct slist_t *udids = NULL;
 	unsigned int i;
 	unsigned int found = 0;
 
@@ -500,7 +500,7 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 	config_dir = opendir(config_path);
 	if (config_dir) {
 		struct dirent *entry;
-		struct slist_t *listp = uuids;
+		struct slist_t *listp = udids;
 		while ((entry = readdir(config_dir))) {
 			char *ext = strstr(entry->d_name, ".pem");
 			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == 44)) {
@@ -511,7 +511,7 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 				ne->next = NULL;
 				if (!listp) {
 					listp = ne;
-					uuids = listp;
+					udids = listp;
 				} else {
 					listp->next = ne;
 					listp = listp->next;
@@ -523,10 +523,10 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
 	}
 	*list = (char**)malloc(sizeof(char*) * (found+1));
 	i = 0;
-	while (uuids) {
-		(*list)[i++] = uuids->name;
-		struct slist_t *old = uuids;
-		uuids = uuids->next;
+	while (udids) {
+		(*list)[i++] = udids->name;
+		struct slist_t *old = udids;
+		udids = udids->next;
 		free(old);
 	}
 	(*list)[i] = NULL;
@@ -542,17 +542,18 @@ userpref_error_t userpref_get_paired_uuids(char ***list, unsigned int *count)
  * Mark the device (as represented by the key) as having connected to this
  * configuration.
  *
+ * @param udid The device UDID as given by the device
  * @param public_key The public key given by the device
  *
  * @return 1 on success and 0 if no public key is given or if it has already
  *         been marked as connected previously.
  */
-userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t public_key)
+userpref_error_t userpref_set_device_public_key(const char *udid, key_data_t public_key)
 {
 	if (NULL == public_key.data)
 		return USERPREF_E_INVALID_ARG;
 	
-	if (userpref_has_device_public_key(uuid))
+	if (userpref_has_device_public_key(udid))
 		return USERPREF_E_SUCCESS;
 
 	/* ensure config directory exists */
@@ -560,10 +561,10 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t pub
 
 	/* build file path */
 	const char *config_path = userpref_get_config_dir();
-	char *pem = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	char *pem = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
 	strcpy(pem, config_path);
 	strcat(pem, DIR_SEP_S);
-	strcat(pem, uuid);
+	strcat(pem, udid);
 	strcat(pem, ".pem");
 
 	/* store file */
@@ -580,23 +581,23 @@ userpref_error_t userpref_set_device_public_key(const char *uuid, key_data_t pub
 }
 
 /**
- * Remove the public key stored for the device with uuid from this host.
+ * Remove the public key stored for the device with udid from this host.
  *
- * @param uuid The uuid of the device
+ * @param udid The udid of the device
  *
  * @return USERPREF_E_SUCCESS on success.
  */
-userpref_error_t userpref_remove_device_public_key(const char *uuid)
+userpref_error_t userpref_remove_device_public_key(const char *udid)
 {
-	if (!userpref_has_device_public_key(uuid))
+	if (!userpref_has_device_public_key(udid))
 		return USERPREF_E_SUCCESS;
 
 	/* build file path */
 	const char *config_path = userpref_get_config_dir();
-	char *pem = (char*)malloc(strlen(config_path)+1+strlen(uuid)+4+1);
+	char *pem = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
 	strcpy(pem, config_path);
 	strcat(pem, DIR_SEP_S);
-	strcat(pem, uuid);
+	strcat(pem, udid);
 	strcat(pem, ".pem");
 
 	/* remove file */

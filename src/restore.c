@@ -112,8 +112,8 @@ restored_error_t restored_client_free(restored_client_t client)
 		}
 	}
 
-	if (client->uuid) {
-		free(client->uuid);
+	if (client->udid) {
+		free(client->udid);
 	}
 	if (client->label) {
 		free(client->label);
@@ -370,22 +370,22 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("could not connect to restored (device %s)", device->uuid);
+		debug_info("could not connect to restored (device %s)", device->udid);
 		return RESTORE_E_MUX_ERROR;
 	}
 
 	restored_client_t client_loc = (restored_client_t) malloc(sizeof(struct restored_client_private));
 	client_loc->parent = plistclient;
-	client_loc->uuid = NULL;
+	client_loc->udid = NULL;
 	client_loc->label = NULL;
 	if (label != NULL)
 		client_loc->label = strdup(label);
 
-	ret = idevice_get_uuid(device, &client_loc->uuid);
+	ret = idevice_get_udid(device, &client_loc->udid);
 	if (RESTORE_E_SUCCESS != ret) {
-		debug_info("failed to get device uuid.");
+		debug_info("failed to get device udid.");
 	}
-	debug_info("device uuid: %s", client_loc->uuid);
+	debug_info("device udid: %s", client_loc->udid);
 
 	if (RESTORE_E_SUCCESS == ret) {
 		*client = client_loc;

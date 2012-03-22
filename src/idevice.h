@@ -63,7 +63,7 @@ struct idevice_connection_private {
 };
 
 struct idevice_private {
-	char *uuid;
+	char *udid;
 	enum connection_type conn_type;
 	void *conn_data;
 };

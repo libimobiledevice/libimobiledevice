@@ -32,8 +32,8 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] UUID\n", (name ? name + 1: argv[0]));
-	printf("Makes a device with the supplied 40-digit UUID enter recovery mode immediately.\n\n");
+	printf("Usage: %s [OPTIONS] UDID\n", (name ? name + 1: argv[0]));
+	printf("Makes a device with the supplied 40-digit UDID enter recovery mode immediately.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
 	idevice_t phone = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char uuid[41];
-	uuid[0] = 0;
+	char udid[41];
+	udid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -65,11 +65,11 @@ int main(int argc, char *argv[])
 		print_usage(argc, argv);
 		return 0;
 	}
-	strcpy(uuid, argv[i]);
+	strcpy(udid, argv[i]);
 
-	ret = idevice_new(&phone, uuid);
+	ret = idevice_new(&phone, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
-		printf("No device found with uuid %s, is it plugged in?\n", uuid);
+		printf("No device found with udid %s, is it plugged in?\n", udid);
 		return -1;
 	}
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* run query and output information */
-	printf("Telling device with uuid %s to enter recovery mode.\n", uuid);
+	printf("Telling device with udid %s to enter recovery mode.\n", udid);
 	if(lockdownd_enter_recovery(client) != LOCKDOWN_E_SUCCESS)
 	{
 		printf("Failed to enter recovery mode.\n");
