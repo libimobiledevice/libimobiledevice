@@ -27,8 +27,8 @@ AC_PROG_LIBTOOL
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 0.1.4)
-PKG_CHECK_MODULES(libplist, libplist >= 0.15)
-PKG_CHECK_MODULES(libplistmm, libplist++ >= 0.15)
+PKG_CHECK_MODULES(libplist, libplist >= 1.8)
+PKG_CHECK_MODULES(libplistmm, libplist++ >= 1.8)
 AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
 # Checks for header files.
