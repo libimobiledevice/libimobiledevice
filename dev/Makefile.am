@@ -33,4 +33,4 @@ filerelaytest_LDADD = ../src/libimobiledevice.la
 
 endif # ENABLE_DEVTOOLS
 
-EXTRA_DIST = ideviceclient.c lckdclient.c afccheck.c msyncclient.c filerelaytest.c housearresttest.c
+EXTRA_DIST = ideviceclient.c lckdclient.c afccheck.c msyncclient.c filerelaytest.c
