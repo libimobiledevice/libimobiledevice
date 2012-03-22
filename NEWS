@@ -1,5 +1,18 @@
+Version 1.0.7
+~~~~~~~~~~~~~
+
+* Maintenance release of stable series
+* Changes:
+  - Fix SWIG 2.x detection
+  - Fix support for iOS 5 and later
+  - Flush output of idevicesyslog immediately
+  - Replace deprecated GNUTLS functions properly
+  - Fix segfaults in library and some tools
+  - Fix memory leaks
+  - Build fixes
+
 Version 1.0.6
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 * Quick follow up release
 * Changes:
