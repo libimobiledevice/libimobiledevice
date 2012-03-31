@@ -1060,8 +1060,9 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
  *
  * @param client The lockdown client
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
- *  LOCKDOWN_E_PLIST_ERROR if the device did not acknowledge the request
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client
+ *  is NULL, LOCKDOWN_E_PLIST_ERROR if the device did not acknowledge the
+ *  request
  */
 lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 {
@@ -1104,9 +1105,10 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
  * @param ohost_cert Holds the generated host certificate.
  * @param oroot_cert Holds the generated root certificate.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when a parameter is NULL,
- *  LOCKDOWN_E_INVALID_CONF if the internal configuration system failed,
- *  LOCKDOWN_E_SSL_ERROR if the certificates could not be generated
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when a
+ *  parameter is NULL, LOCKDOWN_E_INVALID_CONF if the internal configuration
+ *  system failed, LOCKDOWN_E_SSL_ERROR if the certificates could not be
+ *  generated
  */
 lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * odevice_cert,
 									   key_data_t * ohost_cert, key_data_t * oroot_cert)
@@ -1396,8 +1398,8 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
  * @param session_id The new session_id of the created session
  * @param ssl_enabled Whether SSL communication is used in the session
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when a client or
- *  host_id is NULL, LOCKDOWN_E_PLIST_ERROR if the response plist had errors,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when a client
+ *  or host_id is NULL, LOCKDOWN_E_PLIST_ERROR if the response plist had errors,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the supplied HostID,
  *  LOCKDOWN_E_SSL_ERROR if enabling SSL communication failed
  */
