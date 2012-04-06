@@ -378,6 +378,7 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 	client_loc->parent = plistclient;
 	client_loc->udid = NULL;
 	client_loc->label = NULL;
+	client_loc->info = NULL;
 	if (label != NULL)
 		client_loc->label = strdup(label);
 
