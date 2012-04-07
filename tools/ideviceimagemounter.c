@@ -1,5 +1,6 @@
-/**
- * ideviceimagemounter -- Mount developer/debug disk images on the iPhone/iPod
+/*
+ * ideviceimagemounter.c
+ * Mount developer/debug disk images on the device
  *
  * Copyright (C) 2010 Nikias Bassen <nikias@gmx.li>
  *

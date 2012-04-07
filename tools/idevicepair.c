@@ -1,6 +1,6 @@
 /*
  * idevicepair.c
- * Simple utility to pair/unpair an iDevice
+ * Manage pairings with devices and this host
  *
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
@@ -35,7 +35,7 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("\n%s - Manage pairings with iPhone/iPod Touch/iPad devices and this host.\n\n", (name ? name + 1: argv[0]));
+	printf("\n%s - Manage pairings with devices and this host.\n\n", (name ? name + 1: argv[0]));
 	printf("Usage: %s [OPTIONS] COMMAND\n\n", (name ? name + 1: argv[0]));
 	printf(" Where COMMAND is one of:\n");
 	printf("  hostid       print the host id of this computer\n");

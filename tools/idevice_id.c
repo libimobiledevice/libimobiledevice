@@ -14,7 +14,7 @@ static void print_usage(int argc, char **argv)
 	
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
-	printf("Prints device name or a list of attached iPhone/iPod Touch devices.\n\n");
+	printf("Prints device name or a list of attached devices.\n\n");
 	printf("  The UDID is a 40-digit hexadecimal number of the device\n");
 	printf("  for which the name should be retrieved.\n\n");
 	printf("  -l, --list\t\tlist UDID of all attached devices\n");

@@ -253,7 +253,7 @@ static void print_usage(int argc, char **argv)
 	
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Show information about a connected iPhone/iPod Touch.\n\n");
+	printf("Show information about a connected device.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -s, --simple\t\tuse a simple connection to avoid auto-pairing with the device\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");

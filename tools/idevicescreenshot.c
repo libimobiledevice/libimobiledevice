@@ -1,5 +1,6 @@
-/**
- * idevicescreenshot -- Gets a screenshot from a connected iPhone/iPod Touch
+/*
+ * idevicescreenshot.c
+ * Gets a screenshot from a device
  *
  * Copyright (C) 2010 Nikias Bassen <nikias@gmx.li>
  *
@@ -128,7 +129,7 @@ void print_usage(int argc, char **argv)
 
         name = strrchr(argv[0], '/');
         printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-        printf("Gets a screenshot from the connected iPhone/iPod Touch.\n");
+        printf("Gets a screenshot from a device.\n");
         printf("The screenshot is saved as a TIFF image in the current directory.\n");
         printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
         printf("the screenshotr service is not available.\n\n");

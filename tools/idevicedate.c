@@ -1,6 +1,6 @@
 /*
  * idevicedate.c
- * Simple utility to get and set the clock on an iDevice
+ * Simple utility to get and set the clock on a device
  *
  * Copyright (c) 2011 Martin Szulecki All Rights Reserved.
  *
@@ -42,7 +42,7 @@ static void print_usage(int argc, char **argv)
 	
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Display the current date or set it on an iDevice.\n\n");
+	printf("Display the current date or set it on a device.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -s, --set TIMESTAMP\tset UTC time described by TIMESTAMP\n");
