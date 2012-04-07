@@ -116,36 +116,16 @@ int main(int argc, char *argv[])
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
 			while (!quit_flag) {
-				char *receive = NULL;
-				uint32_t datalen = 0, bytes = 0, recv_bytes = 0;
-
-				ret = idevice_connection_receive(conn, (char *) &datalen, sizeof(datalen), &bytes);
-				if (ret < 0) {
+				char c;
+				uint32_t bytes = 0;
+				if ((idevice_connection_receive(conn, &c, 1, &bytes) < 0) || (bytes != 1)) {
 					fprintf(stderr, "Error receiving data. Exiting...\n");
 					break;
 				}
-
-				datalen = be32toh(datalen);
-
-				if (datalen == 0)
-					continue;
-
-				recv_bytes += bytes;
-				receive = (char *) malloc(sizeof(char) * datalen);
-
-				while (!quit_flag && (recv_bytes <= datalen)) {
-					ret = idevice_connection_receive(conn, receive, datalen, &bytes);
-
-					if (bytes == 0)
-						break;
-
-					recv_bytes += bytes;
-
-					fwrite(receive, sizeof(char), bytes, stdout);
+				if (c != 0) {
+					putchar(c);
 					fflush(stdout);
 				}
-
-				free(receive);
 			}
 		}
 		idevice_disconnect(conn);
