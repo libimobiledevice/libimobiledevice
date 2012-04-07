@@ -49,7 +49,7 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 	idevice_event_t ev;
 
 	ev.event = event->event;
-	ev.udid = event->device.uuid;
+	ev.udid = event->device.udid;
 	ev.conn_type = CONNECTION_USBMUXD;
 
 	if (event_cb) {
@@ -122,7 +122,7 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 
 	for (i = 0; dev_list[i].handle > 0; i++) {
 		newlist = realloc(*devices, sizeof(char*) * (newcount+1));
-		newlist[newcount++] = strdup(dev_list[i].uuid);
+		newlist[newcount++] = strdup(dev_list[i].udid);
 		*devices = newlist;
 	}
 	usbmuxd_device_list_free(&dev_list);
@@ -171,10 +171,10 @@ idevice_error_t idevice_device_list_free(char **devices)
 idevice_error_t idevice_new(idevice_t * device, const char *udid)
 {
 	usbmuxd_device_info_t muxdev;
-	int res = usbmuxd_get_device_by_uuid(udid, &muxdev);
+	int res = usbmuxd_get_device_by_udid(udid, &muxdev);
 	if (res > 0) {
 		idevice_t phone = (idevice_t) malloc(sizeof(struct idevice_private));
-		phone->udid = strdup(muxdev.uuid);
+		phone->udid = strdup(muxdev.udid);
 		phone->conn_type = CONNECTION_USBMUXD;
 		phone->conn_data = (void*)(long)muxdev.handle;
 		*device = phone;
