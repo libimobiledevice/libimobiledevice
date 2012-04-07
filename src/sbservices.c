@@ -283,7 +283,53 @@ leave_unlock:
 	}
 	sbs_unlock(client);
 	return res;
+}
 
+/**
+ * Gets the interface orientation of the device.
+ *
+ * @param client The connected sbservices client to use.
+ * @param interface_orientation The interface orientation upon successful return.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client or state is invalid, or an SBSERVICES_E_* error code otherwise.
+ */
+sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation)
+{
+	if (!client || !client->parent || !interface_orientation)
+		return SBSERVICES_E_INVALID_ARG;
+
+	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict, "command", plist_new_string("getInterfaceOrientation"));
+
+	sbs_lock(client);
+
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+		goto leave_unlock;
+	}
+	plist_free(dict);
+	dict = NULL;
+
+	res = sbservices_error(property_list_service_receive_plist(client->parent, &dict));
+	if (res	== SBSERVICES_E_SUCCESS) {
+		plist_t node = plist_dict_get_item(dict, "interfaceOrientation");
+		if (node) {
+			uint64_t value = SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN;
+			plist_get_uint_val(node, &value);
+			*interface_orientation = (sbservices_interface_orientation_t)value;
+		}
+	}
+
+leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
+	sbs_unlock(client);
+	return res;
 }
 
 /**

@@ -39,6 +39,17 @@ extern "C" {
 #define SBSERVICES_E_UNKNOWN_ERROR       -256
 /*@}*/
 
+/** @name Orientation of the user interface on the device */
+/*@{*/
+typedef enum {
+  SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN                = 0,
+  SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT               = 1,
+  SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT_UPSIDE_DOWN   = 2,
+  SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_RIGHT        = 3,
+  SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_LEFT         = 4
+} sbservices_interface_orientation_t;
+/*@}*/
+
 /** Represents an error code. */
 typedef int16_t sbservices_error_t;
 
@@ -51,6 +62,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client);
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
 sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
+sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation);
 sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
 #ifdef __cplusplus
