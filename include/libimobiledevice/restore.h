@@ -1,6 +1,7 @@
 /**
  * @file libimobiledevice/restore.h
  * @brief Initiate restore process or reboot device.
+ * @note This service is only available if the device is in restore mode.
  * \internal
  *
  * Copyright (c) 2010 Joshua Hill. All Rights Reserved.
