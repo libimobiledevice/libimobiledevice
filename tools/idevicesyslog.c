@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 			while (!quit_flag) {
 				char c;
 				uint32_t bytes = 0;
-				if ((idevice_connection_receive(conn, &c, 1, &bytes) < 0) || (bytes != 1)) {
+				if (idevice_connection_receive(conn, &c, 1, &bytes) < 0) {
 					fprintf(stderr, "Error receiving data. Exiting...\n");
 					break;
 				}
