@@ -39,6 +39,15 @@ extern "C" {
 #define DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR       -256
 /*@}*/
 
+#define DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT (1 << 1)
+#define DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS        (1 << 2)
+#define DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL        (1 << 3)
+
+#define DIAGNOSTICS_RELAY_REQUEST_TYPE_ALL                "All"
+#define DIAGNOSTICS_RELAY_REQUEST_TYPE_WIFI               "WiFi"
+#define DIAGNOSTICS_RELAY_REQUEST_TYPE_GAS_GAUGE          "GasGauge"
+#define DIAGNOSTICS_RELAY_REQUEST_TYPE_NAND               "NAND"
+
 /** Represents an error code. */
 typedef int16_t diagnostics_relay_error_t;
 
@@ -49,7 +58,10 @@ diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, uint16_
 diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client);
 
 diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client);
-diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, plist_t* diagnostics);
+diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client);
+diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
+diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
+diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
 
 #ifdef __cplusplus
 }

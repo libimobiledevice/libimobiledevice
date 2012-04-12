@@ -32,35 +32,14 @@
  * plist to a previously sent request.
  *
  * @param dict The plist to evaluate.
- * @param query_match Name of the request to match or NULL if no match is
- *        required.
  *
  * @return RESULT_SUCCESS when the result is 'Success',
  *         RESULT_FAILURE when the result is 'Failure',
  *         or a negative value if an error occured during evaluation.
  */
-static int diagnostics_relay_check_result(plist_t dict, const char *query_match)
+static int diagnostics_relay_check_result(plist_t dict)
 {
 	int ret = -1;
-
-	plist_t query_node = plist_dict_get_item(dict, "Request");
-	if (!query_node) {
-		return ret;
-	}
-	if (plist_get_node_type(query_node) != PLIST_STRING) {
-		return ret;
-	} else {
-		char *query_value = NULL;
-		plist_get_string_val(query_node, &query_value);
-		if (!query_value) {
-			return ret;
-		}
-		if (query_match && (strcmp(query_value, query_match) != 0)) {
-			free(query_value);
-			return ret;
-		}
-		free(query_value);
-	}
 
 	plist_t result_node = plist_dict_get_item(dict, "Status");
 	if (!result_node)
@@ -226,7 +205,7 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict, "Goodbye") == RESULT_SUCCESS) {
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
 		debug_info("success");
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
 	}
@@ -235,7 +214,123 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, plist_t* diagnostics)
+/**
+ * Puts the device into deep sleep mode and disconnects from host.
+ *
+ * @param client The diagnostics_relay client
+ *
+ * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
+ *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client is NULL,
+ *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
+ *  request
+ */
+diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client)
+{
+	if (!client)
+		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
+
+	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+
+	plist_dict_insert_item(dict,"Request", plist_new_string("Sleep"));
+	ret = diagnostics_relay_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = diagnostics_relay_receive(client, &dict);
+	if (!dict) {
+		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
+	}
+
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+static diagnostics_relay_error_t internal_diagnostics_relay_action(diagnostics_relay_client_t client, const char* name, int flags)
+{
+	if (!client)
+		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
+
+	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict,"Request", plist_new_string(name));
+
+	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT) {
+		plist_dict_insert_item(dict, "WaitForDisconnect", plist_new_bool(1));
+	}
+
+	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS) {
+		plist_dict_insert_item(dict, "DisplayPass", plist_new_bool(1));
+	}
+
+	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL) {
+		plist_dict_insert_item(dict, "DisplayFail", plist_new_bool(1));
+	}
+
+	ret = diagnostics_relay_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = diagnostics_relay_receive(client, &dict);
+	if (!dict) {
+		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
+	}
+
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+/**
+ * Restart the device and optionally show a user notification.
+ *
+ * @param client The diagnostics_relay client
+ * @param flags A binary flag combination of
+ *        DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT to wait until 
+ *        diagnostics_relay_client_free() disconnects before execution and
+ *        DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL to show a "FAIL" dialog
+ *        or DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS to show an "OK" dialog
+ *
+ * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
+ *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client is NULL,
+ *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
+ *  request
+ */
+diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags)
+{
+	return internal_diagnostics_relay_action(client, "Restart", flags);
+}
+
+/**
+ * Shutdown of the device and optionally show a user notification.
+ *
+ * @param client The diagnostics_relay client
+ * @param flags A binary flag combination of
+ *        DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT to wait until 
+ *        diagnostics_relay_client_free() disconnects before execution and
+ *        DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL to show a "FAIL" dialog
+ *        or DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS to show an "OK" dialog
+ *
+ * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
+ *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client is NULL,
+ *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
+ *  request
+ */
+diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags)
+{
+	return internal_diagnostics_relay_action(client, "Shutdown", flags);
+}
+
+diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics)
 {
 	if (!client || diagnostics == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -243,85 +338,17 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-/*
-	Provides a diagnostics interface. Some stuff is only available on iOS 5+
-
-	Protocol:
-
-		Request:
-			<key>Request</key><string>IORegistry</string>
-			[<key>CurrentPlane</key><string>IODeviceTree</string>]
-		Response:
-			[Diagnostics]
-				IORegistry
-					...
-			Status
-				"Success" | "UnknownRequest"
-			[ErrorCode]
-				%d
-
-	Unknown Strings:
-
-	? IO80211Interface
-	? InternalBuild
-	? DisplayFail
-	? DisplayPass
-	? WaitForDisconnect
-
-	Known/Tested Requests:
-
-	// wifi: Show wifi status
-	plist_dict_insert_item(dict,"Request", plist_new_string("WiFi"));
-
-	// gas_gauge: Show battery load cycles and more
-	plist_dict_insert_item(dict,"Request", plist_new_string("GasGauge"));
-	plist_dict_insert_item(dict,"Request", plist_new_string("NAND"));
-	plist_dict_insert_item(dict,"Request", plist_new_string("Sleep"));
-	plist_dict_insert_item(dict,"Request", plist_new_string("Shutdown"));
-	plist_dict_insert_item(dict,"Request", plist_new_string("Restart"));
-
-	// obliberate: Wipe data on device
-	// @note: Currently yields: "iPhone mobile_diagnostics_relay[253] <Error>: do_obliterate: obliteration denied: not running internal build."
-	plist_dict_insert_item(dict,"Request", plist_new_string("Obliterate"));
-	? DataPartitionOnly
-	? ObliterationType
-	? ObliterateDataPartition
-	? ObliterationTypeWipeAndBrick
-	? DisplayProgressBar
-	? SkipDataObliteration
-	? ObliterationMessage
-
-	// mobile_gestalt: read out managed keys
-	plist_t keys = plist_new_array();
-	plist_array_append_item(keys, plist_new_string("UserAssignedDeviceName"));
-	plist_array_append_item(keys, plist_new_string("BasebandSecurityInfo"));
-	plist_array_append_item(keys, plist_new_string("BasebandSerialNumber"));
-	plist_array_append_item(keys, plist_new_string("MyPhoneNumber"));
-	plist_array_append_item(keys, plist_new_string("SNUM"));
-	plist_dict_insert_item(dict,"MobileGestaltKeys", keys);
-	plist_dict_insert_item(dict,"Request", plist_new_string("MobileGestalt"));
-
-	// io registry: dump by plane or name and class
-	plist_dict_insert_item(dict,"CurrentPlane", plist_new_string("IODeviceTree"));
-	or
-	plist_dict_insert_item(dict,"EntryName", plist_new_string("baseband"));
-	plist_dict_insert_item(dict,"EntryClass", plist_new_string("IOPlatformDevice"));
-	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
-*/
-	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
-	plist_dict_insert_item(dict,"CurrentPlane", plist_new_string(""));
+	plist_dict_insert_item(dict,"Request", plist_new_string(type));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
 
 	ret = diagnostics_relay_receive(client, &dict);
 	if (!dict) {
-		debug_info("did not get response back");
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict, "Diagnostics") == RESULT_SUCCESS) {
-		debug_info("success");
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
 	}
 	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
@@ -331,7 +358,6 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 
 	plist_t value_node = plist_dict_get_item(dict, "Diagnostics");
 	if (value_node) {
-		debug_info("has a value");
 		*diagnostics = plist_copy(value_node);
 	}
 

@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 			result = -1;
 		} else {
 			plist_t node = NULL;
-			if (diagnostics_relay_request_diagnostics(diagc, &node) != DIAGNOSTICS_RELAY_E_SUCCESS) {
+			if (diagnostics_relay_request_diagnostics(diagc, DIAGNOSTICS_RELAY_REQUEST_TYPE_ALL, &node) != DIAGNOSTICS_RELAY_E_SUCCESS) {
 				printf("Unable to retrieve diagnostics");
 			}
 			if (node) {
