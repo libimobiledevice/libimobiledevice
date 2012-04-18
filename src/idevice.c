@@ -559,6 +559,7 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (ssl_data->ctx) {
 		SSL_CTX_free(ssl_data->ctx);
 	}
+	openssl_init_done = 0;
 #else
 	if (ssl_data->session) {
 		gnutls_deinit(ssl_data->session);
@@ -667,6 +668,11 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	}
 
 	/* Set up OpenSSL */
+	if (openssl_init_done == 0) {
+		SSL_library_init();
+		openssl_init_done = 1;
+	}
+
 	BIO *ssl_bio = BIO_new(BIO_s_socket());
 	if (!ssl_bio) {
 		debug_info("ERROR: Could not create SSL bio.");
@@ -674,11 +680,12 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	}
 	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
 
-	if (openssl_init_done == 0) {
-		SSL_library_init();
-		openssl_init_done = 1;
-	}
 	SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv3_method());
+	if (ssl_ctx == NULL) {
+		debug_info("ERROR: Could not create SSL context.");
+		BIO_free(ssl_bio);
+		return ret;
+	}
 
 	BIO* membp;
 	X509* rootCert = NULL;
