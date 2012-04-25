@@ -34,12 +34,17 @@
 
 static const char *domains[] = {
 	"com.apple.disk_usage",
+	"com.apple.disk_usage.factory",
 	"com.apple.mobile.battery",
 /* FIXME: For some reason lockdownd segfaults on this, works sometimes though 
 	"com.apple.mobile.debug",. */
 	"com.apple.iqagent",
+	"com.apple.purplebuddy",
+	"com.apple.PurpleBuddy",
+	"com.apple.mobile.chaperone",
 	"com.apple.mobile.third_party_termination",
 	"com.apple.mobile.lockdownd",
+	"com.apple.mobile.lockdown_cache",
 	"com.apple.xcode.developerdomain",
 	"com.apple.international",
 	"com.apple.mobile.data_sync",
