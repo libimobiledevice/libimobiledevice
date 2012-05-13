@@ -364,3 +364,114 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 	plist_free(dict);
 	return ret;
 }
+
+diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result)
+{
+	if (!client || plist_get_node_type(keys) != PLIST_ARRAY || result == NULL)
+		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
+
+	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict,"MobileGestaltKeys", plist_copy(keys));
+	plist_dict_insert_item(dict,"Request", plist_new_string("MobileGestalt"));
+	ret = diagnostics_relay_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = diagnostics_relay_receive(client, &dict);
+	if (!dict) {
+		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
+	}
+
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	}
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		plist_free(dict);
+		return ret;
+	}
+
+	plist_t value_node = plist_dict_get_item(dict, "Diagnostics");
+	if (value_node) {
+		*result = plist_copy(value_node);
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
+{
+	if (!client || (name == NULL && class == NULL) || result == NULL)
+		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
+
+	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	if (name)
+		plist_dict_insert_item(dict,"EntryName", plist_new_string(name));
+	if (class)
+		plist_dict_insert_item(dict,"EntryClass", plist_new_string(class));
+	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
+	ret = diagnostics_relay_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = diagnostics_relay_receive(client, &dict);
+	if (!dict) {
+		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
+	}
+
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	}
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		plist_free(dict);
+		return ret;
+	}
+
+	plist_t value_node = plist_dict_get_item(dict, "Diagnostics");
+	if (value_node) {
+		*result = plist_copy(value_node);
+	}
+
+	plist_free(dict);
+	return ret;
+}
+
+diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result)
+{
+	if (!client || plane == NULL || result == NULL)
+		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
+
+	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_insert_item(dict,"CurrentPlane", plist_new_string(plane));
+	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
+	ret = diagnostics_relay_send(client, dict);
+	plist_free(dict);
+	dict = NULL;
+
+	ret = diagnostics_relay_receive(client, &dict);
+	if (!dict) {
+		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
+	}
+
+	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	}
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		plist_free(dict);
+		return ret;
+	}
+
+	plist_t value_node = plist_dict_get_item(dict, "Diagnostics");
+	if (value_node) {
+		*result = plist_copy(value_node);
+	}
+
+	plist_free(dict);
+	return ret;
+}
