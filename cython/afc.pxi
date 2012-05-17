@@ -162,7 +162,7 @@ cdef class AfcClient(BaseService):
             err = afc_client_free(self._c_client)
             self.handle_error(err)
 
-    cdef inline BaseError _error(self, int16_t ret):
+    cdef BaseError _error(self, int16_t ret):
         return AfcError(ret)
 
     cpdef list get_device_info(self):

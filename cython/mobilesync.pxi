@@ -149,10 +149,10 @@ cdef class MobileSyncClient(DeviceLinkService):
                 plist.plist_free(remapping)
             raise
     
-    cdef inline int16_t _send(self, plist.plist_t node):
+    cdef int16_t _send(self, plist.plist_t node):
         return mobilesync_send(self._c_client, node)
 
-    cdef inline int16_t _receive(self, plist.plist_t* node):
+    cdef int16_t _receive(self, plist.plist_t* node):
         return mobilesync_receive(self._c_client, node)
 
     cdef inline BaseError _error(self, int16_t ret):

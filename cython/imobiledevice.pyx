@@ -25,9 +25,8 @@ cdef class Base:
             return 0
         cdef BaseError err = self._error(ret)
         raise err
-        return -1
 
-    cdef inline BaseError _error(self, int16_t ret): pass
+    cdef BaseError _error(self, int16_t ret): pass
 
 cdef extern from "libimobiledevice/libimobiledevice.h":
     ctypedef enum idevice_error_t:
@@ -211,10 +210,10 @@ cdef class PropertyListService(BaseService):
                 plist.plist_free(c_node)
             raise
 
-    cdef inline int16_t _send(self, plist.plist_t node):
+    cdef int16_t _send(self, plist.plist_t node):
         raise NotImplementedError("send is not implemented")
 
-    cdef inline int16_t _receive(self, plist.plist_t* c_node):
+    cdef int16_t _receive(self, plist.plist_t* c_node):
         raise NotImplementedError("receive is not implemented")
 
 cdef class DeviceLinkService(PropertyListService):
