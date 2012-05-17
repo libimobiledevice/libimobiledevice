@@ -6,8 +6,11 @@ AC_DEFUN([AC_PROG_CYTHON],[
                 CYTHON=false
         elif test -n "$1" ; then
                 AC_MSG_CHECKING([for Cython version])
-                [cython_version=`$CYTHON --version 2>&1 | grep 'Cython version' | sed 's/.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/g'`]
+                [cython_version=`$CYTHON --version 2>&1 | sed 's/Cython version \(.*\)$/\1/g'`]
                 AC_MSG_RESULT([$cython_version])
+
+                # Setup extra version string for parsing
+                [cython_version_stripped=`echo $cython_version | sed 's/\([0-9]\+\)\.\([0-9]\+\)[^\.]*\(\.\([0-9]\+\)\)\?.*/0\1.0\2.0\4/g'`]
                 if test -n "$cython_version" ; then
                         # Calculate the required version number components
                         [required=$1]
@@ -25,8 +28,9 @@ AC_DEFUN([AC_PROG_CYTHON],[
                         if test -z "$required_patch" ; then
                                 [required_patch=0]
                         fi
+
                         # Calculate the available version number components
-                        [available=$cython_version]
+                        [available=$cython_version_stripped]
                         [available_major=`echo $available | sed 's/[^0-9].*//'`]
                         if test -z "$available_major" ; then
                                 [available_major=0]
@@ -41,6 +45,7 @@ AC_DEFUN([AC_PROG_CYTHON],[
                         if test -z "$available_patch" ; then
                                 [available_patch=0]
                         fi
+
                         if test $available_major -gt $required_major || \
                                 ( test $available_major -eq $required_major && \
                                       test $available_minor -gt $required_minor ) || \
