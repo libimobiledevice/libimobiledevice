@@ -102,6 +102,20 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 }
 #endif
 
+static const char *userpref_get_tmp_dir()
+{
+	const char *cdir = getenv("TMPDIR");
+	if (cdir && cdir[0])
+		return cdir;
+	cdir = getenv("TMP");
+	if (cdir && cdir[0])
+		return cdir;
+	cdir = getenv("TEMP");
+	if (cdir && cdir[0])
+		return cdir;
+	return "/tmp";
+}
+
 static const char *userpref_get_config_dir()
 {
 	if (__config_dir[0]) return __config_dir;
@@ -125,7 +139,14 @@ static const char *userpref_get_config_dir()
 	const char *cdir = getenv("XDG_CONFIG_HOME");
 	if (!cdir) {
 		cdir = getenv("HOME");
-		strcpy(__config_dir, cdir);
+		if (!cdir || !cdir[0]) {
+			const char *tdir = userpref_get_tmp_dir();
+			strcpy(__config_dir, tdir);
+			strcat(__config_dir, DIR_SEP_S);
+			strcat(__config_dir, "root");
+		} else {
+			strcpy(__config_dir, cdir);
+		}
 		strcat(__config_dir, DIR_SEP_S);
 		strcat(__config_dir, ".config");
 	} else {
