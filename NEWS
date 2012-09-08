@@ -1,3 +1,19 @@
+Version 1.1.5
+~~~~~~~~~~~~~
+
+* Development release
+* Changes:
+  - Add idevicediagnostics tool
+  - Add diagnostics_relay service implementation
+  - Add idevicedebugserverproxy tool
+  - Add ideviceprovision tool
+  - Add misagent service implementation to manage provisioning profiles
+  - Fix crash if $HOME is empty or not defined
+  - Fix non-ASCII characters being stripped when using plist communication
+  - Improve compile support for Cython >= 0.16 and check it at configure time
+  - Fix possible crash when using OpenSSL
+* API is UNSTABLE
+
 Version 1.1.4
 ~~~~~~~~~~~~~
 
