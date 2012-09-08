@@ -34,18 +34,20 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Display the current date or set it on a device.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
-	printf("  -i, --install FILE\tInstalls the provisioning profile specified by FILE.\n");
-	printf("                    \tA valid .mobileprovision file is expected.\n");
-	printf("  -l, --list\t\tGet a list of all provisioning profiles on the device.\n");
-	printf("  -c, --copy PATH\tRetrieves all provisioning profiles from the device and\n");
-	printf("                 \tstores them into the existing directory specified by PATH.\n");
-	printf("                 \tThe files will be stored as UUID.mobileprovision\n");
-	printf("  -r, --remove UUID\tRemoves the provisioning profile identified by UUID.\n");
-	printf("  -h, --help\t\tprints usage information\n");
+	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	printf("Manage provisioning profiles on a device.\n\n");
+	printf(" Where COMMAND is one of:\n");
+	printf("  install FILE\tInstalls the provisioning profile specified by FILE.\n");
+	printf("              \tA valid .mobileprovision file is expected.\n");
+	printf("  list\t\tGet a list of all provisioning profiles on the device.\n");
+	printf("  copy PATH\tRetrieves all provisioning profiles from the device and\n");
+	printf("           \tstores them into the existing directory specified by PATH.\n");
+	printf("           \tThe files will be stored as UUID.mobileprovision\n");
+	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n\n");
+	printf(" The following OPTIONS are accepted:\n");
+	printf("  -d, --debug      enable communication debugging\n");
+	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
+	printf("  -h, --help       prints usage information\n");
 	printf("\n");
 }
 
@@ -209,7 +211,7 @@ int main(int argc, char *argv[])
 			udid = argv[i];
 			continue;
 		}
-		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--install")) {
+		else if (!strcmp(argv[i], "install")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
@@ -219,10 +221,10 @@ int main(int argc, char *argv[])
 			op = OP_INSTALL;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
-			op = OP_LIST;			
+		else if (!strcmp(argv[i], "list")) {
+			op = OP_LIST;
 		}
-		else if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--copy")) {
+		else if (!strcmp(argv[i], "copy")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
@@ -232,7 +234,7 @@ int main(int argc, char *argv[])
 			op = OP_COPY;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--remove")) {
+		else if (!strcmp(argv[i], "remove")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
