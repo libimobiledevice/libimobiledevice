@@ -1,0 +1,41 @@
+.TH "ideviceprovision" 1
+.SH NAME
+ideviceprovision \- Manage provisioning profiles on a device.
+.SH SYNOPSIS
+.B ideviceprovision
+[OPTIONS] COMMAND
+
+.SH DESCRIPTION
+
+Manage provisioning profiles on a device.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B install FILE
+Install the provisioning profile specified by FILE. A valid ".mobileprovision"
+file is expected.
+.TP
+.B list
+Get a list of all provisioning profiles on the device.
+.TP
+.B copy PATH
+Retrieves all provisioning profiles from the device and stores them into the
+existing directory specified by PATH. The files will be stored 
+as "UUID.mobileprovision".
+.TP
+.B remove UUID
+Removes the provisioning profile identified by UUID.
+
+.SH AUTHORS
+Nikias Bassen

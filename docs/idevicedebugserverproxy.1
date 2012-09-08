@@ -1,0 +1,34 @@
+.TH "idevicedebugserverproxy" 1
+.SH NAME
+idevicedebugserverproxy \- Remote debugging proxy.
+.SH SYNOPSIS
+.B idevicedebugserverproxy
+[OPTIONS] PORT
+
+.SH DESCRIPTION
+
+Proxy a debugserver connection from a device for remote debugging.
+After starting up, clients can connect to PORT and communicate with the remote
+debugserver using the LLVM remote serial debugging protocol.
+Thus connecting using LLDB or a LLVM based gdb to this port would allow
+remote debugging.
+The developer disk image needs to be mounted for this service to be available.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH USAGE
+.TP
+.B PORT
+The port under which the proxy should listen for connections from clients.
+
+.SH AUTHORS
+Martin Szulecki

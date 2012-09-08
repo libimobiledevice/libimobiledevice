@@ -1,0 +1,51 @@
+.TH "idevicediagnostics" 1
+.SH NAME
+idevicediagnostics \- Interact with the diagnostics interface of a device.
+.SH SYNOPSIS
+.B idevicediagnostics
+[OPTIONS] COMMAND
+
+.SH DESCRIPTION
+
+Interact with the diagnostics interface of a device which allows to retrive
+all kinds of information including diagnostics data, mobilegestalt data, remote
+access to the IORegistry and certain commands like restart, shutdown and sleep.
+Only available for iOS 4 and later. Accessing IORegistry is only supported on
+iOS 5 and later.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B diagnostics [TYPE]
+print diagnostics information from device optionally by TYPE. This includes
+"All", "WiFi", "GasGauge" or "NAND". Default is "All".
+.TP
+.B mobilegestalt KEY [...]
+print values of mobilegestalt keys passed as arguments after the command and 
+seperated by a space.
+.TP
+.B ioreg [PLANE]
+print IORegistry of device, optionally by PLANE like "IODeviceTree", "IOPower"
+ or "IOService". Only available on iOS 5 and later.
+.TP
+.B shutdown
+shutdown device
+.TP
+.B restart
+restart device
+.TP
+.B sleep
+put device into sleep mode which also disconnects it from the host.
+
+.SH AUTHORS
+Martin Szulecki
