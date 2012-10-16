@@ -30,6 +30,7 @@
 #include <libgen.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/statvfs.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -1571,13 +1572,23 @@ checkpoint:
 				} else if (!strcmp(dlmsg, "DLMessageUploadFiles")) {
 					/* device wants to send files to the computer */
 					file_count += mb2_handle_receive_files(message, backup_directory);
+				} else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace")) {
+					/* device wants to know how much disk space is available on the computer */
+					struct statvfs fs;
+					memset(&fs, '\0', sizeof(fs));
+					int res = statvfs(backup_directory, &fs);
+					uint64_t freespace = 0;
+					if (res == 0) {
+						freespace = fs.f_bavail * fs.f_bsize;
+					}
+					mobilebackup2_send_status_response(mobilebackup2, res, NULL, plist_new_uint(freespace));
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
 					mb2_handle_list_directory(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageCreateDirectory")) {
 					/* make a directory */
 					mb2_handle_make_directory(message, backup_directory);
-				} else if (!strcmp(dlmsg, "DLMessageMoveFiles")) {
+				} else if (!strcmp(dlmsg, "DLMessageMoveFiles") || !strcmp(dlmsg, "DLMessageMoveItems")) {
 					/* perform a series of rename operations */
 					plist_t moves = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_dict_get_size(moves);
@@ -1623,7 +1634,7 @@ checkpoint:
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
-				} else if (!strcmp(dlmsg, "DLMessageRemoveFiles")) {
+				} else if (!strcmp(dlmsg, "DLMessageRemoveFiles") || !strcmp(dlmsg, "DLMessageRemoveItems")) {
 					plist_t removes = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_array_get_size(removes);
 					PRINT_VERBOSE(1, "Removing %d file%s\n", cnt, (cnt == 1) ? "" : "s");
