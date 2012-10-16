@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 		}
 
 		char *targetname = NULL;
-		if (asprintf(&targetname, "%s/%s", PKG_PATH, basename(image_path)) < 0) {
+		if (asprintf(&targetname, "%s/%s", PKG_PATH, "staging.dimage") < 0) {
 			fprintf(stderr, "Out of memory!?\n");
 			goto leave;
 		}
