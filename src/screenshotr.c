@@ -27,7 +27,7 @@
 #include "device_link_service.h"
 #include "debug.h"
 
-#define SCREENSHOTR_VERSION_INT1 100
+#define SCREENSHOTR_VERSION_INT1 300
 #define SCREENSHOTR_VERSION_INT2 0
 
 /**
