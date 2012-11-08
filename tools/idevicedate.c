@@ -150,7 +150,21 @@ int main(int argc, char *argv[])
 		/* get time value from device */
 		if(lockdownd_get_value(client, NULL, "TimeIntervalSince1970", &node) == LOCKDOWN_E_SUCCESS) {
 			if (node) {
-				plist_get_uint_val(node, &datetime);
+				switch (plist_get_node_type(node)) {
+				case PLIST_UINT:
+					plist_get_uint_val(node, &datetime);
+					break;
+				case PLIST_REAL:
+					{
+					double rv = 0;
+					plist_get_real_val(node, &rv);
+					datetime = rv;
+					}
+					break;
+				default:
+					fprintf(stderr, "Unexpected node type for 'TimeIntervalSince1970'\n");
+					break;
+				}
 				plist_free(node);
 				node = NULL;
 
