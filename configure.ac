@@ -164,8 +164,8 @@ AM_CONDITIONAL([ENABLE_DEVTOOLS],[test "x$DEV_SUB" = "xdev"])
 AC_SUBST([DEV_SUB])
 
 AC_ARG_ENABLE([debug-code],
-            [AS_HELP_STRING([--disable-debug-code],
-            [disable debug message reporting in library (default is yes)])],
+            [AS_HELP_STRING([--enable-debug-code],
+            [enable debug message reporting in library (default is no)])],
             [no_debug_code=false],
             [no_debug_code=true])
 if test "$no_debug_code" = true; then
