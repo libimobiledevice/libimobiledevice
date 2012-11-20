@@ -46,6 +46,18 @@
 #define htobe32 be32toh
 #endif
 
+#ifndef le32toh
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define le32toh(x) __bswap_32(x)
+#else
+#define le32toh(x) (x)
+#endif
+#endif
+
+#ifndef htole32
+#define htole32 le32toh
+#endif
+
 #ifndef __bswap_64
 #define __bswap_64(x) ((((x) & 0xFF00000000000000ull) >> 56) \
                     | (((x) & 0x00FF000000000000ull) >> 40) \
