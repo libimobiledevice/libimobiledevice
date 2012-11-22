@@ -455,9 +455,10 @@ static int plist_strcmp(plist_t node, const char *str)
 
 static char *mobilebackup_build_path(const char *backup_directory, const char *name, const char *extension)
 {
-	char* filename = (char*)malloc(strlen(name)+strlen(extension)+1);
+	char* filename = (char*)malloc(strlen(name)+(extension == NULL ? 0: strlen(extension))+1);
 	strcpy(filename, name);
-	strcat(filename, extension);
+	if (extension != NULL)
+		strcat(filename, extension);
 	char *path = build_path(backup_directory, filename, NULL);
 	free(filename);
 	return path;
