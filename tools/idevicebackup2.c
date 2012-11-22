@@ -30,7 +30,6 @@
 #include <libgen.h>
 #include <ctype.h>
 #include <time.h>
-#include <sys/statvfs.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -47,7 +46,10 @@
 #define LOCK_WAIT 200000
 
 #ifdef WIN32
+#include <windows.h>
 #define sleep(x) Sleep(x*1000)
+#else
+#include <sys/statvfs.h>
 #endif
 
 #define CODE_SUCCESS 0x00
@@ -1574,13 +1576,20 @@ checkpoint:
 					file_count += mb2_handle_receive_files(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace")) {
 					/* device wants to know how much disk space is available on the computer */
+					uint64_t freespace = 0;
+					int res = -1;
+#ifdef WIN32
+					if (GetDiskFreeSpaceEx(backup_directory, (PULARGE_INTEGER)&freespace, NULL, NULL)) {
+						res = 0;
+					}
+#else
 					struct statvfs fs;
 					memset(&fs, '\0', sizeof(fs));
-					int res = statvfs(backup_directory, &fs);
-					uint64_t freespace = 0;
+					res = statvfs(backup_directory, &fs);
 					if (res == 0) {
 						freespace = fs.f_bavail * fs.f_bsize;
 					}
+#endif
 					mobilebackup2_send_status_response(mobilebackup2, res, NULL, plist_new_uint(freespace));
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
