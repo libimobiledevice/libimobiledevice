@@ -624,6 +624,20 @@ static int errno_to_device_error(int errno_value)
 	}
 }
 
+#ifdef WIN32
+static int win32err_to_errno(int err_value)
+{
+	switch (err_value) {
+		case ERROR_FILE_NOT_FOUND:
+			return ENOENT;
+		case ERROR_ALREADY_EXISTS:
+			return EEXIST;
+		default:
+			return EFAULT;
+	}
+}
+#endif
+
 static int mb2_handle_send_file(const char *backup_dir, const char *path, plist_t *errplist)
 {
 	uint32_t nlen = 0;
@@ -1619,7 +1633,15 @@ checkpoint:
 									free(str);
 									char *oldpath = build_path(backup_directory, key, NULL);
 
+#ifdef WIN32
+									struct stat st;
+									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
+										RemoveDirectory(newpath);
+									else
+										DeleteFile(newpath);
+#else
 									remove(newpath);
+#endif
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
 										errcode = errno_to_device_error(errno);
@@ -1658,11 +1680,26 @@ checkpoint:
 							if (str) {
 								char *newpath = build_path(backup_directory, str, NULL);
 								free(str);
+#ifdef WIN32
+								struct stat st;
+								int res = 0;
+								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
+									res = RemoveDirectory(newpath);
+								else
+									res = DeleteFile(newpath);
+								if (!res) {
+									int e = win32err_to_errno(GetLastError());
+									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(e), e);
+									errcode = errno_to_device_error(e);
+									errdesc = strerror(e);
+								}
+#else
 								if (remove(newpath) < 0) {
 									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
 									errcode = errno_to_device_error(errno);
 									errdesc = strerror(errno);
 								}
+#endif
 								free(newpath);
 							}
 						}
