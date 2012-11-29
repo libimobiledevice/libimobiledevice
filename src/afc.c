@@ -522,7 +522,7 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 }
 
 /**
- * Get device info for a client connection to phone. The device information
+ * Get device information for a connected client. The device information
  * returned is the device model as well as the free space, the total capacity
  * and blocksize on the accessed disk partition.
  * 
@@ -649,7 +649,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 }
 
 /**
- * Renames a file or directory on the phone.
+ * Renames a file or directory on the device.
  * 
  * @param client The client to have rename.
  * @param from The name to rename from. (must be a fully-qualified path)
@@ -691,7 +691,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 }
 
 /**
- * Creates a directory on the phone.
+ * Creates a directory on the device.
  * 
  * @param client The client to use to make a directory.
  * @param dir The directory's path. (must be a fully-qualified path, I assume
@@ -772,7 +772,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
 }
 
 /**
- * Opens a file on the phone.
+ * Opens a file on the device.
  * 
  * @param client The client to use to open the file. 
  * @param filename The file to open. (must be a fully-qualified path)
@@ -1002,7 +1002,7 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
 }
 
 /**
- * Closes a file on the phone.
+ * Closes a file on the device.
  * 
  * @param client The client to close the file with.
  * @param handle File handle of a previously opened file.
@@ -1044,7 +1044,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 }
 
 /**
- * Locks or unlocks a file on the phone. 
+ * Locks or unlocks a file on the device. 
  *
  * makes use of flock on the device, see
  * http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
@@ -1096,7 +1096,7 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 }
 
 /**
- * Seeks to a given position of a pre-opened file on the phone. 
+ * Seeks to a given position of a pre-opened file on the device. 
  * 
  * @param client The client to use to seek to the position.
  * @param handle File handle of a previously opened.
@@ -1143,7 +1143,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 }
 
 /**
- * Returns current position in a pre-opened file on the phone.
+ * Returns current position in a pre-opened file on the device.
  * 
  * @param client The client to use.
  * @param handle File handle of a previously opened file.
@@ -1191,7 +1191,7 @@ afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *positi
 }
 
 /**
- * Sets the size of a file on the phone.
+ * Sets the size of a file on the device.
  * 
  * @param client The client to use to set the file size.
  * @param handle File handle of a previously opened file.
@@ -1238,7 +1238,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 }
 
 /**
- * Sets the size of a file on the phone without prior opening it.
+ * Sets the size of a file on the device without prior opening it.
  * 
  * @param client The client to use to set the file size.
  * @param path The path of the file to be truncated.
@@ -1330,7 +1330,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 }
 
 /**
- * Sets the modification time of a file on the phone.
+ * Sets the modification time of a file on the device.
  * 
  * @param client The client to use to set the file size.
  * @param path Path of the file for which the modification time should be set.
