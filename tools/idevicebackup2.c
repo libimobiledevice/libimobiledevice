@@ -251,12 +251,11 @@ static char* format_size_for_display(uint64_t size)
 	return strdup(buf);
 }
 
-static plist_t mobilebackup_factory_info_plist_new()
+static plist_t mobilebackup_factory_info_plist_new(const char* udid)
 {
 	/* gather data from lockdown */
 	plist_t value_node = NULL;
 	plist_t root_node = NULL;
-	char *udid = NULL;
 	char *udid_uppercase = NULL;
 
 	plist_t ret = plist_new_dict();
@@ -302,16 +301,14 @@ static plist_t mobilebackup_factory_info_plist_new()
 	/* FIXME Sync Settings? */
 
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
-	idevice_get_udid(phone, &udid);
 	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(udid));
 
 	plist_dict_insert_item(ret, "Target Type", plist_new_string("Device"));
 
 	/* uppercase */
-	udid_uppercase = str_toupper(udid);
+	udid_uppercase = str_toupper((char*)udid);
 	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
 	free(udid_uppercase);
-	free(udid);
 
 	char *data_buf = NULL;
 	uint64_t data_size = 0;
@@ -1455,7 +1452,7 @@ checkpoint:
 				plist_free(info_plist);
 				info_plist = NULL;
 			}
-			info_plist = mobilebackup_factory_info_plist_new();
+			info_plist = mobilebackup_factory_info_plist_new(udid);
 			remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			free(info_path);
