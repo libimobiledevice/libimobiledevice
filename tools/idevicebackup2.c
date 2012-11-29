@@ -472,67 +472,6 @@ static int mb2_status_check_snapshot_state(const char *path, const char *udid, c
 	return ret;
 }
 
-static int mobilebackup_info_is_current_device(plist_t info)
-{
-	plist_t value_node = NULL;
-	plist_t node = NULL;
-	plist_t root_node = NULL;
-	int ret = 0;
-
-	if (!info)
-		return ret;
-
-	if (plist_get_node_type(info) != PLIST_DICT)
-		return ret;
-
-	/* get basic device information in one go */
-	lockdownd_get_value(client, NULL, NULL, &root_node);
-
-	/* verify UDID */
-	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
-	node = plist_dict_get_item(info, "Target Identifier");
-
-	if(plist_compare_node_value(value_node, node))
-		ret = 1;
-	else {
-		printf("Info.plist: UniqueDeviceID does not match.\n");
-	}
-
-	/* verify SerialNumber */
-	if (ret == 1) {
-		value_node = plist_dict_get_item(root_node, "SerialNumber");
-		node = plist_dict_get_item(info, "Serial Number");
-
-		if(plist_compare_node_value(value_node, node))
-			ret = 1;
-		else {
-			printf("Info.plist: SerialNumber does not match.\n");
-			ret = 0;
-		}
-	}
-
-	/* verify ProductVersion to prevent using backup with different OS version */
-	if (ret == 1) {
-		value_node = plist_dict_get_item(root_node, "ProductVersion");
-		node = plist_dict_get_item(info, "Product Version");
-
-		if(plist_compare_node_value(value_node, node))
-			ret = 1;
-		else {
-			printf("Info.plist: ProductVersion does not match.\n");
-			ret = 0;
-		}
-	}
-
-	plist_free(root_node);
-	root_node = NULL;
-
-	value_node = NULL;
-	node = NULL;
-
-	return ret;
-}
-
 static void do_post_notification(const char *notification)
 {
 	uint16_t nport = 0;
@@ -1186,6 +1125,7 @@ static void print_usage(int argc, char **argv)
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }
@@ -1195,6 +1135,7 @@ int main(int argc, char *argv[])
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	char* udid = NULL;
+	char* source_udid = NULL;
 	uint16_t port = 0;
 	int cmd = -1;
 	int cmd_flags = 0;
@@ -1227,6 +1168,15 @@ int main(int argc, char *argv[])
 				return 0;
 			}
 			udid = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--source")) {
+			i++;
+			if (!argv[i] || (strlen(argv[i]) != 40)) {
+				print_usage(argc, argv);
+				return 0;
+			}
+			source_udid = strdup(argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -1307,12 +1257,16 @@ int main(int argc, char *argv[])
 		idevice_get_udid(device, &udid);
 	}
 
+	if (!source_udid) {
+		source_udid = strdup(udid);
+	}
+
 	/* backup directory must contain an Info.plist */
-	char *info_path = build_path(backup_directory, udid, "Info.plist", NULL);
+	char *info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
 	if (cmd == CMD_RESTORE) {
 		if (stat(info_path, &st) != 0) {
 			free(info_path);
-			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, udid);
+			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
 			return -1;
 		}
 	}
@@ -1387,12 +1341,6 @@ int main(int argc, char *argv[])
 				printf("Could not read Info.plist\n");
 				is_full_backup = 1;
 			}
-			if (info_plist && ((cmd == CMD_BACKUP) || (cmd == CMD_RESTORE))) {
-				if (!mobilebackup_info_is_current_device(info_plist)) {
-					printf("Aborting. Backup data is not compatible with the current device.\n");
-					cmd = CMD_LEAVE;
-				}
-			}
 		} else {
 			if (cmd == CMD_RESTORE) {
 				printf("Aborting restore. Info.plist is missing.\n");
@@ -1440,9 +1388,21 @@ checkpoint:
 			PRINT_VERBOSE(1, "Starting backup...\n");
 
 			/* make sure backup device sub-directory exists */
-			char *devbackupdir = build_path(backup_directory, udid, NULL);
+			char* devbackupdir = build_path(backup_directory, source_udid, NULL);
 			__mkdir(devbackupdir, 0755);
 			free(devbackupdir);
+
+			if (strcmp(source_udid, udid) != 0) {
+				/* handle different source backup directory */
+				// make sure target backup device sub-directory exists
+				devbackupdir = build_path(backup_directory, udid, NULL);
+				__mkdir(devbackupdir, 0755);
+				free(devbackupdir);
+
+				// use Info.plist path in target backup folder */
+				free(info_path);
+				info_path = build_path(backup_directory, udid, "Info.plist", NULL);
+			}
 
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
 			/* TODO: verify battery on AC enough battery remaining */	
@@ -1463,7 +1423,7 @@ checkpoint:
 			/* request backup from device with manifest from last backup */
 			PRINT_VERBOSE(1, "Requesting backup from device...\n");
 
-			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, NULL, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				if (is_full_backup) {
 					PRINT_VERBOSE(1, "Full backup mode.\n");
@@ -1485,7 +1445,7 @@ checkpoint:
 			/* TODO: verify battery on AC enough battery remaining */
 
 			/* verify if Status.plist says we read from an successful backup */
-			if (!mb2_status_check_snapshot_state(backup_directory, udid, "finished")) {
+			if (!mb2_status_check_snapshot_state(backup_directory, source_udid, "finished")) {
 				printf("ERROR: Cannot ensure we restore from a successful backup. Aborting.\n");
 				cmd = CMD_LEAVE;
 				break;
@@ -1505,7 +1465,7 @@ checkpoint:
 			plist_dict_insert_item(opts, "RestorePreserveSettings", plist_new_bool((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0));
 			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0  ? "Yes":"No"));
 
-			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, udid, opts);
+			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, source_udid, opts);
 			plist_free(opts);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
@@ -1520,7 +1480,7 @@ checkpoint:
 			break;
 			case CMD_INFO:
 			PRINT_VERBOSE(1, "Requesting backup info from device...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "Info", udid, NULL, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "Info", udid, source_udid, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting backup info from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
@@ -1528,7 +1488,7 @@ checkpoint:
 			break;
 			case CMD_LIST:
 			PRINT_VERBOSE(1, "Requesting backup list from device...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "List", udid, NULL, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "List", udid, source_udid, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting backup list from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
@@ -1536,7 +1496,7 @@ checkpoint:
 			break;
 			case CMD_UNBACK:
 			PRINT_VERBOSE(1, "Starting to unpack backup...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "Unback", udid, NULL, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "Unback", udid, source_udid, NULL);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting unback operation from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
@@ -1888,6 +1848,9 @@ files_out:
 
 	if (udid) {
 		free(udid);
+	}
+	if (source_udid) {
+		free(source_udid);
 	}
 
 	return 0;
