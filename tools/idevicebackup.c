@@ -56,7 +56,7 @@
 
 static mobilebackup_client_t mobilebackup = NULL;
 static lockdownd_client_t client = NULL;
-static idevice_t phone = NULL;
+static idevice_t device = NULL;
 
 static int quit_flag = 0;
 
@@ -748,14 +748,14 @@ static void do_post_notification(const char *notification)
 	np_client_t np;
 
 	if (!client) {
-		if (lockdownd_client_new_with_handshake(phone, &client, "idevicebackup") != LOCKDOWN_E_SUCCESS) {
+		if (lockdownd_client_new_with_handshake(device, &client, "idevicebackup") != LOCKDOWN_E_SUCCESS) {
 			return;
 		}
 	}
 
 	lockdownd_start_service(client, NP_SERVICE_NAME, &nport);
 	if (nport) {
-		np_client_new(phone, nport, &np);
+		np_client_new(device, nport, &np);
 		if (np) {
 			np_post_notification(np, notification);
 			np_client_free(np);
@@ -908,7 +908,7 @@ int main(int argc, char *argv[])
 	printf("Backup directory is \"%s\"\n", backup_directory);
 
 	if (udid) {
-		ret = idevice_new(&phone, udid);
+		ret = idevice_new(&device, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
 			return -1;
@@ -916,15 +916,15 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		ret = idevice_new(&phone, NULL);
+		ret = idevice_new(&device, NULL);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicebackup")) {
-		idevice_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicebackup")) {
+		idevice_free(device);
 		return -1;
 	}
 
@@ -932,7 +932,7 @@ int main(int argc, char *argv[])
 	np_client_t np = NULL;
 	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-		np_client_new(phone, port, &np);
+		np_client_new(device, port, &np);
 		np_set_notify_callback(np, notify_cb, NULL);
 		const char *noties[5] = {
 			NP_SYNC_CANCEL_REQUEST,
@@ -952,7 +952,7 @@ int main(int argc, char *argv[])
 		port = 0;
 		ret = lockdownd_start_service(client, "com.apple.afc", &port);
 		if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-			afc_client_new(phone, port, &afc);
+			afc_client_new(device, port, &afc);
 		}
 	}
 
@@ -961,7 +961,7 @@ int main(int argc, char *argv[])
 	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &port);
 	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, port);
-		mobilebackup_client_new(phone, port, &mobilebackup);
+		mobilebackup_client_new(device, port, &mobilebackup);
 
 		/* check abort conditions */
 		if (quit_flag > 0) {
@@ -1694,7 +1694,7 @@ files_out:
 	if (mobilebackup)
 		mobilebackup_client_free(mobilebackup);
 
-	idevice_free(phone);
+	idevice_free(device);
 
 	if (udid) {
 		free(udid);

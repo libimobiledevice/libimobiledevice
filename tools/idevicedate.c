@@ -54,7 +54,7 @@ static void print_usage(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
-	idevice_t phone = NULL;
+	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	const char* udid = NULL;
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ret = idevice_new(&phone, udid);
+	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicedate")) {
-		idevice_free(phone);
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicedate")) {
+		idevice_free(device);
 		return -1;
 	}
 
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	}
 
 	lockdownd_client_free(client);
-	idevice_free(phone);
+	idevice_free(device);
 
 	return 0;
 }

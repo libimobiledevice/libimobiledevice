@@ -91,7 +91,7 @@ static void parse_opts(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	lockdownd_client_t client = NULL;
-	idevice_t phone = NULL;
+	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	lockdownd_error_t lerr;
 	int result;
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 	}
 
 	if (udid) {
-		ret = idevice_new(&phone, udid);
+		ret = idevice_new(&device, udid);
 		free(udid);
 		udid = NULL;
 		if (ret != IDEVICE_E_SUCCESS) {
@@ -166,16 +166,16 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 	} else {
-		ret = idevice_new(&phone, NULL);
+		ret = idevice_new(&device, NULL);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return EXIT_FAILURE;
 		}
 	}
 
-	lerr = lockdownd_client_new(phone, &client, "idevicepair");
+	lerr = lockdownd_client_new(device, &client, "idevicepair");
 	if (lerr != LOCKDOWN_E_SUCCESS) {
-		idevice_free(phone);
+		idevice_free(device);
 		printf("ERROR: lockdownd_client_new failed with error code %d\n", lerr);
 		return EXIT_FAILURE;
 	}
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	ret = idevice_get_udid(phone, &udid);
+	ret = idevice_get_udid(device, &udid);
 	if (ret != IDEVICE_E_SUCCESS) {
 		printf("ERROR: Could not get device udid, error code %d\n", ret);
 		result = EXIT_FAILURE;
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
 leave:
 	lockdownd_client_free(client);
-	idevice_free(phone);
+	idevice_free(device);
 	if (udid) {
 		free(udid);
 	}

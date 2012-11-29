@@ -46,7 +46,7 @@ static void print_usage(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	idevice_t phone = NULL;
+	idevice_t device = NULL;
 	lockdownd_client_t client = NULL;
 	char **dev_list = NULL;
 	char *devname = NULL;
@@ -83,14 +83,14 @@ int main(int argc, char **argv)
 
 	switch (mode) {
 	case MODE_SHOW_ID:
-		idevice_new(&phone, udid);
-		if (!phone) {
+		idevice_new(&device, udid);
+		if (!device) {
 			fprintf(stderr, "ERROR: No device with UDID=%s attached.\n", udid);
 			return -2;
 		}
 
-		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(phone, &client, "idevice_id")) {
-			idevice_free(phone);
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(device, &client, "idevice_id")) {
+			idevice_free(device);
 			fprintf(stderr, "ERROR: Connecting to device failed!\n");
 			return -2;
 		}
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 		}
 
 		lockdownd_client_free(client);
-		idevice_free(phone);
+		idevice_free(device);
 
 		if (ret == 0) {
 			printf("%s\n", devname);
