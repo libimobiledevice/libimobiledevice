@@ -85,7 +85,8 @@ enum cmd_flags {
 	CMD_FLAG_RESTORE_SYSTEM_FILES       = (1 << 1),
 	CMD_FLAG_RESTORE_REBOOT             = (1 << 2),
 	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 3),
-	CMD_FLAG_RESTORE_SETTINGS           = (1 << 4)
+	CMD_FLAG_RESTORE_SETTINGS           = (1 << 4),
+	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5)
 };
 
 static void notify_cb(const char *notification, void *userdata)
@@ -1119,6 +1120,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --reboot\treboot the system when done.\n");
 	printf("    --copy\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\trestore device settings from the backup.\n");
+	printf("    --remove\tremove items which are not being restored\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n\n");
@@ -1200,6 +1202,9 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "--settings")) {
 			cmd_flags |= CMD_FLAG_RESTORE_SETTINGS;
+		}
+		else if (!strcmp(argv[i], "--remove")) {
+			cmd_flags |= CMD_FLAG_RESTORE_REMOVE_ITEMS;
 		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
@@ -1463,7 +1468,10 @@ checkpoint:
 				plist_dict_insert_item(opts, "RestoreDontCopyBackup", plist_new_bool(1));
 			PRINT_VERBOSE(1, "Don't copy backup: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0 ? "Yes":"No"));
 			plist_dict_insert_item(opts, "RestorePreserveSettings", plist_new_bool((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0));
-			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0  ? "Yes":"No"));
+			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0 ? "Yes":"No"));
+			if (cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS)
+				plist_dict_insert_item(opts, "RemoveItemsNotRestored", plist_new_bool(1));
+			PRINT_VERBOSE(1, "Remove items that are not restored: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS) ? "Yes":"No"));
 
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, source_udid, opts);
 			plist_free(opts);
