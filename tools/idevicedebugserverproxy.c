@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
-		fprintf(stderr, "Connection to debugserver port %d failed!\n", (int)&port);
+		fprintf(stderr, "Connection to debugserver port %d failed!\n", (int)port);
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
 	}
