@@ -1639,6 +1639,13 @@ checkpoint:
 							char *str = NULL;
 							plist_get_string_val(val, &str);
 							if (str) {
+								const char *checkfile = strchr(str, '/');
+								int suppress_warning = 0;
+								if (checkfile) {
+									if (strcmp(checkfile+1, "Manifest.mbdx") == 0) {
+										suppress_warning = 1;
+									}
+								}
 								char *newpath = build_path(backup_directory, str, NULL);
 								free(str);
 #ifdef WIN32
@@ -1650,13 +1657,15 @@ checkpoint:
 									res = DeleteFile(newpath);
 								if (!res) {
 									int e = win32err_to_errno(GetLastError());
-									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(e), e);
+									if (!suppress_warning)
+										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(e), e);
 									errcode = errno_to_device_error(e);
 									errdesc = strerror(e);
 								}
 #else
 								if (remove(newpath) < 0) {
-									printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
+									if (!suppress_warning)
+										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
 									errcode = errno_to_device_error(errno);
 									errdesc = strerror(errno);
 								}
