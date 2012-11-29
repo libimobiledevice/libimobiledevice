@@ -820,9 +820,8 @@ int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char udid[41];
+	char* udid = NULL;
 	uint16_t port = 0;
-	udid[0] = 0;
 	int cmd = -1;
 	int is_full_backup = 0;
 	char *backup_directory = NULL;
@@ -858,7 +857,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(udid, argv[i]);
+			udid = strdup(argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -911,7 +910,7 @@ int main(int argc, char *argv[])
 
 	printf("Backup directory is \"%s\"\n", backup_directory);
 
-	if (udid[0] != 0) {
+	if (udid) {
 		ret = idevice_new(&phone, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
@@ -1699,6 +1698,10 @@ files_out:
 		mobilebackup_client_free(mobilebackup);
 
 	idevice_free(phone);
+
+	if (udid) {
+		free(udid);
+	}
 
 	return 0;
 }

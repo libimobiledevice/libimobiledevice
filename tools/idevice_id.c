@@ -53,8 +53,7 @@ int main(int argc, char **argv)
 	int ret = 0;
 	int i;
 	int mode = MODE_SHOW_ID;
-	char udid[41];
-	udid[0] = 0;
+	const char* udid = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -79,7 +78,7 @@ int main(int argc, char **argv)
 			print_usage(argc, argv);
 			return 0;
 		}
-		strcpy(udid, argv[i]);
+		udid = argv[i];
 	}
 
 	switch (mode) {

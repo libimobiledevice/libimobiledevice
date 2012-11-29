@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	uint16_t port = 0;
 	int result = -1;
 	int i;
-	char *udid = NULL;
+	const char *udid = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 				print_usage(argc, argv);
 				return 0;
 			}
-			udid = strdup(argv[i]);
+			udid = argv[i];
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -67,14 +67,12 @@ int main(int argc, char **argv)
 	}
 
 	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
-		printf("No device found, is it plugged in?\n");
 		if (udid) {
-			free(udid);
+			printf("No device found with udid %s, is it plugged in?\n", udid);
+		} else {
+			printf("No device found, is it plugged in?\n");
 		}
 		return -1;
-	}
-	if (udid) {
-		free(udid);
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {

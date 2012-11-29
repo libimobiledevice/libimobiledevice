@@ -227,8 +227,7 @@ int main(int argc, char *argv[])
 	idevice_connection_t connection = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	thread_t th;
-	char udid[41];
-	udid[0] = 0;
+	const char* udid = NULL;
 	uint16_t port = 0;
 	uint16_t local_port = 0;
 	int result = EXIT_SUCCESS;
@@ -256,7 +255,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(udid, argv[i]);
+			udid = argv[i];
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -281,22 +280,15 @@ int main(int argc, char *argv[])
 	}
 
 	/* start services and connect to device */
-	if (udid[0] != 0) {
-		ret = idevice_new(&device, udid);
-		if (ret != IDEVICE_E_SUCCESS) {
+	ret = idevice_new(&device, udid);
+	if (ret != IDEVICE_E_SUCCESS) {
+		if (udid) {
 			fprintf(stderr, "No device found with udid %s, is it plugged in?\n", udid);
-			result = EXIT_FAILURE;
-			goto leave_cleanup;
-		}
-	}
-	else
-	{
-		ret = idevice_new(&device, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
+		} else {
 			fprintf(stderr, "No device found, is it plugged in?\n");
-			result = EXIT_FAILURE;
-			goto leave_cleanup;
 		}
+		result = EXIT_FAILURE;
+		goto leave_cleanup;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown, "idevicedebugserverproxy")) {

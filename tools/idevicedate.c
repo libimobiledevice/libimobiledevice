@@ -57,10 +57,9 @@ int main(int argc, char *argv[])
 	idevice_t phone = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char udid[41];
+	const char* udid = NULL;
 	time_t setdate = 0;
 	plist_t node = NULL;
-	udid[0] = 0;
 	uint64_t datetime = 0;
 	time_t rawtime;
 	struct tm * tmp;
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(udid, argv[i]);
+			udid = argv[i];
 			continue;
 		}
 		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--set")) {
@@ -124,20 +123,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (udid[0] != 0) {
-		ret = idevice_new(&phone, udid);
-		if (ret != IDEVICE_E_SUCCESS) {
+	ret = idevice_new(&phone, udid);
+	if (ret != IDEVICE_E_SUCCESS) {
+		if (udid) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
-			return -1;
-		}
-	}
-	else
-	{
-		ret = idevice_new(&phone, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
+		} else {
 			printf("No device found, is it plugged in?\n");
-			return -1;
 		}
+		return -1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(phone, &client, "idevicedate")) {

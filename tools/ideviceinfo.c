@@ -285,14 +285,13 @@ int main(int argc, char *argv[])
 	int i;
 	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
-	char udid[41];
+	const char* udid = NULL;
 	char *domain = NULL;
 	char *key = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
 	plist_type node_type;
-	udid[0] = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -306,7 +305,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(udid, argv[i]);
+			udid = argv[i];
 			continue;
 		}
 		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--domain")) {
@@ -348,20 +347,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (udid[0] != 0) {
-		ret = idevice_new(&phone, udid);
-		if (ret != IDEVICE_E_SUCCESS) {
+	ret = idevice_new(&phone, udid);
+	if (ret != IDEVICE_E_SUCCESS) {
+		if (udid) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
-			return -1;
-		}
-	}
-	else
-	{
-		ret = idevice_new(&phone, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
+		} else {
 			printf("No device found, is it plugged in?\n");
-			return -1;
 		}
+		return -1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != (simple ?

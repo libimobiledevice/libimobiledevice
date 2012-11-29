@@ -45,8 +45,7 @@ int main(int argc, char *argv[])
 	idevice_t phone = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char udid[41];
-	udid[0] = 0;
+	const char* udid = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -65,7 +64,7 @@ int main(int argc, char *argv[])
 		print_usage(argc, argv);
 		return 0;
 	}
-	strcpy(udid, argv[i]);
+	udid = argv[i];
 
 	ret = idevice_new(&phone, udid);
 	if (ret != IDEVICE_E_SUCCESS) {

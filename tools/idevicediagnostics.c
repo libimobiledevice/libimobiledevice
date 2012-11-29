@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	uint16_t port = 0;
 	int result = -1;
 	int i;
-	char *udid = NULL;
+	const char *udid = NULL;
 	int cmd = CMD_NONE;
 	char* cmd_arg = NULL;
 	plist_t node = NULL;
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 				result = 0;
 				goto cleanup;
 			}
-			udid = strdup(argv[i]);
+			udid = argv[i];
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -165,12 +165,12 @@ int main(int argc, char **argv)
 	}
 
 	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
-		printf("No device found, is it plugged in?\n");
+		if (udid) {
+			printf("No device found with udid %s, is it plugged in?\n", udid);	
+		} else {
+			printf("No device found, is it plugged in?\n");
+		}
 		goto cleanup;
-	}
-
-	if (udid) {
-		free(udid);
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown_client, NULL)) {
@@ -261,9 +261,6 @@ int main(int argc, char **argv)
 	idevice_free(device);
 
 cleanup:
-	if (udid) {
-		free(udid);
-	}
 	if (node) {
 		plist_free(node);
 	}

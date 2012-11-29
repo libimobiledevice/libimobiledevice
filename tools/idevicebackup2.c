@@ -1197,9 +1197,8 @@ int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
-	char udid[41];
+	char* udid = NULL;
 	uint16_t port = 0;
-	udid[0] = 0;
 	int cmd = -1;
 	int cmd_flags = 0;
 	int is_full_backup = 0;
@@ -1230,7 +1229,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv);
 				return 0;
 			}
-			strcpy(udid, argv[i]);
+			udid = strdup(argv[i]);
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -1294,7 +1293,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (udid[0] != 0) {
+	if (udid) {
 		ret = idevice_new(&phone, udid);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
@@ -1308,10 +1307,7 @@ int main(int argc, char *argv[])
 			printf("No device found, is it plugged in?\n");
 			return -1;
 		}
-		char *newudid = NULL;
-		idevice_get_udid(phone, &newudid);
-		strcpy(udid, newudid);
-		free(newudid);
+		idevice_get_udid(phone, &udid);
 	}
 
 	/* backup directory must contain an Info.plist */
@@ -1892,6 +1888,10 @@ files_out:
 		np_client_free(np);
 
 	idevice_free(phone);
+
+	if (udid) {
+		free(udid);
+	}
 
 	return 0;
 }
