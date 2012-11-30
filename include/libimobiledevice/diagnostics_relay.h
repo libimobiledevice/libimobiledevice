@@ -35,6 +35,7 @@ extern "C" {
 #define DIAGNOSTICS_RELAY_E_INVALID_ARG           -1
 #define DIAGNOSTICS_RELAY_E_PLIST_ERROR           -2
 #define DIAGNOSTICS_RELAY_E_MUX_ERROR             -3
+#define DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST       -4
 
 #define DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR       -256
 /*@}*/

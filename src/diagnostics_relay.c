@@ -26,6 +26,7 @@
 
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
+#define RESULT_UNKNOWN_REQUEST 2
 
 /**
  * Internally used function for checking the result from a service response
@@ -56,6 +57,8 @@ static int diagnostics_relay_check_result(plist_t dict)
 				ret = RESULT_SUCCESS;
 			} else if (!strcmp(result_value, "Failure")) {
 				ret = RESULT_FAILURE;
+			} else if (!strcmp(result_value, "UnknownRequest")) {
+				ret = RESULT_UNKNOWN_REQUEST;
 			} else {
 				debug_info("ERROR: unknown result value '%s'", result_value);
 			}
@@ -205,10 +208,15 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
-		debug_info("success");
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+
 	plist_free(dict);
 	dict = NULL;
 	return ret;
@@ -243,8 +251,13 @@ diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t cli
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
 
 	plist_free(dict);
@@ -282,8 +295,13 @@ static diagnostics_relay_error_t internal_diagnostics_relay_action(diagnostics_r
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
 
 	plist_free(dict);
@@ -348,9 +366,15 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+
 	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
 		plist_free(dict);
 		return ret;
@@ -384,9 +408,15 @@ diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_rela
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+
 	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
 		plist_free(dict);
 		return ret;
@@ -423,9 +453,15 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_r
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+
 	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
 		plist_free(dict);
 		return ret;
@@ -459,9 +495,15 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_r
 		return DIAGNOSTICS_RELAY_E_PLIST_ERROR;
 	}
 
-	if (diagnostics_relay_check_result(dict) == RESULT_SUCCESS) {
+	int check = diagnostics_relay_check_result(dict);
+	if (check == RESULT_SUCCESS) {
 		ret = DIAGNOSTICS_RELAY_E_SUCCESS;
+	} else if (check == RESULT_UNKNOWN_REQUEST) {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST;
+	} else {
+		ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+
 	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
 		plist_free(dict);
 		return ret;
