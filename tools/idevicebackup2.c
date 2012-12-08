@@ -1116,11 +1116,12 @@ static void print_usage(int argc, char **argv)
 	printf("commands:\n");
 	printf("  backup\tcreate backup for the device\n");
 	printf("  restore\trestore last backup to the device\n");
-	printf("    --system\trestore system files, too.\n");
-	printf("    --reboot\treboot the system when done.\n");
-	printf("    --copy\tcreate a copy of backup folder before restoring.\n");
-	printf("    --settings\trestore device settings from the backup.\n");
-	printf("    --remove\tremove items which are not being restored\n");
+	printf("    --system\t\trestore system files, too.\n");
+	printf("    --reboot\t\treboot the system when done.\n");
+	printf("    --copy\t\tcreate a copy of backup folder before restoring.\n");
+	printf("    --settings\t\trestore device settings from the backup.\n");
+	printf("    --remove\t\tremove items which are not being restored\n");
+	printf("    --password PWD\tsupply the password of the source backup\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n\n");
@@ -1142,7 +1143,8 @@ int main(int argc, char *argv[])
 	int cmd = -1;
 	int cmd_flags = 0;
 	int is_full_backup = 0;
-	char *backup_directory = NULL;
+	char* backup_directory = NULL;
+	char* backup_password = NULL;
 	struct stat st;
 	plist_t node_tmp = NULL;
 	plist_t info_plist = NULL;
@@ -1205,6 +1207,17 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "--remove")) {
 			cmd_flags |= CMD_FLAG_RESTORE_REMOVE_ITEMS;
+		}
+		else if (!strcmp(argv[i], "--password")) {
+			i++;
+			if (!argv[i]) {
+				print_usage(argc, argv);
+				return 0;
+			}
+			if (backup_password)
+				free(backup_password);
+			backup_password = strdup(argv[i]);
+			continue;
 		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
@@ -1471,7 +1484,11 @@ checkpoint:
 			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0 ? "Yes":"No"));
 			if (cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS)
 				plist_dict_insert_item(opts, "RemoveItemsNotRestored", plist_new_bool(1));
-			PRINT_VERBOSE(1, "Remove items that are not restored: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS) ? "Yes":"No"));
+				PRINT_VERBOSE(1, "Remove items that are not restored: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS) ? "Yes":"No"));
+			if (backup_password != NULL) {
+				plist_dict_insert_item(opts, "Password", plist_new_string(backup_password));
+			}
+			PRINT_VERBOSE(1, "Backup password: %s\n", (backup_password == NULL ? "No":"Yes"));
 
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, source_udid, opts);
 			plist_free(opts);
