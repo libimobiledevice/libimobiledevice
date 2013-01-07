@@ -760,6 +760,52 @@ static void mb2_handle_send_files(plist_t message, const char *backup_dir)
 	}
 }
 
+static int mb2_receive_filename(char** filename)
+{
+	uint32_t nlen = 0;
+	uint32_t rlen = 0;
+
+	do {
+		nlen = 0;
+		rlen = 0;
+		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &rlen);
+		nlen = be32toh(nlen);
+
+		if ((nlen == 0) && (rlen == 4)) {
+			// a zero length means no more files to receive
+			return 0;
+		} else if(rlen == 0) {
+			// device needs more time, waiting...
+			continue;
+		} else if (nlen > 4096) {
+			// filename length is too large
+			printf("ERROR: %s: too large filename length (%d)!\n", __func__, nlen);
+			return 0;
+		}
+
+		if (*filename != NULL) {
+			free(*filename);
+			*filename = NULL;
+		}
+
+		*filename = (char*)malloc(nlen+1);
+
+		rlen = 0;
+		mobilebackup2_receive_raw(mobilebackup2, *filename, nlen, &rlen);
+		if (rlen != nlen) {
+			printf("ERROR: %s: could not read filename\n", __func__);
+			return 0;
+		}
+
+		char* p = *filename;
+		p[rlen] = 0;
+
+		break;
+	} while(1 && !quit_flag);
+
+	return nlen;
+}
+
 static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 {
 	uint64_t backup_real_size = 0;
@@ -792,48 +838,30 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 	do {
 		if (quit_flag)
 			break;
-		r = 0;
-		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
-		nlen = be32toh(nlen);
+
+		nlen = mb2_receive_filename(&dname);
 		if (nlen == 0) {
-			// we're done here
-			break;
-		} else if (nlen > 4096) {
-			// too very long path
-			printf("ERROR: %s: too long device filename (%d)!\n", __func__, nlen);
 			break;
 		}
-		if (dname != NULL)
-			free(dname);
-		dname = (char*)malloc(nlen+1);
-		r = 0;
-		mobilebackup2_receive_raw(mobilebackup2, dname, nlen, &r);
-		if (r != nlen) {
-			printf("ERROR: %s: could not read device filename\n", __func__);
+
+		nlen = mb2_receive_filename(&fname);
+		if (!nlen) {
 			break;
 		}
-		dname[r] = 0;
-		nlen = 0;
-		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
-		nlen = be32toh(nlen);
-		if (nlen == 0) {
-			printf("ERROR: %s: zero-length backup filename!\n", __func__);
-			break;
-		} else if (nlen > 4096) {
-			printf("ERROR: %s: too long backup filename (%d)!\n", __func__, nlen);
-			break;
-		}
-		fname = (char*)malloc(nlen+1);
-		mobilebackup2_receive_raw(mobilebackup2, fname, nlen, &r);
-		if (r != nlen) {
-			printf("ERROR: %s: could not receive backup filename!\n", __func__);
-			break;
-		}
-		fname[r] = 0;
-		if (bname != NULL)
+
+		if (bname != NULL) {
 			free(bname);
+			bname = NULL;
+		}
+
 		bname = build_path(backup_dir, fname, NULL);
-		free(fname);
+
+		if (fname != NULL) {
+			free(fname);
+			fname = NULL;
+		}
+
+		r = 0;
 		nlen = 0;
 		mobilebackup2_receive_raw(mobilebackup2, (char*)&nlen, 4, &r);
 		if (r != 4) {
@@ -841,8 +869,10 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			break;
 		}
 		nlen = be32toh(nlen);
+
 		last_code = code;
 		code = 0;
+
 		mobilebackup2_receive_raw(mobilebackup2, &code, 1, &r);
 		if (r != 1) {
 			printf("ERROR: %s: could not receive code!\n", __func__);
@@ -914,6 +944,9 @@ static int mb2_handle_receive_files(plist_t message, const char *backup_dir)
 			free(msg);
 		}
 	} while (1);
+
+	if (fname != NULL)
+		free(fname);
 
 	/* if there are leftovers to read, finish up cleanly */
 	if ((int)nlen-1 > 0) {
