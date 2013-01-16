@@ -549,6 +549,35 @@ static void print_progress(uint64_t current, uint64_t total)
 		PRINT_VERBOSE(1, "\n");
 }
 
+static double overall_progress = 0;
+
+static void mb2_set_overall_progress(double progress)
+{
+	if (progress > 0.0)
+		overall_progress = progress;
+}
+
+static void mb2_set_overall_progress_from_message(plist_t message, char* identifier)
+{
+	plist_t node = NULL;
+	double progress = 0.0;
+
+	if (!strcmp(identifier, "DLMessageDownloadFiles")) {
+		node = plist_array_get_item(message, 3);
+	} else if (!strcmp(identifier, "DLMessageUploadFiles")) {
+		node = plist_array_get_item(message, 2);
+	} else if (!strcmp(identifier, "DLMessageMoveFiles") || !strcmp(identifier, "DLMessageMoveItems")) {
+		node = plist_array_get_item(message, 3);
+	} else if (!strcmp(identifier, "DLMessageRemoveFiles") || !strcmp(identifier, "DLMessageRemoveItems")) {
+		node = plist_array_get_item(message, 3);
+	}
+
+	if (node != NULL) {
+		plist_get_real_val(node, &progress);
+		mb2_set_overall_progress(progress);
+	}
+}
+
 static void mb2_multi_status_add_file_error(plist_t status_dict, const char *path, int error_code, const char *error_message)
 {
 	if (!status_dict) return;
@@ -1859,9 +1888,11 @@ checkpoint:
 
 				if (!strcmp(dlmsg, "DLMessageDownloadFiles")) {
 					/* device wants to download files from the computer */
+					mb2_set_overall_progress_from_message(message, dlmsg);
 					mb2_handle_send_files(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageUploadFiles")) {
 					/* device wants to send files to the computer */
+					mb2_set_overall_progress_from_message(message, dlmsg);
 					file_count += mb2_handle_receive_files(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace")) {
 					/* device wants to know how much disk space is available on the computer */
@@ -1888,6 +1919,7 @@ checkpoint:
 					mb2_handle_make_directory(message, backup_directory);
 				} else if (!strcmp(dlmsg, "DLMessageMoveFiles") || !strcmp(dlmsg, "DLMessageMoveItems")) {
 					/* perform a series of rename operations */
+					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t moves = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_dict_get_size(moves);
 					PRINT_VERBOSE(1, "Moving %d file%s\n", cnt, (cnt == 1) ? "" : "s");
@@ -1941,6 +1973,7 @@ checkpoint:
 						printf("Could not send status response, error %d\n", err);
 					}
 				} else if (!strcmp(dlmsg, "DLMessageRemoveFiles") || !strcmp(dlmsg, "DLMessageRemoveItems")) {
+					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t removes = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_array_get_size(removes);
 					PRINT_VERBOSE(1, "Removing %d file%s\n", cnt, (cnt == 1) ? "" : "s");
@@ -2072,16 +2105,9 @@ checkpoint:
 				}
 
 				/* print status */
-				if (plist_array_get_size(message) >= 3) {
-					plist_t pnode = plist_array_get_item(message, 3);
-					if (pnode && (plist_get_node_type(pnode) == PLIST_REAL)) {
-						double progress = 0.0;
-						plist_get_real_val(pnode, &progress);
-						if (progress > 0) {
-							print_progress_real(progress, 0);
-							PRINT_VERBOSE(1, " Finished\n");
-						}
-					}
+				if (overall_progress > 0) {
+					print_progress_real(overall_progress, 0);
+					PRINT_VERBOSE(1, " Finished\n");
 				}
 
 				if (message)
