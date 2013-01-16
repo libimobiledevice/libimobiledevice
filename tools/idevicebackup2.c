@@ -1456,6 +1456,7 @@ int main(int argc, char *argv[])
 		source_udid = strdup(udid);
 	}
 
+	uint8_t is_encrypted = 0;
 	char *info_path = NULL; 
 	if (cmd != CMD_CHANGEPW) {
 		/* backup directory must contain an Info.plist */
@@ -1466,8 +1467,41 @@ int main(int argc, char *argv[])
 				printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
 				return -1;
 			}
+			char* manifest_path = build_path(backup_directory, source_udid, "Manifest.plist", NULL);
+			if (stat(manifest_path, &st) != 0) {
+				free(info_path);
+			}
+			plist_t manifest_plist = NULL;
+			plist_read_from_filename(&manifest_plist, manifest_path);
+			if (!manifest_plist) {
+				free(info_path);
+				free(manifest_path);
+				printf("ERROR: Backup directory \"%s\" is invalid. No Manifest.plist found for UDID %s.\n", backup_directory, source_udid);
+				return -1;
+			}
+			node_tmp = plist_dict_get_item(manifest_plist, "IsEncrypted");
+			if (node_tmp && (plist_get_node_type(node_tmp) == PLIST_BOOLEAN)) {
+				plist_get_bool_val(node_tmp, &is_encrypted);
+			}
+			plist_free(manifest_plist);
+			free(manifest_path);
 		}
 		PRINT_VERBOSE(1, "Backup directory is \"%s\"\n", backup_directory);
+	}
+
+	if (is_encrypted) {
+		PRINT_VERBOSE(1, "This is an encrypted backup.\n");
+		if (backup_password == NULL) {
+			backup_password = ask_for_password("Enter backup password", 0);
+			if (!backup_password || (strlen(backup_password) == 0)) {
+				if (backup_password) {
+					free(backup_password);
+				}
+				idevice_free(device);
+				printf("ERROR: a backup password is required to restore an encrypted backup. Cannot continue.\n");
+				return -1;
+			}
+		}
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicebackup")) {
