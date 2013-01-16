@@ -49,6 +49,7 @@
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #else
+#include <termios.h>
 #include <sys/statvfs.h>
 #endif
 
@@ -73,6 +74,7 @@ enum cmd_mode {
 	CMD_INFO,
 	CMD_LIST,
 	CMD_UNBACK,
+	CMD_CHANGEPW,
 	CMD_LEAVE
 };
 
@@ -86,14 +88,21 @@ enum cmd_flags {
 	CMD_FLAG_RESTORE_REBOOT             = (1 << 2),
 	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 3),
 	CMD_FLAG_RESTORE_SETTINGS           = (1 << 4),
-	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5)
+	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5),
+	CMD_FLAG_ENCRYPTION_ENABLE          = (1 << 6),
+	CMD_FLAG_ENCRYPTION_DISABLE         = (1 << 7),
+	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8)
 };
+
+static int backup_domain_changed = 0;
 
 static void notify_cb(const char *notification, void *userdata)
 {
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
 		PRINT_VERBOSE(1, "User has cancelled the backup process on the device.\n");
 		quit_flag++;
+	} else if (!strcmp(notification, NP_BACKUP_DOMAIN_CHANGED)) {
+		backup_domain_changed = 1;
 	} else {
 		PRINT_VERBOSE(1, "Unhandled notification '%s' (TODO: implement)\n", notification);
 	}
@@ -1131,6 +1140,72 @@ static void mb2_copy_directory_by_path(const char *src, const char *dst)
 	}
 }
 
+#ifdef WIN32
+#define BS_CC '\b'
+#define my_getch getch
+#else
+#define BS_CC 0x7f
+static int my_getch()
+{
+	struct termios oldt, newt;
+	int ch;
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	ch = getchar();
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+	return ch;
+}
+#endif
+
+static void get_hidden_input(char *buf, int maxlen)
+{
+	int pwlen = 0;
+	int c;
+
+	while ((c = my_getch())) {
+		if ((c == '\r') || (c == '\n')) {
+			break;
+		} else if (isprint(c)) {
+			if (pwlen < maxlen-1)
+				buf[pwlen++] = c;
+			fputc('*', stderr);
+		} else if (c == BS_CC) {
+			if (pwlen > 0) {
+				fputs("\b \b", stderr);
+				pwlen--;
+			}
+		}
+	}
+	buf[pwlen] = 0;
+}
+
+static char* ask_for_password(const char* msg, int type_again)
+{
+	char pwbuf[256];
+	
+	fprintf(stderr, "%s: ", msg);
+	fflush(stderr);
+	get_hidden_input(pwbuf, 256);
+	fputc('\n', stderr);
+	
+	if (type_again) {
+		char pwrep[256];
+		
+		fprintf(stderr, "%s (repeat): ", msg);
+		fflush(stderr);
+		get_hidden_input(pwrep, 256);
+		fputc('\n', stderr);
+
+		if (strcmp(pwbuf, pwrep) != 0) {
+			printf("ERROR: passwords don't match\n");
+			return NULL;
+		}
+	}
+	return strdup(pwbuf);
+}
+
 /**
  * signal handler function for cleaning up properly
  */
@@ -1157,7 +1232,12 @@ static void print_usage(int argc, char **argv)
 	printf("    --password PWD\tsupply the password of the source backup\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
-	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n\n");
+	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n");
+	printf("  encryption on|off [PWD]\tenable or disable backup encryption\n");
+	printf("    NOTE: if password is omitted it will be requested interactively\n");
+	printf("  changepw [OLD NEW]  change backup password on target device\n");
+	printf("    NOTE: if no passwords are given the change will be performed interactively.\n");
+	printf("\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
@@ -1178,6 +1258,7 @@ int main(int argc, char *argv[])
 	int is_full_backup = 0;
 	char* backup_directory = NULL;
 	char* backup_password = NULL;
+	char* newpw = NULL;
 	struct stat st;
 	plist_t node_tmp = NULL;
 	plist_t info_plist = NULL;
@@ -1263,6 +1344,65 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "unback")) {
 			cmd = CMD_UNBACK;
 		}
+		else if (!strcmp(argv[i], "encryption")) {
+			cmd = CMD_CHANGEPW;
+			i++;
+			if (!argv[i]) {
+				printf("No argument given for encryption command; requires either 'on' or 'off'.\n");
+				print_usage(argc, argv);
+				return 0;	
+			}
+			if (!strcmp(argv[i], "on")) {
+				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;	
+			} else if (!strcmp(argv[i], "off")) {
+				cmd_flags |= CMD_FLAG_ENCRYPTION_DISABLE;	
+			} else {
+				printf("Invalid argument '%s' for encryption command; must be either 'on' or 'off'.\n", argv[i]);
+			}
+			// check if a password was given on the command line
+			if (newpw) {
+				free(newpw);
+				newpw = NULL;
+			}
+			if (backup_password) {
+				free(backup_password);
+				backup_password = NULL;
+			}	
+			i++;
+			if (argv[i]) {
+				if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
+					newpw = strdup(argv[i]);
+				} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
+					backup_password = strdup(argv[i]);
+				}
+			}
+			continue;
+		}
+		else if (!strcmp(argv[i], "changepw")) {
+			cmd = CMD_CHANGEPW;
+			cmd_flags |= CMD_FLAG_ENCRYPTION_CHANGEPW;	
+			// check if passwords were given on command line
+			if (newpw) {
+				free(newpw);
+				newpw = NULL;
+			}
+			if (backup_password) {
+				free(backup_password);
+				backup_password = NULL;
+			}		
+			i++;
+			if (argv[i]) {
+				backup_password = strdup(argv[i]);
+				i++;
+				if (!argv[i]) {
+					printf("Old and new passwords have to be passed as arguments for the changepw command\n");
+					print_usage(argc, argv);
+					return 0;
+				}
+				newpw = strdup(argv[i]);
+			}
+			continue;
+		}
 		else if (backup_directory == NULL) {
 			backup_directory = argv[i];
 		}
@@ -1279,16 +1419,20 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (backup_directory == NULL) {
-		printf("No target backup directory specified.\n");
-		print_usage(argc, argv);
-		return -1;
-	}
+	if (cmd == CMD_CHANGEPW) {
+		backup_directory = strdup(".this_folder_is_not_present_on_purpose");
+	} else {
+		if (backup_directory == NULL) {
+			printf("No target backup directory specified.\n");
+			print_usage(argc, argv);
+			return -1;
+		}
 
-	/* verify if passed backup directory exists */
-	if (stat(backup_directory, &st) != 0) {
-		printf("ERROR: Backup directory \"%s\" does not exist!\n", backup_directory);
-		return -1;
+		/* verify if passed backup directory exists */
+		if (stat(backup_directory, &st) != 0) {
+			printf("ERROR: Backup directory \"%s\" does not exist!\n", backup_directory);
+			return -1;
+		}
 	}
 
 	if (udid) {
@@ -1312,17 +1456,19 @@ int main(int argc, char *argv[])
 		source_udid = strdup(udid);
 	}
 
-	/* backup directory must contain an Info.plist */
-	char *info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
-	if (cmd == CMD_RESTORE) {
-		if (stat(info_path, &st) != 0) {
-			free(info_path);
-			printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
-			return -1;
+	char *info_path = NULL; 
+	if (cmd != CMD_CHANGEPW) {
+		/* backup directory must contain an Info.plist */
+		info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
+		if (cmd == CMD_RESTORE) {
+			if (stat(info_path, &st) != 0) {
+				free(info_path);
+				printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
+				return -1;
+			}
 		}
+		PRINT_VERBOSE(1, "Backup directory is \"%s\"\n", backup_directory);
 	}
-
-	PRINT_VERBOSE(1, "Backup directory is \"%s\"\n", backup_directory);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicebackup")) {
 		idevice_free(device);
@@ -1384,7 +1530,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* verify existing Info.plist */
-		if (stat(info_path, &st) == 0) {
+		if (info_path && (stat(info_path, &st) == 0)) {
 			PRINT_VERBOSE(1, "Reading Info.plist from backup.\n");
 			plist_read_from_filename(&info_plist, info_path);
 
@@ -1431,6 +1577,16 @@ int main(int argc, char *argv[])
 				cmd = CMD_LEAVE;
 			}
 		}
+		uint8_t willEncrypt = 0;
+		node_tmp = NULL;
+		lockdownd_get_value(client, "com.apple.mobile.backup", "WillEncrypt", &node_tmp);
+		if (node_tmp) {
+			if (plist_get_node_type(node_tmp) == PLIST_BOOLEAN) {
+				plist_get_bool_val(node_tmp, &willEncrypt);
+			}
+			plist_free(node_tmp);
+			node_tmp = NULL;
+		}
 
 checkpoint:
 
@@ -1472,8 +1628,12 @@ checkpoint:
 			info_plist = NULL;
 
 			/* request backup from device with manifest from last backup */
-			PRINT_VERBOSE(1, "Requesting backup from device...\n");
-
+			if (willEncrypt) {
+				PRINT_VERBOSE(1, "Backup will be encrypted.\n");
+			} else {
+				PRINT_VERBOSE(1, "Backup will be unencrypted.\n");
+			}
+			PRINT_VERBOSE(1, "Requesting backup from device...\n");	
 			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				if (is_full_backup) {
@@ -1560,6 +1720,76 @@ checkpoint:
 				cmd = CMD_LEAVE;
 			}
 			break;
+			case CMD_CHANGEPW:
+			opts = plist_new_dict();
+			plist_dict_insert_item(opts, "TargetIdentifier", plist_new_string(udid));	
+			if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
+				if (!willEncrypt) {
+					if (!newpw) {
+						newpw = ask_for_password("Enter new backup password", 1);
+					}
+					if (!newpw) {
+						printf("No backup password given. Aborting.\n");
+					}
+				} else {
+					printf("ERROR: Backup encryption is already enabled. Aborting.\n");
+					cmd = CMD_LEAVE;
+					if (newpw) {
+						free(newpw);
+						newpw = NULL;
+					}
+				}
+			} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
+				if (willEncrypt) {
+					if (!backup_password) {
+						backup_password = ask_for_password("Enter current backup password", 0);
+					}
+				} else {
+					printf("ERROR: Backup encryption is not enabled. Aborting.\n");
+					cmd = CMD_LEAVE;
+					if (backup_password) {
+						free(backup_password);
+						backup_password = NULL;
+					}
+				}
+			} else if (cmd_flags & CMD_FLAG_ENCRYPTION_CHANGEPW) {
+				if (willEncrypt) {
+					if (!backup_password) {
+						backup_password = ask_for_password("Enter old backup password", 0);
+						newpw = ask_for_password("Enter new backup password", 1);
+					}
+				} else {
+					printf("ERROR: Backup encryption is not enabled so can't change password. Aborting.\n");
+					cmd = CMD_LEAVE;
+					if (newpw) {
+						free(newpw);
+						newpw = NULL;
+					}	
+					if (backup_password) {
+						free(backup_password);
+						backup_password = NULL;
+					}
+				}
+			}
+			if (newpw) {
+				plist_dict_insert_item(opts, "NewPassword", plist_new_string(newpw));
+			}
+			if (backup_password) {
+				plist_dict_insert_item(opts, "OldPassword", plist_new_string(backup_password));
+			}
+			if (newpw || backup_password) {
+				mobilebackup2_send_message(mobilebackup2, "ChangePassword", opts);
+				/*if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
+					int retr = 10;
+					while ((retr-- >= 0) && !backup_domain_changed) {
+						sleep(1);
+					}
+				}*/
+			} else {
+				cmd = CMD_LEAVE;
+			}
+			plist_free(opts);
+			break;
 			default:
 			break;
 		}
@@ -1592,7 +1822,7 @@ checkpoint:
 					sleep(2);
 					goto files_out;
 				}
-				
+
 				if (!strcmp(dlmsg, "DLMessageDownloadFiles")) {
 					/* device wants to download files from the computer */
 					mb2_handle_send_files(message, backup_directory);
@@ -1858,6 +2088,27 @@ files_out:
 				} else {
 					PRINT_VERBOSE(1, "The files can now be found in the \"_unback_\" directory.\n");
 					PRINT_VERBOSE(1, "Unback Successful.\n");
+				}
+				break;
+				case CMD_CHANGEPW:
+				if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
+					if (operation_ok) {
+						PRINT_VERBOSE(1, "Backup encryption has been enabled successfully.\n");
+					} else {
+						PRINT_VERBOSE(1, "Could not enable backup encryption.\n");
+					}
+				} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
+					if (operation_ok) {
+						PRINT_VERBOSE(1, "Backup encryption has been disabled successfully.\n"); 
+					} else {
+						PRINT_VERBOSE(1, "Could not disable backup encryption.\n");
+					}
+				} else if (cmd_flags & CMD_FLAG_ENCRYPTION_CHANGEPW) {
+					if (operation_ok) {
+						PRINT_VERBOSE(1, "Backup encryption password has been changed successfully.\n");
+					} else {
+						PRINT_VERBOSE(1, "Could not change backup encryption password.\n");
+					}
 				}
 				break;
 				case CMD_RESTORE:
