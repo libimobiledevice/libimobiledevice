@@ -1258,7 +1258,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --copy\t\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\t\trestore device settings from the backup.\n");
 	printf("    --remove\t\tremove items which are not being restored\n");
-	printf("    --password PWD\tsupply the password of the source backup\n");
+	printf("    --password PWD\tsupply the password of the source backup\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n");
@@ -1697,7 +1697,7 @@ checkpoint:
 			} else {
 				PRINT_VERBOSE(1, "Backup will be unencrypted.\n");
 			}
-			PRINT_VERBOSE(1, "Requesting backup from device...\n");	
+			PRINT_VERBOSE(1, "Requesting backup from device...\n");
 			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, NULL);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				if (is_full_backup) {
