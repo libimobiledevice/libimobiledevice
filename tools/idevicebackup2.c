@@ -1312,7 +1312,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
-				return 0;
+				return -1;
 			}
 			udid = strdup(argv[i]);
 			continue;
@@ -1321,7 +1321,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i] || (strlen(argv[i]) != 40)) {
 				print_usage(argc, argv);
-				return 0;
+				return -1;
 			}
 			source_udid = strdup(argv[i]);
 			continue;
@@ -1355,7 +1355,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i]) {
 				print_usage(argc, argv);
-				return 0;
+				return -1;
 			}
 			if (backup_password)
 				free(backup_password);
@@ -1379,7 +1379,7 @@ int main(int argc, char *argv[])
 			if (!argv[i]) {
 				printf("No argument given for encryption command; requires either 'on' or 'off'.\n");
 				print_usage(argc, argv);
-				return 0;	
+				return -1;	
 			}
 			if (!strcmp(argv[i], "on")) {
 				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;	
@@ -1426,7 +1426,7 @@ int main(int argc, char *argv[])
 				if (!argv[i]) {
 					printf("Old and new passwords have to be passed as arguments for the changepw command\n");
 					print_usage(argc, argv);
-					return 0;
+					return -1;
 				}
 				newpw = strdup(argv[i]);
 			}
@@ -1437,7 +1437,7 @@ int main(int argc, char *argv[])
 		}
 		else {
 			print_usage(argc, argv);
-			return 0;
+			return -1;
 		}
 	}
 
