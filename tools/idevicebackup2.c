@@ -1285,6 +1285,7 @@ int main(int argc, char *argv[])
 	int cmd = -1;
 	int cmd_flags = 0;
 	int is_full_backup = 0;
+	int result_code = -1;
 	char* backup_directory = NULL;
 	char* backup_password = NULL;
 	char* newpw = NULL;
@@ -2075,6 +2076,9 @@ checkpoint:
 						error_code = (uint32_t)ec;
 						if (error_code == 0) {
 							operation_ok = 1;
+							result_code = 0;
+						} else {
+							result_code = -error_code;
 						}
 					}
 					nn = plist_dict_get_item(node_tmp, "ErrorDescription");
@@ -2132,13 +2136,13 @@ files_out:
 			switch (cmd) {
 				case CMD_BACKUP:
 					PRINT_VERBOSE(1, "Received %d files from device.\n", file_count);
-					if (mb2_status_check_snapshot_state(backup_directory, udid, "finished")) {
+					if (operation_ok && mb2_status_check_snapshot_state(backup_directory, udid, "finished")) {
 						PRINT_VERBOSE(1, "Backup Successful.\n");
 					} else {
 						if (quit_flag) {
 							PRINT_VERBOSE(1, "Backup Aborted.\n");
 						} else {
-							PRINT_VERBOSE(1, "Backup Failed.\n");
+							PRINT_VERBOSE(1, "Backup Failed (Error Code %d).\n", -result_code);
 						}
 					}
 				break;
@@ -2177,7 +2181,7 @@ files_out:
 				if (operation_ok) {
 					PRINT_VERBOSE(1, "Restore Successful.\n");
 				} else {
-					PRINT_VERBOSE(1, "Restore Failed.\n");
+					PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
 				}
 				
 				break;
@@ -2231,6 +2235,6 @@ files_out:
 		free(source_udid);
 	}
 
-	return 0;
+	return result_code;
 }
 
