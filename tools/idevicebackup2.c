@@ -1258,14 +1258,15 @@ static void print_usage(int argc, char **argv)
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n");
 	printf("  encryption on|off [PWD]\tenable or disable backup encryption\n");
-	printf("    NOTE: if password is omitted it will be requested interactively\n");
+	printf("    NOTE: password will be requested in interactive mode if omitted\n");
 	printf("  changepw [OLD NEW]  change backup password on target device\n");
-	printf("    NOTE: if no passwords are given the change will be performed interactively.\n");
+	printf("    NOTE: passwords will be requested in interactive mode if omitted\n");
 	printf("\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
+	printf("  -i, --interactive\trequest passwords interactively\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }
@@ -1282,6 +1283,7 @@ int main(int argc, char *argv[])
 	int is_full_backup = 0;
 	int result_code = -1;
 	char* backup_directory = NULL;
+	int interactive_mode = 0;
 	char* backup_password = NULL;
 	char* newpw = NULL;
 	struct stat st;
@@ -1320,6 +1322,10 @@ int main(int argc, char *argv[])
 				return -1;
 			}
 			source_udid = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--interactive")) {
+			interactive_mode = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -1484,7 +1490,12 @@ int main(int argc, char *argv[])
 
 	uint8_t is_encrypted = 0;
 	char *info_path = NULL; 
-	if (cmd != CMD_CHANGEPW) {
+	if (cmd == CMD_CHANGEPW) {
+		if (!interactive_mode && (!backup_password || !newpw)) {
+			printf("ERROR: Can't get password input in non-interactive mode. Either pass password(s) on the command line, or enable interactive mode with -i or --interactive.\n");
+			return -1;
+		}
+	} else {
 		/* backup directory must contain an Info.plist */
 		info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
 		if (cmd == CMD_RESTORE) {
@@ -1518,7 +1529,9 @@ int main(int argc, char *argv[])
 	if (is_encrypted) {
 		PRINT_VERBOSE(1, "This is an encrypted backup.\n");
 		if (backup_password == NULL) {
-			backup_password = ask_for_password("Enter backup password", 0);
+			if (interactive_mode) {
+				backup_password = ask_for_password("Enter backup password", 0);
+			}
 			if (!backup_password || (strlen(backup_password) == 0)) {
 				if (backup_password) {
 					free(backup_password);
