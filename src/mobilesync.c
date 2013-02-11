@@ -172,6 +172,7 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
  * @param computer_data_class_version The version of the data class storage on the computer
  * @param sync_type A pointer to store the sync type reported by the device_anchor
  * @param device_data_class_version The version of the data class storage on the device
+ * @param error_description A pointer to store an error message if reported by the device
  *
  * @retval MOBILESYNC_E_SUCCESS on success
  * @retval MOBILESYNC_E_INVALID_ARG if one of the parameters is invalid
@@ -180,7 +181,7 @@ mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
  * @retval MOBILESYNC_E_CANCELLED if the device explicitly cancelled the
  * sync request
  */
-mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version)
+mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description)
 {
 	if (!client || client->data_class || !data_class ||
 		!anchors || !anchors->computer_anchor) {
@@ -192,6 +193,8 @@ mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data
 	char *sync_type_str = NULL;
 	plist_t msg = NULL;
 	plist_t response_type_node = NULL;
+
+	*error_description = NULL;
 
 	msg = plist_new_array();
 	plist_array_append_item(msg, plist_new_string("SDMessageSyncDataClassWithDevice"));
@@ -232,23 +235,19 @@ mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data
 		goto out;
 	}
 
+	// did the device refuse to sync with the computer?
 	if (!strcmp(response_type, "SDMessageRefuseToSyncDataClassWithComputer")) {
-		char *reason = NULL;
 		err = MOBILESYNC_E_SYNC_REFUSED;
-		plist_get_string_val(plist_array_get_item(msg, 2), &reason);
-		debug_info("Device refused sync: %s", reason);
-		free(reason);
-		reason = NULL;
+		plist_get_string_val(plist_array_get_item(msg, 2), error_description);
+		debug_info("Device refused sync: %s", error_description);
 		goto out;
 	}
 
+	// did the device cancel the session?
 	if (!strcmp(response_type, "SDMessageCancelSession")) {
-		char *reason = NULL;
 		err = MOBILESYNC_E_CANCELLED;
-		plist_get_string_val(plist_array_get_item(msg, 2), &reason);
-		debug_info("Device cancelled: %s", reason);
-		free(reason);
-		reason = NULL;
+		plist_get_string_val(plist_array_get_item(msg, 2), error_description);
+		debug_info("Device cancelled: %s", error_description);
 		goto out;
 	}
 
