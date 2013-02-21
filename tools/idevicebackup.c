@@ -51,6 +51,7 @@
 #define LOCK_WAIT 200000
 
 #ifdef WIN32
+#include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #endif
 
