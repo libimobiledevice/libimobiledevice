@@ -4,6 +4,7 @@ AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS) ${libpthread_LIBS} $(openssl_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice.la
+libimobiledevice_la_LIBADD = 
 libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
 libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       debug.c debug.h\
@@ -25,3 +26,7 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       misagent.c misagent.h\
 		       restore.c restore.h\
 		       diagnostics_relay.c diagnostics_relay.h
+
+if WIN32
+libimobiledevice_la_LIBADD += -lole32
+endif

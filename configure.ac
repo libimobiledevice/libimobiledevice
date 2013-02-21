@@ -67,6 +67,22 @@ if test "x$ac_cv_have_endian" = "xno"; then
   fi
 fi
 
+# Check for operating system
+AC_MSG_CHECKING([whether to enable WIN32 build settings])
+case ${host_os} in
+  *mingw32*|*cygwin*)
+    win32=true
+    AC_MSG_RESULT([yes])
+    AC_CHECK_TOOL([WINDRES], [windres], AC_MSG_ERROR([windres not found]))
+    AC_SUBST(WINDRES)
+    ;;
+  *)
+    win32=false
+    AC_MSG_RESULT([no])
+    ;;
+esac
+AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+
 # Cython Python Bindings
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
