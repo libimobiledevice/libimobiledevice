@@ -182,6 +182,8 @@ webinspector_error_t webinspector_send(webinspector_client_t client, plist_t pli
 	plist_dict_insert_item(outplist, "WIRFinalMessageKey", plist_new_data(buf, length));
 	free(buf);
 
+	debug_plist(outplist);
+
 	res = webinspector_error(property_list_service_send_binary_plist(client->parent, outplist));
 	plist_free(outplist);
 	if (res != WEBINSPECTOR_E_SUCCESS) {
@@ -256,6 +258,8 @@ webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t cli
 		debug_info("Error restoring the inner plist.");
 		return WEBINSPECTOR_E_PLIST_ERROR;
 	}
+
+	debug_plist(*plist);
 
 	return res;
 }
