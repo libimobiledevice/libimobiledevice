@@ -95,7 +95,7 @@ static void *thread_device_to_client(void *data)
 			}
 		} else {
 			/* send to device */
-			debug("%s: sending data to device...\n", __func__);
+			debug("%s: sending data to client...\n", __func__);
 			sent = socket_send(socket_info->client_fd, buffer, recv_len);
 			if (sent < recv_len) {
 				if (sent <= 0) {
