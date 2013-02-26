@@ -69,7 +69,7 @@ static void afc_unlock(afc_client_t client)
  * Makes a connection to the AFC service on the device using the given
  * connection.
  *
- * @param serviceclient A connected service client
+ * @param service_client A connected service client
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
  * 
@@ -77,13 +77,13 @@ static void afc_unlock(afc_client_t client)
  *  invalid, or AFC_E_NO_MEM if there is a memory allocation problem.
  */
 
-afc_error_t afc_client_new_with_service_client(service_client_t serviceclient, afc_client_t *client)
+afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client)
 {
-	if (!serviceclient)
+	if (!service_client)
 		return AFC_E_INVALID_ARG;
 
 	afc_client_t client_loc = (afc_client_t) malloc(sizeof(struct afc_client_private));
-	client_loc->parent = serviceclient;
+	client_loc->parent = service_client;
 	client_loc->free_parent = 0;
 
 	/* allocate a packet */

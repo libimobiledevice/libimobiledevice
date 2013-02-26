@@ -103,4 +103,6 @@ enum {
 	AFC_OP_SET_FILE_TIME   = 0x0000001E 	/* set st_mtime */
 };
 
+afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client);
+
 #endif
