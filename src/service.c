@@ -97,16 +97,18 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  * @param client Pointer that will point to a newly allocated service_client_t
  *     upon successful return. Must be freed using service_client_free() after
  *     use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
  *
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
  */
-service_error_t service_client_start_service(idevice_t device, const char* service_name, service_client_t *client)
+service_error_t service_client_start_service(idevice_t device, const char* service_name, service_client_t *client, const char* label)
 {
 	*client = NULL;
 
 	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
 		debug_info("Could not create a lockdown client.");
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
