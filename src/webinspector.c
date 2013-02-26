@@ -104,16 +104,18 @@ webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service
  * @param client Pointer that will point to a newly allocated
  *     webinspector_client_t upon successful return. Must be freed using
  *     webinspector_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
  *
  * @return WEBINSPECTOR_E_SUCCESS on success, or an WEBINSPECTOR_E_* error
  *     code otherwise.
  */
-webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client)
+webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
 {
 	*client = NULL;
 
 	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
 		idevice_free(device);
 		debug_info("Could not create a lockdown client.");
 		return WEBINSPECTOR_E_UNKNOWN_ERROR;

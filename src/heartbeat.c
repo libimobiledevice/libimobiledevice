@@ -104,16 +104,18 @@ heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descr
  * @param client Pointer that will point to a newly allocated
  *     heartbeat_client_t upon successful return. Must be freed using
  *     heartbeat_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
  *
  * @return HEARTBEAT_E_SUCCESS on success, or an HEARTBEAT_E_* error
  *     code otherwise.
  */
-heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client)
+heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client, const char* label)
 {
 	*client = NULL;
 
 	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
 		idevice_free(device);
 		debug_info("Could not create a lockdown client.");
 		return HEARTBEAT_E_UNKNOWN_ERROR;
