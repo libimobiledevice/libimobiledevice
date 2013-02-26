@@ -101,7 +101,7 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
  */
-service_error_t service_start_service(idevice_t device, const char* service_name, service_client_t *client)
+service_error_t service_client_start_service(idevice_t device, const char* service_name, service_client_t *client)
 {
 	*client = NULL;
 

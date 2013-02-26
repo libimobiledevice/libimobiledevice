@@ -49,9 +49,8 @@ typedef struct heartbeat_client_private heartbeat_client_private;
 typedef heartbeat_client_private *heartbeat_client_t; /**< The client handle. */
 
 heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descriptor_t service, heartbeat_client_t * client);
+heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client);
 heartbeat_error_t heartbeat_client_free(heartbeat_client_t client);
-
-heartbeat_error_t heartbeat_start_service(idevice_t device, heartbeat_client_t * client);
 
 heartbeat_error_t heartbeat_send(heartbeat_client_t client, plist_t plist);
 heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist);

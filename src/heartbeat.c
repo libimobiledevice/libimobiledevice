@@ -108,7 +108,7 @@ heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descr
  * @return HEARTBEAT_E_SUCCESS on success, or an HEARTBEAT_E_* error
  *     code otherwise.
  */
-heartbeat_error_t heartbeat_start_service(idevice_t device, heartbeat_client_t * client)
+heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client)
 {
 	*client = NULL;
 

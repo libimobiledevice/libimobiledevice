@@ -108,7 +108,7 @@ webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service
  * @return WEBINSPECTOR_E_SUCCESS on success, or an WEBINSPECTOR_E_* error
  *     code otherwise.
  */
-webinspector_error_t webinspector_start_service(idevice_t device, webinspector_client_t * client)
+webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client)
 {
 	*client = NULL;
 
