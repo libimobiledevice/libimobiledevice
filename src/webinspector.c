@@ -74,10 +74,10 @@ webinspector_error_t webinspector_client_new(idevice_t device, uint16_t port, we
 {
 	*client = NULL;
 
-	debug_info("Creating webinspector_client, port = %d.\n", port);
+	debug_info("Creating webinspector_client, port = %d.", port);
 
 	if (!device || port == 0 || !client || *client) {
-		debug_info("Incorrect parameter passed to webinspector_client_new.\n");
+		debug_info("Incorrect parameter passed to webinspector_client_new.");
 		return WEBINSPECTOR_E_INVALID_ARG;
 	}
 
@@ -115,7 +115,7 @@ webinspector_error_t webinspector_start_service(idevice_t device, webinspector_c
 	lockdownd_client_t lckd = NULL;
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
 		idevice_free(device);
-		debug_info("Could not create a lockdown client.\n");
+		debug_info("Could not create a lockdown client.");
 		return WEBINSPECTOR_E_UNKNOWN_ERROR;
 	}
 	
@@ -124,13 +124,13 @@ webinspector_error_t webinspector_start_service(idevice_t device, webinspector_c
 	lockdownd_client_free(lckd);
 
 	if (port <= 0) {
-		debug_info("Could not start webinspector service!\n");
+		debug_info("Could not start webinspector service!");
 		return WEBINSPECTOR_E_UNKNOWN_ERROR;
 	}
 
 	webinspector_error_t res = webinspector_client_new(device, port, client);
 	if (res != WEBINSPECTOR_E_SUCCESS) {
-		debug_info("Could not connect to webinspector! Port: %i, error: %i\n", port, res);
+		debug_info("Could not connect to webinspector! Port: %i, error: %i", port, res);
 		return res;
 	}
 
