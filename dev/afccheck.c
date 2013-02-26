@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
 	idevice_t phone = NULL;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	afc_client_t afc = NULL;
 
 	if (argc > 1 && !strcasecmp(argv[1], "--debug")) {
@@ -111,14 +111,19 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &port) && !port) {
+	if (LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, "com.apple.afc", &service) && !service->port) {
 		lockdownd_client_free(client);
 		idevice_free(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
 		return 1;
 	}
 
-	afc_client_new(phone, port, &afc);
+	afc_client_new(phone, service, &afc);
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
 
 	pthread_t threads[NB_THREADS];
 	param data[NB_THREADS];

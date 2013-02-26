@@ -95,20 +95,20 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
  * Connects to the installation_proxy service on the specified device.
  *
  * @param device The device to connect to
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *     instproxy_client_t upon successful return.
  *
  * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error value
  *     when an error occured.
  */
-instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client)
+instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client)
 {
 	if (!device)
 		return INSTPROXY_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return INSTPROXY_E_CONN_FAILED;
 	}
 

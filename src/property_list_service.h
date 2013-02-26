@@ -21,6 +21,7 @@
 #ifndef PROPERTY_LIST_SERVICE_H
 #define PROPERTY_LIST_SERVICE_H
 
+#include <libimobiledevice/lockdown.h>
 #include "idevice.h"
 
 /* Error Codes */
@@ -41,7 +42,7 @@ typedef struct property_list_service_client_private *property_list_service_clien
 typedef int16_t property_list_service_error_t;
 
 /* creation and destruction */
-property_list_service_error_t property_list_service_client_new(idevice_t device, uint16_t port, property_list_service_client_t *client);
+property_list_service_error_t property_list_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, property_list_service_client_t *client);
 property_list_service_error_t property_list_service_client_free(property_list_service_client_t client);
 
 /* sending */

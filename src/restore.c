@@ -368,8 +368,13 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 
 	restored_error_t ret = RESTORE_E_SUCCESS;
 
+	static struct lockdownd_service_descriptor service = {
+		.port = 0xf27e,
+		.ssl_enabled = 0
+	};
+
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		debug_info("could not connect to restored (device %s)", device->udid);
 		return RESTORE_E_MUX_ERROR;
 	}

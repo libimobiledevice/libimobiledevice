@@ -62,7 +62,7 @@ static webinspector_error_t webinspector_error(property_list_service_error_t err
  * Connects to the webinspector service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will point to a newly allocated
  *     webinspector_client_t upon successful return. Must be freed using
  *     webinspector_client_free() after use.
@@ -70,19 +70,19 @@ static webinspector_error_t webinspector_error(property_list_service_error_t err
  * @return WEBINSPECTOR_E_SUCCESS on success, WEBINSPECTOR_E_INVALID_ARG when
  *     client is NULL, or an WEBINSPECTOR_E_* error code otherwise.
  */
-webinspector_error_t webinspector_client_new(idevice_t device, uint16_t port, webinspector_client_t * client)
+webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client)
 {
 	*client = NULL;
 
-	debug_info("Creating webinspector_client, port = %d.", port);
+	debug_info("Creating webinspector_client, port = %d.", service->port);
 
-	if (!device || port == 0 || !client || *client) {
+	if (!device || service->port == 0 || !client || *client) {
 		debug_info("Incorrect parameter passed to webinspector_client_new.");
 		return WEBINSPECTOR_E_INVALID_ARG;
 	}
 
 	property_list_service_client_t plclient = NULL;
-	webinspector_error_t ret = webinspector_error(property_list_service_client_new(device, port, &plclient));
+	webinspector_error_t ret = webinspector_error(property_list_service_client_new(device, service, &plclient));
 	if (ret != WEBINSPECTOR_E_SUCCESS) {
 		debug_info("Creating a property list client failed. Error: %i", ret);
 		return ret;
@@ -118,20 +118,25 @@ webinspector_error_t webinspector_start_service(idevice_t device, webinspector_c
 		debug_info("Could not create a lockdown client.");
 		return WEBINSPECTOR_E_UNKNOWN_ERROR;
 	}
-	
-	uint16_t port = 0;
-	lockdownd_start_service(lckd, WEBINSPECTOR_SERVICE_NAME, &port);
+
+	lockdownd_service_descriptor_t service = NULL;
+	lockdownd_start_service(lckd, WEBINSPECTOR_SERVICE_NAME, &service);
 	lockdownd_client_free(lckd);
 
-	if (port <= 0) {
+	if (service->port <= 0) {
 		debug_info("Could not start webinspector service!");
 		return WEBINSPECTOR_E_UNKNOWN_ERROR;
 	}
 
-	webinspector_error_t res = webinspector_client_new(device, port, client);
+	webinspector_error_t res = webinspector_client_new(device, service, client);
 	if (res != WEBINSPECTOR_E_SUCCESS) {
-		debug_info("Could not connect to webinspector! Port: %i, error: %i", port, res);
+		debug_info("Could not connect to webinspector! Port: %i, error: %i", service->port, res);
 		return res;
+	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
 	return WEBINSPECTOR_E_SUCCESS;

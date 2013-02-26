@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -90,7 +91,7 @@ typedef np_client_private *np_client_t; /**< The client handle. */
 typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
-np_error_t np_client_new(idevice_t device, uint16_t port, np_client_t *client);
+np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
 np_error_t np_client_free(np_client_t client);
 np_error_t np_post_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notification(np_client_t client, const char *notification);

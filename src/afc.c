@@ -119,7 +119,7 @@ afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_
  * @see afc_client_new_from_connection
  * 
  * @param device The device to connect to.
- * @param port The destination port.
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
  * 
@@ -127,16 +127,20 @@ afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_
  *  invalid, AFC_E_MUX_ERROR if the connection cannot be established,
  *  or AFC_E_NO_MEM if there is a memory allocation problem.
  */
-afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t * client)
+afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t * client)
 {
-	if (!device || port==0)
+	if (!device || service->port == 0)
 		return AFC_E_INVALID_ARG;
 
 	/* attempt connection */
 	idevice_connection_t connection = NULL;
-	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
+	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
 		return AFC_E_MUX_ERROR;
 	}
+
+	/* enable SSL if requested */
+	if (service->ssl_enabled)
+		idevice_connection_enable_ssl(connection);
 
 	afc_error_t err = afc_client_new_from_connection(connection, client);
 	if (err != AFC_E_SUCCESS) {

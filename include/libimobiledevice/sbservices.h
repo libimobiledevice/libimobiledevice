@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -57,7 +58,7 @@ typedef struct sbservices_client_private sbservices_client_private;
 typedef sbservices_client_private *sbservices_client_t; /**< The client handle. */
 
 /* Interface */
-sbservices_error_t sbservices_client_new(idevice_t device, uint16_t port, sbservices_client_t *client);
+sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client);
 sbservices_error_t sbservices_client_free(sbservices_client_t client);
 sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
 sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);

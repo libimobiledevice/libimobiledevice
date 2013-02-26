@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	const char* udid = NULL;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
@@ -99,13 +99,13 @@ int main(int argc, char *argv[])
 	}
 
 	/* start syslog_relay service and retrieve port */
-	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &port);
-	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
+	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &service);
+	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
 		lockdownd_client_free(client);
-		
+
 		/* connect to socket relay messages */
 		idevice_connection_t conn = NULL;
-		if ((idevice_connect(device, port, &conn) != IDEVICE_E_SUCCESS) || !conn) {
+		if ((idevice_connect(device, service->port, &conn) != IDEVICE_E_SUCCESS) || !conn) {
 			printf("ERROR: Could not open usbmux connection.\n");
 		} else {
 			while (!quit_flag) {
@@ -125,6 +125,9 @@ int main(int argc, char *argv[])
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
+
+	if (service)
+		lockdownd_service_descriptor_free(service);
 
 	idevice_free(device);
 

@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -70,6 +71,12 @@ struct lockdownd_pair_record {
 /** A pair record holding device, host and root certificates along the host_id */
 typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
 
+struct lockdownd_service_descriptor {
+	uint16_t port;
+	uint8_t ssl_enabled;
+};
+typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
+
 /* Interface */
 lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
 lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
@@ -79,7 +86,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
 lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
 lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
 lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, uint16_t *port);
+lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
 lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
@@ -98,6 +105,7 @@ lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **u
 lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
 lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count);
 lockdownd_error_t lockdownd_data_classes_free(char **classes);
+lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
 
 #ifdef __cplusplus
 }

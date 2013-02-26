@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	lockdownd_client_t lockdown_client = NULL;
 	diagnostics_relay_client_t diagnostics_client = NULL;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	int result = -1;
 	int i;
 	const char *udid = NULL;
@@ -173,23 +173,23 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown_client, NULL)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown_client, "idevicediagnostics")) {
 		idevice_free(device);
 		printf("Unable to connect to lockdownd.\n");
 		goto cleanup;
 	}
 
 	/*  attempt to use newer diagnostics service available on iOS 5 and later */
-	ret = lockdownd_start_service(lockdown_client, "com.apple.mobile.diagnostics_relay", &port);
+	ret = lockdownd_start_service(lockdown_client, "com.apple.mobile.diagnostics_relay", &service);
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		/*  attempt to use older diagnostics service */
-		ret = lockdownd_start_service(lockdown_client, "com.apple.iosdiagnostics.relay", &port);
+		ret = lockdownd_start_service(lockdown_client, "com.apple.iosdiagnostics.relay", &service);
 	}
 
 	lockdownd_client_free(lockdown_client);
 
-	if ((ret == LOCKDOWN_E_SUCCESS) && (port > 0)) {
-		if (diagnostics_relay_client_new(device, port, &diagnostics_client) != DIAGNOSTICS_RELAY_E_SUCCESS) {
+	if ((ret == LOCKDOWN_E_SUCCESS) && (service->port > 0)) {
+		if (diagnostics_relay_client_new(device, service, &diagnostics_client) != DIAGNOSTICS_RELAY_E_SUCCESS) {
 			printf("Could not connect to diagnostics_relay!\n");
 			result = -1;
 		} else {
@@ -256,6 +256,11 @@ int main(int argc, char **argv)
 		}
 	} else {
 		printf("Could not start diagnostics service!\n");
+	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
 	idevice_free(device);

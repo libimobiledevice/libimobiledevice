@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -53,7 +54,7 @@ typedef enum {
 	MB_RESTORE_PRESERVE_CAMERA_ROLL = 1 << 2
 } mobilebackup_flags_t;
 
-mobilebackup_error_t mobilebackup_client_new(idevice_t device, uint16_t port, mobilebackup_client_t * client);
+mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);

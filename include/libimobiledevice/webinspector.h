@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 #define WEBINSPECTOR_SERVICE_NAME "com.apple.webinspector"
 
@@ -47,7 +48,7 @@ typedef int16_t webinspector_error_t;
 typedef struct webinspector_client_private webinspector_client_private;
 typedef webinspector_client_private *webinspector_client_t; /**< The client handle. */
 
-webinspector_error_t webinspector_client_new(idevice_t device, uint16_t port, webinspector_client_t * client);
+webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client);
 webinspector_error_t webinspector_client_free(webinspector_client_t client);
 
 webinspector_error_t webinspector_start_service(idevice_t device, webinspector_client_t * client);

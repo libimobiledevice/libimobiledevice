@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	thread_t th;
 	const char* udid = NULL;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	uint16_t local_port = 0;
 	int result = EXIT_SUCCESS;
 	int i;
@@ -297,14 +297,14 @@ int main(int argc, char *argv[])
 		goto leave_cleanup;
 	}
 
-	if ((lockdownd_start_service(lockdown, "com.apple.debugserver", &port) != LOCKDOWN_E_SUCCESS) || !port) {
+	if ((lockdownd_start_service(lockdown, "com.apple.debugserver", &service) != LOCKDOWN_E_SUCCESS) || !service->port) {
 		fprintf(stderr, "Could not start com.apple.debugserver!\nPlease make sure to mount the developer disk image first.\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
 	}
 
-	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
-		fprintf(stderr, "Connection to debugserver port %d failed!\n", (int)port);
+	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
+		fprintf(stderr, "Connection to debugserver port %d failed!\n", (int)service->port);
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
 	}
@@ -320,7 +320,12 @@ int main(int argc, char *argv[])
 
 	socket_info.device_connection = connection;
 	socket_info.local_port = local_port;
-	socket_info.remote_port = port;
+	socket_info.remote_port = service->port;
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
 
 	/* create local socket */
 	socket_info.server_fd = socket_create(socket_info.local_port);

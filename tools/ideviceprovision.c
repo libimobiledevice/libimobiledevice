@@ -193,6 +193,7 @@ static plist_t profile_get_embedded_plist(plist_t profile)
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
+	lockdownd_service_descriptor_t service = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
@@ -278,8 +279,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	uint16_t port = 0;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &port)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
 		fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
 		lockdownd_client_free(client);
 		idevice_free(device);
@@ -289,12 +289,17 @@ int main(int argc, char *argv[])
 	client = NULL;
 
 	misagent_client_t mis = NULL;
-	if (misagent_client_new(device, port, &mis) != MISAGENT_E_SUCCESS) {
+	if (misagent_client_new(device, service, &mis) != MISAGENT_E_SUCCESS) {
 		fprintf(stderr, "Could not connect to \"com.apple.misagent\" on device\n");
+		if (service)
+			lockdownd_service_descriptor_free(service);
 		lockdownd_client_free(client);
 		idevice_free(device);
 		return -1;
 	}
+
+	if (service)
+		lockdownd_service_descriptor_free(service);
 
 	switch (op) {
 		case OP_INSTALL:

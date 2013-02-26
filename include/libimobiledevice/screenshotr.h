@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -47,7 +48,7 @@ typedef int16_t screenshotr_error_t;
 typedef struct screenshotr_client_private screenshotr_client_private;
 typedef screenshotr_client_private *screenshotr_client_t; /**< The client handle. */
 
-screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port, screenshotr_client_t * client);
+screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service, screenshotr_client_t * client);
 screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);
 screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize);
 

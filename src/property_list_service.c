@@ -57,8 +57,7 @@ static property_list_service_error_t idevice_to_property_list_service_error(idev
  * Creates a new property list service for the specified port.
  * 
  * @param device The device to connect to.
- * @param port The port on the device to connect to, usually opened by a call to
- *     lockdownd_start_service.
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *     property_list_service_client_t upon successful return.
  *
@@ -66,14 +65,14 @@ static property_list_service_error_t idevice_to_property_list_service_error(idev
  *     PROPERTY_LIST_SERVICE_E_INVALID_ARG when one of the arguments is invalid,
  *     or PROPERTY_LIST_SERVICE_E_MUX_ERROR when connecting to the device failed.
  */
-property_list_service_error_t property_list_service_client_new(idevice_t device, uint16_t port, property_list_service_client_t *client)
+property_list_service_error_t property_list_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, property_list_service_client_t *client)
 {
-	if (!device || port == 0 || !client || *client)
+	if (!device || (service->port == 0) || !client || *client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
 	/* Attempt connection */
 	idevice_connection_t connection = NULL;
-	if (idevice_connect(device, port, &connection) != IDEVICE_E_SUCCESS) {
+	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	}
 
@@ -81,8 +80,12 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 	property_list_service_client_t client_loc = (property_list_service_client_t)malloc(sizeof(struct property_list_service_client_private));
 	client_loc->connection = connection;
 
-	*client = client_loc;
+	/* enable SSL if requested */
+	if (service->ssl_enabled == 1)
+		property_list_service_enable_ssl(client_loc);
 
+	/* all done, return success */
+	*client = client_loc;
 	return PROPERTY_LIST_SERVICE_E_SUCCESS;
 }
 

@@ -745,7 +745,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 
 static void do_post_notification(const char *notification)
 {
-	uint16_t nport = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	np_client_t np;
 
 	if (!client) {
@@ -754,15 +754,20 @@ static void do_post_notification(const char *notification)
 		}
 	}
 
-	lockdownd_start_service(client, NP_SERVICE_NAME, &nport);
-	if (nport) {
-		np_client_new(device, nport, &np);
+	lockdownd_start_service(client, NP_SERVICE_NAME, &service);
+	if (service->port) {
+		np_client_new(device, service, &np);
 		if (np) {
 			np_post_notification(np, notification);
 			np_client_free(np);
 		}
 	} else {
 		printf("Could not start %s\n", NP_SERVICE_NAME);
+	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 }
 
@@ -819,7 +824,7 @@ int main(int argc, char *argv[])
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	char* udid = NULL;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	int cmd = -1;
 	int is_full_backup = 0;
 	char *backup_directory = NULL;
@@ -931,9 +936,9 @@ int main(int argc, char *argv[])
 
 	/* start notification_proxy */
 	np_client_t np = NULL;
-	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &port);
-	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-		np_client_new(device, port, &np);
+	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
+	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+		np_client_new(device, service, &np);
 		np_set_notify_callback(np, notify_cb, NULL);
 		const char *noties[5] = {
 			NP_SYNC_CANCEL_REQUEST,
@@ -947,22 +952,37 @@ int main(int argc, char *argv[])
 		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
 	}
 
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
+
 	afc_client_t afc = NULL;
 	if (cmd == CMD_BACKUP) {
 		/* start AFC, we need this for the lock file */
-		port = 0;
-		ret = lockdownd_start_service(client, "com.apple.afc", &port);
-		if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-			afc_client_new(device, port, &afc);
+		service->port = 0;
+		service->ssl_enabled = 0;
+		ret = lockdownd_start_service(client, "com.apple.afc", &service);
+		if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+			afc_client_new(device, service, &afc);
 		}
 	}
 
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
+
 	/* start mobilebackup service and retrieve port */
-	port = 0;
-	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &port);
-	if ((ret == LOCKDOWN_E_SUCCESS) && port) {
-		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, port);
-		mobilebackup_client_new(device, port, &mobilebackup);
+	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &service);
+	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, service->port);
+		mobilebackup_client_new(device, service, &mobilebackup);
+
+		if (service) {
+			lockdownd_service_descriptor_free(service);
+			service = NULL;
+		}
 
 		/* check abort conditions */
 		if (quit_flag > 0) {

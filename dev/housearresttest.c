@@ -96,8 +96,8 @@ int main(int argc, char **argv)
 		goto leave_cleanup;
 	}
 
-	uint16_t port = 0;
-	if (lockdownd_start_service(client, "com.apple.mobile.house_arrest", &port) != LOCKDOWN_E_SUCCESS) {
+	lockdownd_service_descriptor_t service = NULL;
+	if (lockdownd_start_service(client, "com.apple.mobile.house_arrest", &service) != LOCKDOWN_E_SUCCESS) {
 		printf("could not start house_arrest service!\n");
 		goto leave_cleanup;
 	}
@@ -107,9 +107,14 @@ int main(int argc, char **argv)
 		client = NULL;
 	}
 
-	if (house_arrest_client_new(dev, port, &hac) != HOUSE_ARREST_E_SUCCESS) {
+	if (house_arrest_client_new(dev, service, &hac) != HOUSE_ARREST_E_SUCCESS) {
 		printf("could not connect to house_arrest service!\n");
 		goto leave_cleanup;
+	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
 	res = house_arrest_send_command(hac, "VendDocuments", appid);

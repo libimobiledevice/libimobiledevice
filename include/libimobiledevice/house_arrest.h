@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/afc.h>
 
 /** @name Error Codes */
@@ -48,7 +49,7 @@ typedef struct house_arrest_client_private house_arrest_client_private;
 typedef house_arrest_client_private *house_arrest_client_t; /**< The client handle. */
 
 /* Interface */
-house_arrest_error_t house_arrest_client_new(idevice_t device, uint16_t port, house_arrest_client_t *client);
+house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client);
 house_arrest_error_t house_arrest_client_free(house_arrest_client_t client);
 
 house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict);

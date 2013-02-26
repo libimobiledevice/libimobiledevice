@@ -69,7 +69,7 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
  * Connects to the mobilesync service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service()).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *     #mobilesync_client_t upon successful return.
  *
@@ -78,14 +78,14 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
  * @retval DEVICE_LINK_SERVICE_E_BAD_VERSION if the mobilesync version on
  * the device is newer.
  */
-mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port,
+mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 						   mobilesync_client_t * client)
 {
-	if (!device || port == 0 || !client || *client)
+	if (!device || service->port == 0 || !client || *client)
 		return MOBILESYNC_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;
-	mobilesync_error_t ret = mobilesync_error(device_link_service_client_new(device, port, &dlclient));
+	mobilesync_error_t ret = mobilesync_error(device_link_service_client_new(device, service, &dlclient));
 	if (ret != MOBILESYNC_E_SUCCESS) {
 		return ret;
 	}

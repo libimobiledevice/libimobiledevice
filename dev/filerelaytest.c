@@ -27,6 +27,7 @@ int main(int argc, char **argv)
 {
 	idevice_t dev = NULL;
 	lockdownd_client_t client = NULL;
+	lockdownd_service_descriptor_t service = NULL;
 	file_relay_client_t frc = NULL;
 
 	if (idevice_new(&dev, NULL) != IDEVICE_E_SUCCESS) {
@@ -40,8 +41,7 @@ int main(int argc, char **argv)
 		goto leave_cleanup;
 	}
 
-	uint16_t port = 0;
-	if (lockdownd_start_service(client, "com.apple.mobile.file_relay", &port) != LOCKDOWN_E_SUCCESS) {
+	if (lockdownd_start_service(client, "com.apple.mobile.file_relay", &service) != LOCKDOWN_E_SUCCESS) {
 		printf("could not start file_relay service!\n");
 		goto leave_cleanup;
 	}
@@ -51,9 +51,14 @@ int main(int argc, char **argv)
 		client = NULL;
 	}
 
-	if (file_relay_client_new(dev, port, &frc) != FILE_RELAY_E_SUCCESS) {
+	if (file_relay_client_new(dev, service, &frc) != FILE_RELAY_E_SUCCESS) {
 		printf("could not connect to file_relay service!\n");
 		goto leave_cleanup;
+	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
 	idevice_connection_t dump = NULL;

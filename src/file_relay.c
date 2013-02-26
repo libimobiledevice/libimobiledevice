@@ -28,7 +28,7 @@
  * Connects to the file_relay service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Reference that will point to a newly allocated
  *     file_relay_client_t upon successful return.
  *
@@ -36,14 +36,14 @@
  *     FILE_RELAY_E_INVALID_ARG when one of the parameters is invalid,
  *     or FILE_RELAY_E_MUX_ERROR when the connection failed.
  */
-file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_relay_client_t *client)
+file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, file_relay_client_t *client)
 {
-	if (!device || port == 0 || !client || *client) {
+	if (!device || service->port == 0 || !client || *client) {
 		return FILE_RELAY_E_INVALID_ARG;
 	}
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return FILE_RELAY_E_MUX_ERROR;
 	}
 

@@ -62,7 +62,7 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
  * Connects to the screenshotr service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *     screenshotr_client_t upon successful return.
  *
@@ -73,14 +73,14 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
  *     or more parameters are invalid, or SCREENSHOTR_E_CONN_FAILED if the
  *     connection to the device could not be established.
  */
-screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port,
+screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 					   screenshotr_client_t * client)
 {
-	if (!device || port == 0 || !client || *client)
+	if (!device || service->port == 0 || !client || *client)
 		return SCREENSHOTR_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;
-	screenshotr_error_t ret = screenshotr_error(device_link_service_client_new(device, port, &dlclient));
+	screenshotr_error_t ret = screenshotr_error(device_link_service_client_new(device, service, &dlclient));
 	if (ret != SCREENSHOTR_E_SUCCESS) {
 		return ret;
 	}

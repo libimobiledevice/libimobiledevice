@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -65,7 +66,7 @@ typedef struct {
 typedef mobilesync_anchors *mobilesync_anchors_t; /**< Anchors used by the device and computer. */
 
 /* Interface */
-mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client);
+mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilesync_client_t * client);
 mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
 
 mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);

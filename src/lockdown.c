@@ -646,8 +646,13 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
+	static struct lockdownd_service_descriptor service = {
+		.port = 0xf27e,
+		.ssl_enabled = 0
+	};
+
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, 0xf27e, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		debug_info("could not connect to lockdownd (device %s)", device->udid);
 		return LOCKDOWN_E_MUX_ERROR;
 	}
@@ -1494,17 +1499,17 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
  * Requests to start a service and retrieve it's port on success.
  *
  * @param client The lockdownd client
- * @param service The name of the service to start
- * @param port The port number the service was started on
+ * @param identifier The identifier of the service to start
+ * @param descriptor The service descriptor on success or NULL on failure
  
  * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
  *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
  *  started by the device
  */
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *service, uint16_t *port)
+lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service)
 {
-	if (!client || !service || !port)
+	if (!client || !identifier || !service)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	char *host_id = NULL;
@@ -1524,7 +1529,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartService"));
-	plist_dict_insert_item(dict,"Service", plist_new_string(service));
+	plist_dict_insert_item(dict,"Service", plist_new_string(identifier));
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -1542,20 +1547,34 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	if (!dict)
 		return LOCKDOWN_E_PLIST_ERROR;
 
+	if (*service == NULL)
+		*service = (lockdownd_service_descriptor_t)malloc(sizeof(struct lockdownd_service_descriptor));
+	(*service)->port = 0;
+	(*service)->ssl_enabled = 0;
+
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "StartService") == RESULT_SUCCESS) {
-		plist_t port_value_node = plist_dict_get_item(dict, "Port");
-
-		if (port_value_node && (plist_get_node_type(port_value_node) == PLIST_UINT)) {
+		/* read service port number */
+		plist_t node = plist_dict_get_item(dict, "Port");
+		if (node && (plist_get_node_type(node) == PLIST_UINT)) {
 			uint64_t port_value = 0;
-			plist_get_uint_val(port_value_node, &port_value);
+			plist_get_uint_val(node, &port_value);
 
 			if (port_value) {
 				port_loc = port_value;
 				ret = LOCKDOWN_E_SUCCESS;
 			}
-			if (port && ret == LOCKDOWN_E_SUCCESS)
-				*port = port_loc;
+			if (port_loc && ret == LOCKDOWN_E_SUCCESS) {
+				(*service)->port = port_loc;
+			}
+		}
+
+		/* check if the service requires SSL */
+		node = plist_dict_get_item(dict, "EnableServiceSSL");
+		if (node && (plist_get_node_type(node) == PLIST_BOOLEAN)) {
+			uint8_t b = 0;
+			plist_get_bool_val(node, &b);
+			(*service)->ssl_enabled = b;
 		}
 	} else {
 		ret = LOCKDOWN_E_START_SERVICE_FAILED;
@@ -1783,5 +1802,20 @@ lockdownd_error_t lockdownd_data_classes_free(char **classes)
 		}
 		free(classes);
 	}
+	return LOCKDOWN_E_SUCCESS;
+}
+
+/**
+ * Frees memory of a service descriptor as returned by lockdownd_start_service()
+ *
+ * @param sevice A service descriptor instance to free.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
+ */
+lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service)
+{
+	if (service)
+		free(service);
+
 	return LOCKDOWN_E_SUCCESS;
 }

@@ -59,20 +59,20 @@ static house_arrest_error_t house_arrest_error(property_list_service_error_t err
  * Connects to the house_arrest service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will point to a newly allocated
  *     housearrest_client_t upon successful return.
  *
  * @return HOUSE_ARREST_E_SUCCESS on success, HOUSE_ARREST_E_INVALID_ARG when
  *     client is NULL, or an HOUSE_ARREST_E_* error code otherwise.
  */
-house_arrest_error_t house_arrest_client_new(idevice_t device, uint16_t port, house_arrest_client_t *client)
+house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client)
 {
 	if (!device)
 		return HOUSE_ARREST_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	house_arrest_error_t err = house_arrest_error(property_list_service_client_new(device, port, &plistclient));
+	house_arrest_error_t err = house_arrest_error(property_list_service_client_new(device, service, &plistclient));
 	if (err != HOUSE_ARREST_E_SUCCESS) {
 		return err;
 	}

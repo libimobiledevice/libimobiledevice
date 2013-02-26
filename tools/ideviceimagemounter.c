@@ -267,7 +267,7 @@ int main(int argc, char **argv)
 	lockdownd_client_t lckd = NULL;
 	mobile_image_mounter_client_t mim = NULL;
 	afc_client_t afc = NULL;
-	uint16_t port = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	int res = -1;
 	char *image_path = NULL;
 	char *image_sig_path = NULL;
@@ -303,29 +303,37 @@ int main(int argc, char **argv)
 		goto leave;
 	}
 
-	lockdownd_start_service(lckd, "com.apple.mobile.mobile_image_mounter", &port);
+	lockdownd_start_service(lckd, "com.apple.mobile.mobile_image_mounter", &service);
 
-	if (port == 0) {
+	if (service->port == 0) {
 		printf("ERROR: Could not start mobile_image_mounter service!\n");
 		goto leave;
 	}
 
-	if (mobile_image_mounter_new(device, port, &mim) != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+	if (mobile_image_mounter_new(device, service, &mim) != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 		printf("ERROR: Could not connect to mobile_image_mounter!\n");
 		goto leave;
 	}	
 
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
+
 	if (!list_mode) {
 		struct stat fst;
-		port = 0;
-		if ((lockdownd_start_service(lckd, "com.apple.afc", &port) !=
-			 LOCKDOWN_E_SUCCESS) || !port) {
+		if ((lockdownd_start_service(lckd, "com.apple.afc", &service) !=
+			 LOCKDOWN_E_SUCCESS) || !service->port) {
 			fprintf(stderr, "Could not start com.apple.afc!\n");
 			goto leave;
 		}
-		if (afc_client_new(device, port, &afc) != AFC_E_SUCCESS) {
+		if (afc_client_new(device, service, &afc) != AFC_E_SUCCESS) {
 			fprintf(stderr, "Could not connect to AFC!\n");
 			goto leave;
+		}
+		if (service) {
+			lockdownd_service_descriptor_free(service);
+			service = NULL;
 		}
 		if (stat(image_path, &fst) != 0) {
 			fprintf(stderr, "ERROR: stat: %s: %s\n", image_path, strerror(errno));

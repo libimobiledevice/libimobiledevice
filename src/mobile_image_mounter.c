@@ -87,7 +87,7 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
  * Connects to the mobile_image_mounter service on the specified device.
  * 
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *    mobile_image_mounter_client_t upon successful return.
  * 
@@ -96,13 +96,13 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
  *    or MOBILE_IMAGE_MOUNTER_E_CONN_FAILED if the connection to the
  *    device could not be established.
  */
-mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t port, mobile_image_mounter_client_t *client)
+mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client)
 {
 	if (!device)
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, port, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return MOBILE_IMAGE_MOUNTER_E_CONN_FAILED;
 	}
 

@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -47,7 +48,7 @@ typedef struct misagent_client_private misagent_client_private;
 typedef misagent_client_private *misagent_client_t; /**< The client handle. */
 
 /* Interface */
-misagent_error_t misagent_client_new(idevice_t device, uint16_t port, misagent_client_t *client);
+misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client);
 misagent_error_t misagent_client_free(misagent_client_t client);
 
 misagent_error_t misagent_install(misagent_client_t client, plist_t profile);

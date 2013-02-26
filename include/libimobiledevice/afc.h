@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 /** @name Error Codes */
 /*@{*/
@@ -93,7 +94,7 @@ typedef afc_client_private *afc_client_t; /**< The client handle. */
 
 /* Interface */
 afc_error_t afc_client_new_from_connection(idevice_connection_t connection, afc_client_t *client);
-afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t *client);
+afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t *client);
 afc_error_t afc_client_free(afc_client_t client);
 afc_error_t afc_get_device_info(afc_client_t client, char ***infos);
 afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***list);

@@ -65,7 +65,7 @@ static mobilebackup2_error_t mobilebackup2_error(device_link_service_error_t err
  * Connects to the mobilebackup2 service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
  *     mobilebackup2_client_t upon successful return.
  *
@@ -73,14 +73,14 @@ static mobilebackup2_error_t mobilebackup2_error(device_link_service_error_t err
  *     if one or more parameter is invalid, or MOBILEBACKUP2_E_BAD_VERSION
  *     if the mobilebackup2 version on the device is newer.
  */
-mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, uint16_t port,
+mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 						mobilebackup2_client_t * client)
 {
-	if (!device || port == 0 || !client || *client)
+	if (!device || service->port == 0 || !client || *client)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;
-	mobilebackup2_error_t ret = mobilebackup2_error(device_link_service_client_new(device, port, &dlclient));
+	mobilebackup2_error_t ret = mobilebackup2_error(device_link_service_client_new(device, service, &dlclient));
 	if (ret != MOBILEBACKUP2_E_SUCCESS) {
 		return ret;
 	}

@@ -136,9 +136,13 @@ int main(int argc, char *argv[])
 				}
 
 				if (!strcmp(*args, "start") && len == 2) {
-					uint16_t port = 0;
-					if(LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, *(args + 1), &port)) {
-						printf("started service %s on port %i\n", *(args + 1), port);
+					lockdownd_service_descriptor_t service = NULL;
+					if(LOCKDOWN_E_SUCCESS == lockdownd_start_service(client, *(args + 1), &service)) {
+						printf("started service %s on port %i\n", *(args + 1), service->port);
+						if (service) {
+							lockdownd_service_descriptor_free(service);
+							service = NULL;
+						}
 					}
 					else
 					{

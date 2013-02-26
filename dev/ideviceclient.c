@@ -45,13 +45,13 @@ static void notifier(const char *notification, void *userdata)
 
 static void perform_notification(idevice_t phone, lockdownd_client_t client, const char *notification)
 {
-	uint16_t nport = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	np_client_t np;
 
-	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &nport);
-	if (nport) {
+	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &service);
+	if (service->port) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
-		np_client_new(phone, nport, &np);
+		np_client_new(phone, service, &np);
 		if (np) {
 			printf("::::::::: PostNotification %s\n", notification);
 			np_post_notification(np, notification);
@@ -60,13 +60,18 @@ static void perform_notification(idevice_t phone, lockdownd_client_t client, con
 	} else {
 		printf("::::::::::::::: np was NOT started ::::::::::::\n");
 	}
+
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
+	}
 }
 
 int main(int argc, char *argv[])
 {
 	unsigned int bytes = 0;
-	uint16_t port = 0, i = 0;
-	uint16_t npp;
+	uint16_t i = 0;
+	lockdownd_service_descriptor_t service = NULL;
 	lockdownd_client_t client = NULL;
 	idevice_t phone = NULL;
 	uint64_t lockfile = 0;
@@ -102,19 +107,33 @@ int main(int argc, char *argv[])
 		free(nnn);
 	}
 
-	lockdownd_start_service(client, "com.apple.afc", &port);
+	lockdownd_start_service(client, "com.apple.afc", &service);
 
-	if (port) {
+	if (service->port) {
 		afc_client_t afc = NULL;
-		afc_client_new(phone, port, &afc);
+		afc_client_new(phone, service, &afc);
+
+		if (service) {
+			lockdownd_service_descriptor_free(service);
+			service = NULL;
+		}
+
 		if (afc) {
-			lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &npp);
-			if (npp) {
+			service->port = 0;
+			service->ssl_enabled = 0;
+			lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &service);
+			if (service->port) {
 				printf("Notification Proxy started.\n");
-				np_client_new(phone, npp, &gnp);
+				np_client_new(phone, service, &gnp);
 			} else {
 				printf("ERROR: Notification proxy could not be started.\n");
 			}
+
+			if (service) {
+				lockdownd_service_descriptor_free(service);
+				service = NULL;
+			}
+
 			if (gnp) {
 				const char *nspec[5] = {
 					NP_SYNC_CANCEL_REQUEST,

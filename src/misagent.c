@@ -91,20 +91,20 @@ static misagent_error_t misagent_check_result(plist_t response, int* status_code
  * Connects to the misagent service on the specified device.
  *
  * @param device The device to connect to.
- * @param port Destination port (usually given by lockdownd_start_service).
+ * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will point to a newly allocated
  *     misagent_client_t upon successful return.
  *
  * @return MISAGENT_E_SUCCESS on success, MISAGENT_E_INVALID_ARG when
  *     client is NULL, or an MISAGENT_E_* error code otherwise.
  */
-misagent_error_t misagent_client_new(idevice_t device, uint16_t port, misagent_client_t *client)
+misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client)
 {
 	if (!device)
 		return MISAGENT_E_INVALID_ARG;
 
 	property_list_service_client_t plistclient = NULL;
-	misagent_error_t err = misagent_error(property_list_service_client_new(device, port, &plistclient));
+	misagent_error_t err = misagent_error(property_list_service_client_new(device, service, &plistclient));
 	if (err != MISAGENT_E_SUCCESS) {
 		return err;
 	}
