@@ -1,10 +1,10 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libpthread_LIBS) $(libplist_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
+AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(openssl_LIBS) $(libplist_LIBS)
 
 if ENABLE_DEVTOOLS
-noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest lckd-client
+noinst_PROGRAMS = ideviceclient afccheck filerelaytest housearresttest lckd-client ideviceheartbeat
 
 ideviceclient_SOURCES = ideviceclient.c
 ideviceclient_CFLAGS = $(AM_CFLAGS)
@@ -31,6 +31,11 @@ housearresttest_CFLAGS = $(AM_CFLAGS)
 housearresttest_LDFLAGS = $(AM_LDFLAGS)
 housearresttest_LDADD = ../src/libimobiledevice.la
 
+ideviceheartbeat_SOURCES = ideviceheartbeat.c
+ideviceheartbeat_CFLAGS = $(AM_CFLAGS)
+ideviceheartbeat_LDFLAGS = $(AM_LDFLAGS)
+ideviceheartbeat_LDADD = ../src/libimobiledevice.la
+
 endif # ENABLE_DEVTOOLS
 
-EXTRA_DIST = ideviceclient.c lckdclient.c afccheck.c filerelaytest.c housearresttest.c
+EXTRA_DIST = ideviceclient.c lckdclient.c afccheck.c filerelaytest.c housearresttest.c ideviceheartbeat.c
