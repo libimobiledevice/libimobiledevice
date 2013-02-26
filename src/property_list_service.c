@@ -25,27 +25,28 @@
 #include <string.h>
 
 #include "property_list_service.h"
-#include "idevice.h"
 #include "debug.h"
 #include "endianness.h"
 
 /**
- * Convert an idevice_error_t value to an property_list_service_error_t value.
+ * Convert a service_error_t value to a property_list_service_error_t value.
  * Used internally to get correct error codes.
  *
- * @param err An idevice_error_t error code
+ * @param err A service_error_t error code
  *
  * @return A matching property_list_service_error_t error code,
  *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR otherwise.
  */
-static property_list_service_error_t idevice_to_property_list_service_error(idevice_error_t err)
+static property_list_service_error_t service_to_property_list_service_error(service_error_t err)
 {
 	switch (err) {
-		case IDEVICE_E_SUCCESS:
+		case SERVICE_E_SUCCESS:
 			return PROPERTY_LIST_SERVICE_E_SUCCESS;
-		case IDEVICE_E_INVALID_ARG:
+		case SERVICE_E_INVALID_ARG:
 			return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-		case IDEVICE_E_SSL_ERROR:
+		case SERVICE_E_MUX_ERROR:
+			return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
+		case SERVICE_E_SSL_ERROR:
 			return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
 		default:
 			break;
@@ -70,19 +71,15 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 	if (!device || (service->port == 0) || !client || *client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
-	/* Attempt connection */
-	idevice_connection_t connection = NULL;
-	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
-		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
+	service_client_t parent = NULL;
+	service_error_t rerr = service_client_new(device, service, &parent);
+	if (rerr != SERVICE_E_SUCCESS) {
+		return service_to_property_list_service_error(rerr);
 	}
 
 	/* create client object */
 	property_list_service_client_t client_loc = (property_list_service_client_t)malloc(sizeof(struct property_list_service_client_private));
-	client_loc->connection = connection;
-
-	/* enable SSL if requested */
-	if (service->ssl_enabled == 1)
-		property_list_service_enable_ssl(client_loc);
+	client_loc->parent = parent;
 
 	/* all done, return success */
 	*client = client_loc;
@@ -103,7 +100,7 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 	if (!client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
-	property_list_service_error_t err = idevice_to_property_list_service_error(idevice_disconnect(client->connection));
+	property_list_service_error_t err = service_to_property_list_service_error(service_client_free(client->parent));
 	free(client);
 	return err;
 }
@@ -130,7 +127,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	uint32_t nlen = 0;
 	int bytes = 0;
 
-	if (!client || (client && !client->connection) || !plist) {
+	if (!client || (client && !client->parent) || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
@@ -146,9 +143,9 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 
 	nlen = htobe32(length);
 	debug_info("sending %d bytes", length);
-	idevice_connection_send(client->connection, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
+	service_send(client->parent, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
-		idevice_connection_send(client->connection, content, length, (uint32_t*)&bytes);
+		service_send(client->parent, content, length, (uint32_t*)&bytes);
 		if (bytes > 0) {
 			debug_info("sent %d bytes", bytes);
 			debug_plist(plist);
@@ -222,11 +219,11 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 	uint32_t pktlen = 0;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->connection) || !plist) {
+	if (!client || (client && !client->parent) || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	idevice_connection_receive_timeout(client->connection, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	service_receive_with_timeout(client->parent, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
 		debug_info("initial read failed!");
@@ -240,7 +237,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 			content = (char*)malloc(pktlen);
 
 			while (curlen < pktlen) {
-				idevice_connection_receive(client->connection, content+curlen, pktlen-curlen, &bytes);
+				service_receive(client->parent, content+curlen, pktlen-curlen, &bytes);
 				if (bytes <= 0) {
 					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 					break;
@@ -332,9 +329,9 @@ property_list_service_error_t property_list_service_receive_plist(property_list_
  */
 property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
 {
-	if (!client || !client->connection)
+	if (!client || !client->parent)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-	return idevice_to_property_list_service_error(idevice_connection_enable_ssl(client->connection));
+	return service_to_property_list_service_error(service_enable_ssl(client->parent));
 }
 
 /**
@@ -349,8 +346,8 @@ property_list_service_error_t property_list_service_enable_ssl(property_list_ser
  */
 property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client)
 {
-	if (!client || !client->connection)
+	if (!client || !client->parent)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-	return idevice_to_property_list_service_error(idevice_connection_disable_ssl(client->connection));
+	return service_to_property_list_service_error(service_disable_ssl(client->parent));
 }
 

@@ -9,6 +9,7 @@ libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_
 libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       debug.c debug.h\
 		       userpref.c userpref.h\
+		       service.c service.h\
 		       property_list_service.c property_list_service.h\
 		       device_link_service.c device_link_service.h\
 		       lockdown.c lockdown.h\

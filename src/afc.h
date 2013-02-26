@@ -30,6 +30,7 @@
 #endif
 
 #include "libimobiledevice/afc.h"
+#include "service.h"
 #include "endianness.h"
 
 #define AFC_MAGIC "CFA6LPAA"
@@ -57,7 +58,7 @@ typedef struct {
 } AFCFilePacket;
 
 struct afc_client_private {
-	idevice_connection_t connection;
+	service_client_t parent;
 	AFCPacket *afc_packet;
 	int file_handle;
 	int lock;
@@ -66,7 +67,7 @@ struct afc_client_private {
 #else
 	pthread_mutex_t mutex;
 #endif
-	int own_connection;
+	int free_parent;
 };
 
 /* AFC Operations */

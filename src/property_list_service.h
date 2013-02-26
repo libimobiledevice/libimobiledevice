@@ -23,6 +23,7 @@
 #define __PROPERTY_LIST_SERVICE_H
 
 #include <libimobiledevice/lockdown.h>
+#include "service.h"
 #include "idevice.h"
 
 /* Error Codes */
@@ -35,7 +36,7 @@
 #define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
 
 struct property_list_service_client_private {
-	idevice_connection_t connection;
+	service_client_t parent;
 };
 
 typedef struct property_list_service_client_private *property_list_service_client_t;

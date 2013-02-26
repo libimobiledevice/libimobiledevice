@@ -279,13 +279,13 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
 
 	*bytes = 0;
 
-	idevice_connection_t conn = client->parent->parent->connection;
+	service_client_t raw = client->parent->parent->parent;
 
 	int bytes_loc = 0;
 	uint32_t sent = 0;
 	do {
 		bytes_loc = 0;
-		idevice_connection_send(conn, data+sent, length-sent, (uint32_t*)&bytes_loc);
+		service_send(raw, data+sent, length-sent, (uint32_t*)&bytes_loc);
 		if (bytes_loc <= 0)
 			break;
 		sent += bytes_loc;
@@ -321,7 +321,7 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
-	idevice_connection_t conn = client->parent->parent->connection;
+	service_client_t raw = client->parent->parent->parent;
 
 	*bytes = 0;
 
@@ -329,7 +329,7 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 	uint32_t received = 0;
 	do {
 		bytes_loc = 0;
-		idevice_connection_receive(conn, data+received, length-received, (uint32_t*)&bytes_loc);
+		service_receive(raw, data+received, length-received, (uint32_t*)&bytes_loc);
 		if (bytes_loc <= 0) break;
 		received += bytes_loc;
 	} while (received < length);

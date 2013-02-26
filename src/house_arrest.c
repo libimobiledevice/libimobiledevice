@@ -105,7 +105,7 @@ house_arrest_error_t house_arrest_client_free(house_arrest_client_t client)
 		return HOUSE_ARREST_E_INVALID_ARG;
 
 	house_arrest_error_t err = HOUSE_ARREST_E_SUCCESS;
-	if (client->parent && client->parent->connection) {
+	if (client->parent && client->parent->parent->connection) {
 		house_arrest_error(property_list_service_client_free(client->parent));
 	}
 	client->parent = NULL;
@@ -242,7 +242,7 @@ afc_error_t afc_client_new_from_house_arrest_client(house_arrest_client_t client
 	if (!client || !client->parent || (client->mode == HOUSE_ARREST_CLIENT_MODE_AFC)) {
 		return AFC_E_INVALID_ARG;
 	}
-	afc_error_t err = afc_client_new_from_connection(client->parent->connection, afc_client);
+	afc_error_t err = afc_client_new_with_service_client(client->parent->parent, afc_client);
 	if (err == AFC_E_SUCCESS) {
 		client->mode = HOUSE_ARREST_CLIENT_MODE_AFC;
 	}

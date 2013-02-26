@@ -132,7 +132,7 @@ misagent_error_t misagent_client_free(misagent_client_t client)
 		return MISAGENT_E_INVALID_ARG;
 
 	misagent_error_t err = MISAGENT_E_SUCCESS;
-	if (client->parent && client->parent->connection) {
+	if (client->parent && client->parent->parent) {
 		misagent_error(property_list_service_client_free(client->parent));
 	}
 	client->parent = NULL;

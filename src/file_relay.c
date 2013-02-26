@@ -188,7 +188,7 @@ file_relay_error_t file_relay_request_sources(file_relay_client_t client, const 
 	free(ack);
 	err = FILE_RELAY_E_SUCCESS;
 
-	*connection = client->parent->connection;
+	*connection = client->parent->parent->connection;
 
 leave:
 	if (dict) {
