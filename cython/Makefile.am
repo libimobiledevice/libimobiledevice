@@ -13,10 +13,17 @@ PXIINCLUDES =					\
 	notification_proxy.pxi		\
 	sbservices.pxi				\
 	mobilebackup.pxi			\
+	mobilebackup2.pxi			\
 	afc.pxi						\
 	file_relay.pxi				\
 	screenshotr.pxi				\
 	installation_proxy.pxi		\
+	webinspector.pxi			\
+	heartbeat.pxi				\
+	diagnostics_relay.pxi		\
+	misagent.pxi				\
+	house_arrest.pxi			\
+	restore.pxi					\
 	mobile_image_mounter.pxi
 
 CLEANFILES =                \
