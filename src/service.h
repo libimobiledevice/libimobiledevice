@@ -40,9 +40,11 @@ typedef struct service_client_private *service_client_t;
 
 typedef int16_t service_error_t;
 
+#define SERVICE_CONSTRUCTOR(x) (uint16_t (*)(idevice_t, lockdownd_service_descriptor_t, void**))(x)
+
 /* creation and destruction */
 service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client);
-service_error_t service_client_start_service(idevice_t device, const char* service_name, service_client_t *client, const char* label);
+service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, uint16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), uint16_t *error_code);
 service_error_t service_client_free(service_client_t client);
 
 /* sending */

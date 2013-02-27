@@ -103,7 +103,7 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
  */
-service_error_t service_client_start_service(idevice_t device, const char* service_name, service_client_t *client, const char* label)
+service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, uint16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), uint16_t *error_code)
 {
 	*client = NULL;
 
@@ -122,18 +122,24 @@ service_error_t service_client_start_service(idevice_t device, const char* servi
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
 
-	service_error_t res = service_client_new(device, service, client);
-	if (res != SERVICE_E_SUCCESS) {
-		debug_info("Could not connect to service %s! Port: %i, error: %i", service_name, service->port, res);
-		return res;
+	uint16_t ec;
+	if (constructor_func) {
+		ec = (uint16_t)constructor_func(device, service, client);
+	} else {
+		ec = service_client_new(device, service, (service_client_t*)client);
+	}
+	if (error_code) {
+		*error_code = ec;
 	}
 
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
+	if (ec != SERVICE_E_SUCCESS) {
+		debug_info("Could not connect to service %s! Port: %i, error: %i", service_name, service->port, ec);
 	}
 
-	return SERVICE_E_SUCCESS;
+	lockdownd_service_descriptor_free(service);
+	service = NULL;
+
+	return (ec == SERVICE_E_SUCCESS) ? SERVICE_E_SUCCESS : SERVICE_E_START_SERVICE_ERROR;
 }
 
 /**

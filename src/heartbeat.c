@@ -112,36 +112,9 @@ heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descr
  */
 heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client, const char* label)
 {
-	*client = NULL;
-
-	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
-		idevice_free(device);
-		debug_info("Could not create a lockdown client.");
-		return HEARTBEAT_E_UNKNOWN_ERROR;
-	}
-
-	lockdownd_service_descriptor_t service = NULL;
-	lockdownd_start_service(lckd, HEARTBEAT_SERVICE_NAME, &service);
-	lockdownd_client_free(lckd);
-
-	if (service->port <= 0) {
-		debug_info("Could not start heartbeat service!");
-		return HEARTBEAT_E_UNKNOWN_ERROR;
-	}
-
-	heartbeat_error_t res = heartbeat_client_new(device, service, client);
-	if (res != HEARTBEAT_E_SUCCESS) {
-		debug_info("Could not connect to heartbeat! Port: %i, error: %i", service->port, res);
-		return res;
-	}
-
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
-	}
-
-	return HEARTBEAT_E_SUCCESS;
+	heartbeat_error_t err = HEARTBEAT_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, HEARTBEAT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(heartbeat_client_new), &err);
+	return err;
 }
 
 /**
