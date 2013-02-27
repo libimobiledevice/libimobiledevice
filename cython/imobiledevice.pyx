@@ -210,11 +210,28 @@ cdef class PropertyListService(BaseService):
                 plist.plist_free(c_node)
             raise
 
+    cpdef object receive_with_timeout(self, int timeout_ms):
+        cdef:
+            plist.plist_t c_node = NULL
+            int16_t err
+        err = self._receive_with_timeout(&c_node, timeout_ms)
+        try:
+            self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
+        except BaseError, e:
+            if c_node != NULL:
+                plist.plist_free(c_node)
+            raise
+
     cdef int16_t _send(self, plist.plist_t node):
         raise NotImplementedError("send is not implemented")
 
     cdef int16_t _receive(self, plist.plist_t* c_node):
         raise NotImplementedError("receive is not implemented")
+
+    cdef int16_t _receive_with_timeout(self, plist.plist_t* c_node, int timeout_ms):
+        raise NotImplementedError("receive_with_timeout is not implemented")
 
 cdef class DeviceLinkService(PropertyListService):
     pass

@@ -51,8 +51,10 @@ cdef class BaseService(Base):
 cdef class PropertyListService(BaseService):
     cpdef send(self, plist.Node node)
     cpdef object receive(self)
+    cpdef object receive_with_timeout(self, int timeout_ms)
     cdef int16_t _send(self, plist.plist_t node)
     cdef int16_t _receive(self, plist.plist_t* c_node)
+    cdef int16_t _receive_with_timeout(self, plist.plist_t* c_node, int timeout_ms)
 
 cdef extern from "libimobiledevice/lockdown.h":
     cdef struct lockdownd_client_private:
