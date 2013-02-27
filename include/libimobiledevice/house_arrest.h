@@ -1,6 +1,6 @@
 /**
  * @file libimobiledevice/house_arrest.h
- * @brief Access AppStore application folders and their contents.
+ * @brief Access app folders and their contents.
  * \internal
  *
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
