@@ -11,7 +11,7 @@ Version 1.1.5
   - Add webinspector service implementation for WebKit remote debugging
   - Add support for encrypted and password protected backups to idevicebackup2
   - Fix major "too long filename received" bug in idevicebackup2
-  - Various fixes for proper and tested WIN32 support including MingW building
+  - Various fixes for proper and tested WIN32 support including MinGW building
   - Fix various crashers and improve quality of idevicebackup2 tool
   - Add endianness helpers for systems lacking support
   - Fix idevicedate to work on iOS 6+
@@ -22,7 +22,10 @@ Version 1.1.5
   - Add misagent service implementation to manage provisioning profiles
   - Fix crash if $HOME is empty or not defined
   - Fix non-ASCII characters being stripped when using plist communication
-  - Improve compile support for Cython >= 0.16 and check it at configure time
+  - Improve compile support for cython and check it at configure time
+  - Bump cython requirement to 0.17.0+
+  - Fix compilation of cython bindings
+  - Python bindings now cover all C APIs
   - Fix iOS 6 compatibility for mobilesync, mobilebackup, mobilebackup2 and
     screenshotr by bumping device link protocol version number
   - Do not strip non_ASCII characters from XML plists
