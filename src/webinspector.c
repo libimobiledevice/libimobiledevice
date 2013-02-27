@@ -112,36 +112,9 @@ webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service
  */
 webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
 {
-	*client = NULL;
-
-	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
-		idevice_free(device);
-		debug_info("Could not create a lockdown client.");
-		return WEBINSPECTOR_E_UNKNOWN_ERROR;
-	}
-
-	lockdownd_service_descriptor_t service = NULL;
-	lockdownd_start_service(lckd, WEBINSPECTOR_SERVICE_NAME, &service);
-	lockdownd_client_free(lckd);
-
-	if (service->port <= 0) {
-		debug_info("Could not start webinspector service!");
-		return WEBINSPECTOR_E_UNKNOWN_ERROR;
-	}
-
-	webinspector_error_t res = webinspector_client_new(device, service, client);
-	if (res != WEBINSPECTOR_E_SUCCESS) {
-		debug_info("Could not connect to webinspector! Port: %i, error: %i", service->port, res);
-		return res;
-	}
-
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
-	}
-
-	return WEBINSPECTOR_E_SUCCESS;
+	webinspector_error_t err = WEBINSPECTOR_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), (uint16_t*)&err);
+	return err;
 }
 
 /**
