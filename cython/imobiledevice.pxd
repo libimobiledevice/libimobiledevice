@@ -1,6 +1,6 @@
 cimport plist
 
-include "stdint.pxi"
+from libc.stdint cimport *
 
 cdef extern from "pyerrors.h":
     ctypedef class __builtin__.Exception [object PyBaseExceptionObject]:
