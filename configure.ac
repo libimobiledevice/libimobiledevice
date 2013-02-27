@@ -91,7 +91,7 @@ AC_ARG_WITH([cython],
             [build_cython=true])
 if test "$build_cython" = "true"; then
             AM_PATH_PYTHON(2.3)
-            AC_PROG_CYTHON(0.13.0)
+            AC_PROG_CYTHON(0.17.0)
             CYTHON_PYTHON
 else
             CYTHON=false
