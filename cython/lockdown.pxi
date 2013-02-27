@@ -29,7 +29,7 @@ cdef extern from "libimobiledevice/lockdown.h":
     lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, char *domain, char *key, plist.plist_t *value)
     lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, char *domain, char *key, plist.plist_t value)
     lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, char *domain, char *key)
-    lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, char *service, uint16_t *port)
+    lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, char *identifier, lockdownd_service_descriptor_t *service)
     lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, char *host_id, char **session_id, int *ssl_enabled)
     lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, char *session_id)
     lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist.plist_t plist)
@@ -43,6 +43,7 @@ cdef extern from "libimobiledevice/lockdown.h":
     lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
     lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count)
     lockdownd_error_t lockdownd_data_classes_free(char **classes)
+    lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service)
 
 cdef class LockdownError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -88,6 +89,21 @@ cdef class LockdownPairRecord:
         def __get__(self):
             cdef bytes result = self._c_record.root_certificate
             return result
+
+cdef class LockdownServiceDescriptor:
+    #def __cinit__(self, uint16_t port, uint8_t ssl_enabled, *args, **kwargs):
+    def __dealloc__(self):
+        cdef lockdownd_error_t err
+        if self._c_service_descriptor is not NULL:
+            err = lockdownd_service_descriptor_free(self._c_service_descriptor)
+            self._c_service_descriptor = NULL
+            self.handle_error(err)
+    property port:
+        def __get__(self):
+            return self._c_service_descriptor.port
+    property ssl_enabled:
+        def __get__(self):
+            return self._c_service_descriptor.ssl_enabled
 
 cdef class LockdownClient(PropertyListService):
     def __cinit__(self, iDevice device not None, bytes label=b'', bint handshake=True, *args, **kwargs):
@@ -162,10 +178,11 @@ cdef class LockdownClient(PropertyListService):
     cpdef remove_value(self, bytes domain, bytes key):
         self.handle_error(lockdownd_remove_value(self._c_client, domain, key))
 
-    cpdef uint16_t start_service(self, object service):
+    cpdef object start_service(self, object service):
         cdef:
             char* c_service_name = NULL
-            uint16_t port = 0
+            lockdownd_service_descriptor_t c_descriptor = NULL
+            LockdownServiceDescriptor result
 
         if issubclass(service, BaseService) and \
             service.__service_name__ is not None \
@@ -177,24 +194,26 @@ cdef class LockdownClient(PropertyListService):
             raise TypeError("LockdownClient.start_service() takes a BaseService or string as its first argument")
 
         try:
-            self.handle_error(lockdownd_start_service(self._c_client, c_service_name, &port))
-            
-            return port
+            self.handle_error(lockdownd_start_service(self._c_client, c_service_name, &c_descriptor))
+
+            result = LockdownServiceDescriptor.__new__(LockdownServiceDescriptor)
+            result._c_service_descriptor = c_descriptor
+
+            return result
         except BaseError, e:
             raise
 
     cpdef object get_service_client(self, object service_class):
         cdef:
-            uint16_t port = 0
-            object result
+            LockdownServiceDescriptor descriptor
 
         if not hasattr(service_class, '__service_name__') and \
             not service_class.__service_name__ is not None \
             and not isinstance(service_class.__service_name__, basestring):
             raise TypeError("LockdownClient.get_service_client() takes a BaseService as its first argument")
 
-        port = self.start_service(service_class)
-        return service_class(self.device, port)
+        descriptor = self.start_service(service_class)
+        return service_class(self.device, descriptor)
 
     cpdef tuple start_session(self, bytes host_id):
         cdef:

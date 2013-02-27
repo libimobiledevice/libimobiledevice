@@ -24,12 +24,12 @@ cdef extern from "libimobiledevice/mobilesync.h":
         char *host_anchor
     ctypedef mobilesync_anchors *mobilesync_anchors_t
 
-    mobilesync_error_t mobilesync_client_new(idevice_t device, uint16_t port, mobilesync_client_t * client)
+    mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilesync_client_t * client)
     mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
     mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist.plist_t *plist)
     mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist.plist_t plist)
 
-    mobilesync_error_t mobilesync_start(mobilesync_client_t client, char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version)
+    mobilesync_error_t mobilesync_start(mobilesync_client_t client, char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description)
     mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, char* reason)
     mobilesync_error_t mobilesync_finish(mobilesync_client_t client)
 
@@ -73,8 +73,8 @@ cdef class MobileSyncClient(DeviceLinkService):
     __service_name__ = "com.apple.mobilesync"
     cdef mobilesync_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        self.handle_error(mobilesync_client_new(device._c_dev, port, &(self._c_client)))
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
+        self.handle_error(mobilesync_client_new(device._c_dev, descriptor._c_service_descriptor, &(self._c_client)))
     
     def __dealloc__(self):
         cdef mobilesync_error_t err
@@ -88,6 +88,7 @@ cdef class MobileSyncClient(DeviceLinkService):
             mobilesync_sync_type_t sync_type
             uint64_t computer_data_class_version = 1
             uint64_t device_data_class_version
+            char* error_description = NULL
 
         if device_anchor is None:
             anchors = mobilesync_anchors_new(NULL, host_anchor)
@@ -95,8 +96,8 @@ cdef class MobileSyncClient(DeviceLinkService):
             anchors = mobilesync_anchors_new(device_anchor, host_anchor)
 
         try:
-            self.handle_error(mobilesync_start(self._c_client, data_class, anchors, computer_data_class_version, &sync_type, &device_data_class_version))
-            return (sync_type, <bint>computer_data_class_version, <bint>device_data_class_version)
+            self.handle_error(mobilesync_start(self._c_client, data_class, anchors, computer_data_class_version, &sync_type, &device_data_class_version, &error_description))
+            return (sync_type, <bint>computer_data_class_version, <bint>device_data_class_version, <bytes>error_description)
         except Exception, e:
             raise
         finally:

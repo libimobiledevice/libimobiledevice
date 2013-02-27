@@ -13,7 +13,7 @@ cdef extern from "libimobiledevice/file_relay.h":
         FILE_RELAY_E_STAGING_EMPTY = -5
         FILE_RELAY_E_UNKNOWN_ERROR = -256
 
-    file_relay_error_t file_relay_client_new(idevice_t device, uint16_t port, file_relay_client_t *client)
+    file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, file_relay_client_t *client)
     file_relay_error_t file_relay_client_free(file_relay_client_t client)
 
     file_relay_error_t file_relay_request_sources(file_relay_client_t client, const_sources_t sources, idevice_connection_t *connection)
@@ -37,8 +37,8 @@ cdef class FileRelayClient(PropertyListService):
     __service_name__ = "com.apple.mobile.file_relay"
     cdef file_relay_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        self.handle_error(file_relay_client_new(device._c_dev, port, &self._c_client))
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
+        self.handle_error(file_relay_client_new(device._c_dev, descriptor._c_service_descriptor, &self._c_client))
 
     def __dealloc__(self):
         cdef file_relay_error_t err

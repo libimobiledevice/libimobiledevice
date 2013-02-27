@@ -46,7 +46,7 @@ cdef extern from "libimobiledevice/afc.h":
         AFC_LOCK_EX = 2 | 4
         AFC_LOCK_UN = 8 | 4
 
-    afc_error_t afc_client_new(idevice_t device, uint16_t port, afc_client_t *client)
+    afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, afc_client_t *client)
     afc_error_t afc_client_free(afc_client_t client)
     afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
     afc_error_t afc_read_directory(afc_client_t client, char *dir, char ***list)
@@ -153,8 +153,8 @@ cdef class AfcClient(BaseService):
     __service_name__ = "com.apple.afc"
     cdef afc_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        self.handle_error(afc_client_new(device._c_dev, port, &(self._c_client)))
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
+        self.handle_error(afc_client_new(device._c_dev, descriptor._c_service_descriptor, &(self._c_client)))
     
     def __dealloc__(self):
         cdef afc_error_t err

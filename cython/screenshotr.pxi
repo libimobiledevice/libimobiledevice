@@ -11,7 +11,7 @@ cdef extern from "libimobiledevice/screenshotr.h":
         SCREENSHOTR_E_BAD_VERSION = -4
         SCREENSHOTR_E_UNKNOWN_ERROR = -256
 
-    screenshotr_error_t screenshotr_client_new(idevice_t device, uint16_t port, screenshotr_client_t * client)
+    screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, screenshotr_client_t * client)
     screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
     screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize)
 
@@ -31,8 +31,8 @@ cdef class ScreenshotrClient(DeviceLinkService):
     __service_name__ = "com.apple.mobile.screenshotr"
     cdef screenshotr_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        self.handle_error(screenshotr_client_new(device._c_dev, port, &self._c_client))
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
+        self.handle_error(screenshotr_client_new(device._c_dev, descriptor._c_service_descriptor, &self._c_client))
 
     def __dealloc__(self):
         cdef screenshotr_error_t err

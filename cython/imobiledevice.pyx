@@ -130,7 +130,7 @@ cdef class iDeviceConnection(Base):
         err = idevice_disconnect(self._c_connection)
         self.handle_error(err)
 
-    cdef inline BaseError _error(self, int16_t ret):
+    cdef BaseError _error(self, int16_t ret):
         return iDeviceError(ret)
 
 from libc.stdlib cimport *
@@ -148,7 +148,7 @@ cdef class iDevice(Base):
         if self._c_dev is not NULL:
             self.handle_error(idevice_free(self._c_dev))
 
-    cdef inline BaseError _error(self, int16_t ret):
+    cdef BaseError _error(self, int16_t ret):
         return iDeviceError(ret)
 
     cpdef iDeviceConnection connect(self, uint16_t port):

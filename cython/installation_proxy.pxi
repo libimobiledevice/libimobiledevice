@@ -13,7 +13,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
         INSTPROXY_E_OP_FAILED = -5
         INSTPROXY_E_UNKNOWN_ERROR = -256
 
-    instproxy_error_t instproxy_client_new(idevice_t device, uint16_t port, instproxy_client_t *client)
+    instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, instproxy_client_t *client)
     instproxy_error_t instproxy_client_free(instproxy_client_t client)
 
     instproxy_error_t instproxy_browse(instproxy_client_t client, plist.plist_t client_options, plist.plist_t *result)
@@ -46,11 +46,11 @@ cdef class InstallationProxyClient(PropertyListService):
     __service_name__ = "com.apple.mobile.installation_proxy"
     cdef instproxy_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
         cdef:
             iDevice dev = device
             instproxy_error_t err
-        err = instproxy_client_new(dev._c_dev, port, &self._c_client)
+        err = instproxy_client_new(dev._c_dev, descriptor._c_service_descriptor, &self._c_client)
         self.handle_error(err)
 
     def __dealloc__(self):

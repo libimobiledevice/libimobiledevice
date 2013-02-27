@@ -12,7 +12,7 @@ cdef class BaseError(Exception):
 
 cdef class Base:
     cdef inline int handle_error(self, int16_t ret) except -1
-    cdef inline BaseError _error(self, int16_t ret)
+    cdef BaseError _error(self, int16_t ret)
 
 cdef class iDeviceError(BaseError): pass
 
@@ -66,11 +66,18 @@ cdef extern from "libimobiledevice/lockdown.h":
         char *host_id
         char *root_certificate
     ctypedef lockdownd_pair_record *lockdownd_pair_record_t
+    cdef struct lockdownd_service_descriptor:
+        uint16_t port
+        uint8_t ssl_enabled
+    ctypedef lockdownd_service_descriptor *lockdownd_service_descriptor_t
 
 cdef class LockdownError(BaseError): pass
 
 cdef class LockdownPairRecord:
     cdef lockdownd_pair_record_t _c_record
+
+cdef class LockdownServiceDescriptor:
+    cdef lockdownd_service_descriptor_t _c_service_descriptor
 
 cdef class LockdownClient(PropertyListService):
     cdef lockdownd_client_t _c_client
@@ -80,7 +87,7 @@ cdef class LockdownClient(PropertyListService):
     cpdef plist.Node get_value(self, bytes domain=*, bytes key=*)
     cpdef set_value(self, bytes domain, bytes key, object value)
     cpdef remove_value(self, bytes domain, bytes key)
-    cpdef uint16_t start_service(self, object service)
+    cpdef object start_service(self, object service)
     cpdef object get_service_client(self, object service_class)
     cpdef tuple start_session(self, bytes host_id)
     cpdef stop_session(self, bytes session_id)

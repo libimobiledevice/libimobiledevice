@@ -10,7 +10,7 @@ cdef extern from "libimobiledevice/mobile_image_mounter.h":
         MOBILE_IMAGE_MOUNTER_E_CONN_FAILED = -3
         MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR = -256
 
-    mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, uint16_t port, mobile_image_mounter_client_t *client)
+    mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t descriptor, mobile_image_mounter_client_t *client)
     mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client)
     mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, char *image_type, plist.plist_t *result)
     mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, char *image_path, char *image_signature, uint16_t signature_length, char *image_type, plist.plist_t *result)
@@ -31,8 +31,8 @@ cdef class MobileImageMounterClient(PropertyListService):
     __service_name__ = "com.apple.mobile.mobile_image_mounter"
     cdef mobile_image_mounter_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, int port, *args, **kwargs):
-        self.handle_error(mobile_image_mounter_new(device._c_dev, port, &self._c_client))
+    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
+        self.handle_error(mobile_image_mounter_new(device._c_dev, descriptor._c_service_descriptor, &self._c_client))
     
     def __dealloc__(self):
         cdef mobile_image_mounter_error_t err
