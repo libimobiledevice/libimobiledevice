@@ -241,7 +241,7 @@ Configuration for $PACKAGE $VERSION:
   Debug code ..............: $building_debug_code
   Dev tools ...............: $building_dev_tools
   Python bindings .........: $cython_python_bindings
-  SSL support .............: $ssl_provider
+  SSL support backend .....: $ssl_provider
 
   Now type 'make' to build $PACKAGE $VERSION,
   and then 'make install' for installation.
