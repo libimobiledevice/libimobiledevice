@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef __DEBUG_H
+#define __DEBUG_H
 
 #include <plist/plist.h>
 

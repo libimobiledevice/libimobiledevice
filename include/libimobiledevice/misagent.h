@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef MISAGENT_H
-#define MISAGENT_H
+#ifndef IMISAGENT_H
+#define IMISAGENT_H
 
 #ifdef __cplusplus
 extern "C" {

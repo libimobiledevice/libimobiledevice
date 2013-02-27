@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef MOBILEBACKUP2_H
-#define MOBILEBACKUP2_H
+
+#ifndef __MOBILEBACKUP2_H
+#define __MOBILEBACKUP2_H
 
 #include "libimobiledevice/mobilebackup2.h"
 #include "device_link_service.h"

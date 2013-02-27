@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef IMISAGENT_H
-#define IMISAGENT_H
+
+#ifndef __MISAGENT_H
+#define __MISAGENT_H
 
 #include "libimobiledevice/misagent.h"
 #include "property_list_service.h"

@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef IMOBILE_IMAGE_MOUNTER_H
-#define IMOBILE_IMAGE_MOUNTER_H
+
+#ifndef __MOBILE_IMAGE_MOUNTER_H
+#define __MOBILE_IMAGE_MOUNTER_H
 
 #ifdef WIN32
 #include <windows.h>

@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef DEVICE_LINK_SERVICE_H
-#define DEVICE_LINK_SERVICE_H
+
+#ifndef __DEVICE_LINK_SERVICE_H
+#define __DEVICE_LINK_SERVICE_H
 
 #include "property_list_service.h"
 

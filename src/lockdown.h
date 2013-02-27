@@ -1,5 +1,5 @@
 /*
- * lockdownd.h
+ * lockdown.h
  * Defines lockdown stuff, like the client struct.
  *
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef LOCKDOWND_H
-#define LOCKDOWND_H
+#ifndef __LOCKDOWND_H
+#define __LOCKDOWND_H
 
 #include "userpref.h"
 

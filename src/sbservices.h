@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef ISBSERVICES_H
-#define ISBSERVICES_H
+
+#ifndef __SBSERVICES_H
+#define __SBSERVICES_H
 
 #ifdef WIN32
 #include <windows.h>

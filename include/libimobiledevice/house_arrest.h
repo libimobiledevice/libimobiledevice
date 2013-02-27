@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef HOUSE_ARREST_H
-#define HOUSE_ARREST_H
+#ifndef IHOUSE_ARREST_H
+#define IHOUSE_ARREST_H
 
 #ifdef __cplusplus
 extern "C" {

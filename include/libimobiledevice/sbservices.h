@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SB_SERVICES_H
-#define SB_SERVICES_H
+#ifndef ISB_SERVICES_H
+#define ISB_SERVICES_H
 
 #ifdef __cplusplus
 extern "C" {

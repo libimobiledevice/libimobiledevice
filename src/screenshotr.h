@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef SCREENSHOTR_H
-#define SCREENSHOTR_H
+
+#ifndef __SCREENSHOTR_H
+#define __SCREENSHOTR_H
 
 #include "libimobiledevice/screenshotr.h"
 #include "device_link_service.h"

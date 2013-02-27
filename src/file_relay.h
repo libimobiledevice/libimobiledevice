@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef FILE_RELAY_H
-#define FILE_RELAY_H
+
+#ifndef __FILE_RELAY_H
+#define __FILE_RELAY_H
 
 #include "libimobiledevice/file_relay.h"
 #include "property_list_service.h"

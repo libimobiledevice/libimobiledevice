@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
+#ifndef __AFC_H
+#define __AFC_H
+
 #include <stdint.h>
 #ifdef WIN32
 #include <windows.h>
@@ -99,3 +102,4 @@ enum {
 	AFC_OP_SET_FILE_TIME   = 0x0000001E 	/* set st_mtime */
 };
 
+#endif

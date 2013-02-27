@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef INOTIFICATION_PROXY_H
-#define INOTIFICATION_PROXY_H
+
+#ifndef __NOTIFICATION_PROXY_H
+#define __NOTIFICATION_PROXY_H
 
 #ifdef WIN32
 #include <windows.h>

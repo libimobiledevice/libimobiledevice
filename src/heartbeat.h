@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef HEARTBEAT_H
-#define HEARTBEAT_H
+#ifndef __HEARTBEAT_H
+#define __HEARTBEAT_H
 
 #include "libimobiledevice/heartbeat.h"
 #include "property_list_service.h"

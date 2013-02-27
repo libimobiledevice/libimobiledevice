@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef RESTORED_H
-#define RESTORED_H
+#ifndef __RESTORED_H
+#define __RESTORED_H
 
 #include <string.h>
 

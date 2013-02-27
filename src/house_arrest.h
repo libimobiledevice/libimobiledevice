@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef IHOUSE_ARREST_H
-#define IHOUSE_ARREST_H
+
+#ifndef __HOUSE_ARREST_H
+#define __HOUSE_ARREST_H
 
 #include "libimobiledevice/house_arrest.h"
 #include "property_list_service.h"

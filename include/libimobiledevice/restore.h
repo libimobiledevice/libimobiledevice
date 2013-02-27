@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef RESTORE_H
-#define RESTORE_H
+#ifndef IRESTORE_H
+#define IRESTORE_H
 
 #ifdef __cplusplus
 extern "C" {

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef WEBINSPECTOR_H
-#define WEBINSPECTOR_H
+#ifndef __WEBINSPECTOR_H
+#define __WEBINSPECTOR_H
 
 #include "libimobiledevice/webinspector.h"
 #include "property_list_service.h"

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef INSTALLATION_PROXY_H
-#define INSTALLATION_PROXY_H
+#ifndef IINSTALLATION_PROXY_H
+#define IINSTALLATION_PROXY_H
 
 #ifdef __cplusplus
 extern "C" {

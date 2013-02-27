@@ -18,8 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#ifndef PROPERTY_LIST_SERVICE_H
-#define PROPERTY_LIST_SERVICE_H
+
+#ifndef __PROPERTY_LIST_SERVICE_H
+#define __PROPERTY_LIST_SERVICE_H
 
 #include <libimobiledevice/lockdown.h>
 #include "idevice.h"

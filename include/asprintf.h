@@ -1,5 +1,5 @@
-#ifndef ASPRINTF_H
-#define ASPRINTF_H
+#ifndef __ASPRINTF_H
+#define __ASPRINTF_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

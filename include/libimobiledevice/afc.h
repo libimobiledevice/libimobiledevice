@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef AFC_H
-#define AFC_H
+#ifndef IAFC_H
+#define IAFC_H
 
 #ifdef __cplusplus
 extern "C" {
