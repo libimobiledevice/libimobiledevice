@@ -113,7 +113,7 @@ webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service
 webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
 {
 	webinspector_error_t err = WEBINSPECTOR_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), (uint16_t*)&err);
+	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), (int16_t*)&err);
 	return err;
 }
 

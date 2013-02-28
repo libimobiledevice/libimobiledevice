@@ -103,7 +103,7 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
  */
-service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, uint16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), uint16_t *error_code)
+service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code)
 {
 	*client = NULL;
 
@@ -122,9 +122,9 @@ service_error_t service_client_factory_start_service(idevice_t device, const cha
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
 
-	uint16_t ec;
+	int16_t ec;
 	if (constructor_func) {
-		ec = (uint16_t)constructor_func(device, service, client);
+		ec = (int16_t)constructor_func(device, service, client);
 	} else {
 		ec = service_client_new(device, service, (service_client_t*)client);
 	}
