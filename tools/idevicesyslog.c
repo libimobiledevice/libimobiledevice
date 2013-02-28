@@ -28,6 +28,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <endianness.h>
+#include "../src/service.h"
 
 static int quit_flag = 0;
 
@@ -44,12 +45,10 @@ static void clean_exit(int sig)
 
 int main(int argc, char *argv[])
 {
-	lockdownd_client_t client = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	const char* udid = NULL;
-	lockdownd_service_descriptor_t service = NULL;
 
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
@@ -93,42 +92,27 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicesyslog")) {
-		idevice_free(device);
-		return -1;
-	}
+	service_error_t serr = SERVICE_E_UNKNOWN_ERROR;
+	service_client_t syslog = NULL;
 
-	/* start syslog_relay service and retrieve port */
-	ret = lockdownd_start_service(client, "com.apple.syslog_relay", &service);
-	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
-		lockdownd_client_free(client);
-
-		/* connect to socket relay messages */
-		idevice_connection_t conn = NULL;
-		if ((idevice_connect(device, service->port, &conn) != IDEVICE_E_SUCCESS) || !conn) {
-			printf("ERROR: Could not open usbmux connection.\n");
-		} else {
-			while (!quit_flag) {
-				char c;
-				uint32_t bytes = 0;
-				if (idevice_connection_receive(conn, &c, 1, &bytes) < 0) {
-					fprintf(stderr, "Error receiving data. Exiting...\n");
-					break;
-				}
-				if (c != 0) {
-					putchar(c);
-					fflush(stdout);
-				}
+	service_client_factory_start_service(device, "com.apple.syslog_relay", (void**)&syslog, "idevicesyslog", NULL, &serr);
+	if (serr == SERVICE_E_SUCCESS) {
+		while (!quit_flag) {
+			char c;
+			uint32_t bytes = 0;
+			if (service_receive(syslog, &c, 1, &bytes) != SERVICE_E_SUCCESS) {
+				fprintf(stderr, "Error receiving data. Exiting...\n");
+				break;
+			}
+			if (c != 0) {
+				putchar(c);
+				fflush(stdout);
 			}
 		}
-		idevice_disconnect(conn);
+		service_client_free(syslog);
 	} else {
 		printf("ERROR: Could not start service com.apple.syslog_relay.\n");
 	}
-
-	if (service)
-		lockdownd_service_descriptor_free(service);
-
 	idevice_free(device);
 
 	return 0;
