@@ -102,9 +102,12 @@ int main(int argc, char *argv[])
 
 	/* start heartbeat service on device */
 	heartbeat_client_start_service(device, &heartbeat, "ideviceheartbeat");
-
 	if (heartbeat) {
 		printf("< heartbeat started, listening...\n");
+	} else {
+		printf("Failed to start heartbeat service\n");
+		idevice_free(device);
+		return -1;
 	}
 
 	/* main loop */
