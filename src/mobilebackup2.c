@@ -76,7 +76,7 @@ static mobilebackup2_error_t mobilebackup2_error(device_link_service_error_t err
 mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 						mobilebackup2_client_t * client)
 {
-	if (!device || service->port == 0 || !client || *client)
+	if (!device || !service || service->port == 0 || !client || *client)
 		return MOBILEBACKUP2_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;

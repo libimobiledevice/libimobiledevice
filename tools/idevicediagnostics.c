@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 
 	lockdownd_client_free(lockdown_client);
 
-	if ((ret == LOCKDOWN_E_SUCCESS) && (service->port > 0)) {
+	if ((ret == LOCKDOWN_E_SUCCESS) && service && (service->port > 0)) {
 		if (diagnostics_relay_client_new(device, service, &diagnostics_client) != DIAGNOSTICS_RELAY_E_SUCCESS) {
 			printf("Could not connect to diagnostics_relay!\n");
 			result = -1;

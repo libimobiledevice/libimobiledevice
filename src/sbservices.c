@@ -97,9 +97,6 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
  */
 sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client)
 {
-	if (!device)
-		return SBSERVICES_E_INVALID_ARG;
-
 	property_list_service_client_t plistclient = NULL;
 	sbservices_error_t err = sbservices_error(property_list_service_client_new(device, service, &plistclient));
 	if (err != SBSERVICES_E_SUCCESS) {

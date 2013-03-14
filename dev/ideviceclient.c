@@ -49,7 +49,7 @@ static void perform_notification(idevice_t phone, lockdownd_client_t client, con
 	np_client_t np;
 
 	lockdownd_start_service(client, "com.apple.mobile.notification_proxy", &service);
-	if (service->port) {
+	if (service && service->port) {
 		printf("::::::::::::::: np was started ::::::::::::\n");
 		np_client_new(phone, service, &np);
 		if (np) {
@@ -109,14 +109,9 @@ int main(int argc, char *argv[])
 
 	lockdownd_start_service(client, "com.apple.afc", &service);
 
-	if (service->port) {
+	if (service && service->port) {
 		afc_client_t afc = NULL;
 		afc_client_new(phone, service, &afc);
-
-		if (service) {
-			lockdownd_service_descriptor_free(service);
-			service = NULL;
-		}
 
 		if (afc) {
 			service->port = 0;
@@ -127,11 +122,6 @@ int main(int argc, char *argv[])
 				np_client_new(phone, service, &gnp);
 			} else {
 				printf("ERROR: Notification proxy could not be started.\n");
-			}
-
-			if (service) {
-				lockdownd_service_descriptor_free(service);
-				service = NULL;
 			}
 
 			if (gnp) {
@@ -266,6 +256,9 @@ int main(int argc, char *argv[])
 		}
 
 		afc_client_free(afc);
+
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	} else {
 		printf("Start service failure.\n");
 	}

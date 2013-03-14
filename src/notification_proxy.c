@@ -108,12 +108,10 @@ static np_error_t np_error(property_list_service_error_t err)
  */
 np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client)
 {
-	if (!device)
-		return NP_E_INVALID_ARG;
-
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		return NP_E_CONN_FAILED;
+	np_error_t err = np_error(property_list_service_client_new(device, service, &plistclient));
+	if (err != NP_E_SUCCESS) {
+		return err;
 	}
 
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_private));

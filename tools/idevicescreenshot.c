@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 
 	lockdownd_start_service(lckd, "com.apple.mobile.screenshotr", &service);
 	lockdownd_client_free(lckd);
-	if (service->port > 0) {
+	if (service && service->port > 0) {
 		if (screenshotr_client_new(device, service, &shotr) != SCREENSHOTR_E_SUCCESS) {
 			printf("Could not connect to screenshotr!\n");
 		} else {

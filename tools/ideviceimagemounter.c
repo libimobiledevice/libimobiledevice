@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 
 	lockdownd_start_service(lckd, "com.apple.mobile.mobile_image_mounter", &service);
 
-	if (service->port == 0) {
+	if (!service || service->port == 0) {
 		printf("ERROR: Could not start mobile_image_mounter service!\n");
 		goto leave;
 	}
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
 	if (!list_mode) {
 		struct stat fst;
 		if ((lockdownd_start_service(lckd, "com.apple.afc", &service) !=
-			 LOCKDOWN_E_SUCCESS) || !service->port) {
+			 LOCKDOWN_E_SUCCESS) || !service || !service->port) {
 			fprintf(stderr, "Could not start com.apple.afc!\n");
 			goto leave;
 		}

@@ -489,7 +489,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 	}
 
 	lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
-	if (service->port) {
+	if (service && service->port) {
 		np_client_new(device, service, &np);
 		if (np) {
 			np_post_notification(np, notification);
@@ -1557,7 +1557,7 @@ int main(int argc, char *argv[])
 	/* start notification_proxy */
 	np_client_t np = NULL;
 	ret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
-	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+	if ((ret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		np_client_new(device, service, &np);
 		np_set_notify_callback(np, notify_cb, NULL);
 		const char *noties[5] = {
@@ -1570,11 +1570,6 @@ int main(int argc, char *argv[])
 		np_observe_notifications(np, noties);
 	} else {
 		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
-	}
-
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
 	}
 
 	afc_client_t afc = NULL;
@@ -1596,7 +1591,7 @@ int main(int argc, char *argv[])
 	/* start mobilebackup service and retrieve port */
 	mobilebackup2_client_t mobilebackup2 = NULL;
 	ret = lockdownd_start_service(lockdown, MOBILEBACKUP2_SERVICE_NAME, &service);
-	if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+	if ((ret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		PRINT_VERBOSE(1, "Started \"%s\" service on port %d.\n", MOBILEBACKUP2_SERVICE_NAME, service->port);
 		mobilebackup2_client_new(device, service, &mobilebackup2);
 

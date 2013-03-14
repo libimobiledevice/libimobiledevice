@@ -74,12 +74,12 @@ heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descr
 {
 	*client = NULL;
 
-	debug_info("Creating heartbeat_client, port = %d.", service->port);
-
-	if (!device || service->port == 0 || !client || *client) {
+	if (!device || !service || service->port == 0 || !client || *client) {
 		debug_info("Incorrect parameter passed to heartbeat_client_new.");
 		return HEARTBEAT_E_INVALID_ARG;
 	}
+
+	debug_info("Creating heartbeat_client, port = %d.", service->port);
 
 	property_list_service_client_t plclient = NULL;
 	heartbeat_error_t ret = heartbeat_error(property_list_service_client_new(device, service, &plclient));

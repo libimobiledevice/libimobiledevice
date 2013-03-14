@@ -84,7 +84,7 @@ static int device_link_service_get_message(plist_t dl_msg, char **message)
  */
 device_link_service_error_t device_link_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, device_link_service_client_t *client)
 {
-	if (!device || service->port == 0 || !client || *client) {
+	if (!device || !service || service->port == 0 || !client || *client) {
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
 	}
 

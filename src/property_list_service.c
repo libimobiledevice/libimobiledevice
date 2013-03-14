@@ -68,7 +68,7 @@ static property_list_service_error_t service_to_property_list_service_error(serv
  */
 property_list_service_error_t property_list_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, property_list_service_client_t *client)
 {
-	if (!device || (service->port == 0) || !client || *client)
+	if (!device || !service || service->port == 0 || !client || *client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
 	service_client_t parent = NULL;

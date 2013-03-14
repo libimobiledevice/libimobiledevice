@@ -76,7 +76,7 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
 screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 					   screenshotr_client_t * client)
 {
-	if (!device || service->port == 0 || !client || *client)
+	if (!device || !service || service->port == 0 || !client || *client)
 		return SCREENSHOTR_E_INVALID_ARG;
 
 	device_link_service_client_t dlclient = NULL;

@@ -38,7 +38,7 @@
  */
 file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, file_relay_client_t *client)
 {
-	if (!device || service->port == 0 || !client || *client) {
+	if (!device || !service || service->port == 0 || !client || *client) {
 		return FILE_RELAY_E_INVALID_ARG;
 	}
 

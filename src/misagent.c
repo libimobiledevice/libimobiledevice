@@ -100,9 +100,6 @@ static misagent_error_t misagent_check_result(plist_t response, int* status_code
  */
 misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client)
 {
-	if (!device)
-		return MISAGENT_E_INVALID_ARG;
-
 	property_list_service_client_t plistclient = NULL;
 	misagent_error_t err = misagent_error(property_list_service_client_new(device, service, &plistclient));
 	if (err != MISAGENT_E_SUCCESS) {

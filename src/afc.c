@@ -123,7 +123,7 @@ afc_error_t afc_client_new_with_service_client(service_client_t service_client, 
  */
 afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t * client)
 {
-	if (!device || service->port == 0)
+	if (!device || !service || service->port == 0)
 		return AFC_E_INVALID_ARG;
 
 	service_client_t parent = NULL;

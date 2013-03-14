@@ -104,12 +104,10 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
  */
 instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client)
 {
-	if (!device)
-		return INSTPROXY_E_INVALID_ARG;
-
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		return INSTPROXY_E_CONN_FAILED;
+	instproxy_error_t err = instproxy_error(property_list_service_client_new(device, service, &plistclient));
+	if (err != INSTPROXY_E_SUCCESS) {
+		return err;
 	}
 
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));

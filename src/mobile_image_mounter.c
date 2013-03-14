@@ -98,12 +98,10 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
  */
 mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client)
 {
-	if (!device)
-		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
-
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		return MOBILE_IMAGE_MOUNTER_E_CONN_FAILED;
+	mobile_image_mounter_error_t err = mobile_image_mounter_error(property_list_service_client_new(device, service, &plistclient));
+	if (err != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		return err;
 	}
 
 	mobile_image_mounter_client_t client_loc = (mobile_image_mounter_client_t) malloc(sizeof(struct mobile_image_mounter_client_private));

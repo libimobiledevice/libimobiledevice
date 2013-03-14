@@ -83,7 +83,7 @@ static int diagnostics_relay_check_result(plist_t dict)
  */
 diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client)
 {
-	if (!device || service->port == 0 || !client || *client) {
+	if (!device || !service || service->port == 0 || !client || *client) {
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
 	}
 

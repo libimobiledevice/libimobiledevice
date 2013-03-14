@@ -66,7 +66,7 @@ static service_error_t idevice_to_service_error(idevice_error_t err)
  */
 service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client)
 {
-	if (!device || (service->port == 0) || !client || *client)
+	if (!device || !service || service->port == 0 || !client || *client)
 		return SERVICE_E_INVALID_ARG;
 
 	/* Attempt connection */
@@ -117,7 +117,7 @@ service_error_t service_client_factory_start_service(idevice_t device, const cha
 	lockdownd_start_service(lckd, service_name, &service);
 	lockdownd_client_free(lckd);
 
-	if (service->port <= 0) {
+	if (!service || service->port == 0) {
 		debug_info("Could not start service %s!", service_name);
 		return SERVICE_E_START_SERVICE_ERROR;
 	}

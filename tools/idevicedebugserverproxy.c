@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 		goto leave_cleanup;
 	}
 
-	if ((lockdownd_start_service(lockdown, "com.apple.debugserver", &service) != LOCKDOWN_E_SUCCESS) || !service->port) {
+	if ((lockdownd_start_service(lockdown, "com.apple.debugserver", &service) != LOCKDOWN_E_SUCCESS) || !service || !service->port) {
 		fprintf(stderr, "Could not start com.apple.debugserver!\nPlease make sure to mount the developer disk image first.\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
