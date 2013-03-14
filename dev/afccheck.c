@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.afc", &service) || !service || !service->port) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.afc", &service) || !service || !service->port) {
 		lockdownd_client_free(client);
 		idevice_free(phone);
 		fprintf(stderr, "Something went wrong when starting AFC.");
