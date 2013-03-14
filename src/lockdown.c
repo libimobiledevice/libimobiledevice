@@ -1512,6 +1512,12 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	if (!client || !identifier || !service)
 		return LOCKDOWN_E_INVALID_ARG;
 
+	if (*service) {
+		// reset fields if service descriptor is reused
+		(*service)->port = 0;
+		(*service)->ssl_enabled = 0;
+	}
+
 	char *host_id = NULL;
 	userpref_get_host_id(&host_id);
 	if (!host_id)
@@ -1547,13 +1553,13 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	if (!dict)
 		return LOCKDOWN_E_PLIST_ERROR;
 
-	if (*service == NULL)
-		*service = (lockdownd_service_descriptor_t)malloc(sizeof(struct lockdownd_service_descriptor));
-	(*service)->port = 0;
-	(*service)->ssl_enabled = 0;
-
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	if (lockdown_check_result(dict, "StartService") == RESULT_SUCCESS) {
+		if (*service == NULL)
+			*service = (lockdownd_service_descriptor_t)malloc(sizeof(struct lockdownd_service_descriptor));
+		(*service)->port = 0;
+		(*service)->ssl_enabled = 0;
+
 		/* read service port number */
 		plist_t node = plist_dict_get_item(dict, "Port");
 		if (node && (plist_get_node_type(node) == PLIST_UINT)) {
