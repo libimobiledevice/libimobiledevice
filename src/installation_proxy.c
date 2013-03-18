@@ -760,9 +760,9 @@ plist_t instproxy_client_options_new()
  * @param client_options The client options to modify.
  * @param ... KEY, VALUE, [KEY, VALUE], NULL
  *
- * @note The keys and values passed are expected to be strings, except for
- *       "ApplicationSINF" and "iTunesMetadata" expecting a plist node of type
- *       PLIST_DATA as value, or "SkipUninstall" needing int as value.
+ * @note The keys and values passed are expected to be strings, except for the
+ *       keys "ApplicationSINF", "iTunesMetadata", "ReturnAttributes" which are
+ *       expecting a plist_t node as value and "SkipUninstall" expects int.
  */
 void instproxy_client_options_add(plist_t client_options, ...)
 {
