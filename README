@@ -1,27 +1,29 @@
 About
 =====
 
-A library to communicate with services running on Apple iPhone/iPod Touch
-devices.
+A library to communicate with services of Apple iOS devices using native
+protocols.
 
 Requirements
 ============
 
 Development Packages of:
-	libgnutls
-	libgcrypt
-	glib2.0
+	libgnutls or openssl
 	libplist
-	libusbmuxd (within usbmuxd package, see below)
+	libusbmuxd
 
 Software:
-	usbmuxd (git clone git://git.marcansoft.com/usbmuxd.git)
+	usbmuxd
 	make
 	autoheader
 	automake
 	autoconf
 	libtool
 	gcc
+
+Optional:
+	cython (Python bindings)
+	doxygen (Documentation)
 
 Installation
 ============
@@ -31,10 +33,6 @@ To compile run:
 	make
 	sudo make install
 
-On Ubuntu/Debian, you can do:
-	sudo apt-get install build-essential automake autoconf libtool\
-          libgnutls-dev libglib2.0-dev libxml2-dev libreadline5-dev
-
 Who/What/Where?
 ===============
 
@@ -42,7 +40,7 @@ Home:
 	http://www.libimobiledevice.org/
 
 Code:
-	git clone git://git.sukimashita.com/libimobiledevice.git
+	git clone http://git.sukimashita.com/libimobiledevice.git
 
 Tickets:
 	http://libiphone.lighthouseapp.com/
@@ -58,5 +56,4 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2010-03-31
-
+	2013-03-18
