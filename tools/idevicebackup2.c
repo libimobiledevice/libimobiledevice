@@ -1934,7 +1934,7 @@ checkpoint:
 					memset(&fs, '\0', sizeof(fs));
 					res = statvfs(backup_directory, &fs);
 					if (res == 0) {
-						freespace = fs.f_bavail * fs.f_bsize;
+						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_bsize;
 					}
 #endif
 					mobilebackup2_send_status_response(mobilebackup2, res, NULL, plist_new_uint(freespace));
