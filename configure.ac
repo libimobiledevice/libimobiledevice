@@ -56,7 +56,7 @@ if test "x$have_vasprintf" = "xyes"; then
 fi
 
 AC_CHECK_HEADER(endian.h, [ac_cv_have_endian_h="yes"], [ac_cv_have_endian_h="no"])
-if test "x$ac_cv_have_endian" = "xno"; then
+if test "x$ac_cv_have_endian_h" = "xno"; then
   AC_DEFINE(__LITTLE_ENDIAN,1234,[little endian])
   AC_DEFINE(__BIG_ENDIAN,4321,[big endian])
   AC_C_BIGENDIAN([ac_cv_c_bigendian="yes"], [ac_cv_c_bigendian="no"], [], [])
