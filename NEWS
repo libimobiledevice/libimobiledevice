@@ -3,12 +3,18 @@ Version 1.1.5
 
 * Development release
 * Changes:
+  - Implement automatic reconnecting in idevicesyslog
+  - Refactor all services to use new base service
+  - Add new generic service_client_factory_start_service() helper
+  - Implement a base service that all services inherit from
   - API: Refactor use of "port numbers" into a "service descriptor" which is
     a needed change as all services must now transparently support SSL.
     Fortunately, only minor changes are needed to migrate your code properly.
   - Add experimental ideviceheartbeat to allow service checkin over the network
   - Add heartbeat service implementation to keep alive network connections
   - Add webinspector service implementation for WebKit remote debugging
+  - Fix idevicebackup2 failing due to integer overflow in free disk space 
+    calculation on 32 bit architectures and large disk capacities
   - Add support for encrypted and password protected backups to idevicebackup2
   - Fix major "too long filename received" bug in idevicebackup2
   - Various fixes for proper and tested WIN32 support including MinGW building
