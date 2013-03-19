@@ -69,3 +69,5 @@ idevicediagnostics_SOURCES = idevicediagnostics.c
 idevicediagnostics_CFLAGS = $(AM_CFLAGS)
 idevicediagnostics_LDFLAGS = $(AM_LDFLAGS)
 idevicediagnostics_LDADD = ../src/libimobiledevice.la
+
+EXTRA_DIST = socket.h thread.h
