@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	idevice_t device = NULL;
 	lockdownd_client_t client = NULL;
 	char **dev_list = NULL;
-	char *devname = NULL;
+	char *device_name = NULL;
 	int ret = 0;
 	int i;
 	int mode = MODE_SHOW_ID;
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 			return -2;
 		}
 
-		if ((LOCKDOWN_E_SUCCESS != lockdownd_get_device_name(client, &devname)) || !devname) {
+		if ((LOCKDOWN_E_SUCCESS != lockdownd_get_device_name(client, &device_name)) || !device_name) {
 			fprintf(stderr, "ERROR: Could not get device name!\n");
 			ret = -2;
 		}
@@ -104,11 +104,11 @@ int main(int argc, char **argv)
 		idevice_free(device);
 
 		if (ret == 0) {
-			printf("%s\n", devname);
+			printf("%s\n", device_name);
 		}
 
-		if (devname) {
-			free(devname);
+		if (device_name) {
+			free(device_name);
 		}
 
 		return ret;
