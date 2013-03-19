@@ -13,6 +13,12 @@ Create or restore backup from the current or specified directory.
 .TP
 .B \-u, \-\-udid UDID
 target specific device by its 40-digit device UDID.
+.TP
+.B \-s, \-\-source UDID
+use backup data from device specified by UDID.
+.TP
+.B \-i, \-\-interactive
+request passwords interactively on the command line.
 .TP 
 .B \-d, \-\-debug
 enable communication debugging.
@@ -40,15 +46,23 @@ create a copy of backup folder before restoring.
 .B \t\-\-settings
 restore device settings from the backup.
 .TP
+.B \t\-\-remove
+remove items which are not being restored.
+.TP
+.B \t\-\-password PWD
+supply the password of the source backup.
+.TP
 .B info
 show details about last completed backup of device.
 .TP
 .B list
 list files of last completed backup in CSV format.
 .TP
-.B unback
-unpack a completed backup in DIRECTORY/_unback_/.
-
+.B encryption on|off [PWD]
+enable or disable backup encryption.
+.TP
+.B changepw [OLD NEW]
+change backup password on target device.
 .SH AUTHORS
 Martin Szulecki
 
