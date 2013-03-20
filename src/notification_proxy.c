@@ -46,11 +46,7 @@ struct np_thread {
 static void np_lock(np_client_t client)
 {
 	debug_info("NP: Locked");
-#ifdef WIN32
-	EnterCriticalSection(&client->mutex);
-#else
-	pthread_mutex_lock(&client->mutex);
-#endif
+	mutex_lock(&client->mutex);
 }
 
 /**
@@ -61,11 +57,7 @@ static void np_lock(np_client_t client)
 static void np_unlock(np_client_t client)
 {
 	debug_info("NP: Unlocked");
-#ifdef WIN32
-	LeaveCriticalSection(&client->mutex);
-#else
-	pthread_mutex_unlock(&client->mutex);
-#endif
+	mutex_unlock(&client->mutex);
 }
 
 /**
@@ -117,13 +109,8 @@ np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t servic
 	np_client_t client_loc = (np_client_t) malloc(sizeof(struct np_client_private));
 	client_loc->parent = plistclient;
 
-#ifdef WIN32
-	InitializeCriticalSection(&client_loc->mutex);
+	mutex_init(&client_loc->mutex);
 	client_loc->notifier = NULL;
-#else
-	pthread_mutex_init(&client_loc->mutex, NULL);
-	client_loc->notifier = (pthread_t)NULL;
-#endif
 
 	*client = client_loc;
 	return NP_E_SUCCESS;
@@ -146,17 +133,9 @@ np_error_t np_client_free(np_client_t client)
 	client->parent = NULL;
 	if (client->notifier) {
 		debug_info("joining np callback");
-#ifdef WIN32
-		WaitForSingleObject(client->notifier, INFINITE);
-#else
-		pthread_join(client->notifier, NULL);
-#endif
+		thread_join(client->notifier);
 	}
-#ifdef WIN32
-	DeleteCriticalSection(&client->mutex);
-#else
-	pthread_mutex_destroy(&client->mutex);
-#endif
+	mutex_destroy(&client->mutex);
 	free(client);
 
 	return NP_E_SUCCESS;
@@ -415,13 +394,8 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 		debug_info("callback already set, removing\n");
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
-#ifdef WIN32
-		WaitForSingleObject(client->notifier, INFINITE);
+		thread_join(client->notifier);
 		client->notifier = NULL;
-#else
-		pthread_join(client->notifier, NULL);
-		client->notifier = (pthread_t)NULL;
-#endif
 		client->parent = parent;
 	}
 
@@ -432,18 +406,9 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 			npt->cbfunc = notify_cb;
 			npt->user_data = user_data;
 
-#ifdef WIN32
-			client->notifier = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)np_notifier, npt, 0, NULL);
-			if (client->notifier != INVALID_HANDLE_VALUE) {
-				res = NP_E_SUCCESS;
-			} else {
-				client->notifier = NULL;
-			}
-#else
-			if (pthread_create(&client->notifier, NULL, np_notifier, npt) == 0) {
+			if (thread_create(&client->notifier, np_notifier, npt) == 0) {
 				res = NP_E_SUCCESS;
 			}
-#endif
 		}
 	} else {
 		debug_info("no callback set");

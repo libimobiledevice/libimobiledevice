@@ -35,11 +35,7 @@
  */
 static void mobile_image_mounter_lock(mobile_image_mounter_client_t client)
 {
-#ifdef WIN32
-	EnterCriticalSection(&client->mutex);
-#else
-	pthread_mutex_lock(&client->mutex);
-#endif
+	mutex_lock(&client->mutex);
 }
 
 /**
@@ -49,11 +45,7 @@ static void mobile_image_mounter_lock(mobile_image_mounter_client_t client)
  */
 static void mobile_image_mounter_unlock(mobile_image_mounter_client_t client)
 {
-#ifdef WIN32
-	LeaveCriticalSection(&client->mutex);
-#else
-	pthread_mutex_unlock(&client->mutex);
-#endif
+	mutex_unlock(&client->mutex);
 }
 
 /**
@@ -107,11 +99,7 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdown
 	mobile_image_mounter_client_t client_loc = (mobile_image_mounter_client_t) malloc(sizeof(struct mobile_image_mounter_client_private));
 	client_loc->parent = plistclient;
 
-#ifdef WIN32
-	InitializeCriticalSection(&client_loc->mutex);
-#else
-	pthread_mutex_init(&client_loc->mutex, NULL);
-#endif
+	mutex_init(&client_loc->mutex);
 
 	*client = client_loc;
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;
@@ -133,11 +121,7 @@ mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_clie
 
 	property_list_service_client_free(client->parent);
 	client->parent = NULL;
-#ifdef WIN32
-	DeleteCriticalSection(&client->mutex);
-#else
-	pthread_mutex_destroy(&client->mutex);
-#endif
+	mutex_destroy(&client->mutex);
 	free(client);
 
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;

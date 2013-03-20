@@ -22,24 +22,14 @@
 #ifndef __INSTALLATION_PROXY_H
 #define __INSTALLATION_PROXY_H
 
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
-
 #include "libimobiledevice/installation_proxy.h"
 #include "property_list_service.h"
+#include "common/thread.h"
 
 struct instproxy_client_private {
 	property_list_service_client_t parent;
-#ifdef WIN32
-	CRITICAL_SECTION mutex;
-	HANDLE status_updater;
-#else
-	pthread_mutex_t mutex;
-	pthread_t status_updater;
-#endif
+	mutex_t mutex;
+	thread_t status_updater;
 };
 
 #endif

@@ -36,11 +36,7 @@
 static void sbs_lock(sbservices_client_t client)
 {
 	debug_info("SBServices: Locked");
-#ifdef WIN32
-	EnterCriticalSection(&client->mutex);
-#else
-	pthread_mutex_lock(&client->mutex);
-#endif
+	mutex_lock(&client->mutex);
 }
 
 /**
@@ -51,11 +47,7 @@ static void sbs_lock(sbservices_client_t client)
 static void sbs_unlock(sbservices_client_t client)
 {
 	debug_info("SBServices: Unlocked");
-#ifdef WIN32
-	LeaveCriticalSection(&client->mutex);
-#else
-	pthread_mutex_unlock(&client->mutex);
-#endif
+	mutex_unlock(&client->mutex);
 }
 
 /**
@@ -105,11 +97,7 @@ sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_des
 
 	sbservices_client_t client_loc = (sbservices_client_t) malloc(sizeof(struct sbservices_client_private));
 	client_loc->parent = plistclient;
-#ifdef WIN32
-	InitializeCriticalSection(&client_loc->mutex);
-#else
-	pthread_mutex_init(&client_loc->mutex, NULL);
-#endif
+	mutex_init(&client_loc->mutex);
 
 	*client = client_loc;
 	return SBSERVICES_E_SUCCESS;
@@ -131,11 +119,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client)
 
 	sbservices_error_t err = sbservices_error(property_list_service_client_free(client->parent));
 	client->parent = NULL;
-#ifdef WIN32
-	DeleteCriticalSection(&client->mutex);
-#else
-	pthread_mutex_destroy(&client->mutex);
-#endif
+	mutex_destroy(&client->mutex);
 	free(client);
 
 	return err;

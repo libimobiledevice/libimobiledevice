@@ -22,24 +22,14 @@
 #ifndef __NOTIFICATION_PROXY_H
 #define __NOTIFICATION_PROXY_H
 
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
-
 #include "libimobiledevice/notification_proxy.h"
 #include "property_list_service.h"
+#include "common/thread.h"
 
 struct np_client_private {
 	property_list_service_client_t parent;
-#ifdef WIN32
-	CRITICAL_SECTION mutex;
-	HANDLE notifier;
-#else
-	pthread_mutex_t mutex;
-	pthread_t notifier;
-#endif
+	mutex_t mutex;
+	thread_t notifier;
 };
 
 void* np_notifier(void* arg);

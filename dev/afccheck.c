@@ -22,11 +22,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/afc.h>
+#include "common/thread.h"
 
 #define BUFFER_SIZE 20000
 #define NB_THREADS 10
@@ -85,7 +85,7 @@ static void* check_afc(void *data)
 
 	//cleanup
 	afc_remove_path(((param *) data)->afc, path);
-	pthread_exit(0);
+	return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -125,18 +125,18 @@ int main(int argc, char *argv[])
 		service = NULL;
 	}
 
-	pthread_t threads[NB_THREADS];
+	thread_t threads[NB_THREADS];
 	param data[NB_THREADS];
 
 	int i = 0;
 	for (i = 0; i < NB_THREADS; i++) {
 		data[i].afc = afc;
 		data[i].id = i + 1;
-		pthread_create(&threads[i], NULL, check_afc, data + i);
+		thread_create(&threads[i], check_afc, data + i);
 	}
 
 	for (i = 0; i < NB_THREADS; i++) {
-		pthread_join(threads[i], NULL);
+		thread_join(threads[i]);
 	}
 
 	lockdownd_client_free(client);

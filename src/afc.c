@@ -43,11 +43,7 @@ static const int MAXIMUM_PACKET_SIZE = (2 << 15);
 static void afc_lock(afc_client_t client)
 {
 	debug_info("Locked");
-#ifdef WIN32
-	EnterCriticalSection(&client->mutex);
-#else
-	pthread_mutex_lock(&client->mutex);
-#endif
+	mutex_lock(&client->mutex);
 }
 
 /**
@@ -58,11 +54,7 @@ static void afc_lock(afc_client_t client)
 static void afc_unlock(afc_client_t client)
 {
 	debug_info("Unlocked");
-#ifdef WIN32
-	LeaveCriticalSection(&client->mutex);
-#else
-	pthread_mutex_unlock(&client->mutex);
-#endif
+	mutex_unlock(&client->mutex);
 }
 
 /**
@@ -99,11 +91,7 @@ afc_error_t afc_client_new_with_service_client(service_client_t service_client, 
 	memcpy(client_loc->afc_packet->magic, AFC_MAGIC, AFC_MAGIC_LEN);
 	client_loc->file_handle = 0;
 	client_loc->lock = 0;
-#ifdef WIN32
-	InitializeCriticalSection(&client_loc->mutex);
-#else
-	pthread_mutex_init(&client_loc->mutex, NULL);
-#endif
+	mutex_init(&client_loc->mutex);
 
 	*client = client_loc;
 	return AFC_E_SUCCESS;
@@ -156,11 +144,7 @@ afc_error_t afc_client_free(afc_client_t client)
 		client->parent = NULL;
 	}
 	free(client->afc_packet);
-#ifdef WIN32
-	DeleteCriticalSection(&client->mutex);
-#else
-	pthread_mutex_destroy(&client->mutex);
-#endif
+	mutex_destroy(&client->mutex);
 	free(client);
 	return AFC_E_SUCCESS;
 }

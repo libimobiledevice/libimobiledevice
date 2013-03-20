@@ -29,13 +29,13 @@
 #ifdef WIN32
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
-#else
-#include <pthread.h>
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
-#include "../src/service.h"
+
+#include "src/service.h"
+#include "common/thread.h"
 
 static int quit_flag = 0;
 
@@ -46,11 +46,7 @@ static char* udid = NULL;
 static idevice_t device = NULL;
 static service_client_t syslog = NULL;
 
-#ifdef WIN32
-HANDLE worker = NULL;
-#else
-pthread_t worker;
-#endif
+thread_t worker = NULL;
 
 static int logging = 0;
 
@@ -100,19 +96,10 @@ static int start_logging()
 
 	/* start worker thread */
 	logging = 1;
-#ifdef WIN32
-	worker = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)syslog_worker, NULL, 0, NULL);
-	if (worker == INVALID_HANDLE_VALUE) {
+	if (thread_create(&worker, syslog_worker, NULL) != 0) {
 		logging = 0;
 		return -1;
 	}
-#else
-	if (pthread_create(&worker, NULL, syslog_worker, NULL) != 0) {
-		logging = 0;
-		return -1;
-	}
-#endif
-
 	return 0;
 }
 
@@ -127,11 +114,7 @@ static void stop_logging()
 		}
 
 		/* wait for thread to complete */
-#ifdef WIN32
-		WaitForSingleObject(worker, INFINITE);
-#else
-		pthread_join(worker, NULL);
-#endif
+		thread_join(worker);
 	}
 
 	if (device) {
