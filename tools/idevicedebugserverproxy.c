@@ -28,8 +28,8 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
-#include "socket.h"
-#include "thread.h"
+#include "common/socket.h"
+#include "common/thread.h"
 
 #define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)

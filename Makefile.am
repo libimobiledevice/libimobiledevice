@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include $(CYTHON_SUB) $(DEV_SUB) tools docs
+SUBDIRS = common src include $(CYTHON_SUB) $(DEV_SUB) tools docs
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-dev-tools
 

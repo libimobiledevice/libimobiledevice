@@ -60,14 +60,12 @@ ideviceprovision_CFLAGS = $(AM_CFLAGS)
 ideviceprovision_LDFLAGS = $(AM_LDFLAGS)
 ideviceprovision_LDADD = ../src/libimobiledevice.la
 
-idevicedebugserverproxy_SOURCES = idevicedebugserverproxy.c socket.c thread.c
+idevicedebugserverproxy_SOURCES = idevicedebugserverproxy.c
 idevicedebugserverproxy_CFLAGS = $(AM_CFLAGS)
 idevicedebugserverproxy_LDFLAGS = $(AM_LDFLAGS)
-idevicedebugserverproxy_LDADD = ../src/libimobiledevice.la
+idevicedebugserverproxy_LDADD = $(top_srcdir)/common/libinternalcommon.la ../src/libimobiledevice.la
 
 idevicediagnostics_SOURCES = idevicediagnostics.c
 idevicediagnostics_CFLAGS = $(AM_CFLAGS)
 idevicediagnostics_LDFLAGS = $(AM_LDFLAGS)
 idevicediagnostics_LDADD = ../src/libimobiledevice.la
-
-EXTRA_DIST = socket.h thread.h
