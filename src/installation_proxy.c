@@ -105,7 +105,7 @@ instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descr
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));
 	client_loc->parent = plistclient;
 	mutex_init(&client_loc->mutex);
-	client_loc->status_updater = NULL;
+	client_loc->status_updater = (thread_t)NULL;
 
 	*client = client_loc;
 	return INSTPROXY_E_SUCCESS;
@@ -354,7 +354,7 @@ static void* instproxy_status_updater(void* arg)
 	if (data->operation) {
 	    free(data->operation);
 	}
-	data->client->status_updater = NULL;
+	data->client->status_updater = (thread_t)NULL;
 	instproxy_unlock(data->client);
 	free(data);
 

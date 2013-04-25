@@ -110,7 +110,7 @@ np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t servic
 	client_loc->parent = plistclient;
 
 	mutex_init(&client_loc->mutex);
-	client_loc->notifier = NULL;
+	client_loc->notifier = (thread_t)NULL;
 
 	*client = client_loc;
 	return NP_E_SUCCESS;
@@ -395,7 +395,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
 		thread_join(client->notifier);
-		client->notifier = NULL;
+		client->notifier = (thread_t)NULL;
 		client->parent = parent;
 	}
 
