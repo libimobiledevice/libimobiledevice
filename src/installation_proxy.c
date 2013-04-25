@@ -775,3 +775,100 @@ void instproxy_client_options_free(plist_t client_options)
 		plist_free(client_options);
 	}
 }
+
+/**
+ * Query the device for the path of an application.
+ *
+ * @param client The connected installation proxy client.
+ * @param appid ApplicationIdentifier of app to retrieve the path for.
+ * @param path Pointer to store the device path for the application
+ *        which is set to NULL if it could not be determined.
+ *
+ * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_OP_FAILED if
+ *         the path could not be determined or an INSTPROXY_E_* error
+ *         value if an error occured.
+ *
+ * @note This implementation browses all applications and matches the
+ *       right entry by the application identifier.
+ */
+instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* appid, char** path)
+{
+	if (!client || !client->parent || !appid)
+		return INSTPROXY_E_INVALID_ARG;
+
+	plist_t apps = NULL;
+
+	// create client options for any application types
+	plist_t client_opts = instproxy_client_options_new();
+	instproxy_client_options_add(client_opts, "ApplicationType", "Any", NULL);
+
+	// only return attributes we need
+	plist_t return_attributes = plist_new_array();
+	plist_array_append_item(return_attributes, plist_new_string("CFBundleIdentifier"));
+	plist_array_append_item(return_attributes, plist_new_string("CFBundleExecutable"));
+	plist_array_append_item(return_attributes, plist_new_string("Path"));
+	instproxy_client_options_add(client_opts, "ReturnAttributes", return_attributes, NULL);
+
+	// query device for list of apps
+	instproxy_error_t ierr = instproxy_browse(client, client_opts, &apps);
+	instproxy_client_options_free(client_opts);
+	if (ierr != INSTPROXY_E_SUCCESS) {
+		return ierr;
+	}
+
+	plist_t app_found = NULL;
+	uint32_t i;
+	for (i = 0; i < plist_array_get_size(apps); i++) {
+		char *appid_str = NULL;
+		plist_t app_info = plist_array_get_item(apps, i);
+		plist_t idp = plist_dict_get_item(app_info, "CFBundleIdentifier");
+		if (idp) {
+			plist_get_string_val(idp, &appid_str);
+		}
+		if (appid_str && strcmp(appid, appid_str) == 0) {
+			app_found = app_info;
+		}
+		free(appid_str);
+		if (app_found) {
+			break;
+		}
+	}
+
+	if (!app_found) {
+		*path = NULL;
+		return INSTPROXY_E_OP_FAILED;
+	}
+
+	char* path_str = NULL;
+	plist_t path_p = plist_dict_get_item(app_found, "Path");
+	if (path_p) {
+		plist_get_string_val(path_p, &path_str);
+	}
+
+	char* exec_str = NULL;
+	plist_t exec_p = plist_dict_get_item(app_found, "CFBundleExecutable");
+	if (exec_p) {
+		plist_get_string_val(exec_p, &exec_str);
+	}
+
+	if (!path_str) {
+		debug_info("app path not found");
+		return INSTPROXY_E_OP_FAILED;
+	}
+
+	if (!exec_str) {
+		debug_info("bundle executable not found");
+		return INSTPROXY_E_OP_FAILED;
+	}
+
+	plist_free(apps);
+
+	char* ret = (char*)malloc(strlen(path_str) + 1 + strlen(exec_str) + 1);
+	strcpy(ret, path_str);
+	strcat(ret, "/");
+	strcat(ret, exec_str);
+
+	*path = ret;
+
+	return INSTPROXY_E_SUCCESS;
+}
