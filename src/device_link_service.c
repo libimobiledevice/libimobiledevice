@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "device_link_service.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Internally used function to extract the message string from a DL* message

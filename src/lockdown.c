@@ -43,8 +43,8 @@
 #include "property_list_service.h"
 #include "lockdown.h"
 #include "idevice.h"
-#include "debug.h"
-#include "userpref.h"
+#include "common/debug.h"
+#include "common/userpref.h"
 #include "asprintf.h"
 
 #define RESULT_SUCCESS 0

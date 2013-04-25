@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 #include "endianness.h"
 
 /**

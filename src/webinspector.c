@@ -28,7 +28,7 @@
 
 #include "webinspector.h"
 #include "lockdown.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Convert a property_list_service_error_t value to a webinspector_error_t value.

@@ -27,7 +27,7 @@
 
 #include "misagent.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Convert a property_list_service_error_t value to a misagent_error_t

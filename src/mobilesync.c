@@ -30,7 +30,7 @@
 
 #include "mobilesync.h"
 #include "device_link_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 #define MSYNC_VERSION_INT1 300
 #define MSYNC_VERSION_INT2 100

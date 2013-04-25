@@ -26,7 +26,7 @@
 
 #include "service.h"
 #include "idevice.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Convert an idevice_error_t value to an service_error_t value.

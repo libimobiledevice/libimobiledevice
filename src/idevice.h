@@ -33,7 +33,7 @@
 #include <gnutls/x509.h>
 #endif
 
-#include "userpref.h"
+#include "common/userpref.h"
 
 #include "libimobiledevice/libimobiledevice.h"
 

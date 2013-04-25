@@ -27,7 +27,7 @@
 #include "house_arrest.h"
 #include "property_list_service.h"
 #include "afc.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Convert a property_list_service_error_t value to a house_arrest_error_t

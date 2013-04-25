@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "diagnostics_relay.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1

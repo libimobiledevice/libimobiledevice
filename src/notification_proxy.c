@@ -26,7 +26,7 @@
 
 #include "notification_proxy.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 #ifdef WIN32
 #define sleep(x) Sleep(x*1000)

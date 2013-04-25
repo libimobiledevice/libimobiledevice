@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "userpref.h"
+#include "common/userpref.h"
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>

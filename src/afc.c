@@ -29,7 +29,7 @@
 
 #include "afc.h"
 #include "idevice.h"
-#include "debug.h"
+#include "common/debug.h"
 #include "endianness.h"
 
 /** The maximum size an AFC data packet can be */

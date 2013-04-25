@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "file_relay.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Connects to the file_relay service on the specified device.

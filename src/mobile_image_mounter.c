@@ -26,7 +26,7 @@
 
 #include "mobile_image_mounter.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 /**
  * Locks a mobile_image_mounter client, used for thread safety.

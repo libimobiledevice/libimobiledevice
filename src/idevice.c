@@ -35,8 +35,8 @@
 #include <gnutls/gnutls.h>
 #endif
 #include "idevice.h"
-#include "userpref.h"
-#include "debug.h"
+#include "common/userpref.h"
+#include "common/debug.h"
 
 #ifdef HAVE_OPENSSL
 static int openssl_init_done = 0;

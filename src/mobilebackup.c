@@ -25,7 +25,7 @@
 
 #include "mobilebackup.h"
 #include "device_link_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 #define MBACKUP_VERSION_INT1 100
 #define MBACKUP_VERSION_INT2 0

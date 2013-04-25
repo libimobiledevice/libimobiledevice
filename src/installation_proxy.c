@@ -26,7 +26,7 @@
 
 #include "installation_proxy.h"
 #include "property_list_service.h"
-#include "debug.h"
+#include "common/debug.h"
 
 struct instproxy_status_data {
 	instproxy_client_t client;
