@@ -115,6 +115,7 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 
 /* Helper functions */
 afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value);
+afc_error_t afc_dictionary_free(char **dictionary);
 
 #ifdef __cplusplus
 }

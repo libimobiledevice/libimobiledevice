@@ -1349,3 +1349,17 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	return ret;
 }
 
+afc_error_t afc_dictionary_free(char **dictionary)
+{
+    int i = 0;
+
+    if (!dictionary)
+        return AFC_E_INVALID_ARG;
+
+    for (i = 0; dictionary[i]; i++) {
+        free(dictionary[i]);
+    }
+    free(dictionary);
+
+    return AFC_E_SUCCESS;
+}
