@@ -26,7 +26,8 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       restore.c restore.h\
 		       diagnostics_relay.c diagnostics_relay.h\
 		       heartbeat.c heartbeat.h\
-		       webinspector.c webinspector.h
+		       webinspector.c webinspector.h\
+		       syslog_relay.c syslog_relay.h
 
 if WIN32
 libimobiledevice_la_LIBADD += -lole32
