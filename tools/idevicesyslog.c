@@ -33,9 +33,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
-
-#include "src/service.h"
-#include "common/thread.h"
+#include <libimobiledevice/syslog_relay.h>
 
 static int quit_flag = 0;
 
@@ -44,36 +42,11 @@ void print_usage(int argc, char **argv);
 static char* udid = NULL;
 
 static idevice_t device = NULL;
-static service_client_t syslog = NULL;
+static syslog_relay_client_t syslog = NULL;
 
-thread_t worker = NULL;
-
-static int logging = 0;
-
-static void *syslog_worker(void *arg)
+static void syslog_callback(char c, void *user_data)
 {
-	service_error_t ret = SERVICE_E_UNKNOWN_ERROR;
-
-	fprintf(stdout, "[connected]\n");
-	fflush(stdout);
-	
-	logging = 1;
-
-	while (logging) {
-		char c;
-		uint32_t bytes = 0;
-		ret = service_receive_with_timeout(syslog, &c, 1, &bytes, 0);
-		if (ret < 0 || (bytes != 1)) {
-			printf("\n[connection interrupted]\n");
-			fflush(stdout);
-			break;
-		}
-		if(c != 0) {
-			putchar(c);
-		}
-	}
-
-	return NULL;
+	putchar(c);
 }
 
 static int start_logging()
@@ -85,36 +58,39 @@ static int start_logging()
 	}
 
 	/* start and connect to syslog_relay service */
-	service_error_t serr = SERVICE_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, "com.apple.syslog_relay", (void**)&syslog, "idevicesyslog", NULL, &serr);
-	if (serr != SERVICE_E_SUCCESS) {
+	syslog_relay_error_t serr = SYSLOG_RELAY_E_UNKNOWN_ERROR;
+	serr = syslog_relay_client_start_service(device, &syslog, "idevicesyslog");
+	if (serr != SYSLOG_RELAY_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Could not start service com.apple.syslog_relay.\n");
 		idevice_free(device);
 		device = NULL;
 		return -1;
 	}
 
-	/* start worker thread */
-	logging = 1;
-	if (thread_create(&worker, syslog_worker, NULL) != 0) {
-		logging = 0;
+	/* start capturing syslog */
+	serr = syslog_relay_start_capture(syslog, syslog_callback, NULL);
+	if (serr != SYSLOG_RELAY_E_SUCCESS) {
+		fprintf(stderr, "ERROR: Unable tot start capturing syslog.\n");
+		syslog_relay_client_free(syslog);
+		syslog = NULL;
+		idevice_free(device);
+		device = NULL;
 		return -1;
 	}
+
+	fprintf(stdout, "[connected]\n");
+	fflush(stdout);
+
 	return 0;
 }
 
 static void stop_logging()
 {
-	if (logging) {
-		/* notify thread to finish */
-		logging = 0;
-		if (syslog) {
-			service_client_free(syslog);
-			syslog = NULL;
-		}
+	fflush(stdout);
 
-		/* wait for thread to complete */
-		thread_join(worker);
+	if (syslog) {
+		syslog_relay_client_free(syslog);
+		syslog = NULL;
 	}
 
 	if (device) {
@@ -126,7 +102,7 @@ static void stop_logging()
 static void device_event_cb(const idevice_event_t* event, void* userdata)
 {
 	if (event->event == IDEVICE_DEVICE_ADD) {
-		if (!logging) {
+		if (!syslog) {
 			if (!udid) {
 				udid = strdup(event->udid);
 			}
@@ -137,7 +113,7 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 			}
 		}
 	} else if (event->event == IDEVICE_DEVICE_REMOVE) {
-		if (logging && (strcmp(udid, event->udid) == 0)) {
+		if (syslog && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
 		}
 	}
