@@ -32,7 +32,6 @@
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
-#include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/syslog_relay.h>
 
 static int quit_flag = 0;
