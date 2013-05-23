@@ -143,8 +143,8 @@ heartbeat_error_t heartbeat_client_free(heartbeat_client_t client)
  * @param client The heartbeat client
  * @param plist The plist to send
  *
- * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
- *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client or plist is NULL
+ * @return HEARTBEAT_E_SUCCESS on success,
+ *  HEARTBEAT_E_INVALID_ARG when client or plist is NULL
  */
 heartbeat_error_t heartbeat_send(heartbeat_client_t client, plist_t plist)
 {
@@ -167,8 +167,8 @@ heartbeat_error_t heartbeat_send(heartbeat_client_t client, plist_t plist)
  * @param client The heartbeat client
  * @param plist The plist to store the received data
  *
- * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
- *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client or plist is NULL
+ * @return HEARTBEAT_E_SUCCESS on success,
+ *  HEARTBEAT_E_INVALID_ARG when client or plist is NULL
  */
 heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist)
 {
