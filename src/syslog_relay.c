@@ -211,8 +211,10 @@ void *syslog_relay_worker(void *arg)
 	while (srwt->client->parent) {
 		char c;
 		uint32_t bytes = 0;
-		ret = syslog_relay_receive_with_timeout(srwt->client, &c, 1, &bytes, 0);
-		if (ret < 0 || (bytes != 1)) {
+		ret = syslog_relay_receive_with_timeout(srwt->client, &c, 1, &bytes, 100);
+		if ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS)) {
+			continue;
+		} else if (ret < 0) {
 			debug_info("Connection to syslog relay interrupted");
 			break;
 		}
