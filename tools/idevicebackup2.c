@@ -47,6 +47,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include <conio.h>
 #define sleep(x) Sleep(x*1000)
 #else
 #include <termios.h>
@@ -1968,7 +1969,6 @@ checkpoint:
 									char *oldpath = build_path(backup_directory, key, NULL);
 
 #ifdef WIN32
-									struct stat st;
 									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
 										RemoveDirectory(newpath);
 									else
@@ -2023,7 +2023,6 @@ checkpoint:
 								char *newpath = build_path(backup_directory, str, NULL);
 								free(str);
 #ifdef WIN32
-								struct stat st;
 								int res = 0;
 								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
 									res = RemoveDirectory(newpath);

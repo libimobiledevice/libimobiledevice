@@ -102,6 +102,7 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 }
 #endif
 
+#ifndef WIN32
 static const char *userpref_get_tmp_dir()
 {
 	const char *cdir = getenv("TMPDIR");
@@ -115,6 +116,7 @@ static const char *userpref_get_tmp_dir()
 		return cdir;
 	return "/tmp";
 }
+#endif
 
 static const char *userpref_get_config_dir()
 {

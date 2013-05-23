@@ -116,7 +116,7 @@ inline void debug_buffer(const char *data, const int length)
 					fprintf(stderr, "   ");
 					continue;
 				}
-				fprintf(stderr, "%02hhx ", *(data + i + j));
+				fprintf(stderr, "%02x ", *(data + i + j));
 			}
 			fprintf(stderr, "  | ");
 			for (j = 0; j < 16; j++) {
