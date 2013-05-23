@@ -58,10 +58,7 @@ syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client);
 syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data);
 syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client);
 
-/* sending */
-syslog_relay_error_t syslog_relay_send(syslog_relay_client_t client, const char *data, uint32_t size, uint32_t *sent);
-
-/* receiving */
+/* Receiving */
 syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
 syslog_relay_error_t syslog_relay_receive(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received);
 

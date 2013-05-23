@@ -147,37 +147,6 @@ syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client)
 }
 
 /**
- * Sends data to the service.
- *
- * @param client The syslog_relay client
- * @param data Data to send
- * @param size Size of the data to send
- * @param sent Number of bytes sent (can be NULL to ignore)
- *
- * @return SYSLOG_RELAY_E_SUCCESS on success,
- *  SYSLOG_RELAY_E_INVALID_ARG when client or plist is NULL
- */
-syslog_relay_error_t syslog_relay_send(syslog_relay_client_t client, const char* data, uint32_t size, uint32_t *sent)
-{
-	syslog_relay_error_t res = SYSLOG_RELAY_E_UNKNOWN_ERROR;
-	int bytes = 0;
-
-	if (!client || !data || (size == 0)) {
-		return SYSLOG_RELAY_E_INVALID_ARG;
-	}
-
-	res = syslog_relay_error(service_send(client->parent, data, size, (uint32_t*)&bytes));
-	if (bytes <= 0) {
-		debug_info("ERROR: sending to device failed.");
-	}
-	if (sent) {
-		*sent = (uint32_t)bytes;
-	}
-
-	return res;
-}
-
-/**
  * Receives data from the service.
  *
  * @param client The syslog_relay client
