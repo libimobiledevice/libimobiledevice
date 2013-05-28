@@ -12,8 +12,8 @@ ideviceinfo_LDADD = ../src/libimobiledevice.la
 
 idevicepair_SOURCES = idevicepair.c
 idevicepair_CFLAGS = $(AM_CFLAGS)
-idevicepair_LDFLAGS = $(AM_LDFLAGS)
-idevicepair_LDADD = $(top_srcdir)/common/libinternalcommon.la ../src/libimobiledevice.la
+idevicepair_LDFLAGS = $(top_srcdir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicepair_LDADD = ../src/libimobiledevice.la
 
 idevicesyslog_SOURCES = idevicesyslog.c
 idevicesyslog_CFLAGS = $(AM_CFLAGS)
@@ -62,8 +62,8 @@ ideviceprovision_LDADD = ../src/libimobiledevice.la
 
 idevicedebugserverproxy_SOURCES = idevicedebugserverproxy.c
 idevicedebugserverproxy_CFLAGS = $(AM_CFLAGS)
-idevicedebugserverproxy_LDFLAGS = $(AM_LDFLAGS)
-idevicedebugserverproxy_LDADD = $(top_srcdir)/common/libinternalcommon.la ../src/libimobiledevice.la
+idevicedebugserverproxy_LDFLAGS = $(top_srcdir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicedebugserverproxy_LDADD = ../src/libimobiledevice.la
 
 idevicediagnostics_SOURCES = idevicediagnostics.c
 idevicediagnostics_CFLAGS = $(AM_CFLAGS)
