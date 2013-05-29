@@ -133,6 +133,20 @@ cdef class AfcFile(Base):
     cpdef truncate(self, uint64_t newsize):
         self.handle_error(afc_file_truncate(self._client._c_client, self._c_handle, newsize))
 
+    cpdef bytes read(self, uint32_t size):
+        cdef:
+            uint32_t bytes_read
+            char* c_data = <char *>malloc(size)
+            bytes result
+        try:
+            self.handle_error(afc_file_read(self._client._c_client, self._c_handle, c_data, size, &bytes_read))
+            result = c_data[:bytes_read]
+            return result
+        except BaseError, e:
+            raise
+        finally:
+            free(c_data)
+
     cpdef uint32_t write(self, bytes data):
         cdef:
             uint32_t bytes_written
@@ -168,7 +182,7 @@ cdef class AfcClient(BaseService):
     cpdef list get_device_info(self):
         cdef:
             afc_error_t err
-            char** infos
+            char** infos = NULL
             bytes info
             int i = 0
             list result = []
@@ -191,7 +205,7 @@ cdef class AfcClient(BaseService):
     cpdef list read_directory(self, bytes directory):
         cdef:
             afc_error_t err
-            char** dir_list
+            char** dir_list = NULL
             bytes f
             int i = 0
             list result = []
@@ -239,10 +253,10 @@ cdef class AfcClient(BaseService):
 
         return f
 
-    cpdef get_file_info(self, bytes path):
+    cpdef list get_file_info(self, bytes path):
         cdef:
             list result = []
-            char** c_result
+            char** c_result = NULL
             int i = 0
             bytes info
         try:
@@ -280,3 +294,35 @@ cdef class AfcClient(BaseService):
 
     cpdef set_file_time(self, bytes path, uint64_t mtime):
         self.handle_error(afc_set_file_time(self._c_client, path, mtime))
+
+cdef class Afc2Client(AfcClient):
+    __service_name__ = "com.apple.afc2"
+
+    cpdef AfcFile open(self, bytes filename, bytes mode=b'r'):
+        cdef:
+            afc_file_mode_t c_mode
+            uint64_t handle
+            AfcFile f
+        if mode == <bytes>'r':
+            c_mode = AFC_FOPEN_RDONLY
+        elif mode == <bytes>'r+':
+            c_mode = AFC_FOPEN_RW
+        elif mode == <bytes>'w':
+            c_mode = AFC_FOPEN_WRONLY
+        elif mode == <bytes>'w+':
+            c_mode = AFC_FOPEN_WR
+        elif mode == <bytes>'a':
+            c_mode = AFC_FOPEN_APPEND
+        elif mode == <bytes>'a+':
+            c_mode = AFC_FOPEN_RDAPPEND
+        else:
+            raise ValueError("mode string must be 'r', 'r+', 'w', 'w+', 'a', or 'a+'")
+
+        self.handle_error(afc_file_open(self._c_client, filename, c_mode, &handle))
+        f = AfcFile.__new__(AfcFile)
+        f._c_handle = handle
+        f._client = <AfcClient>self
+        f._filename = filename
+
+        return f
+
