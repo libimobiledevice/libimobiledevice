@@ -294,3 +294,35 @@ cdef class AfcClient(BaseService):
 
     cpdef set_file_time(self, bytes path, uint64_t mtime):
         self.handle_error(afc_set_file_time(self._c_client, path, mtime))
+
+cdef class Afc2Client(AfcClient):
+    __service_name__ = "com.apple.afc2"
+
+    cpdef AfcFile open(self, bytes filename, bytes mode=b'r'):
+        cdef:
+            afc_file_mode_t c_mode
+            uint64_t handle
+            AfcFile f
+        if mode == <bytes>'r':
+            c_mode = AFC_FOPEN_RDONLY
+        elif mode == <bytes>'r+':
+            c_mode = AFC_FOPEN_RW
+        elif mode == <bytes>'w':
+            c_mode = AFC_FOPEN_WRONLY
+        elif mode == <bytes>'w+':
+            c_mode = AFC_FOPEN_WR
+        elif mode == <bytes>'a':
+            c_mode = AFC_FOPEN_APPEND
+        elif mode == <bytes>'a+':
+            c_mode = AFC_FOPEN_RDAPPEND
+        else:
+            raise ValueError("mode string must be 'r', 'r+', 'w', 'w+', 'a', or 'a+'")
+
+        self.handle_error(afc_file_open(self._c_client, filename, c_mode, &handle))
+        f = AfcFile.__new__(AfcFile)
+        f._c_handle = handle
+        f._client = <AfcClient>self
+        f._filename = filename
+
+        return f
+
