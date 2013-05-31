@@ -182,7 +182,7 @@ cdef class AfcClient(BaseService):
     cpdef list get_device_info(self):
         cdef:
             afc_error_t err
-            char** infos
+            char** infos = NULL
             bytes info
             int i = 0
             list result = []
@@ -205,7 +205,7 @@ cdef class AfcClient(BaseService):
     cpdef list read_directory(self, bytes directory):
         cdef:
             afc_error_t err
-            char** dir_list
+            char** dir_list = NULL
             bytes f
             int i = 0
             list result = []
@@ -253,10 +253,10 @@ cdef class AfcClient(BaseService):
 
         return f
 
-    cpdef get_file_info(self, bytes path):
+    cpdef list get_file_info(self, bytes path):
         cdef:
             list result = []
-            char** c_result
+            char** c_result = NULL
             int i = 0
             bytes info
         try:
