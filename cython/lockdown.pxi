@@ -90,7 +90,7 @@ cdef class LockdownPairRecord:
             cdef bytes result = self._c_record.root_certificate
             return result
 
-cdef class LockdownServiceDescriptor:
+cdef class LockdownServiceDescriptor(Base):
     #def __cinit__(self, uint16_t port, uint8_t ssl_enabled, *args, **kwargs):
     def __dealloc__(self):
         cdef lockdownd_error_t err
