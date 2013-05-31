@@ -76,7 +76,7 @@ cdef class LockdownError(BaseError): pass
 cdef class LockdownPairRecord:
     cdef lockdownd_pair_record_t _c_record
 
-cdef class LockdownServiceDescriptor:
+cdef class LockdownServiceDescriptor(Base):
     cdef lockdownd_service_descriptor_t _c_service_descriptor
 
 cdef class LockdownClient(PropertyListService):
