@@ -221,7 +221,7 @@ cdef class LockdownClient(PropertyListService):
             char* c_session_id = NULL
             bint ssl_enabled
             bytes session_id
-        err = lockdownd_start_session(self._c_client, host_id, &c_session_id, &ssl_enabled)
+        err = lockdownd_start_session(self._c_client, host_id, &c_session_id, <int *>&ssl_enabled)
         try:
             self.handle_error(err)
 
