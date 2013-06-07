@@ -116,6 +116,12 @@ cdef class AfcFile(Base):
     def __init__(self, *args, **kwargs):
         raise TypeError("AfcFile cannot be instantiated")
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     cpdef close(self):
         self.handle_error(afc_file_close(self._client._c_client, self._c_handle))
 
