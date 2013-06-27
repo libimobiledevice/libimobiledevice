@@ -161,8 +161,6 @@ cdef class AfcFile(Base):
             self.handle_error(afc_file_write(self._client._c_client, self._c_handle, c_data, len(data), &bytes_written))
         except BaseError, e:
             raise
-        finally:
-            free(c_data)
 
         return bytes_written
 
