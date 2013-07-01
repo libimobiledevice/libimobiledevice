@@ -1162,6 +1162,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 			debug_info("ERROR: X509V3_EXT_conf_nid failed");
 		}
 		X509_add_ext(dev_cert, ext, -1);
+		X509_EXTENSION_free(ext);
 
 		ASN1_TIME* asn1time = ASN1_TIME_new();
 		ASN1_TIME_set(asn1time, time(NULL));
