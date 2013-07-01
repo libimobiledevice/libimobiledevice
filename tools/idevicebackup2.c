@@ -505,6 +505,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 		lockdownd_service_descriptor_free(service);
 		service = NULL;
 	}
+	lockdownd_client_free(lockdown);
 }
 
 static void print_progress_real(double progress, int flush)
