@@ -470,6 +470,7 @@ static int mb2_status_check_snapshot_state(const char *path, const char *udid, c
 		plist_get_string_val(node, &sval);
 		if (sval) {
 			ret = (strcmp(sval, matches) == 0) ? 1 : 0;
+			free(sval);
 		}
 	} else {
 		printf("%s: ERROR could not get SnapshotState key from Status.plist!\n", __func__);
