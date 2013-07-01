@@ -354,9 +354,9 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	}
 	plist_dict_insert_item(ret, "iTunes Files", files);
 
-	plist_t itunes_settings = plist_new_dict();
+	plist_t itunes_settings = NULL;
 	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
-	plist_dict_insert_item(ret, "iTunes Settings", itunes_settings);
+	plist_dict_insert_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
 
 	plist_dict_insert_item(ret, "iTunes Version", plist_new_string("10.0.1"));
 
@@ -470,6 +470,7 @@ static int mb2_status_check_snapshot_state(const char *path, const char *udid, c
 		plist_get_string_val(node, &sval);
 		if (sval) {
 			ret = (strcmp(sval, matches) == 0) ? 1 : 0;
+			free(sval);
 		}
 	} else {
 		printf("%s: ERROR could not get SnapshotState key from Status.plist!\n", __func__);
@@ -504,6 +505,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 		lockdownd_service_descriptor_free(service);
 		service = NULL;
 	}
+	lockdownd_client_free(lockdown);
 }
 
 static void print_progress_real(double progress, int flush)
@@ -1004,7 +1006,10 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 		free(dname);
 
 	// TODO error handling?!
-	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+	plist_t empty_plist = plist_new_dict();
+	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, empty_plist);
+	plist_free(empty_plist);
+
 	return file_count;
 }
 
@@ -1938,7 +1943,9 @@ checkpoint:
 						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_bsize;
 					}
 #endif
-					mobilebackup2_send_status_response(mobilebackup2, res, NULL, plist_new_uint(freespace));
+					plist_t freespace_item = plist_new_uint(freespace);
+					mobilebackup2_send_status_response(mobilebackup2, res, NULL, freespace_item);
+					plist_free(freespace_item);
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
 					mb2_handle_list_directory(mobilebackup2, message, backup_directory);
@@ -1995,7 +2002,9 @@ checkpoint:
 						errdesc = "Could not create dict iterator";
 						printf("Could not create dict iterator\n");
 					}
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
@@ -2047,7 +2056,9 @@ checkpoint:
 							}
 						}
 					}
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
@@ -2080,8 +2091,9 @@ checkpoint:
 						free(src);
 						free(dst);
 					}
-
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
