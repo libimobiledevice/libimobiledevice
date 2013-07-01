@@ -1006,7 +1006,10 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 		free(dname);
 
 	// TODO error handling?!
-	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, plist_new_dict());
+	plist_t empty_plist = plist_new_dict();
+	mobilebackup2_send_status_response(mobilebackup2, 0, NULL, empty_plist);
+	plist_free(empty_plist);
+
 	return file_count;
 }
 
@@ -1997,7 +2000,9 @@ checkpoint:
 						errdesc = "Could not create dict iterator";
 						printf("Could not create dict iterator\n");
 					}
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
@@ -2049,7 +2054,9 @@ checkpoint:
 							}
 						}
 					}
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
@@ -2082,8 +2089,9 @@ checkpoint:
 						free(src);
 						free(dst);
 					}
-
-					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, plist_new_dict());
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_dict);
+					plist_free(empty_dict);
 					if (err != MOBILEBACKUP2_E_SUCCESS) {
 						printf("Could not send status response, error %d\n", err);
 					}
