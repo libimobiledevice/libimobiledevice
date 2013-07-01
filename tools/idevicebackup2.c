@@ -354,9 +354,9 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	}
 	plist_dict_insert_item(ret, "iTunes Files", files);
 
-	plist_t itunes_settings = plist_new_dict();
+	plist_t itunes_settings = NULL;
 	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
-	plist_dict_insert_item(ret, "iTunes Settings", itunes_settings);
+	plist_dict_insert_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
 
 	plist_dict_insert_item(ret, "iTunes Version", plist_new_string("10.0.1"));
 
