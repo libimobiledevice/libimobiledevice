@@ -1943,7 +1943,9 @@ checkpoint:
 						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_bsize;
 					}
 #endif
-					mobilebackup2_send_status_response(mobilebackup2, res, NULL, plist_new_uint(freespace));
+					plist_t freespace_item = plist_new_uint(freespace);
+					mobilebackup2_send_status_response(mobilebackup2, res, NULL, freespace_item);
+					plist_free(freespace_item);
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
 					mb2_handle_list_directory(mobilebackup2, message, backup_directory);
