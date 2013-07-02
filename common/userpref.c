@@ -26,6 +26,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <unistd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -48,6 +51,7 @@
 
 #include "userpref.h"
 #include "debug.h"
+#include "utils.h"
 
 #define LIBIMOBILEDEVICE_CONF_DIR  "libimobiledevice"
 #define LIBIMOBILEDEVICE_CONF_FILE "libimobiledevicerc"
@@ -65,7 +69,7 @@
 #define DIR_SEP_S "/"
 #endif
 
-static char __config_dir[512] = {0, };
+static char *__config_dir = NULL;
 
 #ifdef WIN32
 static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read, long *items_written)
@@ -103,24 +107,60 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 #endif
 
 #ifndef WIN32
-static const char *userpref_get_tmp_dir()
+static char *get_home_dir_from_system(void)
 {
-	const char *cdir = getenv("TMPDIR");
-	if (cdir && cdir[0])
-		return cdir;
-	cdir = getenv("TMP");
-	if (cdir && cdir[0])
-		return cdir;
-	cdir = getenv("TEMP");
-	if (cdir && cdir[0])
-		return cdir;
-	return "/tmp";
+	long bufsize;
+	char *buf;
+	int error;
+	struct passwd pwd;
+	struct passwd *ppwd;
+	char *result = NULL;
+
+	bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+
+	if (bufsize < 0)
+		bufsize = 1024;
+
+	buf = NULL;
+
+	do {
+		free (buf);
+		buf = malloc (bufsize);
+		if (!buf)
+			return NULL;
+
+		errno = 0;
+		error = getpwuid_r (getuid (), &pwd, buf, bufsize, &ppwd);
+
+		error = (error < 0) ? errno : error;
+
+		if (!ppwd) {
+			if (error == 0 || error == ENOENT)
+				break;
+			else if (bufsize > 32 * 1024)
+				break; /* Unreasonable size; let's bail out */
+
+			bufsize *= 2;
+		}
+	} while (!ppwd);
+
+	if (ppwd && ppwd->pw_dir)
+		result = strdup (ppwd->pw_dir);
+
+	free (buf);
+
+	return result;
 }
 #endif
 
 static const char *userpref_get_config_dir()
 {
-	if (__config_dir[0]) return __config_dir;
+	char *base_config_dir;
+	int use_dot_config;
+
+	if (__config_dir)
+		return __config_dir;
+
 #ifdef WIN32
 	wchar_t path[MAX_PATH+1];
 	HRESULT hr;
@@ -131,37 +171,44 @@ static const char *userpref_get_config_dir()
 	if (hr == S_OK) {
 		b = SHGetPathFromIDListW (pidl, path);
 		if (b) {
-			char *cdir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
-			strcpy(__config_dir, cdir);
-			free(cdir);
+			base_config_dir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
 			CoTaskMemFree (pidl);
 		}
 	}
+
+	use_dot_config = 0;
 #else
 	const char *cdir = getenv("XDG_CONFIG_HOME");
 	if (!cdir) {
 		cdir = getenv("HOME");
 		if (!cdir || !cdir[0]) {
-			const char *tdir = userpref_get_tmp_dir();
-			strcpy(__config_dir, tdir);
-			strcat(__config_dir, DIR_SEP_S);
-			strcat(__config_dir, "root");
+			base_config_dir = get_home_dir_from_system();
+			if (!base_config_dir)
+				return NULL;
 		} else {
-			strcpy(__config_dir, cdir);
+			base_config_dir = strdup(cdir);
 		}
-		strcat(__config_dir, DIR_SEP_S);
-		strcat(__config_dir, ".config");
+
+		use_dot_config = 1;
 	} else {
-		strcpy(__config_dir, cdir);
+		base_config_dir = strdup(cdir);
+		use_dot_config = 0;
 	}
 #endif
-	strcat(__config_dir, DIR_SEP_S);
-	strcat(__config_dir, LIBIMOBILEDEVICE_CONF_DIR);
 
-	int i = strlen(__config_dir)-1;	
-	while ((i > 0) && (__config_dir[i] == DIR_SEP)) {
-		__config_dir[i--] = '\0';
+	if (use_dot_config)
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR);
+	else
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR);
+
+	if (__config_dir) {
+		int i = strlen(__config_dir)-1;	
+		while ((i > 0) && (__config_dir[i] == DIR_SEP)) {
+			__config_dir[i--] = '\0';
+		}
 	}
+
+	free(base_config_dir);
 
 	return __config_dir;
 }
