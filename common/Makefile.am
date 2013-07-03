@@ -10,7 +10,8 @@ libinternalcommon_la_SOURCES = \
 		       socket.c socket.h \
 		       thread.c thread.h \
 		       debug.c debug.h \
-		       userpref.c userpref.h
+		       userpref.c userpref.h \
+		       utils.c utils.h
 
 if WIN32
 libinternalcommon_la_LIBADD += -lole32
