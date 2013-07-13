@@ -22,12 +22,17 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifndef WIN32
 #include <pwd.h>
+#endif
 #include <unistd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
@@ -155,7 +160,7 @@ static char *get_home_dir_from_system(void)
 
 static const char *userpref_get_config_dir()
 {
-	char *base_config_dir;
+	char *base_config_dir = NULL;
 	int use_dot_config;
 
 	if (__config_dir)
