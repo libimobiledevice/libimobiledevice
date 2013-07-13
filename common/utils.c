@@ -29,6 +29,29 @@
 
 #include "utils.h"
 
+#ifndef HAVE_STPCPY
+/**
+ * Copy characters from one string into another
+ *
+ * @note: The strings should not overlap, as the behavior is undefined.
+ *
+ * @s1: The source string.
+ * @s2: The destination string.
+ *
+ * @return a pointer to the terminating `\0' character of @s1,
+ * or NULL if @s1 or @s2 is NULL.
+ */
+char *stpcpy(char * s1, const char * s2)
+{
+	if (s1 == NULL || s2 == NULL)
+		return NULL;
+
+	strcpy(s1, s2);
+
+	return s1 + strlen(s2);
+}
+#endif
+
 /**
  * Concatenate strings into a newly allocated string
  *

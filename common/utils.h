@@ -22,6 +22,9 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+#ifndef HAVE_STPCPY
+char *stpcpy(char * s1, const char * s2);
+#endif
 char *string_concat(const char *str, ...);
 
 #endif
