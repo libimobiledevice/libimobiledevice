@@ -44,16 +44,7 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT8_T
 
 # Checks for library functions.
-AC_CHECK_FUNCS([strcasecmp strdup strerror strndup])
-
-AC_CHECK_FUNC(asprintf, [have_asprintf="yes"], [have_asprintf="no"])
-if test "x$have_asprintf" = "xyes"; then
-  AC_DEFINE(HAVE_ASPRINTF,1,[define if asprintf is available])
-fi
-AC_CHECK_FUNC(vasprintf, [have_vasprintf="yes"], [have_vasprintf="no"])
-if test "x$have_vasprintf" = "xyes"; then
-  AC_DEFINE(HAVE_VASPRINTF,1,[define if vasprintf is available])
-fi
+AC_CHECK_FUNCS([asprintf strcasecmp strdup strerror strndup stpcpy vasprintf])
 
 AC_CHECK_HEADER(endian.h, [ac_cv_have_endian_h="yes"], [ac_cv_have_endian_h="no"])
 if test "x$ac_cv_have_endian_h" = "xno"; then
