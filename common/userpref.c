@@ -202,9 +202,9 @@ static const char *userpref_get_config_dir()
 #endif
 
 	if (use_dot_config)
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR);
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR, NULL);
 	else
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR);
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR, NULL);
 
 	if (__config_dir) {
 		int i = strlen(__config_dir)-1;	
