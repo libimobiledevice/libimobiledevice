@@ -245,6 +245,8 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_opt
 
 	if (res == INSTPROXY_E_SUCCESS) {
 		*result = apps_array;
+	} else {
+		plist_free(apps_array);
 	}
 
 leave_unlock:
@@ -837,6 +839,8 @@ instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_clie
 	}
 
 	if (!app_found) {
+		if (apps)
+			plist_free(apps);
 		*path = NULL;
 		return INSTPROXY_E_OP_FAILED;
 	}
