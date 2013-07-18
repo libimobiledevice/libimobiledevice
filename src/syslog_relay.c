@@ -232,6 +232,20 @@ void *syslog_relay_worker(void *arg)
 	return NULL;
 }
 
+/**
+ * Starts capturing the syslog of the device using a callback.
+ *
+ * Use syslog_relay_stop_capture() to stop receiving the syslog.
+ *
+ * @param client The syslog_relay client to use
+ * @param callback Callback to receive each character from the syslog.
+ * @param user_data Custom pointer passed to the callback function.
+ *
+ * @return SYSLOG_RELAY_E_SUCCESS on success,
+ *      SYSLOG_RELAY_E_INVALID_ARG when one or more parameters are
+ *      invalid or SYSLOG_RELAY_E_UNKNOWN_ERROR when an unspecified
+ *      error occurs or a syslog capture has already been started.
+ */
 syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data)
 {
 	if (!client || !callback)
@@ -259,6 +273,18 @@ syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, sy
 	return res;
 }
 
+/**
+ * Stops capturing the syslog of the device.
+ *
+ * Use syslog_relay_start_capture() to start receiving the syslog.
+ *
+ * @param client The syslog_relay client to use
+ *
+ * @return SYSLOG_RELAY_E_SUCCESS on success,
+ *      SYSLOG_RELAY_E_INVALID_ARG when one or more parameters are
+ *      invalid or SYSLOG_RELAY_E_UNKNOWN_ERROR when an unspecified
+ *      error occurs or a syslog capture has already been started.
+ */
 syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client)
 {
 	if (client->worker) {
