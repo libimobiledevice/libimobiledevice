@@ -129,6 +129,26 @@ afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t serv
 }
 
 /**
+ * Starts a new AFC service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     afc_client_t upon successful return. Must be freed using
+ *     afc_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return AFC_E_SUCCESS on success, or an AFC_E_* error
+ *     code otherwise.
+ */
+afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, const char* label)
+{
+	afc_error_t err = AFC_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, AFC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(afc_client_new), &err);
+	return err;
+}
+
+/**
  * Frees up an AFC client. If the connection was created by the
  * client itself, the connection will be closed.
  * 

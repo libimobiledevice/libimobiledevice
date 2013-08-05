@@ -52,6 +52,7 @@ typedef house_arrest_client_private *house_arrest_client_t; /**< The client hand
 
 /* Interface */
 house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client);
+house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t* client, const char* label);
 house_arrest_error_t house_arrest_client_free(house_arrest_client_t client);
 
 house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict);

@@ -50,7 +50,9 @@ typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**<
 
 /* Interface */
 mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client);
+mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t* client, const char* label);
 mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client);
+
 mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result);
 mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *image_signature, uint16_t signature_length, const char *image_type, plist_t *result);
 mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client);

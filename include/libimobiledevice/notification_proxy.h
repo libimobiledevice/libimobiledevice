@@ -94,7 +94,9 @@ typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
 np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
+np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
 np_error_t np_client_free(np_client_t client);
+
 np_error_t np_post_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notification(np_client_t client, const char *notification);
 np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);

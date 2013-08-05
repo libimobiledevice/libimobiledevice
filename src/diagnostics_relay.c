@@ -102,6 +102,26 @@ diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdow
 }
 
 /**
+ * Starts a new diagnostics_relay service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     diagnostics_relay_client_t upon successful return. Must be freed using
+ *     diagnostics_relay_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return DIAGNOSTICS_RELAY_E_SUCCESS on success, or an DIAGNOSTICS_RELAY_E_* error
+ *     code otherwise.
+ */
+diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t * client, const char* label)
+{
+	diagnostics_relay_error_t err = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, DIAGNOSTICS_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(diagnostics_relay_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a diagnostics_relay client from the device and frees up the 
  * diagnostics_relay client data.
  *

@@ -55,6 +55,7 @@ typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status, vo
 
 /* Interface */
 instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client);
+instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label);
 instproxy_error_t instproxy_client_free(instproxy_client_t client);
 
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);

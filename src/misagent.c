@@ -115,6 +115,26 @@ misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descrip
 }
 
 /**
+ * Starts a new misagent service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     misagent_client_t upon successful return. Must be freed using
+ *     misagent_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return MISAGENT_E_SUCCESS on success, or an MISAGENT_E_* error
+ *     code otherwise.
+ */
+misagent_error_t misagent_client_start_service(idevice_t device, misagent_client_t * client, const char* label)
+{
+	misagent_error_t err = MISAGENT_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, MISAGENT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(misagent_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects an misagent client from the device and frees up the
  * misagent client data.
  *

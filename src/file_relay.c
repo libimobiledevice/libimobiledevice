@@ -57,6 +57,26 @@ file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_des
 }
 
 /**
+ * Starts a new file_relay service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     file_relay_client_t upon successful return. Must be freed using
+ *     file_relay_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return FILE_RELAY_E_SUCCESS on success, or an FILE_RELAY_E_* error
+ *     code otherwise.
+ */
+file_relay_error_t file_relay_client_start_service(idevice_t device, file_relay_client_t * client, const char* label)
+{
+	file_relay_error_t err = FILE_RELAY_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, FILE_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(file_relay_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a file_relay client from the device and frees up the file_relay
  * client data.
  *

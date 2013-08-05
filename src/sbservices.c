@@ -104,6 +104,26 @@ sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_des
 }
 
 /**
+ * Starts a new sbservices service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     sbservices_client_t upon successful return. Must be freed using
+ *     sbservices_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, or an SBSERVICES_E_* error
+ *     code otherwise.
+ */
+sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t * client, const char* label)
+{
+	sbservices_error_t err = SBSERVICES_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, SBSERVICES_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(sbservices_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects an sbservices client from the device and frees up the
  * sbservices client data.
  *

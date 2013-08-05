@@ -51,6 +51,7 @@ typedef misagent_client_private *misagent_client_t; /**< The client handle. */
 
 /* Interface */
 misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client);
+misagent_error_t misagent_client_start_service(idevice_t device, misagent_client_t* client, const char* label);
 misagent_error_t misagent_client_free(misagent_client_t client);
 
 misagent_error_t misagent_install(misagent_client_t client, plist_t profile);

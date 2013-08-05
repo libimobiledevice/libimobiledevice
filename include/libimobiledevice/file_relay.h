@@ -51,6 +51,7 @@ typedef struct file_relay_client_private file_relay_client_private;
 typedef file_relay_client_private *file_relay_client_t; /**< The client handle. */
 
 file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, file_relay_client_t *client);
+file_relay_error_t file_relay_client_start_service(idevice_t device, file_relay_client_t* client, const char* label);
 file_relay_error_t file_relay_client_free(file_relay_client_t client);
 
 file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection);

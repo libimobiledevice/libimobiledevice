@@ -102,6 +102,26 @@ screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_d
 }
 
 /**
+ * Starts a new screenshotr service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     screenshotr_client_t upon successful return. Must be freed using
+ *     screenshotr_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return SCREENSHOTR_E_SUCCESS on success, or an SCREENSHOTR_E_* error
+ *     code otherwise.
+ */
+screenshotr_error_t screenshotr_client_start_service(idevice_t device, screenshotr_client_t * client, const char* label)
+{
+	screenshotr_error_t err = SCREENSHOTR_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, SCREENSHOTR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(screenshotr_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a screenshotr client from the device and frees up the
  * screenshotr client data.
  *

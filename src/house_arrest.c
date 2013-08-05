@@ -83,6 +83,26 @@ house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service
 }
 
 /**
+ * Starts a new house_arrest service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     house_arrest_client_t upon successful return. Must be freed using
+ *     house_arrest_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return HOUSE_ARREST_E_SUCCESS on success, or an HOUSE_ARREST_E_* error
+ *     code otherwise.
+ */
+house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t * client, const char* label)
+{
+	house_arrest_error_t err = HOUSE_ARREST_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, HOUSE_ARREST_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(house_arrest_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects an house_arrest client from the device and frees up the
  * house_arrest client data.
  *

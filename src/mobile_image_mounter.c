@@ -106,6 +106,26 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdown
 }
 
 /**
+ * Starts a new mobile_image_mounter service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     mobile_image_mounter_t upon successful return. Must be freed using
+ *     mobile_image_mounter_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success, or an MOBILE_IMAGE_MOUNTER_E_* error
+ *     code otherwise.
+ */
+mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t * client, const char* label)
+{
+	mobile_image_mounter_error_t err = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, MOBILE_IMAGE_MOUNTER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobile_image_mounter_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a mobile_image_mounter client from the device and frees up the
  * mobile_image_mounter client data.
  * 

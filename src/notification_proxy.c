@@ -117,6 +117,26 @@ np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t servic
 }
 
 /**
+ * Starts a new notification proxy service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     np_client_t upon successful return. Must be freed using
+ *     np_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return NP_E_SUCCESS on success, or an NP_E_* error
+ *     code otherwise.
+ */
+np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label)
+{
+	np_error_t err = NP_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, NP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(np_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a notification_proxy client from the device and frees up the
  * notification_proxy client data.
  * 

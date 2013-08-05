@@ -109,6 +109,26 @@ mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_des
 }
 
 /**
+ * Starts a new mobilesync service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     mobilesync_client_t upon successful return. Must be freed using
+ *     mobilesync_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return MOBILESYNC_E_SUCCESS on success, or an MOBILESYNC_E_* error
+ *     code otherwise.
+ */
+mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t * client, const char* label)
+{
+	mobilesync_error_t err = MOBILESYNC_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, MOBILESYNC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilesync_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a mobilesync client from the device and frees up the
  * mobilesync client data.
  *

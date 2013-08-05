@@ -112,6 +112,26 @@ instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descr
 }
 
 /**
+ * Starts a new installation_proxy service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     instproxy_client_t upon successful return. Must be freed using
+ *     instproxy_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error
+ *     code otherwise.
+ */
+instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
+{
+	instproxy_error_t err = INSTPROXY_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, INSTPROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(instproxy_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects an installation_proxy client from the device and frees up the
  * installation_proxy client data.
  *

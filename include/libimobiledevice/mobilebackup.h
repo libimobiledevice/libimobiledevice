@@ -57,7 +57,9 @@ typedef enum {
 } mobilebackup_flags_t;
 
 mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
+mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t* client, const char* label);
 mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
+
 mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
 mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);

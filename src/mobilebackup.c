@@ -100,6 +100,26 @@ mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service
 }
 
 /**
+ * Starts a new mobilebackup service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     mobilebackup_client_t upon successful return. Must be freed using
+ *     mobilebackup_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return MOBILEBACKUP_E_SUCCESS on success, or an MOBILEBACKUP_E_* error
+ *     code otherwise.
+ */
+mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t * client, const char* label)
+{
+	mobilebackup_error_t err = MOBILEBACKUP_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, MOBILEBACKUP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilebackup_client_new), &err);
+	return err;
+}
+
+/**
  * Disconnects a mobilebackup client from the device and frees up the
  * mobilebackup client data.
  *
