@@ -31,6 +31,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define MOBILESYNC_SERVICE_NAME "com.apple.mobilesync"
+
 /** @name Error Codes */
 /*@{*/
 #define MOBILESYNC_E_SUCCESS                0

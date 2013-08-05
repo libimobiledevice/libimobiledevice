@@ -31,6 +31,8 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/afc.h>
 
+#define HOUSE_ARREST_SERVICE_NAME "com.apple.mobile.house_arrest"
+
 /** @name Error Codes */
 /*@{*/
 #define HOUSE_ARREST_E_SUCCESS                0

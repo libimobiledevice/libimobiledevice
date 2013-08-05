@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define MISAGENT_SERVICE_NAME "com.apple.misagent"
+
 /** @name Error Codes */
 /*@{*/
 #define MISAGENT_E_SUCCESS                0

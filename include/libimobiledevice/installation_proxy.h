@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define INSTPROXY_SERVICE_NAME "com.apple.mobile.installation_proxy"
+
 /** @name Error Codes */
 /*@{*/
 #define INSTPROXY_E_SUCCESS                0

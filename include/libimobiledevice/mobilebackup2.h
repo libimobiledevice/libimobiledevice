@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
+
 /** @name Error Codes */
 /*@{*/
 #define MOBILEBACKUP2_E_SUCCESS                0

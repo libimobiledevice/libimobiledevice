@@ -31,6 +31,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define SCREENSHOTR_SERVICE_NAME "com.apple.mobile.screenshotr"
+
 /** @name Error Codes */
 /*@{*/
 #define SCREENSHOTR_E_SUCCESS                0

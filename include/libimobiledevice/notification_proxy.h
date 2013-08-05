@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
+
 /** @name Error Codes */
 /*@{*/
 #define NP_E_SUCCESS                0

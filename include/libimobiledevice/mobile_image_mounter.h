@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define MOBILE_IMAGE_MOUNTER_SERVICE_NAME "com.apple.mobile.mobile_image_mounter"
+
 /** @name Error Codes */
 /*@{*/
 #define MOBILE_IMAGE_MOUNTER_E_SUCCESS                0

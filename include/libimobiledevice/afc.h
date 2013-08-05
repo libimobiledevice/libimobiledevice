@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define AFC_SERVICE_NAME "com.apple.afc"
+
 /** @name Error Codes */
 /*@{*/
 #define AFC_E_SUCCESS                 0

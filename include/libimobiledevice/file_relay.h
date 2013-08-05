@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define FILE_RELAY_SERVICE_NAME "com.apple.mobile.file_relay"
+
 /** @name Error Codes */
 /*@{*/
 #define FILE_RELAY_E_SUCCESS                0

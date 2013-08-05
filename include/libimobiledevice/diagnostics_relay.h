@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#define DIAGNOSTICS_RELAY_SERVICE_NAME "com.apple.mobile.diagnostics_relay"
+
 /** @name Error Codes */
 /*@{*/
 #define DIAGNOSTICS_RELAY_E_SUCCESS                0
