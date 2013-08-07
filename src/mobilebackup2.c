@@ -458,6 +458,12 @@ mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, 
 	if (options) {
 		plist_dict_insert_item(dict, "Options", plist_copy(options));
 	}
+	if (!strcmp(request, "Unback") && options) {
+		plist_t password = plist_dict_get_item(options, "Password");
+		if (password) {
+			plist_dict_insert_item(dict, "Password", plist_copy(password));
+		}
+	}
 	mobilebackup2_error_t err = mobilebackup2_send_message(client, request, dict);
 	plist_free(dict);
 

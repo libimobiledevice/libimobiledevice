@@ -1810,7 +1810,15 @@ checkpoint:
 			break;
 			case CMD_UNBACK:
 			PRINT_VERBOSE(1, "Starting to unpack backup...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "Unback", udid, source_udid, NULL);
+			if (backup_password != NULL) {
+				opts = plist_new_dict();
+				plist_dict_insert_item(opts, "Password", plist_new_string(backup_password));
+			}
+			PRINT_VERBOSE(1, "Backup password: %s\n", (backup_password == NULL ? "No":"Yes"));
+			err = mobilebackup2_send_request(mobilebackup2, "Unback", udid, source_udid, opts);
+			if (backup_password !=NULL) {
+				plist_free(opts);
+			}
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
 				printf("Error requesting unback operation from device, error code %d\n", err);
 				cmd = CMD_LEAVE;
