@@ -94,6 +94,8 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection);
 idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
 idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
 idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
+idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
+idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 /* misc */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);

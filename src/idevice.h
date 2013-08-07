@@ -69,7 +69,4 @@ struct idevice_private {
 	void *conn_data;
 };
 
-idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
-idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
-
 #endif
