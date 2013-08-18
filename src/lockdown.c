@@ -1689,8 +1689,6 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	userpref_device_record_get_host_id(client->udid, &host_id);
 	if (!host_id)
 		return LOCKDOWN_E_INVALID_CONF;
-	if (!client->session_id)
-		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	plist_t dict = NULL;
 	uint16_t port_loc = 0;
@@ -1757,6 +1755,8 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 			plist_get_string_val(error_node, &error);
 			if (!strcmp(error, "InvalidService")) {
 				ret = LOCKDOWN_E_INVALID_SERVICE;
+			} else if (!strcmp(error, "NoRunningSession")) {
+				ret = LOCKDOWN_E_NO_RUNNING_SESSION;
 			}
 			free(error);
 		}
