@@ -37,6 +37,17 @@ typedef gnutls_datum_t key_data_t;
 #endif
 
 #include <stdint.h>
+#include <plist/plist.h>
+
+#define USERPREF_DEVICE_CERTIFICATE_KEY "DeviceCertificate"
+#define USERPREF_ESCROW_BAG_KEY "EscrowBag"
+#define USERPREF_HOST_CERTIFICATE_KEY "HostCertificate"
+#define USERPREF_ROOT_CERTIFICATE_KEY "RootCertificate"
+#define USERPREF_HOST_PRIVATE_KEY_KEY "HostPrivateKey"
+#define USERPREF_ROOT_PRIVATE_KEY_KEY "RootPrivateKey"
+#define USERPREF_HOST_ID_KEY "HostID"
+#define USERPREF_SYSTEM_BUID_KEY "SystemBUID"
+#define USERPREF_WIFI_MAC_ADDRESS_KEY "WiFiMACAddress"
 
 #ifndef LIBIMOBILEDEVICE_INTERNAL
 #ifdef WIN32
@@ -58,16 +69,25 @@ typedef gnutls_datum_t key_data_t;
 typedef int16_t userpref_error_t;
 
 #ifdef HAVE_OPENSSL
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt);
 #else
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
 #endif
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t *pem_host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_public_key(const char *udid, key_data_t public_key);
-userpref_error_t userpref_remove_device_public_key(const char *udid);
-LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_public_key(const char *udid);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_set_keys_and_certs(const char *udid, key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert);
+
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_record(const char *udid, plist_t device_record);
+userpref_error_t userpref_remove_device_record(const char *udid);
+LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_record(const char *udid);
+
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
-void userpref_get_host_id(char **host_id);
+void userpref_device_record_get_host_id(const char *udid, char **host_id);
+void userpref_get_system_buid(char **system_buid);
+
+userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_record);
+int userpref_get_value(const char *key, plist_t *value);
+int userpref_set_value(const char *key, plist_t value);
+int userpref_device_record_get_value(const char *udid, const char *key, plist_t *value);
+int userpref_device_record_set_value(const char *udid, const char *key, plist_t value);
 
 #endif

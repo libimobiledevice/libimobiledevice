@@ -58,14 +58,6 @@
 #include "debug.h"
 #include "utils.h"
 
-#define LIBIMOBILEDEVICE_CONF_DIR  "libimobiledevice"
-#define LIBIMOBILEDEVICE_CONF_FILE "libimobiledevicerc"
-
-#define LIBIMOBILEDEVICE_ROOT_PRIVKEY "RootPrivateKey.pem"
-#define LIBIMOBILEDEVICE_HOST_PRIVKEY "HostPrivateKey.pem"
-#define LIBIMOBILEDEVICE_ROOT_CERTIF "RootCertificate.pem"
-#define LIBIMOBILEDEVICE_HOST_CERTIF "HostCertificate.pem"
-
 #ifdef WIN32
 #define DIR_SEP '\\'
 #define DIR_SEP_S "\\"
@@ -73,6 +65,19 @@
 #define DIR_SEP '/'
 #define DIR_SEP_S "/"
 #endif
+
+#define USERPREF_CONFIG_EXTENSION ".plist"
+
+#ifndef __APPLE__
+#define USERPREF_CONFIG_DIR "libimobiledevice"
+#else
+#ifdef WIN32
+#define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
+#else
+#define USERPREF_CONFIG_DIR "lockdown"
+#endif
+#endif
+#define USERPREF_CONFIG_FILE "SystemConfiguration"USERPREF_CONFIG_EXTENSION
 
 static char *__config_dir = NULL;
 
@@ -172,7 +177,7 @@ static const char *userpref_get_config_dir()
 	LPITEMIDLIST pidl = NULL;
 	BOOL b = FALSE;
 
-	hr = SHGetSpecialFolderLocation (NULL, CSIDL_LOCAL_APPDATA, &pidl);
+	hr = SHGetSpecialFolderLocation (NULL, CSIDL_COMMON_APPDATA, &pidl);
 	if (hr == S_OK) {
 		b = SHGetPathFromIDListW (pidl, path);
 		if (b) {
@@ -181,6 +186,10 @@ static const char *userpref_get_config_dir()
 		}
 	}
 
+	use_dot_config = 0;
+#else
+#ifdef __APPLE__
+	base_config_dir = strdup("/var/db");
 	use_dot_config = 0;
 #else
 	const char *cdir = getenv("XDG_CONFIG_HOME");
@@ -200,11 +209,12 @@ static const char *userpref_get_config_dir()
 		use_dot_config = 0;
 	}
 #endif
+#endif
 
 	if (use_dot_config)
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR, NULL);
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
 	else
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, LIBIMOBILEDEVICE_CONF_DIR, NULL);
+		__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
 
 	if (__config_dir) {
 		int i = strlen(__config_dir)-1;	
@@ -214,6 +224,8 @@ static const char *userpref_get_config_dir()
 	}
 
 	free(base_config_dir);
+
+	debug_info("initialized config_dir to %s", __config_dir);
 
 	return __config_dir;
 }
@@ -250,131 +262,6 @@ static int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
-static int config_write(const char *cfgfile, plist_t dict)
-{
-	if (!cfgfile || !dict || (plist_get_node_type(dict) != PLIST_DICT)) {
-		return -1;
-	}
-	int res = -1;
-
-#if 1 // old style config
-	plist_t hostid = plist_dict_get_item(dict, "HostID");
-	if (hostid && (plist_get_node_type(hostid) == PLIST_STRING)) {
-		char *hostidstr = NULL;
-		plist_get_string_val(hostid, &hostidstr);
-		if (hostidstr) {
-			FILE *fd = fopen(cfgfile, "wb");
-			if (fd) {
-				fprintf(fd, "\n[Global]\nHostID=%s\n", hostidstr);
-				fclose(fd);
-				res = 0;
-			} else {
-				debug_info("could not open '%s' for writing: %s", cfgfile, strerror(errno));
-			}
-			free(hostidstr);
-		}
-	}
-#endif
-#if 0
-	char *xml = NULL;
-	uint32_t length = 0;
-
-	plist_to_xml(dict, &xml, &length);
-	if (!xml) {
-		return res;
-	}
-
-	FILE *fd = fopen(cfgfile, "wb");
-	if (!fd) {
-		free(xml);
-		return res;
-	}
-
-	if (fwrite(xml, 1, length, fd) == length) {
-		res = 0;
-	} else {
-		fprintf(stderr, "%s: ERROR: failed to write configuration to '%s'\n", __func__, cfgfile);
-	}
-	fclose(fd);
-
-	free(xml);
-#endif
-	return res;
-}
-
-static int config_read(const char *cfgfile, plist_t *dict)
-{
-	if (!cfgfile || !dict) {
-		return -1;
-	}
-
-	int res = -1;
-	FILE *fd = fopen(cfgfile, "rb");
-	if (!fd) {
-		debug_info("could not open '%s' for reading: %s", cfgfile, strerror(errno));
-		return -1;
-	}
-
-	fseek(fd, 0, SEEK_END);
-	unsigned long int size = ftell(fd);
-	fseek(fd, 0, SEEK_SET);
-	unsigned char *contents = NULL;
-
-	contents = malloc(size);
-	if (fread(contents, 1, size, fd) != size) {
-		free(contents);
-		fclose(fd);
-		return -1;
-	}
-	plist_t plist = NULL;
-
-	if (!memcmp(contents, "bplist00", 8)) {
-		plist_from_bin((const char*)contents, (uint32_t)size, &plist);
-		fclose(fd);
-	} else {
-		if (memchr(contents, '<', size)) {
-			plist_from_xml((const char*)contents, (uint32_t)size, &plist);
-		}
-		if (plist) {
-			fclose(fd);
-		} else {
-			// try parsing old format config file
-			char line[256];
-			fseek(fd, 0, SEEK_SET);
-			while (fgets(line, 256, fd)) {
-				char *p = &line[0];
-				size_t llen = strlen(p)-1;
-				while ((llen > 0) && ((p[llen] == '\n') || (p[llen] == '\r'))) {
-					p[llen] = '\0';
-					llen--;
-				}
-				if (llen == 0) continue;
-				while ((p[0] == '\n') || (p[0] == '\r')) {
-					p++;
-				}
-				if (!strncmp(p, "HostID=", 7)) {
-					plist = plist_new_dict();
-					plist_dict_insert_item(plist, "HostID", plist_new_string(p+7));
-					break;
-				}
-			}
-			fclose(fd);
-#if 0
-			if (plist) {
-				// write new format config
-				config_write(cfgfile, plist);
-			}
-#endif
-		}
-	}
-	free(contents);
-	if (plist) {
-		*dict = plist;
-		res = 0;
-	}
-	return res;
-}
-
 /**
  * Creates a freedesktop compatible configuration directory.
  */
@@ -398,12 +285,12 @@ static int get_rand(int min, int max)
  *
  * @return A null terminated string containing a valid HostID.
  */
-static char *userpref_generate_host_id()
+static char *userpref_generate_host_id(int index)
 {
 	/* HostID's are just UUID's, and UUID's are 36 characters long */
 	char *hostid = (char *) malloc(sizeof(char) * 37);
 	const char *chars = "ABCDEF0123456789";
-	srand(time(NULL));
+	srand(time(NULL) - index);
 	int i = 0;
 
 	for (i = 0; i < 36; i++) {
@@ -420,88 +307,193 @@ static char *userpref_generate_host_id()
 }
 
 /**
- * Store HostID in config file.
+ * Generates a valid BUID for this system (which is actually a UUID).
  *
- * @param host_id A null terminated string containing a valid HostID.
+ * @return A null terminated string containing a valid BUID.
  */
-static int userpref_set_host_id(const char *host_id)
+static char *userpref_generate_system_buid()
 {
-	const char *config_path;
-	char *config_file;
+	return userpref_generate_host_id(1);
+}
 
-	if (!host_id)
+static int internal_set_value(const char *config_file, const char *key, plist_t value)
+{
+	if (!config_file)
 		return 0;
+
+	/* read file into plist */
+	plist_t config = NULL;
+
+	plist_read_from_filename(&config, config_file);
+	if (!config) {
+		config = plist_new_dict();
+		plist_dict_insert_item(config, key, value);
+	} else {
+		plist_t n = plist_dict_get_item(config, key);
+		if (n) {
+			plist_dict_remove_item(config, key);
+		}
+		plist_dict_insert_item(config, key, value);
+		remove(config_file);
+	}
+
+	/* store in config file */
+	char *value_string = NULL;
+	if (plist_get_node_type(value) == PLIST_STRING) {
+		plist_get_string_val(value, &value_string);
+		debug_info("setting key %s to %s in config_file %s", key, value_string, config_file);
+	} else {
+		debug_info("setting key %s in config_file %s", key, config_file);
+	}
+
+	plist_write_to_filename(config, config_file, PLIST_FORMAT_XML);
+
+	plist_free(config);
+
+	return 1;
+}
+
+int userpref_set_value(const char *key, plist_t value)
+{
+	const char *config_path = NULL;
+	char *config_file = NULL;
 
 	/* Make sure config directory exists */
 	userpref_create_config_dir();
 
 	config_path = userpref_get_config_dir();
-	config_file = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_CONF_FILE)+1);
-	strcpy(config_file, config_path);
-	strcat(config_file, DIR_SEP_S);
-	strcat(config_file, LIBIMOBILEDEVICE_CONF_FILE);
+	config_file = string_concat(config_path, DIR_SEP_S, USERPREF_CONFIG_FILE, NULL);
 
-	/* Now parse file to get the HostID */
-	plist_t config = NULL;
-	config_read(config_file, &config);
-	if (!config) {
-		config = plist_new_dict();
-		plist_dict_insert_item(config, "HostID", plist_new_string(host_id));
-	} else {
-		plist_t n = plist_dict_get_item(config, "HostID");
-		if (n) {
-			plist_set_string_val(n, host_id);
-		} else {
-			plist_dict_insert_item(config, "HostID", plist_new_string(host_id));
-		}
-	}
-
-	/* Store in config file */
-	debug_info("setting hostID to %s", host_id);
-
-	config_write(config_file, config);
-	plist_free(config);
+	int result = internal_set_value(config_file, key, value);
 
 	free(config_file);
+
+	return result;
+}
+
+int userpref_device_record_set_value(const char *udid, const char *key, plist_t value)
+{
+	const char *config_path = NULL;
+	char *config_file = NULL;
+
+	/* Make sure config directory exists */
+	userpref_create_config_dir();
+
+	config_path = userpref_get_config_dir();
+	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+
+	int result = internal_set_value(config_file, key, value);
+
+	free(config_file);
+
+	return result;
+}
+
+static int internal_get_value(const char* config_file, const char *key, plist_t *value)
+{
+	*value = NULL;
+
+	/* now parse file to get the SystemBUID */
+	plist_t config = NULL;
+	if (plist_read_from_filename(&config, config_file)) {
+		debug_info("reading key %s from config_file %s", key, config_file);
+		plist_t n = plist_dict_get_item(config, key);
+		if (n) {
+			*value = plist_copy(n);
+			plist_free(n);
+			n = NULL;
+		}
+	}
+	plist_free(config);
+
 	return 1;
 }
 
-/**
- * Reads the HostID from a previously generated configuration file.
- *
- * @note It is the responsibility of the calling function to free the returned host_id
- *
- * @return The string containing the HostID or NULL
- */
-void userpref_get_host_id(char **host_id)
+int userpref_get_value(const char *key, plist_t *value)
 {
-	const char *config_path;
-	char *config_file;
+	const char *config_path = NULL;
+	char *config_file = NULL;
 
 	config_path = userpref_get_config_dir();
-	config_file = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_CONF_FILE)+1);
-	strcpy(config_file, config_path);
-	strcat(config_file, DIR_SEP_S);
-	strcat(config_file, LIBIMOBILEDEVICE_CONF_FILE);
+	config_file = string_concat(config_path, DIR_SEP_S, USERPREF_CONFIG_FILE, NULL);
 
-	/* now parse file to get the HostID */
-	plist_t config = NULL;
-	if (config_read(config_file, &config) == 0) {
-		plist_t n_host_id = plist_dict_get_item(config, "HostID");
-		if (n_host_id && (plist_get_node_type(n_host_id) == PLIST_STRING)) {
-			plist_get_string_val(n_host_id, host_id);
-		}
-	}
-	plist_free(config);
+	int result = internal_get_value(config_file, key, value);
+
 	free(config_file);
+
+	return result;
+}
+
+int userpref_device_record_get_value(const char *udid, const char *key, plist_t *value)
+{
+	const char *config_path = NULL;
+	char *config_file = NULL;
+
+	config_path = userpref_get_config_dir();
+	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+
+	int result = internal_get_value(config_file, key, value);
+
+	free(config_file);
+
+	return result;
+}
+
+/**
+ * Store SystemBUID in config file.
+ *
+ * @param host_id A null terminated string containing a valid SystemBUID.
+ */
+static int userpref_set_system_buid(const char *system_buid)
+{
+	return userpref_set_value(USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
+}
+
+/**
+ * Reads the BUID from a previously generated configuration file.
+ *
+ * @note It is the responsibility of the calling function to free the returned system_buid
+ *
+ * @return The string containing the BUID or NULL
+ */
+void userpref_get_system_buid(char **system_buid)
+{
+	plist_t value = NULL;
+
+	userpref_get_value(USERPREF_SYSTEM_BUID_KEY, &value);
+
+	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
+		plist_get_string_val(value, system_buid);
+		debug_info("got %s %s", USERPREF_SYSTEM_BUID_KEY, *system_buid);
+	}
+
+	if (!*system_buid) {
+		/* no config, generate system_buid */
+		debug_info("no previous %s found", USERPREF_SYSTEM_BUID_KEY);
+		*system_buid = userpref_generate_system_buid();
+		userpref_set_system_buid(*system_buid);
+	}
+
+	debug_info("using %s as %s", *system_buid, USERPREF_SYSTEM_BUID_KEY);
+}
+
+void userpref_device_record_get_host_id(const char *udid, char **host_id)
+{
+	plist_t value = NULL;
+
+	userpref_device_record_get_value(udid, USERPREF_HOST_ID_KEY, &value);
+
+	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
+		plist_get_string_val(value, host_id);
+	}
 
 	if (!*host_id) {
 		/* no config, generate host_id */
-		*host_id = userpref_generate_host_id();
-		userpref_set_host_id(*host_id);
+		*host_id = userpref_generate_host_id(0);
+		userpref_device_record_set_value(udid, USERPREF_HOST_ID_KEY, plist_new_string(*host_id));
 	}
 
-	debug_info("Using %s as HostID", *host_id);
+	debug_info("using %s as %s", *host_id, USERPREF_HOST_ID_KEY);
 }
 
 /**
@@ -512,26 +504,24 @@ void userpref_get_host_id(char **host_id)
  * @return 1 if the device has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int userpref_has_device_public_key(const char *udid)
+int userpref_has_device_record(const char *udid)
 {
 	int ret = 0;
-	const char *config_path;
-	char *config_file;
+	const char *config_path = NULL;
+	char *config_file = NULL;
 	struct stat st;
 
 	if (!udid) return 0;
 
 	/* first get config file */
 	config_path = userpref_get_config_dir();
-	config_file = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
-	strcpy(config_file, config_path);
-	strcat(config_file, DIR_SEP_S);
-	strcat(config_file, udid);
-	strcat(config_file, ".pem");
+	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
 
 	if ((stat(config_file, &st) == 0) && S_ISREG(st.st_mode))
 		ret = 1;
+
 	free(config_file);
+
 	return ret;
 }
 
@@ -557,7 +547,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 		void *next;
 	};
 	DIR *config_dir;
-	const char *config_path;
+	const char *config_path = NULL;
 	struct slist_t *udids = NULL;
 	unsigned int i;
 	unsigned int found = 0;
@@ -577,8 +567,8 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 		struct dirent *entry;
 		struct slist_t *listp = udids;
 		while ((entry = readdir(config_dir))) {
-			char *ext = strstr(entry->d_name, ".pem");
-			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == 44)) {
+			char *ext = strstr(entry->d_name, USERPREF_CONFIG_EXTENSION);
+			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == (40 + strlen(ext)))) {
 				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
 				ne->name = (char*)malloc(41);
 				strncpy(ne->name, entry->d_name, 40);
@@ -614,75 +604,77 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 }
 
 /**
- * Mark the device (as represented by the key) as having connected to this
- * configuration.
+ * Mark the device as having connected to this configuration.
  *
  * @param udid The device UDID as given by the device
- * @param public_key The public key given by the device
+ * @param device_record The device record with full configuration
  *
- * @return 1 on success and 0 if no public key is given or if it has already
+ * @return 1 on success and 0 if no device record is given or if it has already
  *         been marked as connected previously.
  */
-userpref_error_t userpref_set_device_public_key(const char *udid, key_data_t public_key)
+userpref_error_t userpref_set_device_record(const char *udid, plist_t device_record)
 {
-	if (NULL == public_key.data)
-		return USERPREF_E_INVALID_ARG;
-	
-	if (userpref_has_device_public_key(udid))
-		return USERPREF_E_SUCCESS;
-
 	/* ensure config directory exists */
 	userpref_create_config_dir();
 
 	/* build file path */
 	const char *config_path = userpref_get_config_dir();
-	char *pem = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, udid);
-	strcat(pem, ".pem");
+	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+
+	remove(device_record_file);
 
 	/* store file */
-	FILE *pFile = fopen(pem, "wb");
-	if (pFile) {
-		fwrite(public_key.data, 1, public_key.size, pFile);
-		fclose(pFile);
-	} else {
-		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
+	if (!plist_write_to_filename(device_record, device_record_file, PLIST_FORMAT_XML)) {
+		debug_info("could not open '%s' for writing: %s", device_record_file, strerror(errno));
 	}
-	free(pem);
+	free(device_record_file);
+
+	return USERPREF_E_SUCCESS;
+}
+
+userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_record)
+{
+	/* ensure config directory exists */
+	userpref_create_config_dir();
+
+	/* build file path */
+	const char *config_path = userpref_get_config_dir();
+	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+
+	/* read file */
+	if (!plist_read_from_filename(device_record, device_record_file)) {
+		debug_info("could not open '%s' for reading: %s", device_record_file, strerror(errno));
+	}
+	free(device_record_file);
 
 	return USERPREF_E_SUCCESS;
 }
 
 /**
- * Remove the public key stored for the device with udid from this host.
+ * Remove the pairing record stored for a device from this host.
  *
  * @param udid The udid of the device
  *
  * @return USERPREF_E_SUCCESS on success.
  */
-userpref_error_t userpref_remove_device_public_key(const char *udid)
+userpref_error_t userpref_remove_device_record(const char *udid)
 {
-	if (!userpref_has_device_public_key(udid))
+	if (!userpref_has_device_record(udid))
 		return USERPREF_E_SUCCESS;
 
 	/* build file path */
 	const char *config_path = userpref_get_config_dir();
-	char *pem = (char*)malloc(strlen(config_path)+1+strlen(udid)+4+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, udid);
-	strcat(pem, ".pem");
+	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
 
 	/* remove file */
-	remove(pem);
+	remove(device_record_file);
 
-	free(pem);
+	free(device_record_file);
 
 	return USERPREF_E_SUCCESS;
 }
 
+#if 0
 /**
  * Private function which reads the given file into a key_data_t structure.
  *
@@ -696,7 +688,7 @@ static int userpref_get_file_contents(const char *file, key_data_t * data)
 	int success = 0;
 	unsigned long int size = 0;
 	unsigned char *content = NULL;
-	const char *config_path;
+	const char *config_path = NULL;
 	char *filepath;
 	FILE *fd;
 
@@ -705,10 +697,7 @@ static int userpref_get_file_contents(const char *file, key_data_t * data)
 
 	/* Read file */
 	config_path = userpref_get_config_dir();
-	filepath = (char*)malloc(strlen(config_path)+1+strlen(file)+1);
-	strcpy(filepath, config_path);
-	strcat(filepath, DIR_SEP_S);
-	strcat(filepath, file);
+	filepath = string_concat(config_path, DIR_SEP_S, file, NULL);
 
 	fd = fopen(filepath, "rb");
 	if (fd) {
@@ -746,13 +735,14 @@ static int userpref_get_file_contents(const char *file, key_data_t * data)
 
 	return success;
 }
+#endif
 
 /**
  * Private function which generate private keys and certificates.
  *
  * @return 1 if keys were successfully generated, 0 otherwise
  */
-static userpref_error_t userpref_gen_keys_and_cert(void)
+static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udid)
 {
 	userpref_error_t ret = USERPREF_E_SSL_ERROR;
 
@@ -761,7 +751,7 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
 
-	debug_info("Generating keys and certificates");
+	debug_info("generating keys and certificates");
 #ifdef HAVE_OPENSSL
 	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
 	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
@@ -880,7 +870,7 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	gnutls_global_deinit();
 	gnutls_global_init();
 
-	//use less secure random to speed up key generation
+	/* use less secure random to speed up key generation */
 	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM);
 
 	gnutls_x509_privkey_init(&root_privkey);
@@ -940,7 +930,7 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
 	host_cert_pem.size = host_cert_export_size;
 
-	//restore gnutls env
+	/* restore gnutls env */
 	gnutls_global_deinit();
 	gnutls_global_init();
 #endif
@@ -949,7 +939,7 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 		ret = USERPREF_E_SUCCESS;
 
 	/* store values in config file */
-	userpref_set_keys_and_certs( &root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem);
+	userpref_device_record_set_keys_and_certs(udid, &root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem);
 
 	if (root_key_pem.data)
 		free(root_key_pem.data);
@@ -966,15 +956,15 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 /**
  * Private function which import the given key into a gnutls structure.
  *
- * @param key_name The filename of the private key to import.
+ * @param name The name of the private key to import.
  * @param key the gnutls key structure.
  *
  * @return 1 if the key was successfully imported.
  */
 #ifdef HAVE_OPENSSL
-static userpref_error_t userpref_import_key(const char* key_name, key_data_t* key)
+static userpref_error_t userpref_device_record_import_key(const char* udid, const char* name, key_data_t* key)
 #else
-static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_privkey_t key)
+static userpref_error_t userpref_device_record_import_key(const char* udid, const char* name, gnutls_x509_privkey_t key)
 #endif
 {
 #ifdef HAVE_OPENSSL
@@ -982,37 +972,49 @@ static userpref_error_t userpref_import_key(const char* key_name, gnutls_x509_pr
 		return USERPREF_E_SUCCESS;
 #endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	key_data_t pem_key = { NULL, 0 };
-	if (userpref_get_file_contents(key_name, &pem_key)) {
+	char* buffer = NULL;
+	uint64_t length = 0;
+
+	plist_t crt = NULL;
+	if (userpref_device_record_get_value(udid, name, &crt)) {
+		if (crt && plist_get_node_type(crt) == PLIST_DATA) {
+			plist_get_data_val(crt, &buffer, &length);
 #ifdef HAVE_OPENSSL
-		key->data = (unsigned char*)malloc(pem_key.size);
-		memcpy(key->data, pem_key.data, pem_key.size);
-		key->size = pem_key.size;
-		ret = USERPREF_E_SUCCESS;
-#else
-		if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem_key, GNUTLS_X509_FMT_PEM))
+			key->data = (unsigned char*)malloc(length);
+			memcpy(key->data, buffer, length);
+			key->size = length;
 			ret = USERPREF_E_SUCCESS;
-		else
-			ret = USERPREF_E_SSL_ERROR;
+#else
+			key_data_t pem = { buffer, length };
+			if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem, GNUTLS_X509_FMT_PEM))
+				ret = USERPREF_E_SUCCESS;
+			else
+				ret = USERPREF_E_SSL_ERROR;
 #endif
+		}
 	}
-	if (pem_key.data)
-		free(pem_key.data);
+
+	if (crt)
+		plist_free(crt);
+
+	if (buffer)
+		free(buffer);
+
 	return ret;
 }
 
 /**
  * Private function which import the given certificate into a gnutls structure.
  *
- * @param crt_name The filename of the certificate to import.
+ * @param name The name of the certificate to import.
  * @param cert the gnutls certificate structure.
  *
  * @return IDEVICE_E_SUCCESS if the certificate was successfully imported.
  */
 #ifdef HAVE_OPENSSL
-static userpref_error_t userpref_import_crt(const char* crt_name, key_data_t* cert)
+static userpref_error_t userpref_device_record_import_crt(const char* udid, const char* name, key_data_t* cert)
 #else
-static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_crt_t cert)
+static userpref_error_t userpref_device_record_import_crt(const char* udid, const char* name, gnutls_x509_crt_t cert)
 #endif
 {
 #ifdef HAVE_OPENSSL
@@ -1020,23 +1022,34 @@ static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_cr
 		return USERPREF_E_SUCCESS;
 #endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	key_data_t pem_cert = { NULL, 0 };
+	char* buffer = NULL;
+	uint64_t length = 0;
 
-	if (userpref_get_file_contents(crt_name, &pem_cert)) {
+	plist_t crt = NULL;
+	if (userpref_device_record_get_value(udid, name, &crt)) {
+		if (crt && plist_get_node_type(crt) == PLIST_DATA) {
+			plist_get_data_val(crt, &buffer, &length);
 #ifdef HAVE_OPENSSL
-		cert->data = (unsigned char*)malloc(pem_cert.size);
-		memcpy(cert->data, pem_cert.data, pem_cert.size);
-		cert->size = pem_cert.size;
-		ret = USERPREF_E_SUCCESS;
-#else
-		if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem_cert, GNUTLS_X509_FMT_PEM))
+			cert->data = (unsigned char*)malloc(length);
+			memcpy(cert->data, buffer, length);
+			cert->size = length;
 			ret = USERPREF_E_SUCCESS;
-		else
-			ret = USERPREF_E_SSL_ERROR;
+#else
+			key_data_t pem = { buffer, length };
+			if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem, GNUTLS_X509_FMT_PEM))
+				ret = USERPREF_E_SUCCESS;
+			else
+				ret = USERPREF_E_SSL_ERROR;
 #endif
+		}
 	}
-	if (pem_cert.data)
-		free(pem_cert.data);
+
+	if (crt)
+		plist_free(crt);
+
+	if (buffer)
+		free(buffer);
+
 	return ret;
 }
 
@@ -1054,41 +1067,40 @@ static userpref_error_t userpref_import_crt(const char* crt_name, gnutls_x509_cr
  * @return 1 if the keys and certificates were successfully retrieved, 0 otherwise
  */
 #ifdef HAVE_OPENSSL
-userpref_error_t userpref_get_keys_and_certs(key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt)
+userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt)
 #else
-userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
+userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
 #endif
 {
 	userpref_error_t ret = USERPREF_E_SUCCESS;
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_key(LIBIMOBILEDEVICE_ROOT_PRIVKEY, root_privkey);
+		ret = userpref_device_record_import_key(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_key(LIBIMOBILEDEVICE_HOST_PRIVKEY, host_privkey);
+		ret = userpref_device_record_import_key(udid, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_crt(LIBIMOBILEDEVICE_ROOT_CERTIF, root_crt);
+		ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, root_crt);
 
 	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_import_crt(LIBIMOBILEDEVICE_HOST_CERTIF, host_crt);
+		ret = userpref_device_record_import_crt(udid, USERPREF_HOST_CERTIFICATE_KEY, host_crt);
 
 	if (USERPREF_E_SUCCESS != ret) {
-		//we had problem reading or importing root cert
-		//try with a new ones.
-		ret = userpref_gen_keys_and_cert();
+		/* we had problem reading or importing root cert, try with new ones */
+		ret = userpref_device_record_gen_keys_and_cert(udid);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_key(LIBIMOBILEDEVICE_ROOT_PRIVKEY, root_privkey);
+			ret = userpref_device_record_import_key(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_key(LIBIMOBILEDEVICE_HOST_PRIVKEY, host_privkey);
+			ret = userpref_device_record_import_key(udid, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_crt(LIBIMOBILEDEVICE_ROOT_CERTIF, root_crt);
+			ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, root_crt);
 
 		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_import_crt(LIBIMOBILEDEVICE_HOST_CERTIF, host_crt);
+			ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, host_crt);
 	}
 
 	return ret;
@@ -1102,14 +1114,36 @@ userpref_error_t userpref_get_keys_and_certs(gnutls_x509_privkey_t root_privkey,
  *
  * @return 1 if the certificates were successfully retrieved, 0 otherwise
  */
-userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t *pem_host_cert)
+userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert)
 {
-	if (!pem_root_cert || !pem_host_cert)
+	if (!udid || !pem_root_cert || !pem_host_cert)
 		return USERPREF_E_INVALID_ARG;
 
-	if (userpref_get_file_contents(LIBIMOBILEDEVICE_ROOT_CERTIF, pem_root_cert) && userpref_get_file_contents(LIBIMOBILEDEVICE_HOST_CERTIF, pem_host_cert))
+	char* buffer = NULL;
+	uint64_t length = 0;
+	plist_t root_cert = NULL;
+	plist_t host_cert = NULL;
+	if (userpref_device_record_get_value(udid, USERPREF_HOST_CERTIFICATE_KEY, &host_cert) &&
+		userpref_device_record_get_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert)) {
+		if (host_cert && plist_get_node_type(host_cert) == PLIST_DATA) {
+			plist_get_data_val(host_cert, &buffer, &length);
+			pem_host_cert->data = (unsigned char*)malloc(length);
+			memcpy(pem_host_cert->data, buffer, length);
+			pem_host_cert->size = length;
+			free(buffer);
+			buffer = NULL;
+		}
+		if (root_cert && plist_get_node_type(root_cert) == PLIST_DATA) {
+			plist_get_data_val(root_cert, &buffer, &length);
+			pem_root_cert->data = (unsigned char*)malloc(length);
+			memcpy(pem_root_cert->data, buffer, length);
+			pem_root_cert->size = length;
+			free(buffer);
+			buffer = NULL;
+		}
+
 		return USERPREF_E_SUCCESS;
-	else {
+	} else {
 		if (pem_root_cert->data) {
 			free(pem_root_cert->data);
 			pem_root_cert->size = 0;
@@ -1119,7 +1153,9 @@ userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t
 			pem_host_cert->size = 0;
 		}
 	}
+
 	debug_info("configuration invalid");
+
 	return USERPREF_E_INVALID_CONF;
 }
 
@@ -1135,81 +1171,27 @@ userpref_error_t userpref_get_certs_as_pem(key_data_t *pem_root_cert, key_data_t
  *
  * @return 1 on success and 0 otherwise.
  */
-userpref_error_t userpref_set_keys_and_certs(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
+userpref_error_t userpref_device_record_set_keys_and_certs(const char* udid, key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
 {
-	FILE *pFile;
-	char *pem;
-	const char *config_path;
 	userpref_error_t ret = USERPREF_E_SUCCESS;
 
-	debug_info("saving keys and certs");
+	debug_info("saving keys and certs for udid %s", udid);
 
 	if (!root_key || !host_key || !root_cert || !host_cert) {
 		debug_info("missing key or cert (root_key=%p, host_key=%p, root=cert=%p, host_cert=%p", root_key, host_key, root_cert, host_cert);
 		return USERPREF_E_INVALID_ARG;
 	}
 
-	/* Make sure config directory exists */
-	userpref_create_config_dir();
-
-	config_path = userpref_get_config_dir();
-
-	/* Now write keys and certificates to disk */
-	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_ROOT_PRIVKEY)+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, LIBIMOBILEDEVICE_ROOT_PRIVKEY);
-	pFile = fopen(pem, "wb");
-	if (pFile) {
-		fwrite(root_key->data, 1, root_key->size, pFile);
-		fclose(pFile);
+	/* now write keys and certificates to disk */
+	if (userpref_device_record_set_value(udid, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data((char*)host_key->data, host_key->size)) &&
+		userpref_device_record_set_value(udid, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data((char*)host_cert->data, host_cert->size)) &&
+		userpref_device_record_set_value(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data((char*)root_key->data, root_key->size)) &&
+		userpref_device_record_set_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data((char*)root_cert->data, root_cert->size)))
+	{
+		ret = USERPREF_E_SUCCESS;
 	} else {
-		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
-		ret = USERPREF_E_WRITE_ERROR;
+		ret = 1;
 	}
-	free(pem);
-
-	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_PRIVKEY)+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, LIBIMOBILEDEVICE_HOST_PRIVKEY);
-	pFile = fopen(pem, "wb");
-	if (pFile) {
-		fwrite(host_key->data, 1, host_key->size, pFile);
-		fclose(pFile);
-	} else {
-		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
-		ret = USERPREF_E_WRITE_ERROR;
-	}
-	free(pem);
-
-	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_ROOT_CERTIF)+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, LIBIMOBILEDEVICE_ROOT_CERTIF);
-	pFile = fopen(pem, "wb");
-	if (pFile) {
-		fwrite(root_cert->data, 1, root_cert->size, pFile);
-		fclose(pFile);
-	} else {
-		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
-		ret = USERPREF_E_WRITE_ERROR;
-	}
-	free(pem);
-
-	pem = (char*)malloc(strlen(config_path)+1+strlen(LIBIMOBILEDEVICE_HOST_CERTIF)+1);
-	strcpy(pem, config_path);
-	strcat(pem, DIR_SEP_S);
-	strcat(pem, LIBIMOBILEDEVICE_HOST_CERTIF);
-	pFile = fopen(pem, "wb");
-	if (pFile) {
-		fwrite(host_cert->data, 1, host_cert->size, pFile);
-		fclose(pFile);
-	} else {
-		debug_info("could not open '%s' for writing: %s", pem, strerror(errno));
-		ret = USERPREF_E_WRITE_ERROR;
-	}
-	free(pem);
 
 	return ret;
 }

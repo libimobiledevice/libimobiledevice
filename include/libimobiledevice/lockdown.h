@@ -52,6 +52,8 @@ extern "C" {
 #define LOCKDOWN_E_INVALID_HOST_ID           -16
 #define LOCKDOWN_E_INVALID_SERVICE           -17
 #define LOCKDOWN_E_INVALID_ACTIVATION_RECORD -18
+#define LOCKDOWN_E_PAIRING_DIALOG_PENDING    -20
+#define LOCKDOWN_E_USER_DENIED_PAIRING       -21
 
 #define LOCKDOWN_E_UNKNOWN_ERROR            -256
 /*@}*/
@@ -65,8 +67,9 @@ typedef lockdownd_client_private *lockdownd_client_t; /**< The client handle. */
 struct lockdownd_pair_record {
 	char *device_certificate; /**< The device certificate */
 	char *host_certificate;   /**< The host certificate */
-	char *host_id;            /**< A unique HostID for the host computer */
 	char *root_certificate;   /**< The root certificate */
+	char *host_id;            /**< A unique HostID for the host computer */
+	char *system_buid;          /**< A unique system id */
 };
 /** A pair record holding device, host and root certificates along the host_id */
 typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
