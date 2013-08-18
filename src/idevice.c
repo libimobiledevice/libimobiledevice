@@ -238,6 +238,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
+		idevice_get_udid(device, &new_connection->udid);
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	} else {
@@ -270,7 +271,12 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
+
+	if (connection->udid)
+		free(connection->udid);
+
 	free(connection);
+
 	return result;
 }
 
