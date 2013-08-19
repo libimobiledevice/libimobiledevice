@@ -25,6 +25,8 @@
 #include "libimobiledevice/webinspector.h"
 #include "property_list_service.h"
 
+#define WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE 8096
+
 struct webinspector_client_private {
 	property_list_service_client_t parent;
 };

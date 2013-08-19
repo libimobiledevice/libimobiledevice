@@ -149,27 +149,56 @@ webinspector_error_t webinspector_client_free(webinspector_client_t client)
 webinspector_error_t webinspector_send(webinspector_client_t client, plist_t plist)
 {
 	webinspector_error_t res = WEBINSPECTOR_E_UNKNOWN_ERROR;
-	char * buf = NULL;
-	uint32_t length = 0;
 
-	plist_to_bin(plist, &buf, &length);
-	if (!buf || length == 0) {
+	uint32_t offset = 0;
+	int is_final_message = 0;
+
+	char *packet = NULL;
+	uint32_t packet_length = 0;
+
+	debug_info("Sending webinspector message...");
+	debug_plist(plist);
+
+	/* convert plist to packet */
+	plist_to_bin(plist, &packet, &packet_length);
+	if (!packet || packet_length == 0) {
 		debug_info("Error converting plist to binary.");
 		return res;
 	}
 
-	plist_t outplist = plist_new_dict();
-	plist_dict_insert_item(outplist, "WIRFinalMessageKey", plist_new_data(buf, length));
-	free(buf);
+	do {	
+		/* determine if we need to send partial messages */
+		if (packet_length < WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE) {
+			is_final_message = 1;
+		} else {
+			/* send partial packet */
+			is_final_message = 0;
+		}
 
-	debug_plist(outplist);
+		plist_t outplist = plist_new_dict();
+		if (!is_final_message) {
+			/* split packet into partial chunks */
+			plist_dict_insert_item(outplist, "WIRPartialMessageKey", plist_new_data(packet + offset, WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE));
+			offset += WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE;
+			packet_length -= WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE;
+		} else {
+			/* send final chunk */
+			plist_dict_insert_item(outplist, "WIRFinalMessageKey", plist_new_data(packet + offset, packet_length));
+			offset += packet_length;
+			packet_length -= packet_length;
+		}
 
-	res = webinspector_error(property_list_service_send_binary_plist(client->parent, outplist));
-	plist_free(outplist);
-	if (res != WEBINSPECTOR_E_SUCCESS) {
-		debug_info("Sending plist failed with error %d", res);
-		return res;
-	}
+		res = webinspector_error(property_list_service_send_binary_plist(client->parent, outplist));
+		plist_free(outplist);
+		outplist = NULL;
+		if (res != WEBINSPECTOR_E_SUCCESS) {
+			debug_info("Sending plist failed with error %d", res);
+			return res;
+		}
+	} while(packet_length > 0);
+
+	free(packet);
+	packet = NULL;
 
 	return res;
 }
@@ -206,40 +235,92 @@ webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t 
 webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t client, plist_t * plist, uint32_t timeout_ms)
 {
 	webinspector_error_t res = WEBINSPECTOR_E_UNKNOWN_ERROR;
-	plist_t outplist = NULL;
+	plist_t message = NULL;
+	plist_t key = NULL;
 
-	res = webinspector_error(property_list_service_receive_plist_with_timeout(client->parent, &outplist, timeout_ms));
-	if (res != WEBINSPECTOR_E_SUCCESS || !outplist) {
-		debug_info("Could not receive plist, error %d", res);
-		plist_free(outplist);
-		return WEBINSPECTOR_E_MUX_ERROR;
+	int is_final_message = 1;
+
+	char* buffer = NULL;
+	uint64_t length = 0;
+
+	char* packet = NULL;
+	char* newpacket = NULL;
+	uint64_t packet_length = 0;
+
+	debug_info("Receiving webinspector message...");
+
+	do {
+		/* receive message */
+		res = webinspector_error(property_list_service_receive_plist_with_timeout(client->parent, &message, timeout_ms));
+		if (res != WEBINSPECTOR_E_SUCCESS || !message) {
+			debug_info("Could not receive message, error %d", res);
+			plist_free(message);
+			return WEBINSPECTOR_E_MUX_ERROR;
+		}
+
+		/* get message key */
+		key = plist_dict_get_item(message, "WIRFinalMessageKey");
+		if (!key) {
+			key = plist_dict_get_item(message, "WIRPartialMessageKey");
+			if (!key) {
+				debug_info("ERROR: Unable to read message key.");
+				plist_free(message);
+				return WEBINSPECTOR_E_PLIST_ERROR;
+			}
+			is_final_message = 0;
+		} else {
+			is_final_message = 1;
+		}
+
+		/* read partial data */
+		plist_get_data_val(key, &buffer, &length);
+		if (!buffer || length == 0 || length > 0xFFFFFFFF) {
+			debug_info("ERROR: Unable to get the inner plist binary data.");
+			free(packet);
+			free(buffer);
+			return WEBINSPECTOR_E_PLIST_ERROR;
+		}
+
+		/* (re)allocate packet data */
+		if (!packet) {
+			packet = (char*)malloc(length * sizeof(char));
+		} else {
+			newpacket = (char*)realloc(packet, (packet_length + length) * sizeof(char));
+			packet = newpacket;
+		}
+
+		/* copy partial data into final packet data */
+		memcpy(packet + packet_length, buffer, length);
+
+		/* cleanup buffer */
+		free(buffer);
+		buffer = NULL;
+
+		if (message) {
+			plist_free(message);
+			message = NULL;
+		}
+
+		/* adjust packet length */
+		packet_length += length;
+		length = 0;
+	} while(!is_final_message);
+
+	/* read final message */
+	if (packet_length) {
+		plist_from_bin(packet, (uint32_t)packet_length, plist);
+		if (!*plist) {
+			debug_info("Error restoring the final plist.");
+			free(packet);
+			return WEBINSPECTOR_E_PLIST_ERROR;
+		}
+
+		debug_plist(*plist);
 	}
 
-	plist_t inplistdata = plist_dict_get_item(outplist, "WIRFinalMessageKey");
-	if (!inplistdata) {
-		debug_info("Could not find the internal message plist.");
-		plist_free(outplist);
-		return WEBINSPECTOR_E_PLIST_ERROR;
+	if (packet) {
+		free(packet);
 	}
-
-	char * buf;
-	uint64_t length64;
-	plist_get_data_val(inplistdata, &buf, &length64);
-	plist_free(outplist);
-	if (!buf || length64 == 0 || length64 > 0xFFFFFFFF) {
-		debug_info("Error getting the inner plist binary data.");
-		free(buf);
-		return WEBINSPECTOR_E_PLIST_ERROR;
-	}
-
-	plist_from_bin(buf, (uint32_t) length64, plist);
-	free(buf);
-	if (!*plist) {
-		debug_info("Error restoring the inner plist.");
-		return WEBINSPECTOR_E_PLIST_ERROR;
-	}
-
-	debug_plist(*plist);
 
 	return res;
 }
