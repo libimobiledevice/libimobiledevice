@@ -480,6 +480,11 @@ idevice_error_t idevice_get_udid(idevice_t device, char **udid)
 	return IDEVICE_E_SUCCESS;
 }
 
+idevice_error_t idevice_get_uuid(idevice_t device, char **udid)
+{
+	return idevice_get_udid(device, udid);
+}
+
 #ifndef HAVE_OPENSSL
 /**
  * Internally used gnutls callback function for receiving encrypted data.
