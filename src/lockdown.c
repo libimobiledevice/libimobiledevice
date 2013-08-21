@@ -570,6 +570,11 @@ lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t client, char **ud
 	return ret;
 }
 
+lockdownd_error_t lockdownd_get_device_uuid(lockdownd_client_t client, char **udid)
+{
+	return lockdownd_get_device_udid(client, udid);
+}
+
 /**
  * Retrieves the public key of the device from lockdownd.
  *

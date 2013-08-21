@@ -66,7 +66,10 @@ enum idevice_event_type {
 /** Provides information about the occured event. */
 typedef struct {
 	enum idevice_event_type event; /**< The event type. */
-	const char *udid; /**< The device unique id. */
+	union {
+		const char *udid; /**< The device unique id. */
+		const char *uuid;
+	};
 	int conn_type; /**< The connection type. Currently only 1 for usbmuxd. */
 } idevice_event_t;
 
@@ -100,6 +103,7 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 /* misc */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
 idevice_error_t idevice_get_udid(idevice_t device, char **udid);
+idevice_error_t idevice_get_uuid(idevice_t device, char **udid);
 
 #ifdef __cplusplus
 }
