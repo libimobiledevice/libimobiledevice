@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/file_relay.h>
@@ -41,7 +42,7 @@ int main(int argc, char **argv)
 		goto leave_cleanup;
 	}
 
-	if (lockdownd_start_service(client, "com.apple.mobile.file_relay", &service) != LOCKDOWN_E_SUCCESS) {
+	if (lockdownd_start_service(client, FILE_RELAY_SERVICE_NAME, &service) != LOCKDOWN_E_SUCCESS) {
 		printf("could not start file_relay service!\n");
 		goto leave_cleanup;
 	}
@@ -62,7 +63,20 @@ int main(int argc, char **argv)
 	}
 
 	idevice_connection_t dump = NULL;
-	const char *sources[] = {"AppleSupport", "Network", "VPN", "WiFi", "UserDatabases", "CrashReporter", "tmp", "SystemConfiguration", NULL};
+	const char **sources;
+	const char *default_sources[] = {"AppleSupport", "Network", "VPN", "WiFi", "UserDatabases", "CrashReporter", "tmp", "SystemConfiguration", NULL};
+
+	if (argc > 1) {
+		sources = calloc(1, argc * sizeof(char *));
+		argc--;
+		argv++;
+		for (int i = 0; i < argc; i++) {
+			sources[i] = argv[i];
+		}
+	}
+	else {
+		sources = default_sources;
+	}
 
 	printf("Requesting");
 	int i = 0;
