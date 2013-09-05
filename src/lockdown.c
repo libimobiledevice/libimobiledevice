@@ -1473,7 +1473,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 			gnutls_x509_privkey_init(&root_privkey);
 			gnutls_x509_privkey_init(&host_privkey);
 
-			uret = userpref_get_keys_and_certs(root_privkey, root_cert, host_privkey, host_cert);
+			uret = userpref_device_record_get_keys_and_certs(udid, root_privkey, root_cert, host_privkey, host_cert);
 
 			if (USERPREF_E_SUCCESS == uret) {
 				/* generate device certificate */
@@ -1497,7 +1497,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
 
-					uret = userpref_get_certs_as_pem(&pem_root_cert, &pem_host_cert);
+					uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert);
 
 					if (USERPREF_E_SUCCESS == uret) {
 						/* copy buffer for output */

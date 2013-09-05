@@ -986,7 +986,7 @@ static userpref_error_t userpref_device_record_import_key(const char* udid, cons
 			key->size = length;
 			ret = USERPREF_E_SUCCESS;
 #else
-			key_data_t pem = { buffer, length };
+			key_data_t pem = { (unsigned char*)buffer, length };
 			if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem, GNUTLS_X509_FMT_PEM))
 				ret = USERPREF_E_SUCCESS;
 			else
@@ -1036,7 +1036,7 @@ static userpref_error_t userpref_device_record_import_crt(const char* udid, cons
 			cert->size = length;
 			ret = USERPREF_E_SUCCESS;
 #else
-			key_data_t pem = { buffer, length };
+			key_data_t pem = { (unsigned char*)buffer, length };
 			if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem, GNUTLS_X509_FMT_PEM))
 				ret = USERPREF_E_SUCCESS;
 			else

@@ -758,7 +758,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_x509_privkey_init(&ssl_data_loc->root_privkey);
 	gnutls_x509_privkey_init(&ssl_data_loc->host_privkey);
 
-	userpref_error_t uerr = userpref_get_keys_and_certs(ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
+	userpref_error_t uerr = userpref_device_record_get_keys_and_certs(connection->udid, ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
 	if (uerr != USERPREF_E_SUCCESS) {
 		debug_info("Error %d when loading keys and certificates! %d", uerr);
 	}
