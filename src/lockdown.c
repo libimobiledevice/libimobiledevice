@@ -1300,7 +1300,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 
 		X509_EXTENSION* ext;
 		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Basic Constraints");
 		}
 		X509_add_ext(dev_cert, ext, -1);
 		X509_EXTENSION_free(ext);
@@ -1311,7 +1311,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
 		X509_set_notAfter(dev_cert, asn1time);
 		ASN1_TIME_free(asn1time);
-	
+
 		BIO* membp;
 
 		X509* rootCert = NULL;
@@ -1328,6 +1328,22 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 			EVP_PKEY_free(pkey);
 			X509_free(rootCert);
 		}
+
+		X509V3_CTX ctx;
+		X509V3_set_ctx_nodb(&ctx);
+		X509V3_set_ctx(&ctx, NULL, dev_cert, NULL, NULL, 0);
+
+		if (!(ext = X509V3_EXT_conf_nid(NULL, &ctx, NID_subject_key_identifier, (char*)"hash"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Subject Key identifier");
+		}
+		X509_add_ext(dev_cert, ext, -1);
+		X509_EXTENSION_free(ext);
+
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Key Usage");
+		}
+		X509_add_ext(dev_cert, ext, -1);
+		X509_EXTENSION_free(ext);
 
 		EVP_PKEY* rootPriv = NULL;
 		membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
