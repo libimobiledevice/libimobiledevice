@@ -1483,6 +1483,14 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 				gnutls_x509_crt_set_ca_status(dev_cert, 0);
 				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
 				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+				/* FIXME calculate subject key id correctly */
+#if 0
+				unsigned char hash[20];
+				size_t hash_size = sizeof(hash);
+				gnutls_x509_crt_get_key_id(dev_cert, 0, (unsigned char*)hash, &hash_size);
+				gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
+#endif
+				gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
 				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
 				if (LOCKDOWN_E_SUCCESS == ret) {
