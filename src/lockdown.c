@@ -873,32 +873,64 @@ static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_recor
 }
 
 /**
- * Generates a new pairing record plist and required certificates for the 
- * supplied public key of the device and the host_id of the caller's host
- * computer.
+ * Generates a pair record plist with required certificates for a specific
+ * device. If a pairing exists, it is loaded from the computer instead of being
+ * generated.
  *
- * @param public_key The public key of the device.
- * @param host_id The HostID to use for the pair record plist.
- * @param pair_record_plist Holds the generated pair record.
+ * @param pair_record_plist Holds the pair record.
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-static lockdownd_error_t generate_pair_record_plist(const char *udid, char* system_buid, char *host_id, key_data_t public_key, plist_t *pair_record_plist)
+static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, plist_t *pair_record_plist)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	char* host_id = NULL;
+	char* system_buid = NULL;
+	key_data_t public_key = { NULL, 0 };
 
 	key_data_t device_cert = { NULL, 0 };
 	key_data_t host_cert = { NULL, 0 };
 	key_data_t root_cert = { NULL, 0 };
 
-	userpref_error_t uret = userpref_device_record_get_certs_as_pem(udid, &root_cert, &host_cert, &device_cert);
+	/* load certificates if a pairing exists */
+	userpref_error_t uret = userpref_device_record_get_certs_as_pem(client->udid, &root_cert, &host_cert, &device_cert);
 	if ((uret == USERPREF_E_SUCCESS) && (root_cert.size > 0) && (host_cert.size > 0) && (device_cert.size > 0)) {
 		ret = LOCKDOWN_E_SUCCESS;
 	}
 
-	if (ret != LOCKDOWN_E_SUCCESS)
-		ret = lockdownd_gen_pair_cert_for_udid(udid, public_key, &device_cert, &host_cert, &root_cert);
+	/* get systembuid and host id */
+	userpref_get_system_buid(&system_buid);
+	userpref_device_record_get_host_id(client->udid, &host_id);
+
+	/* generate new certificates if needed */
 	if (ret != LOCKDOWN_E_SUCCESS) {
+		ret = lockdownd_get_device_public_key(client, &public_key);
+		if (ret != LOCKDOWN_E_SUCCESS) {
+			if (public_key.data)
+				free(public_key.data);
+			if (host_id)
+				free(host_id);
+			if (system_buid)
+				free(system_buid);
+			debug_info("device refused to send public key.");
+			return ret;
+		}
+		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
+
+		userpref_device_record_set_value(client->udid, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
+
+		ret = lockdownd_gen_pair_cert_for_udid(client->udid, public_key, &device_cert, &host_cert, &root_cert);
+
+		if (public_key.data)
+			free(public_key.data);
+	}
+
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		if (host_id)
+			free(host_id);
+		if (system_buid)
+			free(system_buid);
 		return ret;
 	}
 
@@ -910,6 +942,10 @@ static lockdownd_error_t generate_pair_record_plist(const char *udid, char* syst
 	plist_dict_insert_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
 	plist_dict_insert_item(*pair_record_plist, "SystemBUID", plist_new_string(system_buid));
 
+	if (host_id)
+		free(host_id);
+	if (system_buid)
+		free(system_buid);
 	if (device_cert.data)
 		free(device_cert.data);
 	if (host_cert.data)
@@ -943,10 +979,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
 	plist_t dict_record = NULL;
-	key_data_t public_key = { NULL, 0 };
 	int pairing_mode = 0; /* 0 = libimobiledevice, 1 = external */
-	char* host_id = NULL;
-	char* system_buid = NULL;
 
 	if (pair_record && pair_record->system_buid && pair_record->host_id) {
 		/* valid pair_record passed? */
@@ -959,30 +992,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 
 		pairing_mode = 1;
 	} else {
-		ret = lockdownd_get_device_public_key(client, &public_key);
-		if (ret != LOCKDOWN_E_SUCCESS) {
-			if (public_key.data)
-				free(public_key.data);
-			debug_info("device refused to send public key.");
-			return ret;
-		}
-		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
-
-		/* get libimobiledevice pair_record */
-		userpref_get_system_buid(&system_buid);
-		userpref_device_record_get_host_id(client->udid, &host_id);
-		userpref_device_record_set_value(client->udid, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
-
-		ret = generate_pair_record_plist(client->udid, system_buid, host_id, public_key, &dict_record);
-
-		if (host_id)
-			free(host_id);
-		if (system_buid)
-			free(system_buid);
+		ret = generate_pair_record_plist(client, &dict_record);
 
 		if (ret != LOCKDOWN_E_SUCCESS) {
-			if (public_key.data)
-				free(public_key.data);
 			if (dict_record)
 				plist_free(dict_record);
 			return ret;
@@ -1019,8 +1031,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	dict = NULL;
 
 	if (ret != LOCKDOWN_E_SUCCESS) {
-		if (public_key.data)
-			free(public_key.data);
 		plist_free(dict_record);
 		return ret;
 	}
@@ -1029,8 +1039,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	ret = lockdownd_receive(client, &dict);
 
 	if (ret != LOCKDOWN_E_SUCCESS) {
-		if (public_key.data)
-			free(public_key.data);
 		plist_free(dict_record);
 		return ret;
 	}
@@ -1111,9 +1119,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 
 	plist_free(dict);
 	dict = NULL;
-
-	if (public_key.data)
-		free(public_key.data);
 
 	return ret;
 }
