@@ -1115,7 +1115,7 @@ userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnu
  *
  * @return 1 if the certificates were successfully retrieved, 0 otherwise
  */
-userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert)
+userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert, key_data_t *pem_device_cert)
 {
 	if (!udid || !pem_root_cert || !pem_host_cert)
 		return USERPREF_E_INVALID_ARG;
@@ -1124,6 +1124,7 @@ userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_d
 	uint64_t length = 0;
 	plist_t root_cert = NULL;
 	plist_t host_cert = NULL;
+	plist_t dev_cert = NULL;
 	if (userpref_device_record_get_value(udid, USERPREF_HOST_CERTIFICATE_KEY, &host_cert) &&
 		userpref_device_record_get_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert)) {
 		if (host_cert && plist_get_node_type(host_cert) == PLIST_DATA) {
@@ -1141,6 +1142,18 @@ userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_d
 			pem_root_cert->size = length;
 			free(buffer);
 			buffer = NULL;
+		}
+
+		if (pem_device_cert) {
+			userpref_device_record_get_value(udid, USERPREF_DEVICE_CERTIFICATE_KEY, &dev_cert);
+			if (dev_cert && plist_get_node_type(dev_cert) == PLIST_DATA) {
+				plist_get_data_val(dev_cert, &buffer, &length);
+				pem_device_cert->data = (unsigned char*)malloc(length);
+				memcpy(pem_device_cert->data, buffer, length);
+				pem_device_cert->size = length;
+				free(buffer);
+				buffer = NULL;
+			}
 		}
 
 		return USERPREF_E_SUCCESS;

@@ -890,7 +890,13 @@ static lockdownd_error_t generate_pair_record_plist(const char *udid, char* syst
 	key_data_t host_cert = { NULL, 0 };
 	key_data_t root_cert = { NULL, 0 };
 
-	ret = lockdownd_gen_pair_cert_for_udid(udid, public_key, &device_cert, &host_cert, &root_cert);
+	userpref_error_t uret = userpref_device_record_get_certs_as_pem(udid, &root_cert, &host_cert, &device_cert);
+	if ((uret == USERPREF_E_SUCCESS) && (root_cert.size > 0) && (host_cert.size > 0) && (device_cert.size > 0)) {
+		ret = LOCKDOWN_E_SUCCESS;
+	}
+
+	if (ret != LOCKDOWN_E_SUCCESS)
+		ret = lockdownd_gen_pair_cert_for_udid(udid, public_key, &device_cert, &host_cert, &root_cert);
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		return ret;
 	}
@@ -1058,6 +1064,12 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 						userpref_device_record_set_value(client->udid, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
 						plist_free(escrow_bag);
 						escrow_bag = NULL;
+					}
+
+					/* store DeviceCertificate upon successful pairing */
+					plist_t devcrt = plist_dict_get_item(dict_record, USERPREF_DEVICE_CERTIFICATE_KEY);
+					if (devcrt && plist_get_node_type(devcrt) == PLIST_DATA) {
+						userpref_device_record_set_value(client->udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_copy(devcrt));
 					}
 				}
 			}
@@ -1366,7 +1378,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 			key_data_t pem_root_cert = { NULL, 0 };
 			key_data_t pem_host_cert = { NULL, 0 };
 
-			uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert);
+			uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert, NULL);
 			if (USERPREF_E_SUCCESS == uret) {
 				/* copy buffer for output */
 				membp = BIO_new(BIO_s_mem());
@@ -1505,7 +1517,7 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
 
-					uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert);
+					uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert, NULL);
 
 					if (USERPREF_E_SUCCESS == uret) {
 						/* copy buffer for output */
@@ -1560,11 +1572,6 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 
 	gnutls_free(der_pub_key.data);
 #endif
-	/* save device cert in config */
-	if (odevice_cert->size) {
-		userpref_device_record_set_value(udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_new_data((char*)odevice_cert->data, (uint64_t)odevice_cert->size));
-	}
-
 	return ret;
 }
 

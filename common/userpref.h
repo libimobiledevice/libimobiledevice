@@ -75,7 +75,7 @@ LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_c
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
 #endif
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_set_keys_and_certs(const char *udid, key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert, key_data_t *pem_device_cert);
 
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_record(const char *udid, plist_t device_record);
 userpref_error_t userpref_remove_device_record(const char *udid);
