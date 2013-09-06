@@ -38,6 +38,7 @@
 #else
 #include <libtasn1.h>
 #include <gnutls/x509.h>
+#include <gnutls/crypto.h>
 #endif
 #include <plist/plist.h>
 
@@ -1495,13 +1496,17 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 				gnutls_x509_crt_set_ca_status(dev_cert, 0);
 				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
 				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-				/* FIXME calculate subject key id correctly */
-#if 0
-				unsigned char hash[20];
-				size_t hash_size = sizeof(hash);
-				gnutls_x509_crt_get_key_id(dev_cert, 0, (unsigned char*)hash, &hash_size);
-				gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
-#endif
+
+				/* use custom hash generation for compatibility with the "Apple ecosystem" */
+				const gnutls_digest_algorithm_t dig_sha1 = GNUTLS_DIG_SHA1;
+				size_t hash_size = gnutls_hash_get_len(dig_sha1);
+				unsigned char hash[hash_size];
+				if (gnutls_hash_fast(dig_sha1, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
+					debug_info("ERROR: Failed to generate SHA1 for public key");
+				} else {
+					gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
+				}
+
 				gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
 				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
