@@ -1112,6 +1112,7 @@ userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnu
  *
  * @param pem_root_cert The root certificate.
  * @param pem_host_cert The host certificate.
+ * @param pem_device_cert The device certificate (optional).
  *
  * @return 1 if the certificates were successfully retrieved, 0 otherwise
  */
