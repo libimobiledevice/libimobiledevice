@@ -713,7 +713,7 @@ static lockdownd_error_t lockdownd_client_reconnect(idevice_t device, lockdownd_
 
 	/* try to reconnect */
 	do {
-		debug_info("reconnecting to udid %s, %d remaining attempts", udid, attempts);
+		debug_info("reconnecting to udid %s, %d remaining attempts", device->udid, attempts);
 		ret = lockdownd_client_new(device, client, label);
 		if (ret == LOCKDOWN_E_SUCCESS) {
 			debug_info("reconnected to lockdownd with err %d", ret);
