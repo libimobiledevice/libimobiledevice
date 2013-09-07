@@ -17,7 +17,15 @@ dnl libtool versioning
 # CURRENT : REVISION : AGE
 LIBIMOBILEDEVICE_SO_VERSION=4:1:0
 
+dnl Minimum package versions
+LIBPLIST_VERSION=1.8
+LIBUSBMUXD_VERSION=1.0.8
+LIBPLISTMM_VERSION=1.8
+
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
+AC_SUBST(LIBPLIST_VERSION)
+AC_SUBST(LIBUSBMUXD_VERSION)
+AC_SUBST(LIBPLISTMM_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
@@ -26,9 +34,9 @@ AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
 # Checks for libraries.
-PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= 1.0.8)
-PKG_CHECK_MODULES(libplist, libplist >= 1.8)
-PKG_CHECK_MODULES(libplistmm, libplist++ >= 1.8)
+PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
+PKG_CHECK_MODULES(libplist, libplist >= $LIBPLIST_VERSION)
+PKG_CHECK_MODULES(libplistmm, libplist++ >= $LIBPLISTMM_VERSION)
 AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
 # Checks for header files.
