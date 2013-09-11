@@ -30,6 +30,10 @@ int main(int argc, char **argv)
 	lockdownd_client_t client = NULL;
 	lockdownd_service_descriptor_t service = NULL;
 	file_relay_client_t frc = NULL;
+	idevice_connection_t dump = NULL;
+	const char **sources;
+	const char *default_sources[] = {"AppleSupport", "Network", "VPN", "WiFi", "UserDatabases", "CrashReporter", "tmp", "SystemConfiguration", NULL};
+	int i = 0;
 
 	if (idevice_new(&dev, NULL) != IDEVICE_E_SUCCESS) {
 		printf("no device connected?!\n");
@@ -62,15 +66,11 @@ int main(int argc, char **argv)
 		service = NULL;
 	}
 
-	idevice_connection_t dump = NULL;
-	const char **sources;
-	const char *default_sources[] = {"AppleSupport", "Network", "VPN", "WiFi", "UserDatabases", "CrashReporter", "tmp", "SystemConfiguration", NULL};
-
 	if (argc > 1) {
 		sources = calloc(1, argc * sizeof(char *));
 		argc--;
 		argv++;
-		for (int i = 0; i < argc; i++) {
+		for (i = 0; i < argc; i++) {
 			sources[i] = argv[i];
 		}
 	}
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("Requesting");
-	int i = 0;
+	i = 0;
 	while (sources[i]) {
 		printf(" %s", sources[i]);
 		i++;
