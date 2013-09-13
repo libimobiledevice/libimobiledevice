@@ -705,7 +705,6 @@ static lockdownd_error_t lockdownd_client_reconnect(idevice_t device, lockdownd_
 {
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	int attempts = 3;
-	char *udid = NULL;
 
 	/* free resources of lockownd_client */
 	ret = lockdownd_client_free_simple(*client);
@@ -721,9 +720,6 @@ static lockdownd_error_t lockdownd_client_reconnect(idevice_t device, lockdownd_
 		}
 		sleep(1);
 	} while(attempts--);
-
-	free(udid);
-	udid = NULL;
 
 	return ret;
 }
