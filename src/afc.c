@@ -105,7 +105,7 @@ afc_error_t afc_client_new_with_service_client(service_client_t service_client, 
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
  * 
- * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if device or port is
+ * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if device or service is
  *  invalid, AFC_E_MUX_ERROR if the connection cannot be established,
  *  or AFC_E_NO_MEM if there is a memory allocation problem.
  */
@@ -781,7 +781,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_open(afc_client_t client, const char *filename,
 					 afc_file_mode_t file_mode, uint64_t *handle)
 {
@@ -841,7 +841,7 @@ afc_file_open(afc_client_t client, const char *filename,
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
 {
 	char *input = NULL;
@@ -915,7 +915,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
 {
 	char *acknowledgement = NULL;
