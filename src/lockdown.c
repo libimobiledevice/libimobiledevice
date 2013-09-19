@@ -700,29 +700,6 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	return LOCKDOWN_E_SUCCESS;
 }
 
-static lockdownd_error_t lockdownd_client_reconnect(idevice_t device, lockdownd_client_t *client, const char *label)
-{
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	int attempts = 3;
-
-	/* free resources of lockownd_client */
-	ret = lockdownd_client_free_simple(*client);
-	*client = NULL;
-
-	/* try to reconnect */
-	do {
-		debug_info("reconnecting to udid %s, %d remaining attempts", device->udid, attempts);
-		ret = lockdownd_client_new(device, client, label);
-		if (ret == LOCKDOWN_E_SUCCESS) {
-			debug_info("reconnected to lockdownd with err %d", ret);
-			break;
-		}
-		sleep(1);
-	} while(attempts--);
-
-	return ret;
-}
-
 /**
  * Creates a new lockdownd client for the device and starts initial handshake.
  * The handshake consists out of query_type, validate_pair, pair and
@@ -747,10 +724,8 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	lockdownd_client_t client_loc = NULL;
-	char *system_buid = NULL;
 	char *host_id = NULL;
 	char *type = NULL;
-	int product_version_major = 0;
 
 	ret = lockdownd_client_new(device, &client_loc, label);
 	if (LOCKDOWN_E_SUCCESS != ret) {
@@ -770,24 +745,6 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 			free(type);
 	}
 
-	/* get product version */
-	plist_t product_version_node = NULL;
-	char* product_version = NULL;
-	lockdownd_get_value(client_loc, NULL, "ProductVersion", &product_version_node);
-	if (product_version_node && plist_get_node_type(product_version_node) == PLIST_STRING) {
-		plist_get_string_val(product_version_node, &product_version);
-		product_version_major = strtol(product_version, NULL, 10);
-	}
-
-	if (product_version_major >= 7) {
-		userpref_get_system_buid(&system_buid);
-
-		/* set our BUID for the trust dialog so the next pairing can succeed */
-		lockdownd_set_value(client_loc, NULL, "UntrustedHostBUID", plist_new_string(system_buid));
-		free(system_buid);
-		system_buid = NULL;
-	}
-
 	userpref_device_record_get_host_id(client_loc->udid, &host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
@@ -796,11 +753,6 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_record(client_loc->udid)) {
 		/* attempt pairing */
 		ret = lockdownd_pair(client_loc, NULL);
-
-		if (ret == LOCKDOWN_E_SUCCESS && product_version_major >= 7) {
-			/* the trust dialog was dissmissed, thus the device will reconnect after pairing */
-			lockdownd_client_reconnect(device, &client_loc, label);
-		}
 	}
 
 	/* in any case, we need to validate pairing to receive trusted host status */
@@ -809,11 +761,6 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	/* if not paired yet, let's do it now */
 	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
 		ret = lockdownd_pair(client_loc, NULL);
-
-		if (ret == LOCKDOWN_E_SUCCESS && product_version_major >= 7) {
-			/* the trust dialog was dissmissed, thus the device will reconnect after pairing */
-			lockdownd_client_reconnect(device, &client_loc, label);
-		}
 
 		if (LOCKDOWN_E_SUCCESS == ret) {
 			ret = lockdownd_validate_pair(client_loc, NULL);
