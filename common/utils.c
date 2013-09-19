@@ -139,9 +139,7 @@ void buffer_write_to_filename(const char *filename, const char *buffer, uint64_t
 {
 	FILE *f;
 
-	f = fopen(filename, "ab");
-	if (!f)
-		f = fopen(filename, "wb");
+	f = fopen(filename, "wb");
 	if (f) {
 		fwrite(buffer, sizeof(char), length, f);
 		fclose(f);
