@@ -208,11 +208,15 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
+
 	plist_free(dict);
 	dict = NULL;
-	if (client->ssl_enabled) {
-		property_list_service_disable_ssl(client->parent);
+
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
 	}
+
 	return ret;
 }
 
@@ -222,10 +226,6 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-
-	if (client->session_id) {
-		free(client->session_id);
-	}
 
 	if (client->parent) {
 		if (property_list_service_client_free(client->parent) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -259,7 +259,6 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-
 
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
