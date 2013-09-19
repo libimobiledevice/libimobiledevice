@@ -250,16 +250,13 @@ static int mkdir_with_parents(const char *dir, int mode)
 	}
 	int res;
 	char *parent = strdup(dir);
-	parent = dirname(parent);
-	if (parent) {
-		res = mkdir_with_parents(parent, mode);
+	char* parentdir = dirname(parent);
+	if (parentdir) {
+		res = mkdir_with_parents(parentdir, mode);
 	} else {
-		res = -1;	
+		res = -1;
 	}
 	free(parent);
-	if (res == 0) {
-		mkdir_with_parents(dir, mode);
-	}
 	return res;
 }
 
