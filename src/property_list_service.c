@@ -223,7 +223,10 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	service_receive_with_timeout(client->parent, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	service_error_t serr = service_receive_with_timeout(client->parent, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
+	if ((serr == SERVICE_E_SUCCESS) && (bytes == 0)) {
+		return PROPERTY_LIST_SERVICE_E_TIMEOUT;
+	}
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {
 		debug_info("initial read failed!");
