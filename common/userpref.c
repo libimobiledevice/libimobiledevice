@@ -117,57 +117,9 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 }
 #endif
 
-#ifndef WIN32
-static char *get_home_dir_from_system(void)
-{
-	long bufsize;
-	char *buf;
-	int error;
-	struct passwd pwd;
-	struct passwd *ppwd;
-	char *result = NULL;
-
-	bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
-
-	if (bufsize < 0)
-		bufsize = 1024;
-
-	buf = NULL;
-
-	do {
-		free (buf);
-		buf = malloc (bufsize);
-		if (!buf)
-			return NULL;
-
-		errno = 0;
-		error = getpwuid_r (getuid (), &pwd, buf, bufsize, &ppwd);
-
-		error = (error < 0) ? errno : error;
-
-		if (!ppwd) {
-			if (error == 0 || error == ENOENT)
-				break;
-			else if (bufsize > 32 * 1024)
-				break; /* Unreasonable size; let's bail out */
-
-			bufsize *= 2;
-		}
-	} while (!ppwd);
-
-	if (ppwd && ppwd->pw_dir)
-		result = strdup (ppwd->pw_dir);
-
-	free (buf);
-
-	return result;
-}
-#endif
-
-static const char *userpref_get_config_dir()
+const char *userpref_get_config_dir()
 {
 	char *base_config_dir = NULL;
-	int use_dot_config;
 
 	if (__config_dir)
 		return __config_dir;
@@ -186,36 +138,14 @@ static const char *userpref_get_config_dir()
 			CoTaskMemFree (pidl);
 		}
 	}
-
-	use_dot_config = 0;
 #else
 #ifdef __APPLE__
 	base_config_dir = strdup("/var/db");
-	use_dot_config = 0;
 #else
-	const char *cdir = getenv("XDG_CONFIG_HOME");
-	if (!cdir) {
-		cdir = getenv("HOME");
-		if (!cdir || !cdir[0]) {
-			base_config_dir = get_home_dir_from_system();
-			if (!base_config_dir)
-				return NULL;
-		} else {
-			base_config_dir = strdup(cdir);
-		}
-
-		use_dot_config = 1;
-	} else {
-		base_config_dir = strdup(cdir);
-		use_dot_config = 0;
-	}
+	base_config_dir = strdup("/var/lib");
 #endif
 #endif
-
-	if (use_dot_config)
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, ".config", DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
-	else
-		__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
+	__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
 
 	if (__config_dir) {
 		int i = strlen(__config_dir)-1;	

@@ -84,6 +84,7 @@ LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_record(const char *udid);
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
 void userpref_device_record_get_host_id(const char *udid, char **host_id);
 void userpref_get_system_buid(char **system_buid);
+const char *userpref_get_config_dir();
 
 userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_record);
 int userpref_get_value(const char *key, plist_t *value);
