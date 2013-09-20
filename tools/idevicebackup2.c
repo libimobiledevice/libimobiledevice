@@ -88,7 +88,8 @@ enum cmd_flags {
 	CMD_FLAG_ENCRYPTION_ENABLE          = (1 << 6),
 	CMD_FLAG_ENCRYPTION_DISABLE         = (1 << 7),
 	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8),
-	CMD_FLAG_FORCE_FULL_BACKUP          = (1 << 9)
+	CMD_FLAG_FORCE_FULL_BACKUP          = (1 << 9),
+	CMD_FLAG_ENABLE_CLOUD_BACKUP        = (1 << 10)
 };
 
 static int backup_domain_changed = 0;
@@ -1280,6 +1281,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
 	printf("  -i, --interactive\trequest passwords interactively\n");
+	printf("  -c, --cloud\t\tUse cloud storage using iCloud account of device\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }
@@ -1377,6 +1379,9 @@ int main(int argc, char *argv[])
 			backup_password = strdup(argv[i]);
 			continue;
 		}
+		else if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--cloud")) {
+			cmd_flags |= CMD_FLAG_ENABLE_CLOUD_BACKUP;
+		}
 		else if (!strcmp(argv[i], "--full")) {
 			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
 		}
@@ -1400,9 +1405,9 @@ int main(int argc, char *argv[])
 				return -1;	
 			}
 			if (!strcmp(argv[i], "on")) {
-				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;	
+				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;
 			} else if (!strcmp(argv[i], "off")) {
-				cmd_flags |= CMD_FLAG_ENCRYPTION_DISABLE;	
+				cmd_flags |= CMD_FLAG_ENCRYPTION_DISABLE;
 			} else {
 				printf("Invalid argument '%s' for encryption command; must be either 'on' or 'off'.\n", argv[i]);
 			}
@@ -1646,6 +1651,20 @@ int main(int argc, char *argv[])
 			} else {
 				is_full_backup = 1;
 			}
+		}
+
+		opts = plist_new_dict();
+		if (cmd_flags & CMD_FLAG_ENABLE_CLOUD_BACKUP) {
+			PRINT_VERBOSE(1, "Enabling cloud backup for device...\n");
+		} else {
+			PRINT_VERBOSE(1, "Disabling cloud backup for device...\n");
+		}
+		plist_dict_insert_item(opts, "CloudBackupState", plist_new_bool(cmd & CMD_FLAG_ENABLE_CLOUD_BACKUP ? 1: 0));
+		err = mobilebackup2_send_request(mobilebackup2, "EnableCloudBackup", udid, source_udid, opts);
+		plist_free(opts);
+		if (err != MOBILEBACKUP2_E_SUCCESS) {
+			printf("Error setting cloud backup state on device, error code %d\n", err);
+			cmd = CMD_LEAVE;
 		}
 
 		uint64_t lockfile = 0;
