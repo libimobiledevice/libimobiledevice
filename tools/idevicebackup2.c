@@ -87,7 +87,8 @@ enum cmd_flags {
 	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5),
 	CMD_FLAG_ENCRYPTION_ENABLE          = (1 << 6),
 	CMD_FLAG_ENCRYPTION_DISABLE         = (1 << 7),
-	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8)
+	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8),
+	CMD_FLAG_FORCE_FULL_BACKUP          = (1 << 9)
 };
 
 static int backup_domain_changed = 0;
@@ -1258,6 +1259,7 @@ static void print_usage(int argc, char **argv)
 	printf("Create or restore backup from the current or specified directory.\n\n");
 	printf("commands:\n");
 	printf("  backup\tcreate backup for the device\n");
+	printf("    --full\t\tforce full backup from device.\n");
 	printf("  restore\trestore last backup to the device\n");
 	printf("    --system\t\trestore system files, too.\n");
 	printf("    --reboot\t\treboot the system when done.\n");
@@ -1374,6 +1376,9 @@ int main(int argc, char *argv[])
 				free(backup_password);
 			backup_password = strdup(argv[i]);
 			continue;
+		}
+		else if (!strcmp(argv[i], "--full")) {
+			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
 		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
@@ -1723,6 +1728,11 @@ checkpoint:
 			plist_free(info_plist);
 			info_plist = NULL;
 
+			if (cmd_flags & CMD_FLAG_FORCE_FULL_BACKUP) {
+				PRINT_VERBOSE(1, "Enforcing full backup from device.\n");
+				opts = plist_new_dict();
+				plist_dict_insert_item(opts, "ForceFullBackup", plist_new_bool(1));
+			}
 			/* request backup from device with manifest from last backup */
 			if (willEncrypt) {
 				PRINT_VERBOSE(1, "Backup will be encrypted.\n");
@@ -1730,7 +1740,9 @@ checkpoint:
 				PRINT_VERBOSE(1, "Backup will be unencrypted.\n");
 			}
 			PRINT_VERBOSE(1, "Requesting backup from device...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, opts);
+			if (opts)
+				plist_free(opts);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				if (is_full_backup) {
 					PRINT_VERBOSE(1, "Full backup mode.\n");
