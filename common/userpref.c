@@ -69,15 +69,12 @@
 
 #define USERPREF_CONFIG_EXTENSION ".plist"
 
-#ifndef __APPLE__
-#define USERPREF_CONFIG_DIR "libimobiledevice"
-#else
 #ifdef WIN32
 #define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
 #else
 #define USERPREF_CONFIG_DIR "lockdown"
 #endif
-#endif
+
 #define USERPREF_CONFIG_FILE "SystemConfiguration"USERPREF_CONFIG_EXTENSION
 
 static char *__config_dir = NULL;
