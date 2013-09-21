@@ -1662,6 +1662,7 @@ int main(int argc, char *argv[])
 		plist_dict_insert_item(opts, "CloudBackupState", plist_new_bool(cmd & CMD_FLAG_ENABLE_CLOUD_BACKUP ? 1: 0));
 		err = mobilebackup2_send_request(mobilebackup2, "EnableCloudBackup", udid, source_udid, opts);
 		plist_free(opts);
+		opts = NULL;
 		if (err != MOBILEBACKUP2_E_SUCCESS) {
 			printf("Error setting cloud backup state on device, error code %d\n", err);
 			cmd = CMD_LEAVE;
