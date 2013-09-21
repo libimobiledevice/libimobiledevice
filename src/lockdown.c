@@ -1685,8 +1685,12 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	plist_dict_add_label(dict, client->label);
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartService"));
 	plist_dict_insert_item(dict,"Service", plist_new_string(identifier));
-	userpref_device_record_get_value(client->udid, USERPREF_ESCROW_BAG_KEY, &escrow_bag);
-	plist_dict_insert_item(dict,"EscrowBag", escrow_bag);
+
+	/* send EscrowBag if within a session */
+	if (client->session_id) {
+		userpref_device_record_get_value(client->udid, USERPREF_ESCROW_BAG_KEY, &escrow_bag);
+		plist_dict_insert_item(dict,"EscrowBag", escrow_bag);
+	}
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
