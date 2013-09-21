@@ -96,6 +96,9 @@ static int backup_domain_changed = 0;
 
 static void notify_cb(const char *notification, void *userdata)
 {
+	if (strlen(notification) == 0) {
+		return;
+	}
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
 		PRINT_VERBOSE(1, "User has cancelled the backup process on the device.\n");
 		quit_flag++;
