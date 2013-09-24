@@ -584,19 +584,23 @@ userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_re
  */
 userpref_error_t userpref_remove_device_record(const char *udid)
 {
+	userpref_error_t res = USERPREF_E_SUCCESS;
 	if (!userpref_has_device_record(udid))
-		return USERPREF_E_SUCCESS;
+		return res;
 
 	/* build file path */
 	const char *config_path = userpref_get_config_dir();
 	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
 
 	/* remove file */
-	remove(device_record_file);
+	if (remove(device_record_file) != 0) {
+		debug_info("could not remove %s: %s\n", device_record_file, strerror(errno));
+		res = USERPREF_E_UNKNOWN_ERROR;
+	}
 
 	free(device_record_file);
 
-	return USERPREF_E_SUCCESS;
+	return res;
 }
 
 #if 0
