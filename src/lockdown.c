@@ -376,14 +376,21 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 		return ret;
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	if (lockdown_check_result(dict, "QueryType") == RESULT_SUCCESS) {
+	plist_t type_node = plist_dict_get_item(dict, "Type");
+	if (type_node && (plist_get_node_type(type_node) == PLIST_STRING)) {
+		char* typestr = NULL;
+		plist_get_string_val(type_node, &typestr);
+		debug_info("success with type %s", typestr);
 		/* return the type if requested */
 		if (type != NULL) {
-			plist_t type_node = plist_dict_get_item(dict, "Type");
-			plist_get_string_val(type_node, type);
+			*type = typestr;
+		} else {
+			free(typestr);
 		}
-		debug_info("success with type %s", *type);
 		ret = LOCKDOWN_E_SUCCESS;
+	} else {
+		debug_info("hmm. QueryType response does not contain a type?!\n");
+		debug_plist(dict);
 	}
 	plist_free(dict);
 	dict = NULL;
