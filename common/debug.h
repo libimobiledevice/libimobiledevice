@@ -44,14 +44,14 @@
 #define debug_plist(a)
 #endif
 
-LIBIMOBILEDEVICE_INTERNAL inline void debug_info_real(const char *func,
+LIBIMOBILEDEVICE_INTERNAL void debug_info_real(const char *func,
 											const char *file,
 											int	line,
 											const char *format, ...);
 
-LIBIMOBILEDEVICE_INTERNAL inline void debug_buffer(const char *data, const int length);
-LIBIMOBILEDEVICE_INTERNAL inline void debug_buffer_to_file(const char *file, const char *data, const int length);
-LIBIMOBILEDEVICE_INTERNAL inline void debug_plist_real(const char *func,
+LIBIMOBILEDEVICE_INTERNAL void debug_buffer(const char *data, const int length);
+LIBIMOBILEDEVICE_INTERNAL void debug_buffer_to_file(const char *file, const char *data, const int length);
+LIBIMOBILEDEVICE_INTERNAL void debug_plist_real(const char *func,
 											const char *file,
 											int	line,
 											plist_t plist);
