@@ -210,12 +210,12 @@ static int get_rand(int min, int max)
  *
  * @return A null terminated string containing a valid HostID.
  */
-static char *userpref_generate_host_id(int index)
+static char *userpref_generate_host_id(int idx)
 {
 	/* HostID's are just UUID's, and UUID's are 36 characters long */
 	char *hostid = (char *) malloc(sizeof(char) * 37);
 	const char *chars = "ABCDEF0123456789";
-	srand(time(NULL) - index);
+	srand(time(NULL) - idx);
 	int i = 0;
 
 	for (i = 0; i < 36; i++) {
