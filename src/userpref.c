@@ -709,9 +709,14 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 
 	debug_info("Generating keys and certificates");
 #ifdef HAVE_OPENSSL
+
+#ifdef ANDROID
+	RSA* root_keypair = RSA_generate_key_ex(2048, 65537, NULL, NULL);
+	RSA* host_keypair = RSA_generate_key_ex(2048, 65537, NULL, NULL);
+#else
 	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
 	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
-
+#endif
 	EVP_PKEY* root_pkey = EVP_PKEY_new();
 	EVP_PKEY_assign_RSA(root_pkey, root_keypair);
 
