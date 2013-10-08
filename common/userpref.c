@@ -392,6 +392,9 @@ void userpref_get_system_buid(char **system_buid)
 		debug_info("got %s %s", USERPREF_SYSTEM_BUID_KEY, *system_buid);
 	}
 
+	if (value)
+		plist_free(value);
+
 	if (!*system_buid) {
 		/* no config, generate system_buid */
 		debug_info("no previous %s found", USERPREF_SYSTEM_BUID_KEY);
@@ -411,6 +414,9 @@ void userpref_device_record_get_host_id(const char *udid, char **host_id)
 	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
 		plist_get_string_val(value, host_id);
 	}
+
+	if (value)
+		plist_free(value);
 
 	if (!*host_id) {
 		/* no config, generate host_id */
@@ -1051,9 +1057,11 @@ userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_d
 
 	char* buffer = NULL;
 	uint64_t length = 0;
+
 	plist_t root_cert = NULL;
 	plist_t host_cert = NULL;
 	plist_t dev_cert = NULL;
+
 	if (userpref_device_record_get_value(udid, USERPREF_HOST_CERTIFICATE_KEY, &host_cert) &&
 		userpref_device_record_get_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert)) {
 		if (host_cert && plist_get_node_type(host_cert) == PLIST_DATA) {
@@ -1096,6 +1104,13 @@ userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_d
 			pem_host_cert->size = 0;
 		}
 	}
+
+	if (root_cert)
+		plist_free(root_cert);
+	if (host_cert)
+		plist_free(host_cert);
+	if (dev_cert)
+		plist_free(dev_cert);
 
 	debug_info("configuration invalid");
 
