@@ -336,7 +336,7 @@ static int np_get_notification(np_client_t client, char **notification)
 			res = -2;
 			if (name_value_node && name_value) {
 				*notification = name_value;
-				debug_info("got notification %s\n", __func__, name_value);
+				debug_info("got notification %s", __func__, name_value);
 				res = 0;
 			}
 		} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
@@ -421,7 +421,7 @@ np_error_t np_set_notify_callback( np_client_t client, np_notify_cb_t notify_cb,
 
 	np_lock(client);
 	if (client->notifier) {
-		debug_info("callback already set, removing\n");
+		debug_info("callback already set, removing");
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
 		thread_join(client->notifier);

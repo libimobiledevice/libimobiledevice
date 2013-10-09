@@ -215,7 +215,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		if ((length) < (client->afc_packet->entire_length - client->afc_packet->this_length)) {
 			debug_info("Length did not resemble what it was supposed to based on packet");
 			debug_info("length minus offset: %i", length - offset);
-			debug_info("rest of packet: %i\n", client->afc_packet->entire_length - client->afc_packet->this_length);
+			debug_info("rest of packet: %i", client->afc_packet->entire_length - client->afc_packet->this_length);
 			return AFC_E_INTERNAL_ERROR;
 		}
 

@@ -602,7 +602,7 @@ userpref_error_t userpref_remove_device_record(const char *udid)
 
 	/* remove file */
 	if (remove(device_record_file) != 0) {
-		debug_info("could not remove %s: %s\n", device_record_file, strerror(errno));
+		debug_info("could not remove %s: %s", device_record_file, strerror(errno));
 		res = USERPREF_E_UNKNOWN_ERROR;
 	}
 

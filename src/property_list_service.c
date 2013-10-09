@@ -240,7 +240,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 			debug_info("%d bytes following", pktlen);
 			content = (char*)malloc(pktlen);
 			if (!content) {
-				debug_info("out of memory when allocating %d bytes\n", pktlen);
+				debug_info("out of memory when allocating %d bytes", pktlen);
 				return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 			}
 
@@ -254,7 +254,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 				curlen += bytes;
 			}
 			if (curlen < pktlen) {
-				debug_info("received incomplete packet (%d of %d bytes)\n", curlen, pktlen);
+				debug_info("received incomplete packet (%d of %d bytes)", curlen, pktlen);
 				if (curlen > 0) {
 					debug_info("incomplete packet following:");
 					debug_buffer(content, curlen);

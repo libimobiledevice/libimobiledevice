@@ -113,7 +113,7 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 	*count = 0;
 
 	if (usbmuxd_get_device_list(&dev_list) < 0) {
-		debug_info("ERROR: usbmuxd is not running!\n", __func__);
+		debug_info("ERROR: usbmuxd is not running!", __func__);
 		return IDEVICE_E_NO_DEVICE;
 	}
 

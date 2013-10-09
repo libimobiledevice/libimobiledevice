@@ -260,7 +260,7 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 		}
 		ret = RESTORE_E_SUCCESS;
 	} else {
-		debug_info("hmm. QueryType response does not contain a type?!\n");
+		debug_info("hmm. QueryType response does not contain a type?!");
 		debug_plist(dict);
 		plist_free(dict);
 	}

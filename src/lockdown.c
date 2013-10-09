@@ -389,7 +389,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 		}
 		ret = LOCKDOWN_E_SUCCESS;
 	} else {
-		debug_info("hmm. QueryType response does not contain a type?!\n");
+		debug_info("hmm. QueryType response does not contain a type?!");
 		debug_plist(dict);
 	}
 	plist_free(dict);
