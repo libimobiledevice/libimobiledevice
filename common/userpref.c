@@ -267,6 +267,8 @@ static int internal_set_value(const char *config_file, const char *key, plist_t 
 	if (plist_get_node_type(value) == PLIST_STRING) {
 		plist_get_string_val(value, &value_string);
 		debug_info("setting key %s to %s in config_file %s", key, value_string, config_file);
+		if (value_string)
+			free(value_string);
 	} else {
 		debug_info("setting key %s in config_file %s", key, config_file);
 	}
