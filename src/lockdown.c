@@ -836,8 +836,8 @@ static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, p
 
 	char* host_id = NULL;
 	char* system_buid = NULL;
-	key_data_t public_key = { NULL, 0 };
 
+	key_data_t public_key = { NULL, 0 };
 	key_data_t device_cert = { NULL, 0 };
 	key_data_t host_cert = { NULL, 0 };
 	key_data_t root_cert = { NULL, 0 };
@@ -856,31 +856,18 @@ static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, p
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		ret = lockdownd_get_device_public_key(client, &public_key);
 		if (ret != LOCKDOWN_E_SUCCESS) {
-			if (public_key.data)
-				free(public_key.data);
-			if (host_id)
-				free(host_id);
-			if (system_buid)
-				free(system_buid);
 			debug_info("device refused to send public key.");
-			return ret;
+			goto leave;
 		}
 		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
 
 		userpref_device_record_set_value(client->udid, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
 
 		ret = lockdownd_gen_pair_cert_for_udid(client->udid, public_key, &device_cert, &host_cert, &root_cert);
-
-		if (public_key.data)
-			free(public_key.data);
 	}
 
 	if (ret != LOCKDOWN_E_SUCCESS) {
-		if (host_id)
-			free(host_id);
-		if (system_buid)
-			free(system_buid);
-		return ret;
+		goto leave;
 	}
 
 	/* setup request plist */
@@ -891,10 +878,13 @@ static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, p
 	plist_dict_insert_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
 	plist_dict_insert_item(*pair_record_plist, "SystemBUID", plist_new_string(system_buid));
 
+leave:
 	if (host_id)
 		free(host_id);
 	if (system_buid)
 		free(system_buid);
+	if (public_key.data)
+		free(public_key.data);
 	if (device_cert.data)
 		free(device_cert.data);
 	if (host_cert.data)
