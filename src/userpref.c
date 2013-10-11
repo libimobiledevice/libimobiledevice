@@ -711,8 +711,15 @@ static userpref_error_t userpref_gen_keys_and_cert(void)
 #ifdef HAVE_OPENSSL
 
 #ifdef ANDROID
-	RSA* root_keypair = RSA_generate_key_ex(2048, 65537, NULL, NULL);
-	RSA* host_keypair = RSA_generate_key_ex(2048, 65537, NULL, NULL);
+	RSA* root_keypair = RSA_new();
+	BIGNUM *e1 = BN_new();
+	BN_set_word(e1, 65537);
+	RSA_generate_key_ex(root_keypair, 2048, e1, NULL);
+	
+	RSA* host_keypair = RSA_new();
+	BIGNUM *e2 = BN_new();
+	BN_set_word(e2, 65537);
+	RSA_generate_key_ex(host_keypair, 2048, e2, NULL);
 #else
 	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
 	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
