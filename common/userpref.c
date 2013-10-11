@@ -682,8 +682,21 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 
 	debug_info("generating keys and certificates");
 #ifdef HAVE_OPENSSL
+#ifdef ANDROID
+	RSA* root_keypair = RSA_new();
+	BIGNUM *e1 = BN_new();
+	BN_set_word(e1, 65537);
+	RSA_generate_key_ex(root_keypair, 2048, e1, NULL);
+	
+	RSA* host_keypair = RSA_new();
+	BIGNUM *e2 = BN_new();
+	BN_set_word(e2, 65537);
+	RSA_generate_key_ex(host_keypair, 2048, e2, NULL);
+#else
 	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
 	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
+#endif
+
 
 	EVP_PKEY* root_pkey = EVP_PKEY_new();
 	EVP_PKEY_assign_RSA(root_pkey, root_keypair);

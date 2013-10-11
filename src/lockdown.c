@@ -47,7 +47,11 @@
 #include "idevice.h"
 #include "common/debug.h"
 #include "common/userpref.h"
-#include "asprintf.h"
+#ifdef ANDROID
+#else
+   #include "asprintf.h"
+#endif
+
 
 #ifdef WIN32
 #include <windows.h>
