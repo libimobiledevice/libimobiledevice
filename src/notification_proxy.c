@@ -309,11 +309,15 @@ static int np_get_notification(np_client_t client, char **notification)
 
 	np_lock(client);
 
-	property_list_service_receive_plist_with_timeout(client->parent, &dict, 500);
-	if (!dict) {
+	property_list_service_error_t perr = property_list_service_receive_plist_with_timeout(client->parent, &dict, 500);
+	if (perr == PROPERTY_LIST_SERVICE_E_TIMEOUT) {
 		debug_info("NotificationProxy: no notification received!");
 		res = 0;
-	} else {
+	} else if (perr != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		debug_info("NotificationProxy: error %d occured!", perr);	
+		res = perr;
+	}
+	if (dict) {
 		char *cmd_value = NULL;
 		plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
 
@@ -368,7 +372,10 @@ void* np_notifier( void* arg )
 
 	debug_info("starting callback.");
 	while (npt->client->parent) {
-		np_get_notification(npt->client, &notification);
+		if (np_get_notification(npt->client, &notification) < 0) {
+			npt->cbfunc("", npt->user_data);
+			break;
+		}
 		if (notification) {
 			npt->cbfunc(notification, npt->user_data);
 			free(notification);
@@ -388,6 +395,9 @@ void* np_notifier( void* arg )
  * be called when a notification has been received.
  * It will start a thread that polls for notifications and calls the callback
  * function if a notification has been received.
+ * In case of an error condition when polling for notifications - e.g. device
+ * disconnect - the thread will call the callback function with an empty
+ * notification "" and terminate itself.
  *
  * @param client the NP client
  * @param notify_cb pointer to a callback function or NULL to de-register a

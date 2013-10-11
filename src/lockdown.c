@@ -30,6 +30,7 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/x509.h>
@@ -37,6 +38,7 @@
 #else
 #include <libtasn1.h>
 #include <gnutls/x509.h>
+#include <gnutls/crypto.h>
 #endif
 #include <plist/plist.h>
 
@@ -46,6 +48,11 @@
 #include "common/debug.h"
 #include "common/userpref.h"
 #include "asprintf.h"
+
+#ifdef WIN32
+#include <windows.h>
+#define sleep(x) Sleep(x*1000)
+#endif
 
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
@@ -201,11 +208,40 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
 	}
+
 	plist_free(dict);
 	dict = NULL;
-	if (client->ssl_enabled) {
-		property_list_service_disable_ssl(client->parent);
+
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
 	}
+
+	return ret;
+}
+
+static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	if (client->parent) {
+		if (property_list_service_client_free(client->parent) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+			ret = LOCKDOWN_E_SUCCESS;
+		}
+	}
+
+	if (client->udid) {
+		free(client->udid);
+	}
+	if (client->label) {
+		free(client->label);
+	}
+
+	free(client);
+
 	return ret;
 }
 
@@ -221,29 +257,19 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
+
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
-		free(client->session_id);
 	}
 
 	if (client->parent) {
 		lockdownd_goodbye(client);
-
-		if (property_list_service_client_free(client->parent) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			ret = LOCKDOWN_E_SUCCESS;
-		}
 	}
 
-	if (client->udid) {
-		free(client->udid);
-	}
-	if (client->label) {
-		free(client->label);
-	}
+	ret = lockdownd_client_free_simple(client);
 
-	free(client);
 	return ret;
 }
 
@@ -350,14 +376,21 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 		return ret;
 
 	ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	if (lockdown_check_result(dict, "QueryType") == RESULT_SUCCESS) {
+	plist_t type_node = plist_dict_get_item(dict, "Type");
+	if (type_node && (plist_get_node_type(type_node) == PLIST_STRING)) {
+		char* typestr = NULL;
+		plist_get_string_val(type_node, &typestr);
+		debug_info("success with type %s", typestr);
 		/* return the type if requested */
 		if (type != NULL) {
-			plist_t type_node = plist_dict_get_item(dict, "Type");
-			plist_get_string_val(type_node, type);
+			*type = typestr;
+		} else {
+			free(typestr);
 		}
-		debug_info("success with type %s", *type);
 		ret = LOCKDOWN_E_SUCCESS;
+	} else {
+		debug_info("hmm. QueryType response does not contain a type?!\n");
+		debug_plist(dict);
 	}
 	plist_free(dict);
 	dict = NULL;
@@ -719,13 +752,15 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 			free(type);
 	}
 
-	userpref_get_host_id(&host_id);
+	userpref_device_record_get_host_id(client_loc->udid, &host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
 
-	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_public_key(client_loc->udid))
+	if (LOCKDOWN_E_SUCCESS == ret && !userpref_has_device_record(client_loc->udid)) {
+		/* attempt pairing */
 		ret = lockdownd_pair(client_loc, NULL);
+	}
 
 	/* in any case, we need to validate pairing to receive trusted host status */
 	ret = lockdownd_validate_pair(client_loc, NULL);
@@ -733,8 +768,11 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	/* if not paired yet, let's do it now */
 	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
 		ret = lockdownd_pair(client_loc, NULL);
+
 		if (LOCKDOWN_E_SUCCESS == ret) {
 			ret = lockdownd_validate_pair(client_loc, NULL);
+		} else if (LOCKDOWN_E_PAIRING_DIALOG_PENDING == ret) {
+			debug_info("Device shows the pairing dialog.");
 		}
 	}
 
@@ -772,62 +810,91 @@ static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_recor
 	if (!pair_record)
 		return NULL;
 
-	char *host_id_loc = pair_record->host_id;
-
 	/* setup request plist */
 	plist_t dict = plist_new_dict();
 	plist_dict_insert_item(dict, "DeviceCertificate", plist_new_data(pair_record->device_certificate, strlen(pair_record->device_certificate)));
 	plist_dict_insert_item(dict, "HostCertificate", plist_new_data(pair_record->host_certificate, strlen(pair_record->host_certificate)));
-	if (!pair_record->host_id)
-		userpref_get_host_id(&host_id_loc);
-	plist_dict_insert_item(dict, "HostID", plist_new_string(host_id_loc));
+	plist_dict_insert_item(dict, "HostID", plist_new_string(pair_record->host_id));
 	plist_dict_insert_item(dict, "RootCertificate", plist_new_data(pair_record->root_certificate, strlen(pair_record->root_certificate)));
-
-	if (!pair_record->host_id)
-		free(host_id_loc);
+	plist_dict_insert_item(dict, "SystemBUID", plist_new_string(pair_record->system_buid));
 
 	return dict;
 }
 
 /**
- * Generates a new pairing record plist and required certificates for the 
- * supplied public key of the device and the host_id of the caller's host
- * computer.
+ * Generates a pair record plist with required certificates for a specific
+ * device. If a pairing exists, it is loaded from the computer instead of being
+ * generated.
  *
- * @param public_key The public key of the device.
- * @param host_id The HostID to use for the pair record plist.
- * @param pair_record_plist Holds the generated pair record.
+ * @param pair_record_plist Holds the pair record.
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-static lockdownd_error_t generate_pair_record_plist(key_data_t public_key, char *host_id, plist_t *pair_record_plist)
+static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, plist_t *pair_record_plist)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+
+	char* host_id = NULL;
+	char* system_buid = NULL;
+	key_data_t public_key = { NULL, 0 };
 
 	key_data_t device_cert = { NULL, 0 };
 	key_data_t host_cert = { NULL, 0 };
 	key_data_t root_cert = { NULL, 0 };
 
-	ret = lockdownd_gen_pair_cert(public_key, &device_cert, &host_cert, &root_cert);
-	if (ret != LOCKDOWN_E_SUCCESS) {
-		return ret;
+	/* load certificates if a pairing exists */
+	userpref_error_t uret = userpref_device_record_get_certs_as_pem(client->udid, &root_cert, &host_cert, &device_cert);
+	if ((uret == USERPREF_E_SUCCESS) && (root_cert.size > 0) && (host_cert.size > 0) && (device_cert.size > 0)) {
+		ret = LOCKDOWN_E_SUCCESS;
 	}
 
-	char *host_id_loc = host_id;
+	/* get systembuid and host id */
+	userpref_get_system_buid(&system_buid);
+	userpref_device_record_get_host_id(client->udid, &host_id);
 
-	if (!host_id)
-		userpref_get_host_id(&host_id_loc);
+	/* generate new certificates if needed */
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		ret = lockdownd_get_device_public_key(client, &public_key);
+		if (ret != LOCKDOWN_E_SUCCESS) {
+			if (public_key.data)
+				free(public_key.data);
+			if (host_id)
+				free(host_id);
+			if (system_buid)
+				free(system_buid);
+			debug_info("device refused to send public key.");
+			return ret;
+		}
+		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
+
+		userpref_device_record_set_value(client->udid, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
+
+		ret = lockdownd_gen_pair_cert_for_udid(client->udid, public_key, &device_cert, &host_cert, &root_cert);
+
+		if (public_key.data)
+			free(public_key.data);
+	}
+
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		if (host_id)
+			free(host_id);
+		if (system_buid)
+			free(system_buid);
+		return ret;
+	}
 
 	/* setup request plist */
 	*pair_record_plist = plist_new_dict();
 	plist_dict_insert_item(*pair_record_plist, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
 	plist_dict_insert_item(*pair_record_plist, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
-	plist_dict_insert_item(*pair_record_plist, "HostID", plist_new_string(host_id_loc));
+	plist_dict_insert_item(*pair_record_plist, "HostID", plist_new_string(host_id));
 	plist_dict_insert_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
+	plist_dict_insert_item(*pair_record_plist, "SystemBUID", plist_new_string(system_buid));
 
-	if (!host_id)
-		free(host_id_loc);
-
+	if (host_id)
+		free(host_id);
+	if (system_buid)
+		free(system_buid);
 	if (device_cert.data)
 		free(device_cert.data);
 	if (host_cert.data)
@@ -861,10 +928,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
 	plist_t dict_record = NULL;
-	key_data_t public_key = { NULL, 0 };
 	int pairing_mode = 0; /* 0 = libimobiledevice, 1 = external */
 
-	if (pair_record && pair_record->host_id) {
+	if (pair_record && pair_record->system_buid && pair_record->host_id) {
 		/* valid pair_record passed? */
 		if (!pair_record->device_certificate || !pair_record->host_certificate || !pair_record->root_certificate) {
 			return LOCKDOWN_E_PLIST_ERROR;
@@ -875,16 +941,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 
 		pairing_mode = 1;
 	} else {
-		ret = lockdownd_get_device_public_key(client, &public_key);
-		if (ret != LOCKDOWN_E_SUCCESS) {
-			if (public_key.data)
-				free(public_key.data);
-			debug_info("device refused to send public key.");
-			return ret;
-		}
-		debug_info("device public key follows:\n%.*s", public_key.size, public_key.data);
-		/* get libimobiledevice pair_record */
-		ret = generate_pair_record_plist(public_key, NULL, &dict_record);
+		ret = generate_pair_record_plist(client, &dict_record);
+
 		if (ret != LOCKDOWN_E_SUCCESS) {
 			if (dict_record)
 				plist_free(dict_record);
@@ -892,25 +950,47 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		}
 	}
 
-	/* Setup Pair request plist */
+	if (!strcmp("Pair", verb)) {
+		/* get wifi mac */
+		plist_t wifi_mac_node = NULL;
+		lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_mac_node);
+
+		/* save wifi mac address in config */
+		if (wifi_mac_node) {
+			userpref_device_record_set_value(client->udid, USERPREF_WIFI_MAC_ADDRESS_KEY, plist_copy(wifi_mac_node));
+			plist_free(wifi_mac_node);
+			wifi_mac_node = NULL;
+		}
+	}
+
+	/* setup pair request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"PairRecord", dict_record);
+	plist_dict_insert_item(dict, "PairRecord", plist_copy(dict_record));
 	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
+	plist_dict_insert_item(dict, "ProtocolVersion", plist_new_string(LOCKDOWN_PROTOCOL_VERSION));
+
+	plist_t options = plist_new_dict();
+	plist_dict_insert_item(options, "ExtendedPairingErrors", plist_new_bool(1));
+	plist_dict_insert_item(dict, "PairingOptions", options);
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
 
-	if (ret != LOCKDOWN_E_SUCCESS)
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		plist_free(dict_record);
 		return ret;
+	}
 
 	/* Now get device's answer */
 	ret = lockdownd_receive(client, &dict);
 
-	if (ret != LOCKDOWN_E_SUCCESS)
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		plist_free(dict_record);
 		return ret;
+	}
 
 	if (strcmp(verb, "Unpair") == 0) {
 		/* workaround for Unpair giving back ValidatePair,
@@ -928,13 +1008,31 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	if (ret == LOCKDOWN_E_SUCCESS) {
 		debug_info("%s success", verb);
 		if (!pairing_mode) {
+			debug_info("internal pairing mode");
 			if (!strcmp("Unpair", verb)) {
 				/* remove public key from config */
-				userpref_remove_device_public_key(client->udid);
+				userpref_remove_device_record(client->udid);
 			} else {
-				/* store public key in config */
-				userpref_set_device_public_key(client->udid, public_key);
+				if (!strcmp("Pair", verb)) {
+					debug_info("getting EscrowBag from response");
+
+					/* add returned escrow bag if available */
+					plist_t escrow_bag = plist_dict_get_item(dict, "EscrowBag");
+					if (escrow_bag && plist_get_node_type(escrow_bag) == PLIST_DATA) {
+						userpref_device_record_set_value(client->udid, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
+						plist_free(escrow_bag);
+						escrow_bag = NULL;
+					}
+
+					/* store DeviceCertificate upon successful pairing */
+					plist_t devcrt = plist_dict_get_item(dict_record, USERPREF_DEVICE_CERTIFICATE_KEY);
+					if (devcrt && plist_get_node_type(devcrt) == PLIST_DATA) {
+						userpref_device_record_set_value(client->udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_copy(devcrt));
+					}
+				}
 			}
+		} else {
+			debug_info("external pairing mode");
 		}
 	} else {
 		debug_info("%s failure", verb);
@@ -950,6 +1048,10 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 					ret = LOCKDOWN_E_PASSWORD_PROTECTED;
 				} else if (!strcmp(value, "InvalidHostID")) {
 					ret = LOCKDOWN_E_INVALID_HOST_ID;
+				} else if (!strcmp(value, "UserDeniedPairing")) {
+					ret = LOCKDOWN_E_USER_DENIED_PAIRING;
+				} else if (!strcmp(value, "PairingDialogResponsePending")) {
+					ret = LOCKDOWN_E_PAIRING_DIALOG_PENDING;
 				}
 				free(value);
 			}
@@ -958,10 +1060,15 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			error_node = NULL;
 		}
 	}
+
+	if (dict_record) {
+		plist_free(dict_record);
+		dict_record = NULL;
+	}
+
 	plist_free(dict);
 	dict = NULL;
-	if (public_key.data)
-		free(public_key.data);
+
 	return ret;
 }
 
@@ -1115,11 +1222,12 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
  *  system failed, LOCKDOWN_E_SSL_ERROR if the certificates could not be
  *  generated
  */
-lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * odevice_cert,
+lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t public_key, key_data_t * odevice_cert,
 									   key_data_t * ohost_cert, key_data_t * oroot_cert)
 {
 	if (!public_key.data || !odevice_cert || !ohost_cert || !oroot_cert)
 		return LOCKDOWN_E_INVALID_ARG;
+
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	userpref_error_t uret = USERPREF_E_UNKNOWN_ERROR;
 
@@ -1148,7 +1256,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 	host_privkey.data = NULL;
 	host_privkey.size = 0;
 
-	uret = userpref_get_keys_and_certs(&root_privkey, &root_cert, &host_privkey, &host_cert);
+	uret = userpref_device_record_get_keys_and_certs(udid, &root_privkey, &root_cert, &host_privkey, &host_cert);
 	if (USERPREF_E_SUCCESS == uret) {
 		/* generate device certificate */
 		ASN1_INTEGER* sn = ASN1_INTEGER_new();
@@ -1159,7 +1267,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 
 		X509_EXTENSION* ext;
 		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Basic Constraints");
 		}
 		X509_add_ext(dev_cert, ext, -1);
 		X509_EXTENSION_free(ext);
@@ -1170,7 +1278,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
 		X509_set_notAfter(dev_cert, asn1time);
 		ASN1_TIME_free(asn1time);
-	
+
 		BIO* membp;
 
 		X509* rootCert = NULL;
@@ -1187,6 +1295,22 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 			EVP_PKEY_free(pkey);
 			X509_free(rootCert);
 		}
+
+		X509V3_CTX ctx;
+		X509V3_set_ctx_nodb(&ctx);
+		X509V3_set_ctx(&ctx, NULL, dev_cert, NULL, NULL, 0);
+
+		if (!(ext = X509V3_EXT_conf_nid(NULL, &ctx, NID_subject_key_identifier, (char*)"hash"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Subject Key identifier");
+		}
+		X509_add_ext(dev_cert, ext, -1);
+		X509_EXTENSION_free(ext);
+
+		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment"))) {
+			debug_info("ERROR: X509V3_EXT_conf_nid failed for Key Usage");
+		}
+		X509_add_ext(dev_cert, ext, -1);
+		X509_EXTENSION_free(ext);
 
 		EVP_PKEY* rootPriv = NULL;
 		membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
@@ -1209,7 +1333,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 			key_data_t pem_root_cert = { NULL, 0 };
 			key_data_t pem_host_cert = { NULL, 0 };
 
-			uret = userpref_get_certs_as_pem(&pem_root_cert, &pem_host_cert);
+			uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert, NULL);
 			if (USERPREF_E_SUCCESS == uret) {
 				/* copy buffer for output */
 				membp = BIO_new(BIO_s_mem());
@@ -1316,7 +1440,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 			gnutls_x509_privkey_init(&root_privkey);
 			gnutls_x509_privkey_init(&host_privkey);
 
-			uret = userpref_get_keys_and_certs(root_privkey, root_cert, host_privkey, host_cert);
+			uret = userpref_device_record_get_keys_and_certs(udid, root_privkey, root_cert, host_privkey, host_cert);
 
 			if (USERPREF_E_SUCCESS == uret) {
 				/* generate device certificate */
@@ -1326,6 +1450,18 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 				gnutls_x509_crt_set_ca_status(dev_cert, 0);
 				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
 				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+
+				/* use custom hash generation for compatibility with the "Apple ecosystem" */
+				const gnutls_digest_algorithm_t dig_sha1 = GNUTLS_DIG_SHA1;
+				size_t hash_size = gnutls_hash_get_len(dig_sha1);
+				unsigned char hash[hash_size];
+				if (gnutls_hash_fast(dig_sha1, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
+					debug_info("ERROR: Failed to generate SHA1 for public key");
+				} else {
+					gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
+				}
+
+				gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
 				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
 				if (LOCKDOWN_E_SUCCESS == ret) {
@@ -1340,7 +1476,7 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
 
-					uret = userpref_get_certs_as_pem(&pem_root_cert, &pem_host_cert);
+					uret = userpref_device_record_get_certs_as_pem(udid, &pem_root_cert, &pem_host_cert, NULL);
 
 					if (USERPREF_E_SUCCESS == uret) {
 						/* copy buffer for output */
@@ -1395,7 +1531,6 @@ lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * od
 
 	gnutls_free(der_pub_key.data);
 #endif
-
 	return ret;
 }
 
@@ -1429,8 +1564,23 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* setup request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"HostID", plist_new_string(host_id));
 	plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
+
+	/* add host id */
+	if (host_id) {
+		plist_dict_insert_item(dict, "HostID", plist_new_string(host_id));
+	}
+
+	/* add system buid */
+	char *system_buid = NULL;
+	userpref_get_system_buid(&system_buid);
+	if (system_buid) {
+		plist_dict_insert_item(dict, "SystemBUID", plist_new_string(system_buid));
+		if (system_buid) {
+			free(system_buid);
+			system_buid = NULL;
+		}
+	}
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
@@ -1471,6 +1621,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 		if (session_node && (plist_get_node_type(session_node) == PLIST_STRING)) {
 			plist_get_string_val(session_node, &client->session_id);
 		}
+
 		if (client->session_id) {
 			debug_info("SessionID: %s", client->session_id);
 			if (session_id != NULL)
@@ -1478,7 +1629,9 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 		} else {
 			debug_info("Failed to get SessionID!");
 		}
+
 		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
+
 		if (use_ssl) {
 			ret = property_list_service_enable_ssl(client->parent);
 			if (ret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -1523,11 +1676,9 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 	}
 
 	char *host_id = NULL;
-	userpref_get_host_id(&host_id);
+	userpref_device_record_get_host_id(client->udid, &host_id);
 	if (!host_id)
 		return LOCKDOWN_E_INVALID_CONF;
-	if (!client->session_id)
-		return LOCKDOWN_E_NO_RUNNING_SESSION;
 
 	plist_t dict = NULL;
 	uint16_t port_loc = 0;
@@ -1594,6 +1745,8 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 			plist_get_string_val(error_node, &error);
 			if (!strcmp(error, "InvalidService")) {
 				ret = LOCKDOWN_E_INVALID_SERVICE;
+			} else if (!strcmp(error, "NoRunningSession")) {
+				ret = LOCKDOWN_E_NO_RUNNING_SESSION;
 			}
 			free(error);
 		}

@@ -81,7 +81,7 @@ static void debug_print_line(const char *func, const char *file, int line, const
 }
 #endif
 
-inline void debug_info_real(const char *func, const char *file, int line, const char *format, ...)
+void debug_info_real(const char *func, const char *file, int line, const char *format, ...)
 {
 #ifndef STRIP_DEBUG_CODE
 	va_list args;
@@ -101,7 +101,7 @@ inline void debug_info_real(const char *func, const char *file, int line, const 
 #endif
 }
 
-inline void debug_buffer(const char *data, const int length)
+void debug_buffer(const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
 	int i;
@@ -136,7 +136,7 @@ inline void debug_buffer(const char *data, const int length)
 #endif
 }
 
-inline void debug_buffer_to_file(const char *file, const char *data, const int length)
+void debug_buffer_to_file(const char *file, const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
 	if (debug_level) {
@@ -148,7 +148,7 @@ inline void debug_buffer_to_file(const char *file, const char *data, const int l
 #endif
 }
 
-inline void debug_plist_real(const char *func, const char *file, int line, plist_t plist)
+void debug_plist_real(const char *func, const char *file, int line, plist_t plist)
 {
 #ifndef STRIP_DEBUG_CODE
 	if (!plist)

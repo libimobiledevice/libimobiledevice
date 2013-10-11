@@ -71,7 +71,8 @@ enum cmd_mode {
 	CMD_LIST,
 	CMD_UNBACK,
 	CMD_CHANGEPW,
-	CMD_LEAVE
+	CMD_LEAVE,
+	CMD_CLOUD
 };
 
 enum plist_format_t {
@@ -87,13 +88,19 @@ enum cmd_flags {
 	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5),
 	CMD_FLAG_ENCRYPTION_ENABLE          = (1 << 6),
 	CMD_FLAG_ENCRYPTION_DISABLE         = (1 << 7),
-	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8)
+	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8),
+	CMD_FLAG_FORCE_FULL_BACKUP          = (1 << 9),
+	CMD_FLAG_CLOUD_ENABLE               = (1 << 10),
+	CMD_FLAG_CLOUD_DISABLE              = (1 << 11)
 };
 
 static int backup_domain_changed = 0;
 
 static void notify_cb(const char *notification, void *userdata)
 {
+	if (strlen(notification) == 0) {
+		return;
+	}
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST)) {
 		PRINT_VERBOSE(1, "User has cancelled the backup process on the device.\n");
 		quit_flag++;
@@ -1258,6 +1265,7 @@ static void print_usage(int argc, char **argv)
 	printf("Create or restore backup from the current or specified directory.\n\n");
 	printf("commands:\n");
 	printf("  backup\tcreate backup for the device\n");
+	printf("    --full\t\tforce full backup from device.\n");
 	printf("  restore\trestore last backup to the device\n");
 	printf("    --system\t\trestore system files, too.\n");
 	printf("    --reboot\t\treboot the system when done.\n");
@@ -1272,6 +1280,7 @@ static void print_usage(int argc, char **argv)
 	printf("    NOTE: password will be requested in interactive mode if omitted\n");
 	printf("  changepw [OLD NEW]  change backup password on target device\n");
 	printf("    NOTE: passwords will be requested in interactive mode if omitted\n");
+	printf("  cloud on|off\tenable or disable cloud use (requires iCloud account)\n");
 	printf("\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
@@ -1375,6 +1384,26 @@ int main(int argc, char *argv[])
 			backup_password = strdup(argv[i]);
 			continue;
 		}
+		else if (!strcmp(argv[i], "cloud")) {
+			cmd = CMD_CLOUD;
+			i++;
+			if (!argv[i]) {
+				printf("No argument given for cloud command; requires either 'on' or 'off'.\n");
+				print_usage(argc, argv);
+				return -1;
+			}
+			if (!strcmp(argv[i], "on")) {
+				cmd_flags |= CMD_FLAG_CLOUD_ENABLE;
+			} else if (!strcmp(argv[i], "off")) {
+				cmd_flags |= CMD_FLAG_CLOUD_DISABLE;
+			} else {
+				printf("Invalid argument '%s' for cloud command; must be either 'on' or 'off'.\n", argv[i]);
+			}
+			continue;
+		}
+		else if (!strcmp(argv[i], "--full")) {
+			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
+		}
 		else if (!strcmp(argv[i], "info")) {
 			cmd = CMD_INFO;
 			verbose = 0;
@@ -1395,9 +1424,9 @@ int main(int argc, char *argv[])
 				return -1;	
 			}
 			if (!strcmp(argv[i], "on")) {
-				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;	
+				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;
 			} else if (!strcmp(argv[i], "off")) {
-				cmd_flags |= CMD_FLAG_ENCRYPTION_DISABLE;	
+				cmd_flags |= CMD_FLAG_ENCRYPTION_DISABLE;
 			} else {
 				printf("Invalid argument '%s' for encryption command; must be either 'on' or 'off'.\n", argv[i]);
 			}
@@ -1461,7 +1490,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (cmd == CMD_CHANGEPW) {
+	if (cmd == CMD_CHANGEPW || cmd == CMD_CLOUD) {
 		backup_directory = strdup(".this_folder_is_not_present_on_purpose");
 	} else {
 		if (backup_directory == NULL) {
@@ -1506,7 +1535,7 @@ int main(int argc, char *argv[])
 			printf("ERROR: Can't get password input in non-interactive mode. Either pass password(s) on the command line, or enable interactive mode with -i or --interactive.\n");
 			return -1;
 		}
-	} else {
+	} else if (cmd != CMD_CLOUD) {
 		/* backup directory must contain an Info.plist */
 		info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
 		if (cmd == CMD_RESTORE) {
@@ -1537,7 +1566,7 @@ int main(int argc, char *argv[])
 		PRINT_VERBOSE(1, "Backup directory is \"%s\"\n", backup_directory);
 	}
 
-	if (is_encrypted) {
+	if (cmd != CMD_CLOUD && is_encrypted) {
 		PRINT_VERBOSE(1, "This is an encrypted backup.\n");
 		if (backup_password == NULL) {
 			if (interactive_mode) {
@@ -1626,7 +1655,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* verify existing Info.plist */
-		if (info_path && (stat(info_path, &st) == 0)) {
+		if (info_path && (stat(info_path, &st) == 0) && cmd != CMD_CLOUD) {
 			PRINT_VERBOSE(1, "Reading Info.plist from backup.\n");
 			plist_read_from_filename(&info_plist, info_path);
 
@@ -1687,6 +1716,17 @@ int main(int argc, char *argv[])
 checkpoint:
 
 		switch(cmd) {
+			case CMD_CLOUD:
+			opts = plist_new_dict();
+			plist_dict_insert_item(opts, "CloudBackupState", plist_new_bool(cmd_flags & CMD_FLAG_CLOUD_ENABLE ? 1: 0));
+			err = mobilebackup2_send_request(mobilebackup2, "EnableCloudBackup", udid, source_udid, opts);
+			plist_free(opts);
+			opts = NULL;
+			if (err != MOBILEBACKUP2_E_SUCCESS) {
+				printf("Error setting cloud backup state on device, error code %d\n", err);
+				cmd = CMD_LEAVE;
+			}
+			break;
 			case CMD_BACKUP:
 			PRINT_VERBOSE(1, "Starting backup...\n");
 
@@ -1723,6 +1763,11 @@ checkpoint:
 			plist_free(info_plist);
 			info_plist = NULL;
 
+			if (cmd_flags & CMD_FLAG_FORCE_FULL_BACKUP) {
+				PRINT_VERBOSE(1, "Enforcing full backup from device.\n");
+				opts = plist_new_dict();
+				plist_dict_insert_item(opts, "ForceFullBackup", plist_new_bool(1));
+			}
 			/* request backup from device with manifest from last backup */
 			if (willEncrypt) {
 				PRINT_VERBOSE(1, "Backup will be encrypted.\n");
@@ -1730,7 +1775,9 @@ checkpoint:
 				PRINT_VERBOSE(1, "Backup will be unencrypted.\n");
 			}
 			PRINT_VERBOSE(1, "Requesting backup from device...\n");
-			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, NULL);
+			err = mobilebackup2_send_request(mobilebackup2, "Backup", udid, source_udid, opts);
+			if (opts)
+				plist_free(opts);
 			if (err == MOBILEBACKUP2_E_SUCCESS) {
 				if (is_full_backup) {
 					PRINT_VERBOSE(1, "Full backup mode.\n");
@@ -2179,6 +2226,21 @@ files_out:
 
 			/* report operation status to user */
 			switch (cmd) {
+				case CMD_CLOUD:
+				if (cmd_flags & CMD_FLAG_CLOUD_ENABLE) {
+					if (operation_ok) {
+						PRINT_VERBOSE(1, "Cloud backup has been enabled successfully.\n");
+					} else {
+						PRINT_VERBOSE(1, "Could not enable cloud backup.\n");
+					}
+				} else if (cmd_flags & CMD_FLAG_CLOUD_DISABLE) {
+					if (operation_ok) {
+						PRINT_VERBOSE(1, "Cloud backup has been disabled successfully.\n");
+					} else {
+						PRINT_VERBOSE(1, "Could not disable cloud backup.\n");
+					}
+				}
+				break;
 				case CMD_BACKUP:
 					PRINT_VERBOSE(1, "Received %d files from device.\n", file_count);
 					if (operation_ok && mb2_status_check_snapshot_state(backup_directory, udid, "finished")) {

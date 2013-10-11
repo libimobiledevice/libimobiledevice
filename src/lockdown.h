@@ -27,6 +27,8 @@
 #include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"
 
+#define LOCKDOWN_PROTOCOL_VERSION "2"
+
 struct lockdownd_client_private {
 	property_list_service_client_t parent;
 	int ssl_enabled;
@@ -36,6 +38,6 @@ struct lockdownd_client_private {
 };
 
 lockdownd_error_t lockdownd_get_device_public_key(lockdownd_client_t client, key_data_t * public_key);
-lockdownd_error_t lockdownd_gen_pair_cert(key_data_t public_key, key_data_t * device_cert, key_data_t * host_cert, key_data_t * root_cert);
+lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t public_key, key_data_t * device_cert, key_data_t * host_cert, key_data_t * root_cert);
 
 #endif

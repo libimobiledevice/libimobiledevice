@@ -238,6 +238,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
+		idevice_get_udid(device, &new_connection->udid);
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	} else {
@@ -270,7 +271,12 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
+
+	if (connection->udid)
+		free(connection->udid);
+
 	free(connection);
+
 	return result;
 }
 
@@ -662,7 +668,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	key_data_t root_cert = { NULL, 0 };
 	key_data_t root_privkey = { NULL, 0 };
 
-	userpref_error_t uerr = userpref_get_keys_and_certs(&root_privkey, &root_cert, NULL, NULL);
+	userpref_error_t uerr = userpref_device_record_get_keys_and_certs(connection->udid, &root_privkey, &root_cert, NULL, NULL);
 	if (uerr != USERPREF_E_SUCCESS) {
 		debug_info("Error %d when loading keys and certificates! %d", uerr);
 	}
@@ -752,7 +758,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_x509_privkey_init(&ssl_data_loc->root_privkey);
 	gnutls_x509_privkey_init(&ssl_data_loc->host_privkey);
 
-	userpref_error_t uerr = userpref_get_keys_and_certs(ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
+	userpref_error_t uerr = userpref_device_record_get_keys_and_certs(connection->udid, ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
 	if (uerr != USERPREF_E_SUCCESS) {
 		debug_info("Error %d when loading keys and certificates! %d", uerr);
 	}

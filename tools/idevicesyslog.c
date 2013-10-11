@@ -114,6 +114,7 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 	} else if (event->event == IDEVICE_DEVICE_REMOVE) {
 		if (syslog && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
+			fprintf(stdout, "[disconnected]\n");
 		}
 	}
 }
