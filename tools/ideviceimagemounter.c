@@ -36,7 +36,11 @@
 #include <libimobiledevice/afc.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/mobile_image_mounter.h>
-#include <asprintf.h>
+#ifdef ANDROID
+#else
+   #include "asprintf.h"
+#endif
+
 
 static int indent_level = 0;
 
