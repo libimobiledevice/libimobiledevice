@@ -690,8 +690,16 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 
 	debug_info("generating keys and certificates");
 #ifdef HAVE_OPENSSL
-	RSA* root_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
-	RSA* host_keypair = RSA_generate_key(2048, 65537, NULL, NULL);
+	BIGNUM *e = BN_new();
+	RSA* root_keypair = RSA_new();
+	RSA* host_keypair = RSA_new();
+
+	BN_set_word(e, 65537);
+
+	RSA_generate_key_ex(root_keypair, 2048, e, NULL);
+	RSA_generate_key_ex(host_keypair, 2048, e, NULL);
+
+	BN_free(e);
 
 	EVP_PKEY* root_pkey = EVP_PKEY_new();
 	EVP_PKEY_assign_RSA(root_pkey, root_keypair);
