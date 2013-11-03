@@ -679,10 +679,10 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
-	static struct lockdownd_service_descriptor service = {
-		.port = 0xf27e,
-		.ssl_enabled = 0
-	};
+	static struct lockdownd_service_descriptor service;
+
+	service.port = 0xf27e;
+	service.ssl_enabled = 0;
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -1336,11 +1336,11 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 				if (membp)
 					BIO_free(membp);
 
-				ohost_cert->data = malloc(pem_host_cert.size);
+				ohost_cert->data = (unsigned char*)malloc(pem_host_cert.size);
 				memcpy(ohost_cert->data, pem_host_cert.data, pem_host_cert.size);
 				ohost_cert->size = pem_host_cert.size;
 
-				oroot_cert->data = malloc(pem_root_cert.size);
+				oroot_cert->data = (unsigned char*)malloc(pem_root_cert.size);
 				memcpy(oroot_cert->data, pem_root_cert.data, pem_root_cert.size);
 				oroot_cert->size = pem_root_cert.size;
 
@@ -1919,7 +1919,7 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
 
 	while((value = plist_array_get_item(dict, *count)) != NULL) {
 			plist_get_string_val(value, &val);
-			newlist = realloc(*classes, sizeof(char*) * (*count+1));
+			newlist = (char**)realloc(*classes, sizeof(char*) * (*count+1));
 			str_remove_spaces(val);
 			asprintf(&newlist[*count], "com.apple.%s", val);
 			free(val);
@@ -1928,7 +1928,7 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
 			*count = *count+1;
 	}
 
-	newlist = realloc(*classes, sizeof(char*) * (*count+1));
+	newlist = (char**)realloc(*classes, sizeof(char*) * (*count+1));
 	newlist[*count] = NULL;
 	*classes = newlist;
 
