@@ -32,6 +32,10 @@
 #include "common/debug.h"
 #include "endianness.h"
 
+#ifdef _WIN32
+#define __func__ __FUNCTION__
+#endif
+
 /** The maximum size an AFC data packet can be */
 static const int MAXIMUM_PACKET_SIZE = (2 << 15);
 
@@ -222,7 +226,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		service_send(client->parent, (const char*)client->afc_packet, sizeof(AFCPacket), &sent);
 		AFCPacket_from_LE(client->afc_packet);
 		if (sent == 0) {
 			/* FIXME: should this be handled as success?! */
@@ -257,7 +261,7 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 		/* send AFC packet header */
 		AFCPacket_to_LE(client->afc_packet);
 		sent = 0;
-		service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+		service_send(client->parent, (const char*)client->afc_packet, sizeof(AFCPacket), &sent);
 		AFCPacket_from_LE(client->afc_packet);
 		if (sent == 0) {
 			return AFC_E_SUCCESS;
@@ -1006,7 +1010,7 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
  */
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 {
-	char *buffer = malloc(sizeof(char) * 8);
+	char *buffer = (char *)malloc(sizeof(char)* 8);
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
@@ -1054,7 +1058,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
  */
 afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation)
 {
-	char *buffer = malloc(16);
+	char *buffer = (char *)malloc(16);
 	uint32_t bytes = 0;
 	uint64_t op = htole64(operation);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
