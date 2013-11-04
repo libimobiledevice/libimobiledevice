@@ -26,7 +26,7 @@
 #include <plist/plist.h>
 
 #ifndef LIBIMOBILEDEVICE_INTERNAL
-#ifdef _WIN32
+#ifdef WIN32
 #define LIBIMOBILEDEVICE_INTERNAL
 #else
 #define LIBIMOBILEDEVICE_INTERNAL __attribute__((visibility("hidden")))
