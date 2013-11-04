@@ -22,7 +22,7 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <windows.h>
 typedef HANDLE thread_t;
 typedef CRITICAL_SECTION mutex_t;
