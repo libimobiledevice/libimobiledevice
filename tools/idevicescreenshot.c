@@ -124,16 +124,16 @@ int main(int argc, char **argv)
 
 void print_usage(int argc, char **argv)
 {
-        char *name = NULL;
+	char *name = NULL;
 
-        name = strrchr(argv[0], '/');
-        printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-        printf("Gets a screenshot from a device.\n");
-        printf("The screenshot is saved as a TIFF image in the current directory.\n");
-        printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
-        printf("the screenshotr service is not available.\n\n");
-        printf("  -d, --debug\t\tenable communication debugging\n");
-        printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
-        printf("  -h, --help\t\tprints usage information\n");
-        printf("\n");
+	name = strrchr(argv[0], '/');
+	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
+	printf("Gets a screenshot from a device.\n");
+	printf("The screenshot is saved as a TIFF image in the current directory.\n");
+	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
+	printf("the screenshotr service is not available.\n\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("\n");
 }

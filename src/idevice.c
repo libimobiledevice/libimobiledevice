@@ -71,7 +71,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
 {
 	event_cb = callback;
 	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
-        if (res != 0) {
+	if (res != 0) {
 		event_cb = NULL;
 		debug_info("Error %d when subscribing usbmux event callback!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
@@ -597,28 +597,28 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 #ifndef STRIP_DEBUG_CODE
 static const char *errorstring(int e)
 {
-    switch(e) {
-	case SSL_ERROR_NONE:
-	    return "SSL_ERROR_NONE";
-	case SSL_ERROR_SSL:
-	    return "SSL_ERROR_SSL";
-	case SSL_ERROR_WANT_READ:
-	    return "SSL_ERROR_WANT_READ";
-	case SSL_ERROR_WANT_WRITE:
-	    return "SSL_ERROR_WANT_WRITE";
-	case SSL_ERROR_WANT_X509_LOOKUP:
-	    return "SSL_ERROR_WANT_X509_LOOKUP";
-	case SSL_ERROR_SYSCALL:
-	    return "SSL_ERROR_SYSCALL";
-	case SSL_ERROR_ZERO_RETURN:
-	    return "SSL_ERROR_ZERO_RETURN";
-        case SSL_ERROR_WANT_CONNECT:
-	    return "SSL_ERROR_WANT_CONNECT";
-	case SSL_ERROR_WANT_ACCEPT:
-	    return "SSL_ERROR_WANT_ACCEPT";
-	default:
-	    return "UNKOWN_ERROR_VALUE";
-    }
+	switch(e) {
+		case SSL_ERROR_NONE:
+			return "SSL_ERROR_NONE";
+		case SSL_ERROR_SSL:
+			return "SSL_ERROR_SSL";
+		case SSL_ERROR_WANT_READ:
+			return "SSL_ERROR_WANT_READ";
+		case SSL_ERROR_WANT_WRITE:
+			return "SSL_ERROR_WANT_WRITE";
+		case SSL_ERROR_WANT_X509_LOOKUP:
+			return "SSL_ERROR_WANT_X509_LOOKUP";
+		case SSL_ERROR_SYSCALL:
+			return "SSL_ERROR_SYSCALL";
+		case SSL_ERROR_ZERO_RETURN:
+			return "SSL_ERROR_ZERO_RETURN";
+		case SSL_ERROR_WANT_CONNECT:
+			return "SSL_ERROR_WANT_CONNECT";
+		case SSL_ERROR_WANT_ACCEPT:
+			return "SSL_ERROR_WANT_ACCEPT";
+		default:
+			return "UNKOWN_ERROR_VALUE";
+	}
 }
 #endif
 #endif
@@ -726,7 +726,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	SSL_set_bio(ssl, ssl_bio, ssl_bio);
 
 	return_me = SSL_do_handshake(ssl);
-        if (return_me != 1) {
+	if (return_me != 1) {
 		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
 		BIO_free(ssl_bio);
 		SSL_CTX_free(ssl_ctx);

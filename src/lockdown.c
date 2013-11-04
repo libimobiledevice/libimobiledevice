@@ -1195,6 +1195,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	}
 	plist_free(dict);
 	dict = NULL;
+
 	return ret;
 }
 
