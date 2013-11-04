@@ -548,15 +548,10 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	}
 
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
-	plist_dict_insert_item(dict, "Command", plist_new_string("Uninstall"));
 
 	instproxy_lock(client);
 	res = instproxy_send_command(client, "Uninstall", client_options, appid, NULL);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
