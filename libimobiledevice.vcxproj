@@ -41,9 +41,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(ProjectName)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(ProjectName)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -51,11 +53,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;%(PreprocessorDefinitions);HAVE_OPENSSL</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\usbmuxd\libusbmuxd</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -76,6 +82,86 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="common\debug.h" />
+    <ClInclude Include="common\socket.h" />
+    <ClInclude Include="common\thread.h" />
+    <ClInclude Include="common\userpref.h" />
+    <ClInclude Include="common\utils.h" />
+    <ClInclude Include="include\asprintf.h" />
+    <ClInclude Include="include\endianness.h" />
+    <ClInclude Include="include\libimobiledevice\afc.h" />
+    <ClInclude Include="include\libimobiledevice\diagnostics_relay.h" />
+    <ClInclude Include="include\libimobiledevice\file_relay.h" />
+    <ClInclude Include="include\libimobiledevice\heartbeat.h" />
+    <ClInclude Include="include\libimobiledevice\house_arrest.h" />
+    <ClInclude Include="include\libimobiledevice\installation_proxy.h" />
+    <ClInclude Include="include\libimobiledevice\libimobiledevice.h" />
+    <ClInclude Include="include\libimobiledevice\lockdown.h" />
+    <ClInclude Include="include\libimobiledevice\misagent.h" />
+    <ClInclude Include="include\libimobiledevice\mobilebackup.h" />
+    <ClInclude Include="include\libimobiledevice\mobilebackup2.h" />
+    <ClInclude Include="include\libimobiledevice\mobilesync.h" />
+    <ClInclude Include="include\libimobiledevice\mobile_image_mounter.h" />
+    <ClInclude Include="include\libimobiledevice\notification_proxy.h" />
+    <ClInclude Include="include\libimobiledevice\restore.h" />
+    <ClInclude Include="include\libimobiledevice\sbservices.h" />
+    <ClInclude Include="include\libimobiledevice\screenshotr.h" />
+    <ClInclude Include="include\libimobiledevice\service.h" />
+    <ClInclude Include="include\libimobiledevice\syslog_relay.h" />
+    <ClInclude Include="include\libimobiledevice\webinspector.h" />
+    <ClInclude Include="include\windows\dirent.h" />
+    <ClInclude Include="include\windows\unistd.h" />
+    <ClInclude Include="src\afc.h" />
+    <ClInclude Include="src\device_link_service.h" />
+    <ClInclude Include="src\diagnostics_relay.h" />
+    <ClInclude Include="src\file_relay.h" />
+    <ClInclude Include="src\heartbeat.h" />
+    <ClInclude Include="src\house_arrest.h" />
+    <ClInclude Include="src\idevice.h" />
+    <ClInclude Include="src\installation_proxy.h" />
+    <ClInclude Include="src\lockdown.h" />
+    <ClInclude Include="src\misagent.h" />
+    <ClInclude Include="src\mobilebackup.h" />
+    <ClInclude Include="src\mobilebackup2.h" />
+    <ClInclude Include="src\mobilesync.h" />
+    <ClInclude Include="src\mobile_image_mounter.h" />
+    <ClInclude Include="src\notification_proxy.h" />
+    <ClInclude Include="src\property_list_service.h" />
+    <ClInclude Include="src\restore.h" />
+    <ClInclude Include="src\sbservices.h" />
+    <ClInclude Include="src\screenshotr.h" />
+    <ClInclude Include="src\service.h" />
+    <ClInclude Include="src\syslog_relay.h" />
+    <ClInclude Include="src\webinspector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="common\debug.c" />
+    <ClCompile Include="common\socket.c" />
+    <ClCompile Include="common\thread.c" />
+    <ClCompile Include="common\userpref.c" />
+    <ClCompile Include="common\utils.c" />
+    <ClCompile Include="src\afc.c" />
+    <ClCompile Include="src\device_link_service.c" />
+    <ClCompile Include="src\diagnostics_relay.c" />
+    <ClCompile Include="src\file_relay.c" />
+    <ClCompile Include="src\heartbeat.c" />
+    <ClCompile Include="src\house_arrest.c" />
+    <ClCompile Include="src\idevice.c" />
+    <ClCompile Include="src\installation_proxy.c" />
+    <ClCompile Include="src\lockdown.c" />
+    <ClCompile Include="src\misagent.c" />
+    <ClCompile Include="src\mobilebackup.c" />
+    <ClCompile Include="src\mobilebackup2.c" />
+    <ClCompile Include="src\mobilesync.c" />
+    <ClCompile Include="src\mobile_image_mounter.c" />
+    <ClCompile Include="src\notification_proxy.c" />
+    <ClCompile Include="src\property_list_service.c" />
+    <ClCompile Include="src\restore.c" />
+    <ClCompile Include="src\sbservices.c" />
+    <ClCompile Include="src\screenshotr.c" />
+    <ClCompile Include="src\service.c" />
+    <ClCompile Include="src\syslog_relay.c" />
+    <ClCompile Include="src\webinspector.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

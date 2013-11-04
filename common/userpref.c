@@ -31,7 +31,9 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifndef WIN32
+#ifdef WIN32
+#include <direct.h>
+#else
 #include <pwd.h>
 #endif
 #include <unistd.h>
@@ -47,7 +49,9 @@
 #endif
 
 #include <dirent.h>
+#ifndef WIN32
 #include <libgen.h>
+#endif
 #include <sys/stat.h>
 #include <errno.h>
 
@@ -161,7 +165,7 @@ const char *userpref_get_config_dir()
 static int __mkdir(const char *dir, int mode)
 {
 #ifdef WIN32
-	return mkdir(dir);
+	return _mkdir(dir);
 #else
 	return mkdir(dir, mode);
 #endif
@@ -477,7 +481,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 {
 	struct slist_t {
 		char *name;
-		void *next;
+		slist_t *next;
 	};
 	DIR *config_dir;
 	const char *config_path = NULL;

@@ -1,2 +1,258 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" />
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{8e8f0a26-afee-45b1-9563-6f678de0bc58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{cc34f382-a2c7-49fc-9d09-a069b1dad94b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\libimobiledevice">
+      <UniqueIdentifier>{7a6ba14b-6ba1-4829-821c-0aa2ff2fa302}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\windows">
+      <UniqueIdentifier>{441442d7-1464-4988-a4b3-56d9d81f7457}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{43a565ca-8bd7-4ffe-94aa-a8d3aad7a5b8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\asprintf.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\endianness.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\dirent.h">
+      <Filter>include\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\unistd.h">
+      <Filter>include\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\afc.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\diagnostics_relay.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\file_relay.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\heartbeat.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\house_arrest.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\installation_proxy.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\libimobiledevice.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\lockdown.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\misagent.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\mobile_image_mounter.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\mobilebackup.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\mobilebackup2.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\mobilesync.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\notification_proxy.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\restore.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\sbservices.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\screenshotr.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\service.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\syslog_relay.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libimobiledevice\webinspector.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
+    <ClInclude Include="src\afc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\device_link_service.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\diagnostics_relay.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\file_relay.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heartbeat.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\house_arrest.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\idevice.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\installation_proxy.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lockdown.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\misagent.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mobile_image_mounter.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mobilebackup.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mobilebackup2.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mobilesync.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\notification_proxy.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\property_list_service.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\restore.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sbservices.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\screenshotr.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\service.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\syslog_relay.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\webinspector.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="common\debug.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\socket.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\thread.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\userpref.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\utils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\afc.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\device_link_service.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\diagnostics_relay.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\file_relay.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heartbeat.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\house_arrest.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\idevice.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\installation_proxy.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lockdown.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\misagent.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mobile_image_mounter.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mobilebackup.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mobilebackup2.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mobilesync.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\notification_proxy.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\property_list_service.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\restore.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sbservices.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\screenshotr.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\service.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syslog_relay.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\webinspector.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="common\debug.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\socket.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\thread.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\userpref.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\utils.c">
+      <Filter>common</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

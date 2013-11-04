@@ -32,6 +32,12 @@ extern "C" {
 #include <sys/stat.h>
 #include <plist/plist.h>
 
+#ifdef LIBIMOBILEDEVICE_EXPORTS
+#define LIBIMOBILEDEVICE_API __declspec(dllexport)
+#else
+#define LIBIMOBILEDEVICE_API __declspec(dllimport)
+#endif
+
 /** @name Error Codes */
 /*@{*/
 #define IDEVICE_E_SUCCESS                0
@@ -75,31 +81,31 @@ typedef struct {
 typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_data);
 
 /* functions */
-idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
-idevice_error_t idevice_event_unsubscribe();
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe();
 
 /* discovery (synchronous) */
-idevice_error_t idevice_get_device_list(char ***devices, int *count);
-idevice_error_t idevice_device_list_free(char **devices);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, int *count);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices);
 
 /* device structure creation and destruction */
-idevice_error_t idevice_new(idevice_t *device, const char *udid);
-idevice_error_t idevice_free(idevice_t device);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t *device, const char *udid);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_free(idevice_t device);
 
 /* connection/disconnection */
-idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection);
-idevice_error_t idevice_disconnect(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_disconnect(idevice_connection_t connection);
 
 /* communication */
-idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
-idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
-idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
-idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
-idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 /* misc */
-idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
-idevice_error_t idevice_get_udid(idevice_t device, char **udid);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
 #ifdef __cplusplus
 }
