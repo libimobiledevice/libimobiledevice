@@ -81,34 +81,34 @@ struct lockdownd_service_descriptor {
 typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
 
 /* Interface */
-lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
-lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
-lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
 
-lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
-lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
-lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
-lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
-lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
-lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
-lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
-lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
-lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
-lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
-lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
-lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
-lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
-lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
 
 /* Helper */
-void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
-lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **udid);
-lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
-lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count);
-lockdownd_error_t lockdownd_data_classes_free(char **classes);
-lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
+LIBIMOBILEDEVICE_API void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **udid);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_data_classes_free(char **classes);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
 
 #ifdef __cplusplus
 }
