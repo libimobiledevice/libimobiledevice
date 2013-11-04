@@ -171,6 +171,57 @@ static int __mkdir(const char *dir, int mode)
 #endif
 }
 
+#ifdef WIN32
+// Based on: http://stackoverflow.com/questions/675039/how-can-i-create-directory-tree-in-c-linux
+
+static int do_mkdir(const char *path)
+{
+	struct stat     st;
+	int             status = 0;
+
+	if (stat(path, &st) != 0)
+	{
+		/* Directory does not exist. EEXIST for race condition */
+		if (mkdir(path) != 0 && errno != EEXIST)
+			status = -1;
+	}
+	else if (!S_ISDIR(st.st_mode))
+	{
+		errno = ENOTDIR;
+		status = -1;
+	}
+
+	return(status);
+}
+
+int mkdir_with_parents(const char *path, int mode)
+{
+	char           *pp;
+	char           *sp;
+	int             status;
+	char           *copypath = strdup(path);
+
+	status = 0;
+	pp = copypath;
+	while (status == 0 && (sp = strchr(pp, '/')) != 0)
+	{
+		if (sp != pp)
+		{
+			/* Neither root nor double slash in path */
+			*sp = '\0';
+			status = do_mkdir(copypath);
+			*sp = '/';
+		}
+		pp = sp + 1;
+	}
+	if (status == 0)
+		status = do_mkdir(path);
+	free(copypath);
+	return (status);
+}
+
+#else
+
 static int mkdir_with_parents(const char *dir, int mode)
 {
 	if (!dir) return -1;
@@ -190,6 +241,7 @@ static int mkdir_with_parents(const char *dir, int mode)
 	free(parent);
 	return res;
 }
+#endif
 
 /**
  * Creates a freedesktop compatible configuration directory.
