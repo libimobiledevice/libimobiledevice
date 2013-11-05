@@ -1128,6 +1128,13 @@ userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_d
 			}
 		}
 
+		if (root_cert)
+			plist_free(root_cert);
+		if (host_cert)
+			plist_free(host_cert);
+		if (dev_cert)
+			plist_free(dev_cert);
+
 		return USERPREF_E_SUCCESS;
 	} else {
 		if (pem_root_cert->data) {
