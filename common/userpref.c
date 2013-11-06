@@ -782,22 +782,47 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 
 	if (root_cert && root_pkey && host_cert && host_pkey) {
 		BIO* membp;
+		char *bdata;
 
 		membp = BIO_new(BIO_s_mem());
 		if (PEM_write_bio_X509(membp, root_cert) > 0) {
-			root_cert_pem.size = BIO_get_mem_data(membp, &root_cert_pem.data);
+			root_cert_pem.size = BIO_get_mem_data(membp, &bdata);
+			root_cert_pem.data = (unsigned char*)malloc(root_cert_pem.size);
+			if (root_cert_pem.data) {
+				memcpy(root_cert_pem.data, bdata, root_cert_pem.size);
+			}
+			BIO_free(membp);
+			membp = NULL;
 		}
 		membp = BIO_new(BIO_s_mem());
 		if (PEM_write_bio_PrivateKey(membp, root_pkey, NULL, NULL, 0, 0, NULL) > 0) {
-			root_key_pem.size = BIO_get_mem_data(membp, &root_key_pem.data);
+			root_key_pem.size = BIO_get_mem_data(membp, &bdata);
+			root_key_pem.data = (unsigned char*)malloc(root_key_pem.size);
+			if (root_key_pem.data) {
+				memcpy(root_key_pem.data, bdata, root_key_pem.size);
+			}
+			BIO_free(membp);
+			membp = NULL;
 		}
 		membp = BIO_new(BIO_s_mem());
 		if (PEM_write_bio_X509(membp, host_cert) > 0) {
-			host_cert_pem.size = BIO_get_mem_data(membp, &host_cert_pem.data);
+			host_cert_pem.size = BIO_get_mem_data(membp, &bdata);
+			host_cert_pem.data = (unsigned char*)malloc(host_cert_pem.size);
+			if (host_cert_pem.data) {
+				memcpy(host_cert_pem.data, bdata, host_cert_pem.size);
+			}
+			BIO_free(membp);
+			membp = NULL;
 		}
 		membp = BIO_new(BIO_s_mem());
 		if (PEM_write_bio_PrivateKey(membp, host_pkey, NULL, NULL, 0, 0, NULL) > 0) {
-			host_key_pem.size = BIO_get_mem_data(membp, &host_key_pem.data);
+			host_key_pem.size = BIO_get_mem_data(membp, &bdata);
+			host_key_pem.data = (unsigned char*)malloc(host_key_pem.size);
+			if (host_key_pem.data) {
+				memcpy(host_key_pem.data, bdata, host_key_pem.size);
+			}
+			BIO_free(membp);
+			membp = NULL;
 		}
 	}
 
