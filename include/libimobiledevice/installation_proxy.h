@@ -40,6 +40,7 @@ extern "C" {
 #define INSTPROXY_E_CONN_FAILED           -3
 #define INSTPROXY_E_OP_IN_PROGRESS        -4
 #define INSTPROXY_E_OP_FAILED             -5
+#define INSTPROXY_E_RECEIVE_TIMEOUT       -6
 
 #define INSTPROXY_E_UNKNOWN_ERROR       -256
 /*@}*/
