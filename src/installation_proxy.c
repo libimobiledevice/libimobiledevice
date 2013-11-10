@@ -77,6 +77,8 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
 			return INSTPROXY_E_PLIST_ERROR;
 		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
 			return INSTPROXY_E_CONN_FAILED;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return INSTPROXY_E_RECEIVE_TIMEOUT;
 		default:
 			break;
 	}
