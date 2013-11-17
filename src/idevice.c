@@ -267,6 +267,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
 		usbmuxd_disconnect((int)(long)connection->data);
+		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
@@ -276,6 +277,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 		free(connection->udid);
 
 	free(connection);
+	connection = NULL;
 
 	return result;
 }

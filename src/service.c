@@ -157,7 +157,10 @@ service_error_t service_client_free(service_client_t client)
 		return SERVICE_E_INVALID_ARG;
 
 	service_error_t err = idevice_to_service_error(idevice_disconnect(client->connection));
+
 	free(client);
+	client = NULL;
+
 	return err;
 }
 

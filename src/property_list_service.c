@@ -101,7 +101,10 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
 	property_list_service_error_t err = service_to_property_list_service_error(service_client_free(client->parent));
+
 	free(client);
+	client = NULL;
+
 	return err;
 }
 

@@ -241,6 +241,7 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 	}
 
 	free(client);
+	client = NULL;
 
 	return ret;
 }
