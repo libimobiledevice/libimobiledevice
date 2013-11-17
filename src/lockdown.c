@@ -233,6 +233,10 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 		}
 	}
 
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
+	}
 	if (client->udid) {
 		free(client->udid);
 	}
