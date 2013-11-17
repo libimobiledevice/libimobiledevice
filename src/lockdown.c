@@ -1549,7 +1549,6 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* if we have a running session, stop current one first */
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
-		free(client->session_id);
 	}
 
 	/* setup request plist */
