@@ -327,7 +327,7 @@ static int internal_get_value(const char* config_file, const char *key, plist_t 
 		plist_t n = plist_dict_get_item(config, key);
 		if (n) {
 			*value = plist_copy(n);
-			plist_free(n);
+			//plist_free(n);
 			n = NULL;
 		}
 	}
