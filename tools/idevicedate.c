@@ -60,11 +60,13 @@ int main(int argc, char *argv[])
 	const char* udid = NULL;
 	time_t setdate = 0;
 	plist_t node = NULL;
+	int node_type = -1;
 	uint64_t datetime = 0;
 	time_t rawtime;
 	struct tm * tmp;
 	char const *format = NULL;
 	char buffer[80];
+	int result = 0;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -134,57 +136,86 @@ int main(int argc, char *argv[])
 	}
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicedate")) {
-		idevice_free(device);
-		return -1;
+		result = -1;
+		goto cleanup;
 	}
+
+	if(lockdownd_get_value(client, NULL, "TimeIntervalSince1970", &node) != LOCKDOWN_E_SUCCESS) {
+		fprintf(stderr, "ERROR: Unable to retrieve 'TimeIntervalSince1970' node from device.\n");
+		result = -1;
+		goto cleanup;
+	}
+
+	if (node == NULL) {
+		fprintf(stderr, "ERROR: Empty node for 'TimeIntervalSince1970' received.\n");
+		result = -1;
+		goto cleanup;
+	}
+
+	node_type = plist_get_node_type(node);
 
 	/* get or set? */
 	if (setdate == 0) {
 		/* get time value from device */
-		if(lockdownd_get_value(client, NULL, "TimeIntervalSince1970", &node) == LOCKDOWN_E_SUCCESS) {
-			if (node) {
-				switch (plist_get_node_type(node)) {
-				case PLIST_UINT:
-					plist_get_uint_val(node, &datetime);
-					break;
-				case PLIST_REAL:
-					{
+		switch (node_type) {
+			case PLIST_UINT:
+				plist_get_uint_val(node, &datetime);
+				break;
+			case PLIST_REAL:
+				{
 					double rv = 0;
 					plist_get_real_val(node, &rv);
 					datetime = rv;
-					}
-					break;
-				default:
-					fprintf(stderr, "Unexpected node type for 'TimeIntervalSince1970'\n");
-					break;
 				}
-				plist_free(node);
-				node = NULL;
-
-				/* date/time calculations */
-				rawtime = (time_t)datetime;
-				tmp = localtime(&rawtime);
-
-				/* finally we format and print the current date */
-				strftime(buffer, 80, format, tmp);
-				puts(buffer);
-			}
+				break;
+			default:
+				fprintf(stderr, "ERROR: Unexpected node type for 'TimeIntervalSince1970'\n");
+				break;
 		}
+		plist_free(node);
+		node = NULL;
+
+		/* date/time calculations */
+		rawtime = (time_t)datetime;
+		tmp = localtime(&rawtime);
+
+		/* finally we format and print the current date */
+		strftime(buffer, 80, format, tmp);
+		puts(buffer);
 	} else {
 		datetime = setdate;
 
-		if(lockdownd_set_value(client, NULL, "TimeIntervalSince1970", plist_new_uint(datetime)) == LOCKDOWN_E_SUCCESS) {
+		plist_free(node);
+		node = NULL;
+
+		switch (node_type) {
+			case PLIST_UINT:
+				node = plist_new_uint(datetime);
+				break;
+			case PLIST_REAL:
+				node = plist_new_real((double)datetime);
+				break;
+			default:
+				fprintf(stderr, "ERROR: Unexpected node type for 'TimeIntervalSince1970'\n");
+				break;
+		}
+
+		if(lockdownd_set_value(client, NULL, "TimeIntervalSince1970", node) == LOCKDOWN_E_SUCCESS) {
 			tmp = localtime(&setdate);
 			strftime(buffer, 80, format, tmp);
 			puts(buffer);
 		} else {
 			printf("ERROR: Failed to set date on device.\n");
 		}
+		node = NULL;
 	}
 
-	lockdownd_client_free(client);
-	idevice_free(device);
+cleanup:
+	if (client)
+		lockdownd_client_free(client);
 
-	return 0;
+	if (device)
+		idevice_free(device);
+
+	return result;
 }
-
