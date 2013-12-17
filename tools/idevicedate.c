@@ -43,6 +43,8 @@ static void print_usage(int argc, char **argv)
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	printf("Display the current date or set it on a device.\n\n");
+	printf("NOTE: Setting the time on iOS 6 and later is only supported\n");
+	printf("      in the setup wizard screens before device activation.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -s, --set TIMESTAMP\tset UTC time described by TIMESTAMP\n");
