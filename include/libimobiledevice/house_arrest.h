@@ -51,15 +51,15 @@ typedef struct house_arrest_client_private house_arrest_client_private;
 typedef house_arrest_client_private *house_arrest_client_t; /**< The client handle. */
 
 /* Interface */
-house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client);
-house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t* client, const char* label);
-house_arrest_error_t house_arrest_client_free(house_arrest_client_t client);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_free(house_arrest_client_t client);
 
-house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict);
-house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid);
-house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid);
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict);
 
-afc_error_t afc_client_new_from_house_arrest_client(house_arrest_client_t client, afc_client_t *afc_client);
+LIBIMOBILEDEVICE_API afc_error_t afc_client_new_from_house_arrest_client(house_arrest_client_t client, afc_client_t *afc_client);
 
 #ifdef __cplusplus
 }

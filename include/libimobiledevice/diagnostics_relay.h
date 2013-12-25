@@ -58,18 +58,18 @@ typedef int16_t diagnostics_relay_error_t;
 typedef struct diagnostics_relay_client_private diagnostics_relay_client_private;
 typedef diagnostics_relay_client_private *diagnostics_relay_client_t; /**< The client handle. */
 
-diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client);
-diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t* client, const char* label);
-diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client);
 
-diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client);
-diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client);
-diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
-diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
-diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
-diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* _class, plist_t* result);
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* _class, plist_t* result);
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result);
 
 #ifdef __cplusplus
 }

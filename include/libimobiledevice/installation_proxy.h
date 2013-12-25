@@ -54,25 +54,25 @@ typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */
 typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status, void *user_data);
 
 /* Interface */
-instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client);
-instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label);
-instproxy_error_t instproxy_client_free(instproxy_client_t client);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t client);
 
-instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);
-instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
-instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
-instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
-instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result);
-instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
-instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
-instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
 /* Helper */
-plist_t instproxy_client_options_new();
-void instproxy_client_options_add(plist_t client_options, ...);
-void instproxy_client_options_free(plist_t client_options);
-instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
+LIBIMOBILEDEVICE_API plist_t instproxy_client_options_new();
+LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, ...);
+LIBIMOBILEDEVICE_API void instproxy_client_options_free(plist_t client_options);
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
 
 #ifdef __cplusplus
 }

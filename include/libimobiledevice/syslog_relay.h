@@ -51,16 +51,16 @@ typedef syslog_relay_client_private *syslog_relay_client_t; /**< The client hand
 typedef void (*syslog_relay_receive_cb_t)(char c, void *user_data);
 
 /* Interface */
-syslog_relay_error_t syslog_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, syslog_relay_client_t * client);
-syslog_relay_error_t syslog_relay_client_start_service(idevice_t device, syslog_relay_client_t * client, const char* label);
-syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, syslog_relay_client_t * client);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_start_service(idevice_t device, syslog_relay_client_t * client, const char* label);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client);
 
-syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data);
-syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client);
 
 /* Receiving */
-syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
-syslog_relay_error_t syslog_relay_receive(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive(syslog_relay_client_t client, char *data, uint32_t size, uint32_t *received);
 
 #ifdef __cplusplus
 }

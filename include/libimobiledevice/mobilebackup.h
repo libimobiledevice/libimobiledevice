@@ -56,19 +56,19 @@ typedef enum {
 	MB_RESTORE_PRESERVE_CAMERA_ROLL = 1 << 2
 } mobilebackup_flags_t;
 
-mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
-mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t* client, const char* label);
-mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 
-mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
-mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
-mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
-mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
-mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
-mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
-mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result);
-mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
-mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
 
 #ifdef __cplusplus
 }

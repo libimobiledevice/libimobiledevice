@@ -51,17 +51,17 @@ typedef int16_t mobilebackup2_error_t;
 typedef struct mobilebackup2_client_private mobilebackup2_client_private;
 typedef mobilebackup2_client_private *mobilebackup2_client_t; /**< The client handle. */
 
-mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup2_client_t * client);
-mobilebackup2_error_t mobilebackup2_client_start_service(idevice_t device, mobilebackup2_client_t* client, const char* label);
-mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup2_client_t * client);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_start_service(idevice_t device, mobilebackup2_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client);
 
-mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options);
-mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage);
-mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
-mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes);
-mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version);
-mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options);
-mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options);
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2);
 
 #ifdef __cplusplus
 }

@@ -93,14 +93,14 @@ typedef np_client_private *np_client_t; /**< The client handle. */
 typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
-np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
-np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
-np_error_t np_client_free(np_client_t client);
+LIBIMOBILEDEVICE_API np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
+LIBIMOBILEDEVICE_API np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client);
 
-np_error_t np_post_notification(np_client_t client, const char *notification);
-np_error_t np_observe_notification(np_client_t client, const char *notification);
-np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
-np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
+LIBIMOBILEDEVICE_API np_error_t np_post_notification(np_client_t client, const char *notification);
+LIBIMOBILEDEVICE_API np_error_t np_observe_notification(np_client_t client, const char *notification);
+LIBIMOBILEDEVICE_API np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
+LIBIMOBILEDEVICE_API np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
 
 #ifdef __cplusplus
 }

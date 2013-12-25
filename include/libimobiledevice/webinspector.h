@@ -48,13 +48,13 @@ typedef int16_t webinspector_error_t;
 typedef struct webinspector_client_private webinspector_client_private;
 typedef webinspector_client_private *webinspector_client_t; /**< The client handle. */
 
-webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client);
-webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label);
-webinspector_error_t webinspector_client_free(webinspector_client_t client);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_free(webinspector_client_t client);
 
-webinspector_error_t webinspector_send(webinspector_client_t client, plist_t plist);
-webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t * plist);
-webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t client, plist_t * plist, uint32_t timeout_ms);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_send(webinspector_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t * plist);
+LIBIMOBILEDEVICE_API webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t client, plist_t * plist, uint32_t timeout_ms);
 
 #ifdef __cplusplus
 }

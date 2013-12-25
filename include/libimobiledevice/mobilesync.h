@@ -68,36 +68,36 @@ typedef struct {
 typedef mobilesync_anchors *mobilesync_anchors_t; /**< Anchors used by the device and computer. */
 
 /* Interface */
-mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilesync_client_t * client);
-mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t* client, const char* label);
-mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilesync_client_t * client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_free(mobilesync_client_t client);
 
-mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
-mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t *plist);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist);
 
-mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description);
-mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason);
-mobilesync_error_t mobilesync_finish(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_finish(mobilesync_client_t client);
 
-mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client);
-mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client);
-mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client);
 
-mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions);
-mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client);
 
-mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client);
 
-mobilesync_error_t mobilesync_send_changes(mobilesync_client_t client, plist_t entities, uint8_t is_last_record, plist_t actions);
-mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plist_t *mapping);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_send_changes(mobilesync_client_t client, plist_t entities, uint8_t is_last_record, plist_t actions);
+LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plist_t *mapping);
 
 /* Helper */
-mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor);
-void mobilesync_anchors_free(mobilesync_anchors_t anchors);
+LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor);
+LIBIMOBILEDEVICE_API void mobilesync_anchors_free(mobilesync_anchors_t anchors);
 
-plist_t mobilesync_actions_new();
-void mobilesync_actions_add(plist_t actions, ...);
-void mobilesync_actions_free(plist_t actions);
+LIBIMOBILEDEVICE_API plist_t mobilesync_actions_new();
+LIBIMOBILEDEVICE_API void mobilesync_actions_add(plist_t actions, ...);
+LIBIMOBILEDEVICE_API void mobilesync_actions_free(plist_t actions);
 
 #ifdef __cplusplus
 }

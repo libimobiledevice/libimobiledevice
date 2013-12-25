@@ -51,3 +51,6 @@ tools/ideviceimagemounter
 tools/idevicescreenshot
 cython/.libs/*
 cython/*.c
+libimobiledevice-Debug/
+libimobiledevice-Release/
+*.sdf

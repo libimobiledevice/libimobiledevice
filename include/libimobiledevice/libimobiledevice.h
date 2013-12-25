@@ -59,7 +59,7 @@ typedef struct idevice_connection_private idevice_connection_private;
 typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
 /* generic */
-void idevice_set_debug_level(int level);
+LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level);
 
 /* discovery (events/asynchronous) */
 /** The event type for device add or removal */

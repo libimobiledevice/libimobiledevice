@@ -53,7 +53,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;%(PreprocessorDefinitions);HAVE_OPENSSL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;HAVE_OPENSSL;plist_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\usbmuxd\libusbmuxd</AdditionalIncludeDirectories>
     </ClCompile>
@@ -63,6 +63,7 @@
       <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -73,13 +74,20 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;HAVE_OPENSSL;plist_EXPORTS;STRIP_DEBUG_CODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\usbmuxd\libusbmuxd</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
+      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib</AdditionalLibraryDirectories>
+      <ImageHasSafeExceptionHandlers>
+      </ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -174,6 +182,9 @@
     <ProjectReference Include="..\usbmuxd\usbmuxd.vcxproj">
       <Project>{517e1599-9a39-4dd2-bb39-b36faf28f7ad}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libimobiledevice.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

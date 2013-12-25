@@ -49,16 +49,16 @@ typedef service_client_private* service_client_t; /**< The client handle. */
 #define SERVICE_CONSTRUCTOR(x) (int16_t (*)(idevice_t, lockdownd_service_descriptor_t, void**))(x)
 
 /* Interface */
-service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client);
-service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code);
-service_error_t service_client_free(service_client_t client);
+LIBIMOBILEDEVICE_API service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client);
+LIBIMOBILEDEVICE_API service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t(*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code);
+LIBIMOBILEDEVICE_API service_error_t service_client_free(service_client_t client);
 
-service_error_t service_send(service_client_t client, const char *data, uint32_t size, uint32_t *sent);
-service_error_t service_receive_with_timeout(service_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
-service_error_t service_receive(service_client_t client, char *data, uint32_t size, uint32_t *received);
+LIBIMOBILEDEVICE_API service_error_t service_send(service_client_t client, const char *data, uint32_t size, uint32_t *sent);
+LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
+LIBIMOBILEDEVICE_API service_error_t service_receive(service_client_t client, char *data, uint32_t size, uint32_t *received);
 
-service_error_t service_enable_ssl(service_client_t client);
-service_error_t service_disable_ssl(service_client_t client);
+LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client);
+LIBIMOBILEDEVICE_API service_error_t service_disable_ssl(service_client_t client);
 
 #ifdef __cplusplus
 }
