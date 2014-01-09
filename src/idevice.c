@@ -738,6 +738,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return_me = SSL_do_handshake(ssl);
 	if (return_me != 1) {
 		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
+		SSL_free(ssl);
 		SSL_CTX_free(ssl_ctx);
 	} else {
 		ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
