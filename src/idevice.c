@@ -738,13 +738,11 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return_me = SSL_do_handshake(ssl);
 	if (return_me != 1) {
 		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
-		BIO_free(ssl_bio);
 		SSL_CTX_free(ssl_ctx);
 	} else {
 		ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 		ssl_data_loc->session = ssl;
 		ssl_data_loc->ctx = ssl_ctx;
-		ssl_data_loc->bio = ssl_bio;
 		connection->ssl_data = ssl_data_loc;
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
