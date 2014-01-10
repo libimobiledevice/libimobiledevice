@@ -30,7 +30,7 @@ Installation
 ============
 
 To compile run:
-	./configure
+	./autogen.sh
 	make
 	sudo make install
 
