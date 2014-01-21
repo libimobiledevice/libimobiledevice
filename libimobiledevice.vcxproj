@@ -19,15 +19,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -42,10 +42,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(ProjectName)-$(Configuration)\</IntDir>
+    <OutDir>C:\dev\include\libimobiledevice\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectName)-$(Configuration)\</IntDir>
+    <OutDir>C:\dev\include\libimobiledevice\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -60,7 +62,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
@@ -85,7 +87,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
       <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
     </Link>
@@ -178,9 +180,6 @@
     </ProjectReference>
     <ProjectReference Include="..\libplist\libplist.vcxproj">
       <Project>{75352a45-bcb8-4774-8c66-3af9ea6b6b42}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\usbmuxd\usbmuxd.vcxproj">
-      <Project>{517e1599-9a39-4dd2-bb39-b36faf28f7ad}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
