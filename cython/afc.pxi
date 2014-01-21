@@ -171,8 +171,9 @@ cdef class AfcClient(BaseService):
     __service_name__ = "com.apple.afc"
     cdef afc_client_t _c_client
 
-    def __cinit__(self, iDevice device not None, LockdownServiceDescriptor descriptor, *args, **kwargs):
-        self.handle_error(afc_client_new(device._c_dev, descriptor._c_service_descriptor, &(self._c_client)))
+    def __cinit__(self, iDevice device = None, LockdownServiceDescriptor descriptor = None, *args, **kwargs):
+        if (device is not None and descriptor is not None):
+            self.handle_error(afc_client_new(device._c_dev, descriptor._c_service_descriptor, &(self._c_client)))
     
     def __dealloc__(self):
         cdef afc_error_t err
