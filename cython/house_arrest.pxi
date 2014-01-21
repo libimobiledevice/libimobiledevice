@@ -48,10 +48,10 @@ cdef class HouseArrestClient(PropertyListService):
     cdef inline BaseError _error(self, int16_t ret):
         return HouseArrestError(ret)
 
-    cdef send_request(self, plist.Node message):
+    cpdef send_request(self, plist.Node message):
         self.handle_error(house_arrest_send_request(self._c_client, message._c_node))
 
-    cdef send_command(self, bytes command, bytes appid):
+    cpdef send_command(self, bytes command, bytes appid):
         self.handle_error(house_arrest_send_command(self._c_client, command, appid))
 
     cpdef plist.Node get_result(self):
