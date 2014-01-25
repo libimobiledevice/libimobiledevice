@@ -269,7 +269,7 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		lockdownd_stop_session(client, client->session_id);
 	}
 
-	if (!client->ssl_enabled) {
+	if (client->parent) {
 		lockdownd_goodbye(client);
 	}
 
@@ -1173,7 +1173,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
  */
 lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 {
-	if (!client || !client->parent)
+	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
