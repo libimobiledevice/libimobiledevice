@@ -827,3 +827,31 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 	return IDEVICE_E_SUCCESS;
 }
 
+/**
+* Sets the usbmuxd tcp port
+*
+* @param The new tcp port
+*
+* @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
+* is zero.
+*/
+idevice_error_t idevice_set_usbmuxd_port(uint16_t port)
+{
+	if (0 == port)
+	{
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	libusbmuxd_set_socket_port(port);
+	return IDEVICE_E_SUCCESS;
+}
+
+/**
+* Returns the usbmuxd tcp port
+*
+* @return usbmuxd's tcp port.
+*/
+uint16_t idevice_get_usbmuxd_port()
+{
+	return libusbmuxd_get_socket_port();
+}

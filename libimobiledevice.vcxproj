@@ -90,6 +90,7 @@
       <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

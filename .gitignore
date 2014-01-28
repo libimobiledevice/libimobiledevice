@@ -54,3 +54,4 @@ cython/*.c
 libimobiledevice-Debug/
 libimobiledevice-Release/
 *.sdf
+Debug/

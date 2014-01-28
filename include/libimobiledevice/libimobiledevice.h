@@ -107,6 +107,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
+/* usbmuxd */
+LIBIMOBILEDEVICE_API idevice_error_t idevice_set_usbmuxd_port(uint16_t port);
+LIBIMOBILEDEVICE_API uint16_t idevice_get_usbmuxd_port();
+
 #ifdef __cplusplus
 }
 #endif

@@ -17,6 +17,8 @@ EXPORTS
 	idevice_get_handle
 	idevice_get_udid
 	idevice_set_debug_level
+	idevice_set_usbmuxd_port
+	idevice_get_usbmuxd_port
 
 	lockdownd_client_new
 	lockdownd_client_new_with_handshake
