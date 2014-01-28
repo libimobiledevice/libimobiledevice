@@ -254,6 +254,9 @@
     <ClCompile Include="common\utils.c">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="memory.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="libimobiledevice.def" />

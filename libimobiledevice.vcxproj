@@ -152,6 +152,7 @@
     <ClCompile Include="common\thread.c" />
     <ClCompile Include="common\userpref.c" />
     <ClCompile Include="common\utils.c" />
+    <ClCompile Include="memory.c" />
     <ClCompile Include="src\afc.c" />
     <ClCompile Include="src\device_link_service.c" />
     <ClCompile Include="src\diagnostics_relay.c" />

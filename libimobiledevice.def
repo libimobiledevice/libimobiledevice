@@ -1,6 +1,8 @@
 LIBRARY "libimobiledevice"
 
 EXPORTS
+	libimobiledevice_free
+
 	idevice_event_subscribe
 	idevice_event_unsubscribe
 	idevice_get_device_list
