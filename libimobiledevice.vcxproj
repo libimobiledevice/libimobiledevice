@@ -90,7 +90,8 @@
       <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -175,14 +176,6 @@
     <ClCompile Include="src\service.c" />
     <ClCompile Include="src\syslog_relay.c" />
     <ClCompile Include="src\webinspector.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libplist\libcnary.vcxproj">
-      <Project>{59f2b61d-85ba-4094-838f-3ece45ce0651}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\libplist\libplist.vcxproj">
-      <Project>{75352a45-bcb8-4774-8c66-3af9ea6b6b42}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="libimobiledevice.def" />
