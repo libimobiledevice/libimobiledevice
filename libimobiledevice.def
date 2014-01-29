@@ -290,3 +290,4 @@ EXPORTS
 	plist_access_path
 	plist_access_pathv
 	plist_compare_node_value
+	plist_free_memory
