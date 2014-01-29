@@ -5,6 +5,7 @@
 */
 
 #include <stdlib.h>
+#include "libimobiledevice/libimobiledevice.h"
 
 /**
 * Frees memory allocated in libimobiledevice (using malloc).
