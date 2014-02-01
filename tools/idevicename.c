@@ -47,8 +47,6 @@ int main(int argc, char** argv)
 		{ NULL, 0, NULL, 0}
 	};
 
-	signal(SIGPIPE, SIG_IGN);
-
 	while ((c = getopt_long(argc, argv, "u:", longopts, &optidx)) != -1) {
 		switch (c) {
 		case 'u':
