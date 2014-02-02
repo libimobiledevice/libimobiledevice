@@ -30,7 +30,7 @@ Installation
 ============
 
 To compile run:
-	./configure
+	./autogen.sh
 	make
 	sudo make install
 
@@ -63,4 +63,4 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2013-11-17
+	2014-02-02
