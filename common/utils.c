@@ -88,7 +88,7 @@ char *string_concat(const char *str, ...)
 
 	/* Concat each string */
 
-	result = malloc(len);
+	result = (char *)malloc(len);
 	if (!result)
 		return NULL; /* errno remains set */
 
