@@ -57,6 +57,7 @@
 
 #ifdef WIN32
 #include <shlobj.h>
+#include <shlwapi.h>
 #endif
 
 #include "userpref.h"
@@ -80,6 +81,8 @@
 #endif
 
 #define USERPREF_CONFIG_FILE "SystemConfiguration"USERPREF_CONFIG_EXTENSION
+
+#define USERPREF_LOCAL_CONFIG_FILE "Config"DIR_SEP_S"LockdownConfiguration"USERPREF_CONFIG_EXTENSION
 
 static char *__config_dir = NULL;
 
@@ -118,6 +121,15 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 }
 #endif
 
+static int userpref_has_local_config()
+{
+	#ifdef WIN32
+	return PathFileExists(USERPREF_LOCAL_CONFIG_FILE);
+	#endif
+
+	return 0;
+}
+
 const char *userpref_get_config_dir()
 {
 	char *base_config_dir = NULL;
@@ -131,12 +143,24 @@ const char *userpref_get_config_dir()
 	LPITEMIDLIST pidl = NULL;
 	BOOL b = FALSE;
 
-	hr = SHGetSpecialFolderLocation (NULL, CSIDL_COMMON_APPDATA, &pidl);
-	if (hr == S_OK) {
-		b = SHGetPathFromIDListW (pidl, path);
-		if (b) {
-			base_config_dir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
-			CoTaskMemFree (pidl);
+	/* If we are using our own, local, config file, we are not sharing our data with
+	 * others, so we'll store our device records in the user's temp dir */
+	if (userpref_has_local_config())
+	{
+		base_config_dir = (char *)malloc(MAX_PATH + 1);
+		GetTempPath(MAX_PATH + 1, base_config_dir);
+	}
+	else
+	{
+		hr = SHGetSpecialFolderLocation(NULL, CSIDL_COMMON_APPDATA, &pidl);
+		if (hr == S_OK)
+		{
+			b = SHGetPathFromIDListW(pidl, path);
+			if (b)
+			{
+				base_config_dir = userpref_utf16_to_utf8(path, wcslen(path), NULL, NULL);
+				CoTaskMemFree(pidl);
+			}
 		}
 	}
 #else
@@ -341,6 +365,11 @@ int userpref_set_value(const char *key, plist_t value)
 	const char *config_path = NULL;
 	char *config_file = NULL;
 
+	if (userpref_has_local_config())
+	{
+		return internal_set_value(USERPREF_LOCAL_CONFIG_FILE, key, value);
+	}
+	
 	/* Make sure config directory exists */
 	userpref_create_config_dir();
 
@@ -397,9 +426,14 @@ int userpref_get_value(const char *key, plist_t *value)
 	const char *config_path = NULL;
 	char *config_file = NULL;
 
+	if (userpref_has_local_config())
+	{
+		return internal_get_value(USERPREF_LOCAL_CONFIG_FILE, key, value);
+	}
+	
 	config_path = userpref_get_config_dir();
 	config_file = string_concat(config_path, DIR_SEP_S, USERPREF_CONFIG_FILE, NULL);
-
+	
 	int result = internal_get_value(config_file, key, value);
 
 	free(config_file);
@@ -471,6 +505,15 @@ void userpref_device_record_get_host_id(const char *udid, char **host_id)
 
 	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
 		plist_get_string_val(value, host_id);
+	}
+	else
+	{
+		/* Try to get it from the local config */
+		userpref_get_value(USERPREF_HOST_ID_KEY, &value);
+		if (value && (plist_get_node_type(value) == PLIST_STRING))
+		{
+			plist_get_string_val(value, host_id);
+		}
 	}
 
 	if (value)
@@ -731,6 +774,84 @@ static int userpref_get_file_contents(const char *file, key_data_t * data)
 #endif
 
 /**
+* Private function which reads a key\cert from a plist
+*
+* @return 1 if the key\cert was successfully read, 0 otherwise
+*/
+static int userpref_get_key_from_conf(plist_t conf, const char * name, key_data_t * key)
+{
+	plist_t value = NULL;
+	char * key_data = NULL;
+	uint64_t key_size = 0;
+
+	value = plist_dict_get_item(conf, name);
+	if (value && (plist_get_node_type(value) == PLIST_DATA))
+	{
+		plist_get_data_val(value, &key_data, &key_size);
+		key->data = (unsigned char *)key_data;
+		key->size = key_size;
+
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+* Private function which tries to read the keys and certs from the local config file.
+*
+* @return 1 if keys\certs were successfully read, 0 otherwise
+*/
+static int userpref_get_keys_and_cert_from_local_conf(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
+{
+	if (!userpref_has_local_config())
+	{
+		return 0;
+	}
+
+	/* Read the local config dir */
+	plist_t local_config = NULL;
+	if (!plist_read_from_filename(&local_config, USERPREF_LOCAL_CONFIG_FILE))
+	{
+		debug_info("ERROR: Failed to read local config file");
+		return USERPREF_E_INVALID_CONF;
+	}
+
+	/* Read the keys and certificates from the config file */
+	if (userpref_get_key_from_conf(local_config, USERPREF_HOST_PRIVATE_KEY_KEY, host_key) &&
+		userpref_get_key_from_conf(local_config, USERPREF_HOST_CERTIFICATE_KEY, host_cert) &&
+		userpref_get_key_from_conf(local_config, USERPREF_ROOT_PRIVATE_KEY_KEY, root_key) &&
+		userpref_get_key_from_conf(local_config, USERPREF_ROOT_CERTIFICATE_KEY, root_cert))
+	{
+		plist_free(local_config);
+		return 1;
+	}
+
+	debug_info("ERROR: Failed to read keys\cerst from local conf");
+
+	/* We've failed - cleanup */
+	plist_free(local_config);
+	if (root_key->data)
+	{
+		free(root_key->data);
+	}
+	if (root_cert->data)
+	{
+		free(root_cert->data);
+	}
+	if (host_key->data)
+	{
+		free(host_key->data);
+	}
+	if (host_cert->data)
+	{
+		free(host_cert->data);
+	}
+
+	return 0;
+}
+
+/**
  * Private function which generate private keys and certificates.
  *
  * @return 1 if keys were successfully generated, 0 otherwise
@@ -744,197 +865,204 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
 
-	debug_info("generating keys and certificates");
-#ifdef HAVE_OPENSSL
-	BIGNUM *e = BN_new();
-	RSA* root_keypair = RSA_new();
-	RSA* host_keypair = RSA_new();
-
-	BN_set_word(e, 65537);
-
-	RSA_generate_key_ex(root_keypair, 2048, e, NULL);
-	RSA_generate_key_ex(host_keypair, 2048, e, NULL);
-
-	BN_free(e);
-
-	EVP_PKEY* root_pkey = EVP_PKEY_new();
-	EVP_PKEY_assign_RSA(root_pkey, root_keypair);
-
-	EVP_PKEY* host_pkey = EVP_PKEY_new();
-	EVP_PKEY_assign_RSA(host_pkey, host_keypair);
-
-	/* generate root certificate */
-	X509* root_cert = X509_new();
+	if (userpref_get_keys_and_cert_from_local_conf(&root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem))
 	{
-		/* set serial number */
-		ASN1_INTEGER* sn = ASN1_INTEGER_new();
-		ASN1_INTEGER_set(sn, 0);
-		X509_set_serialNumber(root_cert, sn);
-		ASN1_INTEGER_free(sn);
-
-		/* set version */
-		X509_set_version(root_cert, 2);
-
-		/* set x509v3 basic constraints */
-		X509_EXTENSION* ext;
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:TRUE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
-		}
-		X509_add_ext(root_cert, ext, -1);
-
-		/* set key validity */
-		ASN1_TIME* asn1time = ASN1_TIME_new();
-		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(root_cert, asn1time);
-		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(root_cert, asn1time);
-		ASN1_TIME_free(asn1time);
-
-		/* use root public key for root cert */
-		X509_set_pubkey(root_cert, root_pkey);
-		/* sign root cert with root private key */
-		X509_sign(root_cert, root_pkey, EVP_sha1());
+		debug_info("Using keys and certificates from the local config");
 	}
-
-	/* create host certificate */
-	X509* host_cert = X509_new();
+	else
 	{
-		/* set serial number */
-		ASN1_INTEGER* sn = ASN1_INTEGER_new();
-		ASN1_INTEGER_set(sn, 0);
-		X509_set_serialNumber(host_cert, sn);
-		ASN1_INTEGER_free(sn);
+		debug_info("generating keys and certificates");
+	#ifdef HAVE_OPENSSL
+		BIGNUM *e = BN_new();
+		RSA* root_keypair = RSA_new();
+		RSA* host_keypair = RSA_new();
 
-		/* set version */
-		X509_set_version(host_cert, 2);
+		BN_set_word(e, 65537);
 
-		/* set x509v3 basic constraints */
-		X509_EXTENSION* ext;
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		RSA_generate_key_ex(root_keypair, 2048, e, NULL);
+		RSA_generate_key_ex(host_keypair, 2048, e, NULL);
+
+		BN_free(e);
+
+		EVP_PKEY* root_pkey = EVP_PKEY_new();
+		EVP_PKEY_assign_RSA(root_pkey, root_keypair);
+
+		EVP_PKEY* host_pkey = EVP_PKEY_new();
+		EVP_PKEY_assign_RSA(host_pkey, host_keypair);
+
+		/* generate root certificate */
+		X509* root_cert = X509_new();
+		{
+			/* set serial number */
+			ASN1_INTEGER* sn = ASN1_INTEGER_new();
+			ASN1_INTEGER_set(sn, 0);
+			X509_set_serialNumber(root_cert, sn);
+			ASN1_INTEGER_free(sn);
+
+			/* set version */
+			X509_set_version(root_cert, 2);
+
+			/* set x509v3 basic constraints */
+			X509_EXTENSION* ext;
+			if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:TRUE"))) {
+				debug_info("ERROR: X509V3_EXT_conf_nid failed");
+			}
+			X509_add_ext(root_cert, ext, -1);
+
+			/* set key validity */
+			ASN1_TIME* asn1time = ASN1_TIME_new();
+			ASN1_TIME_set(asn1time, time(NULL));
+			X509_set_notBefore(root_cert, asn1time);
+			ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+			X509_set_notAfter(root_cert, asn1time);
+			ASN1_TIME_free(asn1time);
+
+			/* use root public key for root cert */
+			X509_set_pubkey(root_cert, root_pkey);
+			/* sign root cert with root private key */
+			X509_sign(root_cert, root_pkey, EVP_sha1());
 		}
-		X509_add_ext(host_cert, ext, -1);
 
-		/* set x509v3 key usage */
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"digitalSignature,keyEncipherment"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
+		/* create host certificate */
+		X509* host_cert = X509_new();
+		{
+			/* set serial number */
+			ASN1_INTEGER* sn = ASN1_INTEGER_new();
+			ASN1_INTEGER_set(sn, 0);
+			X509_set_serialNumber(host_cert, sn);
+			ASN1_INTEGER_free(sn);
+
+			/* set version */
+			X509_set_version(host_cert, 2);
+
+			/* set x509v3 basic constraints */
+			X509_EXTENSION* ext;
+			if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
+				debug_info("ERROR: X509V3_EXT_conf_nid failed");
+			}
+			X509_add_ext(host_cert, ext, -1);
+
+			/* set x509v3 key usage */
+			if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"digitalSignature,keyEncipherment"))) {
+				debug_info("ERROR: X509V3_EXT_conf_nid failed");
+			}
+			X509_add_ext(host_cert, ext, -1);
+
+			/* set key validity */
+			ASN1_TIME* asn1time = ASN1_TIME_new();
+			ASN1_TIME_set(asn1time, time(NULL));
+			X509_set_notBefore(host_cert, asn1time);
+			ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+			X509_set_notAfter(host_cert, asn1time);
+			ASN1_TIME_free(asn1time);
+
+			/* use host public key for host cert */	
+			X509_set_pubkey(host_cert, host_pkey);
+
+			/* sign host cert with root private key */
+			X509_sign(host_cert, root_pkey, EVP_sha1());
 		}
-		X509_add_ext(host_cert, ext, -1);
 
-		/* set key validity */
-		ASN1_TIME* asn1time = ASN1_TIME_new();
-		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(host_cert, asn1time);
-		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(host_cert, asn1time);
-		ASN1_TIME_free(asn1time);
+		if (root_cert && root_pkey && host_cert && host_pkey) {
+			BIO* membp;
 
-		/* use host public key for host cert */	
-		X509_set_pubkey(host_cert, host_pkey);
+			membp = BIO_new(BIO_s_mem());
+			if (PEM_write_bio_X509(membp, root_cert) > 0) {
+				root_cert_pem.size = BIO_get_mem_data(membp, &root_cert_pem.data);
+			}
+			membp = BIO_new(BIO_s_mem());
+			if (PEM_write_bio_PrivateKey(membp, root_pkey, NULL, NULL, 0, 0, NULL) > 0) {
+				root_key_pem.size = BIO_get_mem_data(membp, &root_key_pem.data);
+			}
+			membp = BIO_new(BIO_s_mem());
+			if (PEM_write_bio_X509(membp, host_cert) > 0) {
+				host_cert_pem.size = BIO_get_mem_data(membp, &host_cert_pem.data);
+			}
+			membp = BIO_new(BIO_s_mem());
+			if (PEM_write_bio_PrivateKey(membp, host_pkey, NULL, NULL, 0, 0, NULL) > 0) {
+				host_key_pem.size = BIO_get_mem_data(membp, &host_key_pem.data);
+			}
+		}
 
-		/* sign host cert with root private key */
-		X509_sign(host_cert, root_pkey, EVP_sha1());
+		EVP_PKEY_free(root_pkey);
+		EVP_PKEY_free(host_pkey);
+
+		X509_free(host_cert);
+		X509_free(root_cert);
+	#else
+		gnutls_x509_privkey_t root_privkey;
+		gnutls_x509_crt_t root_cert;
+		gnutls_x509_privkey_t host_privkey;
+		gnutls_x509_crt_t host_cert;
+
+		gnutls_global_deinit();
+		gnutls_global_init();
+
+		/* use less secure random to speed up key generation */
+		gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM);
+
+		gnutls_x509_privkey_init(&root_privkey);
+		gnutls_x509_privkey_init(&host_privkey);
+
+		gnutls_x509_crt_init(&root_cert);
+		gnutls_x509_crt_init(&host_cert);
+
+		/* generate root key */
+		gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
+		gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
+
+		/* generate certificates */
+		gnutls_x509_crt_set_key(root_cert, root_privkey);
+		gnutls_x509_crt_set_serial(root_cert, "\x00", 1);
+		gnutls_x509_crt_set_version(root_cert, 3);
+		gnutls_x509_crt_set_ca_status(root_cert, 1);
+		gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
+		gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
+
+		gnutls_x509_crt_set_key(host_cert, host_privkey);
+		gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
+		gnutls_x509_crt_set_version(host_cert, 3);
+		gnutls_x509_crt_set_ca_status(host_cert, 0);
+		gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
+		gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
+		gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);
+
+		/* export to PEM format */
+		size_t root_key_export_size = 0;
+		size_t host_key_export_size = 0;
+
+		gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_export_size);
+		gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_export_size);
+
+		root_key_pem.data = gnutls_malloc(root_key_export_size);
+		host_key_pem.data = gnutls_malloc(host_key_export_size);
+
+		gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, root_key_pem.data, &root_key_export_size);
+		root_key_pem.size = root_key_export_size;
+		gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, host_key_pem.data, &host_key_export_size);
+		host_key_pem.size = host_key_export_size;
+
+		size_t root_cert_export_size = 0;
+		size_t host_cert_export_size = 0;
+
+		gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_export_size);
+		gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_export_size);
+
+		root_cert_pem.data = gnutls_malloc(root_cert_export_size);
+		host_cert_pem.data = gnutls_malloc(host_cert_export_size);
+
+		gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, root_cert_pem.data, &root_cert_export_size);
+		root_cert_pem.size = root_cert_export_size;
+		gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
+		host_cert_pem.size = host_cert_export_size;
+
+		/* restore gnutls env */
+		gnutls_global_deinit();
+		gnutls_global_init();
+	#endif
 	}
-
-	if (root_cert && root_pkey && host_cert && host_pkey) {
-		BIO* membp;
-
-		membp = BIO_new(BIO_s_mem());
-		if (PEM_write_bio_X509(membp, root_cert) > 0) {
-			root_cert_pem.size = BIO_get_mem_data(membp, &root_cert_pem.data);
-		}
-		membp = BIO_new(BIO_s_mem());
-		if (PEM_write_bio_PrivateKey(membp, root_pkey, NULL, NULL, 0, 0, NULL) > 0) {
-			root_key_pem.size = BIO_get_mem_data(membp, &root_key_pem.data);
-		}
-		membp = BIO_new(BIO_s_mem());
-		if (PEM_write_bio_X509(membp, host_cert) > 0) {
-			host_cert_pem.size = BIO_get_mem_data(membp, &host_cert_pem.data);
-		}
-		membp = BIO_new(BIO_s_mem());
-		if (PEM_write_bio_PrivateKey(membp, host_pkey, NULL, NULL, 0, 0, NULL) > 0) {
-			host_key_pem.size = BIO_get_mem_data(membp, &host_key_pem.data);
-		}
-	}
-
-	EVP_PKEY_free(root_pkey);
-	EVP_PKEY_free(host_pkey);
-
-	X509_free(host_cert);
-	X509_free(root_cert);
-#else
-	gnutls_x509_privkey_t root_privkey;
-	gnutls_x509_crt_t root_cert;
-	gnutls_x509_privkey_t host_privkey;
-	gnutls_x509_crt_t host_cert;
-
-	gnutls_global_deinit();
-	gnutls_global_init();
-
-	/* use less secure random to speed up key generation */
-	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM);
-
-	gnutls_x509_privkey_init(&root_privkey);
-	gnutls_x509_privkey_init(&host_privkey);
-
-	gnutls_x509_crt_init(&root_cert);
-	gnutls_x509_crt_init(&host_cert);
-
-	/* generate root key */
-	gnutls_x509_privkey_generate(root_privkey, GNUTLS_PK_RSA, 2048, 0);
-	gnutls_x509_privkey_generate(host_privkey, GNUTLS_PK_RSA, 2048, 0);
-
-	/* generate certificates */
-	gnutls_x509_crt_set_key(root_cert, root_privkey);
-	gnutls_x509_crt_set_serial(root_cert, "\x00", 1);
-	gnutls_x509_crt_set_version(root_cert, 3);
-	gnutls_x509_crt_set_ca_status(root_cert, 1);
-	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
-	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
-
-	gnutls_x509_crt_set_key(host_cert, host_privkey);
-	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
-	gnutls_x509_crt_set_version(host_cert, 3);
-	gnutls_x509_crt_set_ca_status(host_cert, 0);
-	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
-	gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
-	gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);
-
-	/* export to PEM format */
-	size_t root_key_export_size = 0;
-	size_t host_key_export_size = 0;
-
-	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, NULL, &root_key_export_size);
-	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, NULL, &host_key_export_size);
-
-	root_key_pem.data = gnutls_malloc(root_key_export_size);
-	host_key_pem.data = gnutls_malloc(host_key_export_size);
-
-	gnutls_x509_privkey_export(root_privkey, GNUTLS_X509_FMT_PEM, root_key_pem.data, &root_key_export_size);
-	root_key_pem.size = root_key_export_size;
-	gnutls_x509_privkey_export(host_privkey, GNUTLS_X509_FMT_PEM, host_key_pem.data, &host_key_export_size);
-	host_key_pem.size = host_key_export_size;
-
-	size_t root_cert_export_size = 0;
-	size_t host_cert_export_size = 0;
-
-	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, NULL, &root_cert_export_size);
-	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, NULL, &host_cert_export_size);
-
-	root_cert_pem.data = gnutls_malloc(root_cert_export_size);
-	host_cert_pem.data = gnutls_malloc(host_cert_export_size);
-
-	gnutls_x509_crt_export(root_cert, GNUTLS_X509_FMT_PEM, root_cert_pem.data, &root_cert_export_size);
-	root_cert_pem.size = root_cert_export_size;
-	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
-	host_cert_pem.size = host_cert_export_size;
-
-	/* restore gnutls env */
-	gnutls_global_deinit();
-	gnutls_global_init();
-#endif
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
 		ret = USERPREF_E_SUCCESS;

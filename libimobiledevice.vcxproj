@@ -63,7 +63,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
     </Link>
@@ -86,7 +86,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
-      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
