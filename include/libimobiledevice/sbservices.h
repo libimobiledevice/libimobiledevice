@@ -60,15 +60,15 @@ typedef struct sbservices_client_private sbservices_client_private;
 typedef sbservices_client_private *sbservices_client_t; /**< The client handle. */
 
 /* Interface */
-sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client);
-sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t* client, const char* label);
-sbservices_error_t sbservices_client_free(sbservices_client_t client);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_free(sbservices_client_t client);
 
-sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
-sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
-sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
-sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation);
-sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation);
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
 #ifdef __cplusplus
 }

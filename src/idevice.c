@@ -48,7 +48,7 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 {
 	idevice_event_t ev;
 
-	ev.event = event->event;
+	ev.event = (idevice_event_type)event->event;
 	ev.udid = event->device.udid;
 	ev.conn_type = CONNECTION_USBMUXD;
 
@@ -121,14 +121,14 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 	int i, newcount = 0;
 
 	for (i = 0; dev_list[i].handle > 0; i++) {
-		newlist = realloc(*devices, sizeof(char*) * (newcount+1));
+		newlist = (char**)realloc(*devices, sizeof(char*)* (newcount + 1));
 		newlist[newcount++] = strdup(dev_list[i].udid);
 		*devices = newlist;
 	}
 	usbmuxd_device_list_free(&dev_list);
 
 	*count = newcount;
-	newlist = realloc(*devices, sizeof(char*) * (newcount+1));
+	newlist = (char**)realloc(*devices, sizeof(char*)* (newcount + 1));
 	newlist[newcount] = NULL;
 	*devices = newlist;
 
@@ -836,3 +836,31 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 	return IDEVICE_E_SUCCESS;
 }
 
+/**
+* Sets the usbmuxd tcp port
+*
+* @param The new tcp port
+*
+* @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
+* is zero.
+*/
+idevice_error_t idevice_set_usbmuxd_port(uint16_t port)
+{
+	if (0 == port)
+	{
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	libusbmuxd_set_socket_port(port);
+	return IDEVICE_E_SUCCESS;
+}
+
+/**
+* Returns the usbmuxd tcp port
+*
+* @return usbmuxd's tcp port.
+*/
+uint16_t idevice_get_usbmuxd_port()
+{
+	return libusbmuxd_get_socket_port();
+}

@@ -31,7 +31,9 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifndef WIN32
+#ifdef WIN32
+#include <direct.h>
+#else
 #include <pwd.h>
 #endif
 #include <unistd.h>
@@ -47,7 +49,9 @@
 #endif
 
 #include <dirent.h>
+#ifndef WIN32
 #include <libgen.h>
+#endif
 #include <sys/stat.h>
 #include <errno.h>
 
@@ -70,7 +74,7 @@
 #define USERPREF_CONFIG_EXTENSION ".plist"
 
 #ifdef WIN32
-#define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
+#define USERPREF_CONFIG_DIR /*"Apple"DIR_SEP_S*/"Lockdown"
 #else
 #define USERPREF_CONFIG_DIR "lockdown"
 #endif
@@ -122,7 +126,7 @@ const char *userpref_get_config_dir()
 		return __config_dir;
 
 #ifdef WIN32
-	wchar_t path[MAX_PATH+1];
+	/*wchar_t path[MAX_PATH+1];
 	HRESULT hr;
 	LPITEMIDLIST pidl = NULL;
 	BOOL b = FALSE;
@@ -134,7 +138,11 @@ const char *userpref_get_config_dir()
 			base_config_dir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
 			CoTaskMemFree (pidl);
 		}
-	}
+	}*/
+	
+	base_config_dir = (char *)malloc(MAX_PATH + 1);
+	GetTempPath(MAX_PATH + 1, base_config_dir);
+
 #else
 #ifdef __APPLE__
 	base_config_dir = strdup("/var/db");
@@ -161,11 +169,62 @@ const char *userpref_get_config_dir()
 static int __mkdir(const char *dir, int mode)
 {
 #ifdef WIN32
-	return mkdir(dir);
+	return _mkdir(dir);
 #else
 	return mkdir(dir, mode);
 #endif
 }
+
+#ifdef WIN32
+// Based on: http://stackoverflow.com/questions/675039/how-can-i-create-directory-tree-in-c-linux
+
+static int do_mkdir(const char *path)
+{
+	struct stat     st;
+	int             status = 0;
+
+	if (stat(path, &st) != 0)
+	{
+		/* Directory does not exist. EEXIST for race condition */
+		if (mkdir(path) != 0 && errno != EEXIST)
+			status = -1;
+	}
+	else if (!S_ISDIR(st.st_mode))
+	{
+		errno = ENOTDIR;
+		status = -1;
+	}
+
+	return(status);
+}
+
+int mkdir_with_parents(const char *path, int mode)
+{
+	char           *pp;
+	char           *sp;
+	int             status;
+	char           *copypath = strdup(path);
+
+	status = 0;
+	pp = copypath;
+	while (status == 0 && (sp = strchr(pp, '/')) != 0)
+	{
+		if (sp != pp)
+		{
+			/* Neither root nor double slash in path */
+			*sp = '\0';
+			status = do_mkdir(copypath);
+			*sp = '/';
+		}
+		pp = sp + 1;
+	}
+	if (status == 0)
+		status = do_mkdir(path);
+	free(copypath);
+	return (status);
+}
+
+#else
 
 static int mkdir_with_parents(const char *dir, int mode)
 {
@@ -186,6 +245,7 @@ static int mkdir_with_parents(const char *dir, int mode)
 	free(parent);
 	return res;
 }
+#endif
 
 /**
  * Creates a freedesktop compatible configuration directory.
@@ -476,7 +536,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 {
 	struct slist_t {
 		char *name;
-		void *next;
+		slist_t *next;
 	};
 	DIR *config_dir;
 	const char *config_path = NULL;

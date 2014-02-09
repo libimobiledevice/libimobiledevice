@@ -34,14 +34,18 @@
 #endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && !defined(STRIP_DEBUG_CODE)
-#define debug_info(...) debug_info_real (__func__, __FILE__, __LINE__, __VA_ARGS__)
-#define debug_plist(a) debug_plist_real (__func__, __FILE__, __LINE__, a)
+	#define debug_info(...) debug_info_real (__func__, __FILE__, __LINE__, __VA_ARGS__)
+	#define debug_plist(a) debug_plist_real (__func__, __FILE__, __LINE__, a)
 #elif defined(__GNUC__) && __GNUC__ >= 3 && !defined(STRIP_DEBUG_CODE)
-#define debug_info(...) debug_info_real (__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
-#define debug_plist(a) debug_plist_real (__FUNCTION__, __FILE__, __LINE__, a)
+	#define debug_info(...) debug_info_real (__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+	#define debug_plist(a) debug_plist_real (__FUNCTION__, __FILE__, __LINE__, a)
+#elif defined (_MSC_VER) && !defined(STRIP_DEBUG_CODE)
+	#define debug_info(...) debug_info_real (__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+	#define debug_plist(a) debug_plist_real (__FUNCTION__, __FILE__, __LINE__, a)
+	#define __func__ __FUNCTION__
 #else
-#define debug_info(...)
-#define debug_plist(a)
+	#define debug_info(...)
+	#define debug_plist(a)
 #endif
 
 LIBIMOBILEDEVICE_INTERNAL void debug_info_real(const char *func,

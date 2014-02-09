@@ -451,9 +451,9 @@ diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_rela
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
+diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* _class, plist_t* result)
 {
-	if (!client || (name == NULL && class == NULL) || result == NULL)
+	if (!client || (name == NULL && _class == NULL) || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
 
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
@@ -461,8 +461,8 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_r
 	plist_t dict = plist_new_dict();
 	if (name)
 		plist_dict_insert_item(dict,"EntryName", plist_new_string(name));
-	if (class)
-		plist_dict_insert_item(dict,"EntryClass", plist_new_string(class));
+	if (_class)
+		plist_dict_insert_item(dict,"EntryClass", plist_new_string(_class));
 	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);

@@ -50,14 +50,14 @@ typedef struct misagent_client_private misagent_client_private;
 typedef misagent_client_private *misagent_client_t; /**< The client handle. */
 
 /* Interface */
-misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client);
-misagent_error_t misagent_client_start_service(idevice_t device, misagent_client_t* client, const char* label);
-misagent_error_t misagent_client_free(misagent_client_t client);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_client_start_service(idevice_t device, misagent_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_client_free(misagent_client_t client);
 
-misagent_error_t misagent_install(misagent_client_t client, plist_t profile);
-misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles);
-misagent_error_t misagent_remove(misagent_client_t client, const char* profileID);
-int misagent_get_status_code(misagent_client_t client);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_install(misagent_client_t client, plist_t profile);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles);
+LIBIMOBILEDEVICE_API misagent_error_t misagent_remove(misagent_client_t client, const char* profileID);
+LIBIMOBILEDEVICE_API int misagent_get_status_code(misagent_client_t client);
 
 #ifdef __cplusplus
 }
