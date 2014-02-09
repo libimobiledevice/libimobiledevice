@@ -74,7 +74,7 @@
 #define USERPREF_CONFIG_EXTENSION ".plist"
 
 #ifdef WIN32
-#define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
+#define USERPREF_CONFIG_DIR /*"Apple"DIR_SEP_S*/"Lockdown"
 #else
 #define USERPREF_CONFIG_DIR "lockdown"
 #endif
@@ -126,7 +126,7 @@ const char *userpref_get_config_dir()
 		return __config_dir;
 
 #ifdef WIN32
-	wchar_t path[MAX_PATH+1];
+	/*wchar_t path[MAX_PATH+1];
 	HRESULT hr;
 	LPITEMIDLIST pidl = NULL;
 	BOOL b = FALSE;
@@ -138,7 +138,11 @@ const char *userpref_get_config_dir()
 			base_config_dir = userpref_utf16_to_utf8 (path, wcslen(path), NULL, NULL);
 			CoTaskMemFree (pidl);
 		}
-	}
+	}*/
+	
+	base_config_dir = (char *)malloc(MAX_PATH + 1);
+	GetTempPath(MAX_PATH + 1, base_config_dir);
+
 #else
 #ifdef __APPLE__
 	base_config_dir = strdup("/var/db");
