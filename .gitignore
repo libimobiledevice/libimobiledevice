@@ -59,4 +59,4 @@ tools/idevicepair
 tools/ideviceprovision
 cython/.libs/*
 cython/*.c
-
+doxygen.cfg
