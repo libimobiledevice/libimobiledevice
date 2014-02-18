@@ -962,7 +962,7 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 		}
 	}
 
-	/* If we have an open, ssl enabled, lockdown session - try to get the 
+	/* If we have an open, ssl enabled, lockdown session - we'll try to get the 
 	 * device's cert. We'll also try to get the escrowbag if the pairing response
 	 * doesn't contain one (happens on ValidatePair). */
 	int device_cert_retrieved = 0;
@@ -973,18 +973,16 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 			idevice_get_device_ssl_cert(client->parent->parent->connection, &device_cert);
 		}
 		else {
-			debug_info("Session doesn't have ssl enabled, we'll the the DeviceCertificate from the device's response");
+			debug_info("Session doesn't have ssl enabled, we'll use the DeviceCertificate from the device's response");
 		}
 
-		/* If needed - try the get the EscrowBag (only posiible once we've established a session) */
-		if (!escrow_bag && force_record_store)
-		{
+		/* If needed - try to get the EscrowBag (only possible once we've established a session) */
+		if (!escrow_bag && force_record_store) {
 			debug_info("Retrieving EscrowBag from lockdownd");
 			lockdownd_get_value(client, NULL, USERPREF_ESCROW_BAG_KEY, &escrow_bag);
 		}
 
-		/* If we've started the session (which should always be the case) - 
-		 * stop it */
+		/* If we've started the session (which should always be the case) -  stop it */
 		if (session_was_started) {
 			lockdownd_stop_session(client, client->session_id);
 		}
@@ -1004,8 +1002,7 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 	}
 	
 	/* Store the device certificate */
-	if (device_cert && plist_get_node_type(device_cert) == PLIST_DATA)
-	{
+	if (device_cert && plist_get_node_type(device_cert) == PLIST_DATA) {
 		userpref_device_record_set_value(client->udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_copy(device_cert));
 	}
 
@@ -1666,7 +1663,6 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* if we have a running session, stop current one first */
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
-		free(client->session_id);
 	}
 
 	/* setup request plist */

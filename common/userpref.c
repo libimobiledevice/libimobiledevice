@@ -508,12 +508,10 @@ void userpref_device_record_get_host_id(const char *udid, char **host_id)
 	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
 		plist_get_string_val(value, host_id);
 	}
-	else
-	{
+	else {
 		/* Try to get it from the local config */
 		userpref_get_value(USERPREF_HOST_ID_KEY, &value);
-		if (value && (plist_get_node_type(value) == PLIST_STRING))
-		{
+		if (value && (plist_get_node_type(value) == PLIST_STRING)) {
 			plist_get_string_val(value, host_id);
 
 			/* Store the host id in device's record file */
@@ -790,8 +788,7 @@ static int userpref_get_key_from_conf(plist_t conf, const char * name, key_data_
 	uint64_t key_size = 0;
 
 	value = plist_dict_get_item(conf, name);
-	if (value && (plist_get_node_type(value) == PLIST_DATA))
-	{
+	if (value && (plist_get_node_type(value) == PLIST_DATA)) {
 		plist_get_data_val(value, &key_data, &key_size);
 		key->data = (unsigned char *)key_data;
 		key->size = key_size;
@@ -809,15 +806,13 @@ static int userpref_get_key_from_conf(plist_t conf, const char * name, key_data_
 */
 static int userpref_get_keys_and_cert_from_local_conf(key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
 {
-	if (!userpref_has_local_config())
-	{
+	if (!userpref_has_local_config()) {
 		return 0;
 	}
 
 	/* Read the local config dir */
 	plist_t local_config = NULL;
-	if (!plist_read_from_filename(&local_config, USERPREF_LOCAL_CONFIG_FILE))
-	{
+	if (!plist_read_from_filename(&local_config, USERPREF_LOCAL_CONFIG_FILE)) {
 		debug_info("ERROR: Failed to read local config file");
 		return USERPREF_E_INVALID_CONF;
 	}
@@ -836,20 +831,16 @@ static int userpref_get_keys_and_cert_from_local_conf(key_data_t * root_key, key
 
 	/* We've failed - cleanup */
 	plist_free(local_config);
-	if (root_key->data)
-	{
+	if (root_key->data) {
 		free(root_key->data);
 	}
-	if (root_cert->data)
-	{
+	if (root_cert->data) {
 		free(root_cert->data);
 	}
-	if (host_key->data)
-	{
+	if (host_key->data) {
 		free(host_key->data);
 	}
-	if (host_cert->data)
-	{
+	if (host_cert->data) {
 		free(host_cert->data);
 	}
 
@@ -870,12 +861,10 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
 
-	if (userpref_get_keys_and_cert_from_local_conf(&root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem))
-	{
+	if (userpref_get_keys_and_cert_from_local_conf(&root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem)) {
 		debug_info("Using keys and certificates from the local config");
 	}
-	else
-	{
+	else {
 		debug_info("generating keys and certificates");
 	#ifdef HAVE_OPENSSL
 		BIGNUM *e = BN_new();
