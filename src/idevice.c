@@ -811,7 +811,10 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 
 #ifdef HAVE_OPENSSL
 	if (connection->ssl_data->session) {
-		SSL_shutdown(connection->ssl_data->session);
+		/* Perform a bidirectional (2 step) SSL shutdown */
+		if (0 == SSL_shutdown(connection->ssl_data->session)) {
+			SSL_shutdown(connection->ssl_data->session);
+		}
 	}
 #else
 	if (connection->ssl_data->session) {
@@ -828,22 +831,64 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 }
 
 /**
-* Sets the usbmuxd tcp port
-*
-* @param The new tcp port
-*
-* @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
-* is zero.
-*/
+ * Sets the usbmuxd tcp port
+ *
+ * @param The new tcp port
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
+ * is zero.
+ */
 idevice_error_t idevice_set_usbmuxd_port(uint16_t port)
 {
-	if (0 == port)
-	{
+	if (0 == port) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
 	libusbmuxd_set_socket_port(port);
 	return IDEVICE_E_SUCCESS;
+}
+
+/**
+ * Returns the SSL certificate for an ssl enabled connection.
+ * Currently implemented only for openssl.
+ *
+ * @param connection The ssl enabled connection.
+ * @param connection The ssl enabled connection.
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_SSL_ERROR on failure to retrieve 
+ *     certificate. IDEVICE_E_INVALID_ARG when device_cert is NULL, connection,  
+ *     is NULL, or doens't have ssl enabled. 
+ */
+idevice_error_t idevice_get_device_ssl_cert(idevice_connection_t connection, plist_t * device_cert)
+{
+	if (!device_cert || !connection || !connection->ssl_data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+		
+	#ifdef HAVE_OPENSSL
+		plist_t peer_cert_node = NULL;
+		X509 * dev_cert = SSL_get_peer_certificate(connection->ssl_data->session);
+		BIO * dev_cert_mem = BIO_new(BIO_s_mem());
+
+		if (dev_cert && dev_cert_mem && PEM_write_bio_X509(dev_cert_mem, dev_cert) > 0) {
+			/* Get the cert's data */
+			char * dev_cert_data = NULL;
+			unsigned int device_cert_size = BIO_get_mem_data(dev_cert_mem, &dev_cert_data);
+			
+			peer_cert_node = plist_new_data(dev_cert_data, device_cert_size);
+		}
+
+		if (dev_cert_mem) {
+			BIO_free(dev_cert_mem);
+		}
+
+		if (peer_cert_node) {
+			*device_cert = peer_cert_node;
+			return IDEVICE_E_SUCCESS;
+		}
+	#endif
+
+	return IDEVICE_E_SSL_ERROR;
 }
 
 /**

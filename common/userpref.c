@@ -75,14 +75,20 @@
 #define USERPREF_CONFIG_EXTENSION ".plist"
 
 #ifdef WIN32
-#define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
+	#ifdef USE_APPLE_CONFIG_DIR
+		#define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
+	#else
+		#define USERPREF_CONFIG_DIR "Lockdown"
+	#endif
 #else
-#define USERPREF_CONFIG_DIR "lockdown"
+	#define USERPREF_CONFIG_DIR "lockdown"
 #endif
 
 #define USERPREF_CONFIG_FILE "SystemConfiguration"USERPREF_CONFIG_EXTENSION
 
-#define USERPREF_LOCAL_CONFIG_FILE "Config"DIR_SEP_S"LockdownConfiguration"USERPREF_CONFIG_EXTENSION
+/* The pref of our local, preconfigured, lockdown config files, which contains 
+ * pre-generated keys, certs and ids. */
+#define USERPREF_LOCAL_CONFIG_FILE "etc"DIR_SEP_S"LockdownConfiguration"USERPREF_CONFIG_EXTENSION
 
 static char *__config_dir = NULL;
 
@@ -123,9 +129,9 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 
 static int userpref_has_local_config()
 {
-	#ifdef WIN32
+#ifdef WIN32
 	return PathFileExists(USERPREF_LOCAL_CONFIG_FILE);
-	#endif
+#endif
 
 	return 0;
 }
@@ -138,37 +144,33 @@ const char *userpref_get_config_dir()
 		return __config_dir;
 
 #ifdef WIN32
-	wchar_t path[MAX_PATH+1];
-	HRESULT hr;
-	LPITEMIDLIST pidl = NULL;
-	BOOL b = FALSE;
+	#ifdef USE_APPLE_CONFIG_DIR
+		wchar_t path[MAX_PATH+1];
+		HRESULT hr;
+		LPITEMIDLIST pidl = NULL;
+		BOOL b = FALSE;
 
-	/* If we are using our own, local, config file, we are not sharing our data with
-	 * others, so we'll store our device records in the user's temp dir */
-	if (userpref_has_local_config())
-	{
-		base_config_dir = (char *)malloc(MAX_PATH + 1);
-		GetTempPath(MAX_PATH + 1, base_config_dir);
-	}
-	else
-	{
 		hr = SHGetSpecialFolderLocation(NULL, CSIDL_COMMON_APPDATA, &pidl);
 		if (hr == S_OK)
 		{
 			b = SHGetPathFromIDListW(pidl, path);
 			if (b)
 			{
-				base_config_dir = userpref_utf16_to_utf8(path, wcslen(path), NULL, NULL);
+				base_config_dir = config_utf16_to_utf8(path, wcslen(path), NULL, NULL);
 				CoTaskMemFree(pidl);
 			}
 		}
-	}
+	#else
+		/* Use the currnet user's temp folder as the base dir */
+		base_config_dir = (char *)malloc(MAX_PATH + 1);
+		GetTempPath(MAX_PATH + 1, base_config_dir);
+	#endif
 #else
-#ifdef __APPLE__
-	base_config_dir = strdup("/var/db");
-#else
-	base_config_dir = strdup("/var/lib");
-#endif
+	#ifdef __APPLE__
+		base_config_dir = strdup("/var/db");
+	#else
+		base_config_dir = strdup("/var/lib");
+	#endif
 #endif
 	__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
 
@@ -513,6 +515,9 @@ void userpref_device_record_get_host_id(const char *udid, char **host_id)
 		if (value && (plist_get_node_type(value) == PLIST_STRING))
 		{
 			plist_get_string_val(value, host_id);
+
+			/* Store the host id in device's record file */
+			userpref_device_record_set_value(udid, USERPREF_HOST_ID_KEY, plist_new_string(*host_id));
 		}
 	}
 

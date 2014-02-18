@@ -36,6 +36,7 @@ EXPORTS
 	lockdownd_receive
 	lockdownd_pair
 	lockdownd_validate_pair
+	lockdownd_validate_pair_force_store
 	lockdownd_unpair
 	lockdownd_activate
 	lockdownd_deactivate
