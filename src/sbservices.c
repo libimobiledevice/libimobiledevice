@@ -61,19 +61,19 @@ static void sbs_unlock(sbservices_client_t client)
  */
 static sbservices_error_t sbservices_error(property_list_service_error_t err)
 {
-       switch (err) {
-                case PROPERTY_LIST_SERVICE_E_SUCCESS:
-                        return SBSERVICES_E_SUCCESS;
-                case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
-                        return SBSERVICES_E_INVALID_ARG;
-                case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
-                        return SBSERVICES_E_PLIST_ERROR;
-                case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
-                        return SBSERVICES_E_CONN_FAILED;
-                default:
-                        break;
-        }
-        return SBSERVICES_E_UNKNOWN_ERROR;
+	switch (err) {
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
+			return SBSERVICES_E_SUCCESS;
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+			return SBSERVICES_E_INVALID_ARG;
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+			return SBSERVICES_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return SBSERVICES_E_CONN_FAILED;
+		default:
+			break;
+	}
+	return SBSERVICES_E_UNKNOWN_ERROR;
 }
 
 /**

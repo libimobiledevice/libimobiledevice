@@ -45,7 +45,6 @@ struct ssl_data_private {
 #ifdef HAVE_OPENSSL
 	SSL *session;
 	SSL_CTX *ctx;
-	BIO *bio;
 #else
 	gnutls_certificate_credentials_t certificate;
 	gnutls_session_t session;

@@ -242,6 +242,10 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 		}
 	}
 
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
+	}
 	if (client->udid) {
 		free(client->udid);
 	}
@@ -250,6 +254,7 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 	}
 
 	free(client);
+	client = NULL;
 
 	return ret;
 }
@@ -689,7 +694,6 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 		return LOCKDOWN_E_INVALID_ARG;
 
 	static struct lockdownd_service_descriptor service;
-
 	service.port = 0xf27e;
 	service.ssl_enabled = 0;
 
@@ -1310,6 +1314,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	}
 	plist_free(dict);
 	dict = NULL;
+
 	return ret;
 }
 
@@ -1534,6 +1539,9 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
 
 		gnutls_x509_privkey_init(&fake_privkey);
+		gnutls_x509_privkey_init(&root_privkey);
+		gnutls_x509_privkey_init(&host_privkey);
+
 		gnutls_x509_crt_init(&dev_cert);
 		gnutls_x509_crt_init(&root_cert);
 		gnutls_x509_crt_init(&host_cert);
@@ -1541,9 +1549,6 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 		if (GNUTLS_E_SUCCESS ==
 			gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null,
 											   &essentially_null, &essentially_null)) {
-
-			gnutls_x509_privkey_init(&root_privkey);
-			gnutls_x509_privkey_init(&host_privkey);
 
 			uret = userpref_device_record_get_keys_and_certs(udid, root_privkey, root_cert, host_privkey, host_cert);
 

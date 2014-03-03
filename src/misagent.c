@@ -40,19 +40,19 @@
  */
 static misagent_error_t misagent_error(property_list_service_error_t err)
 {
-       switch (err) {
-                case PROPERTY_LIST_SERVICE_E_SUCCESS:
-                        return MISAGENT_E_SUCCESS;
-                case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
-                        return MISAGENT_E_INVALID_ARG;
-                case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
-                        return MISAGENT_E_PLIST_ERROR;
-                case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
-                        return MISAGENT_E_CONN_FAILED;
-                default:
-                        break;
-        }
-        return MISAGENT_E_UNKNOWN_ERROR;
+	switch (err) {
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
+			return MISAGENT_E_SUCCESS;
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+			return MISAGENT_E_INVALID_ARG;
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+			return MISAGENT_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return MISAGENT_E_CONN_FAILED;
+		default:
+			break;
+	}
+	return MISAGENT_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -171,7 +171,7 @@ misagent_error_t misagent_client_free(misagent_client_t client)
 misagent_error_t misagent_install(misagent_client_t client, plist_t profile)
 {
 	if (!client || !client->parent || !profile || (plist_get_node_type(profile) != PLIST_DATA))
-                return MISAGENT_E_INVALID_ARG;
+		return MISAGENT_E_INVALID_ARG;
 
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
@@ -184,10 +184,10 @@ misagent_error_t misagent_install(misagent_client_t client, plist_t profile)
 	plist_free(dict);
 	dict = NULL;
 
-        if (res != MISAGENT_E_SUCCESS) {
-                debug_info("could not send plist, error %d", res);
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 		return res;
-        }
+	}
 
 	res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
 	if (res != MISAGENT_E_SUCCESS) {
@@ -222,7 +222,7 @@ misagent_error_t misagent_install(misagent_client_t client, plist_t profile)
 misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles)
 {
 	if (!client || !client->parent || !profiles)
-                return MISAGENT_E_INVALID_ARG;
+		return MISAGENT_E_INVALID_ARG;
 
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
@@ -234,10 +234,10 @@ misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles)
 	plist_free(dict);
 	dict = NULL;
 
-        if (res != MISAGENT_E_SUCCESS) {
-                debug_info("could not send plist, error %d", res);
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 		return res;
-        }
+	}
 
 	res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
 	if (res != MISAGENT_E_SUCCESS) {
@@ -273,7 +273,7 @@ misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles)
 misagent_error_t misagent_remove(misagent_client_t client, const char* profileID)
 {
 	if (!client || !client->parent || !profileID)
-                return MISAGENT_E_INVALID_ARG;
+		return MISAGENT_E_INVALID_ARG;
 
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
@@ -286,10 +286,10 @@ misagent_error_t misagent_remove(misagent_client_t client, const char* profileID
 	plist_free(dict);
 	dict = NULL;
 
-        if (res != MISAGENT_E_SUCCESS) {
-                debug_info("could not send plist, error %d", res);
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
 		return res;
-        }
+	}
 
 	res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
 	if (res != MISAGENT_E_SUCCESS) {

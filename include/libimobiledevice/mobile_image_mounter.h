@@ -38,6 +38,7 @@ extern "C" {
 #define MOBILE_IMAGE_MOUNTER_E_INVALID_ARG           -1
 #define MOBILE_IMAGE_MOUNTER_E_PLIST_ERROR           -2
 #define MOBILE_IMAGE_MOUNTER_E_CONN_FAILED           -3
+#define MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED        -4
 
 #define MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR       -256
 /*@}*/
@@ -48,12 +49,22 @@ typedef int16_t mobile_image_mounter_error_t;
 typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_private;
 typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**< The client handle. */
 
+/* Add missing definition for ssize_t in MSVC */
+#if defined(_MSC_VER)
+	#include <BaseTsd.h>
+	typedef SSIZE_T ssize_t;
+#endif
+
+/** callback for image upload */
+typedef ssize_t (*mobile_image_mounter_upload_cb_t) (void* buffer, size_t length, void *user_data);
+
 /* Interface */
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client);
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t* client, const char* label);
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client);
 
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *image_signature, uint16_t signature_length, const char *image_type, plist_t *result);
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client);
 

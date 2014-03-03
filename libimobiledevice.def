@@ -132,6 +132,7 @@ EXPORTS
 	mobile_image_mounter_start_service
 	mobile_image_mounter_free
 	mobile_image_mounter_lookup_image
+	mobile_image_mounter_upload_image
 	mobile_image_mounter_mount_image
 	mobile_image_mounter_hangup
 

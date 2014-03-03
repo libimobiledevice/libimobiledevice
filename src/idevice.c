@@ -267,6 +267,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
 		usbmuxd_disconnect((int)(long)connection->data);
+		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
@@ -276,6 +277,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 		free(connection->udid);
 
 	free(connection);
+	connection = NULL;
 
 	return result;
 }
@@ -383,7 +385,15 @@ idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connecti
 
 	if (connection->ssl_data) {
 #ifdef HAVE_OPENSSL
-		int received = SSL_read(connection->ssl_data->session, (void*)data, (int)len);
+		uint32_t received = 0;
+		while (received < len) {
+			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
+			if (r > 0) {
+				received += r;
+			} else {
+				break;
+			}
+		}
 		debug_info("SSL_read %d, received %d", len, received);
 #else
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
@@ -597,28 +607,28 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 #ifndef STRIP_DEBUG_CODE
 static const char *errorstring(int e)
 {
-    switch(e) {
-	case SSL_ERROR_NONE:
-	    return "SSL_ERROR_NONE";
-	case SSL_ERROR_SSL:
-	    return "SSL_ERROR_SSL";
-	case SSL_ERROR_WANT_READ:
-	    return "SSL_ERROR_WANT_READ";
-	case SSL_ERROR_WANT_WRITE:
-	    return "SSL_ERROR_WANT_WRITE";
-	case SSL_ERROR_WANT_X509_LOOKUP:
-	    return "SSL_ERROR_WANT_X509_LOOKUP";
-	case SSL_ERROR_SYSCALL:
-	    return "SSL_ERROR_SYSCALL";
-	case SSL_ERROR_ZERO_RETURN:
-	    return "SSL_ERROR_ZERO_RETURN";
-        case SSL_ERROR_WANT_CONNECT:
-	    return "SSL_ERROR_WANT_CONNECT";
-	case SSL_ERROR_WANT_ACCEPT:
-	    return "SSL_ERROR_WANT_ACCEPT";
-	default:
-	    return "UNKOWN_ERROR_VALUE";
-    }
+	switch(e) {
+		case SSL_ERROR_NONE:
+			return "SSL_ERROR_NONE";
+		case SSL_ERROR_SSL:
+			return "SSL_ERROR_SSL";
+		case SSL_ERROR_WANT_READ:
+			return "SSL_ERROR_WANT_READ";
+		case SSL_ERROR_WANT_WRITE:
+			return "SSL_ERROR_WANT_WRITE";
+		case SSL_ERROR_WANT_X509_LOOKUP:
+			return "SSL_ERROR_WANT_X509_LOOKUP";
+		case SSL_ERROR_SYSCALL:
+			return "SSL_ERROR_SYSCALL";
+		case SSL_ERROR_ZERO_RETURN:
+			return "SSL_ERROR_ZERO_RETURN";
+		case SSL_ERROR_WANT_CONNECT:
+			return "SSL_ERROR_WANT_CONNECT";
+		case SSL_ERROR_WANT_ACCEPT:
+			return "SSL_ERROR_WANT_ACCEPT";
+		default:
+			return "UNKOWN_ERROR_VALUE";
+	}
 }
 #endif
 #endif
@@ -728,13 +738,12 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return_me = SSL_do_handshake(ssl);
         if (return_me != 1) {
 		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
-		BIO_free(ssl_bio);
+		SSL_free(ssl);
 		SSL_CTX_free(ssl_ctx);
 	} else {
 		ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 		ssl_data_loc->session = ssl;
 		ssl_data_loc->ctx = ssl_ctx;
-		ssl_data_loc->bio = ssl_bio;
 		connection->ssl_data = ssl_data_loc;
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
