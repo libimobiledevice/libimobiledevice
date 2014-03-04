@@ -74,3 +74,11 @@ idevicediagnostics_SOURCES = idevicediagnostics.c
 idevicediagnostics_CFLAGS = $(AM_CFLAGS)
 idevicediagnostics_LDFLAGS = $(AM_LDFLAGS)
 idevicediagnostics_LDADD = ../src/libimobiledevice.la
+
+if !WIN32
+bin_PROGRAMS += idevicecrashreport
+idevicecrashreport_SOURCES = idevicecrashreport.c
+idevicecrashreport_CFLAGS = $(AM_CFLAGS)
+idevicecrashreport_LDFLAGS = $(top_srcdir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicecrashreport_LDADD = ../src/libimobiledevice.la
+endif
