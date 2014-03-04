@@ -22,6 +22,10 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #endif
