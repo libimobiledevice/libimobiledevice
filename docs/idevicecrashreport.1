@@ -1,0 +1,36 @@
+.TH "idevicecrashreport" 1
+.SH NAME
+idevicecrashreport \- Retrieve crash reports from a device.
+.SH SYNOPSIS
+.B idevicecrashreport
+[OPTIONS] DIRECTORY
+
+.SH DESCRIPTION
+
+Simple utility to move crash reports from a device to a local directory.
+
+The utility outputs lines prefixed with either "Link:", "Copy:" or "Move:"
+depending on whether a symlink was created, a file was copied or moved from
+the device to the target DIRECTORY.
+
+.SH OPTIONS
+.TP
+.B \-e, \-\-extract
+extract raw crash report into separate '.crash' files.
+.TP
+.B \-k, \-\-keep
+copy but do not remove crash reports from device.
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP
+.B \-h, \-\-help
+prints usage information.
+
+.SH AUTHOR
+Martin Szulecki
+
+Nikias Bassen
