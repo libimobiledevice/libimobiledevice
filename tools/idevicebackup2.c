@@ -39,9 +39,6 @@
 
 #include <endianness.h>
 
-#define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
-#define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
-
 #define LOCK_ATTEMPTS 50
 #define LOCK_WAIT 200000
 
