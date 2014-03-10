@@ -31,7 +31,10 @@
 static void print_usage()
 {
 	printf("\nUsage: idevicename [OPTIONS] [NAME]\n");
+	printf("Display the device name or set it to NAME if specified.\n");
+	printf("\n");
 	printf("  --udid|-u UDID  use UDID to target a specific device\n");
+	printf("  --help|-h       print usage information\n");
 	printf("\n");
 }
 
@@ -44,16 +47,21 @@ int main(int argc, char** argv)
 	int optidx = 0;
 	const struct option longopts[] = {
 		{ "udid", required_argument, NULL, 'u' },
+		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0}
 	};
 
-	while ((c = getopt_long(argc, argv, "u:", longopts, &optidx)) != -1) {
+	while ((c = getopt_long(argc, argv, "u:h", longopts, &optidx)) != -1) {
 		switch (c) {
 		case 'u':
 			udid = strdup(optarg);
 			break;
+		case 'h':
+			print_usage();
+			return 0;
 		default:
-			break;
+			print_usage();
+			return -1;
 		}
 	}
 
