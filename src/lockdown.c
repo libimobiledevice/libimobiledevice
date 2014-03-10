@@ -269,10 +269,6 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client)
 		lockdownd_stop_session(client, client->session_id);
 	}
 
-	if (client->parent) {
-		lockdownd_goodbye(client);
-	}
-
 	ret = lockdownd_client_free_simple(client);
 
 	return ret;
