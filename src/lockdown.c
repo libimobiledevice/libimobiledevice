@@ -217,6 +217,11 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 		client->session_id = NULL;
 	}
 
+	if (client->ssl_enabled) {
+		property_list_service_disable_ssl(client->parent);
+		client->ssl_enabled = 0;
+	}
+
 	return ret;
 }
 
