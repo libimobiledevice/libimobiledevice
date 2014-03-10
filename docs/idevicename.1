@@ -1,0 +1,28 @@
+.TH "idevicename" 1
+.SH NAME
+idevicename \- Display the device name or set it to NAME if specified.
+.SH SYNOPSIS
+.B idevicename
+[OPTIONS]
+[NAME]
+
+.SH DESCRIPTION
+
+Simple utility to manage the device name.
+
+If called without any extra argument this tool will print the current device name.
+
+If
+.B NAME
+is given the device name will be set to the name specified.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP
+.B \-h, \-\-help
+prints usage information
+
+.SH AUTHOR
+Nikias Bassen
