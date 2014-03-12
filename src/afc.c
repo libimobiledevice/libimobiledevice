@@ -27,6 +27,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "afc.h"
 #include "idevice.h"
@@ -144,6 +148,9 @@ afc_error_t afc_client_free(afc_client_t client)
  * @param data The data to send together with the header.
  * @param data_length The length of the data to send with the header.
  * @param payload The data to send after the header has been sent.
+ *   If this is NULL and payload_length is non-zero the caller is
+ *   responsible for immediately transmitting payload_length bytes
+ *   following this call.
  * @param payload_length The length of data to send after the header.
  * @param bytes_sent The total number of bytes actually sent.
  *
@@ -160,8 +167,6 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 
 	if (!data || !data_length)
 		data_length = 0;
-	if (!payload || !payload_length)
-		payload_length = 0;
 
 	client->afc_packet->packet_num++;
 	client->afc_packet->operation = operation;
@@ -194,8 +199,11 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 		return AFC_E_SUCCESS;
 	}
 
+    // If payload_length is > 0 and payload == NULL,
+    // then the caller is obliged to transmit the payload
+    // bytes immediately following this call
 	sent = 0;
-	if (payload_length > 0) {
+    if (payload_length > 0 && payload) {
 		debug_info("packet payload follows");
 		debug_buffer(payload, payload_length);
 		service_send(client->parent, payload, payload_length, &sent);
@@ -746,6 +754,57 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
 	return ret;
 }
 
+afc_error_t afc_file_write_from_fd(afc_client_t client, uint64_t handle, int fd, off_t length, off_t *bytes_written)
+{
+    afc_error_t ret = AFC_E_SUCCESS;
+    idevice_error_t dret = IDEVICE_E_SUCCESS;
+    uint32_t packet_bytes_sent = 0;
+
+    // Fetch file length if we need it
+    if (length == 0) {
+        struct stat st;
+        errno = 0;
+        if (fstat(fd, &st) == 0){
+            length = st.st_size;
+        } else {
+            debug_info("ERROR: Unable to write from fd %d. fstat failed: %s", fd, strerror(errno));
+            return AFC_E_IO_ERROR;
+        }
+    }
+
+    afc_lock(client);
+
+    // Dispatch a write packet with NULL payload,
+    // but specifying the payload_length signalling
+    // that we intend to ship the payload ourselves
+    // after the write packet has been dispatched
+    ret = afc_dispatch_packet(client, AFC_OP_WRITE, (const char*)&handle, 8, NULL, length, &packet_bytes_sent);
+    if (ret != AFC_E_SUCCESS) {
+        afc_unlock(client);
+        debug_info("Failed to send packet header for sendfile()");
+        return ret;
+    }
+
+    dret = idevice_connection_sendfile(client->parent->connection, fd, length, bytes_written);
+    if (dret != IDEVICE_E_SUCCESS) {
+        afc_unlock(client);
+        debug_info("Failed to send payload from fd %d: %s", fd, strerror(errno));
+        return AFC_E_IO_ERROR;
+    }
+
+    ret = afc_receive_data(client, NULL, &packet_bytes_sent);
+
+    afc_unlock(client);
+
+    return AFC_E_SUCCESS;
+}
+
+/**
+ * Closes a file on the device.
+ * 
+ * @param client The client to close the file with.
+ * @param handle File handle of a previously opened file.
+ */
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 {
 	uint32_t bytes = 0;

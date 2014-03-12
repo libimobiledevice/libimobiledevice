@@ -235,6 +235,24 @@ afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, uint
 afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written);
 
 /**
+ * Write data from a file directly to and AFC file handle without
+ * using intermediate buffers. This method is not only more convenient
+ * when you are writing files to the device, it will also put
+ * noticaly less load on the host computer transfering data this way.
+ *
+ * This function uses idevice_connection_sendfile() under the hood.
+ *
+ * @param client The client to use to write to the file.
+ * @param handle File handle of previously opened file.
+ * @param fd A file descriptor for a regular file to send data from.
+ * @param length Number of bytes to send, or 0 to send the entire file.
+ * @param bytes_written Return location for the number of bytes written.
+ *
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
+ */
+afc_error_t afc_file_write_from_fd(afc_client_t client, uint64_t handle, int fd, off_t length, off_t *bytes_written);
+
+/**
  * Seeks to a given position of a pre-opened file on the device.
  *
  * @param client The client to use to seek to the position.
