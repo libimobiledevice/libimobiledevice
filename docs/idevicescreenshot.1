@@ -3,14 +3,18 @@
 idevicescreenshot \- Gets a screenshot from the connected device.
 .SH SYNOPSIS
 .B idevicescreenshot
-[OPTIONS]
+[OPTIONS] [FILE]
 
 .SH DESCRIPTION
 
 Gets a screenshot from the connected device.
 
+The screenshot is saved as a TIFF image with the given FILE name, where the
+default name is "screenshot-DATE.tiff",
+e.g.: ./screenshot-2013-12-31-23-59-59.tiff
+
 NOTE: A mounted developer disk image is required on the device, otherwise
- the screenshotr service is not available.
+the screenshotr service is not available.
 
 .SH OPTIONS
 .TP
