@@ -810,11 +810,13 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
 		debug_info("current count is %i but length is %i", current_count, length);
 
 		/* Send the read command */
-		AFCFilePacket *packet = (AFCFilePacket *) malloc(sizeof(AFCFilePacket));
-		packet->filehandle = handle;
-		packet->size = htole64(((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE);
-		ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)packet, sizeof(AFCFilePacket), NULL, 0, &bytes_loc);
-		free(packet);
+		struct {
+			uint64_t handle;
+			uint64_t size;
+		} readinfo;
+		readinfo.handle = handle;
+		readinfo.size = htole64(((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE);
+		ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)&readinfo, sizeof(readinfo), NULL, 0, &bytes_loc);
 
 		if (ret != AFC_E_SUCCESS) {
 			afc_unlock(client);
@@ -943,9 +945,11 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
  */
 afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation)
 {
-	char *buffer = malloc(16);
 	uint32_t bytes = 0;
-	uint64_t op = htole64(operation);
+	struct {
+		uint64_t handle;
+		uint64_t op;
+	} lockinfo;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
@@ -956,12 +960,9 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 	debug_info("file handle %i", handle);
 
 	/* Send command */
-	memcpy(buffer, &handle, sizeof(uint64_t));
-	memcpy(buffer + 8, &op, 8);
-
-	ret = afc_dispatch_packet(client, AFC_OP_FILE_LOCK, buffer, 16, NULL, 0, &bytes);
-	free(buffer);
-	buffer = NULL;
+	lockinfo.handle = handle;
+	lockinfo.op = htole64(operation);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_LOCK, (const char*)&lockinfo, sizeof(lockinfo), NULL, 0, &bytes);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -988,10 +989,12 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
  */
 afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, int whence)
 {
-	char *buffer = (char *) malloc(sizeof(char) * 24);
-	int64_t offset_loc = (int64_t)htole64(offset);
-	uint64_t whence_loc = htole64(whence);
 	uint32_t bytes = 0;
+	struct {
+		uint64_t handle;
+		uint64_t whence;
+		int64_t offset;
+	} seekinfo;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
@@ -1000,12 +1003,10 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 	afc_lock(client);
 
 	/* Send the command */
-	memcpy(buffer, &handle, sizeof(uint64_t));	/* handle */
-	memcpy(buffer + 8, &whence_loc, sizeof(uint64_t));	/* fromwhere */
-	memcpy(buffer + 16, &offset_loc, sizeof(uint64_t));	/* offset */
-	ret = afc_dispatch_packet(client, AFC_OP_FILE_SEEK, buffer, 24, NULL, 0, &bytes);
-	free(buffer);
-	buffer = NULL;
+	seekinfo.handle = handle;
+	seekinfo.whence = htole64(whence);
+	seekinfo.offset = (int64_t)htole64(offset);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_SEEK, (const char*)&seekinfo, sizeof(seekinfo), NULL, 0, &bytes);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -1076,9 +1077,11 @@ afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *positi
  */
 afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize)
 {
-	char *buffer = (char *) malloc(sizeof(char) * 16);
 	uint32_t bytes = 0;
-	uint64_t newsize_loc = htole64(newsize);
+	struct {
+		uint64_t handle;
+		uint64_t newsize;
+	} truncinfo;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client || (handle == 0))
@@ -1087,11 +1090,9 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 	afc_lock(client);
 
 	/* Send command */
-	memcpy(buffer, &handle, sizeof(uint64_t));	/* handle */
-	memcpy(buffer + 8, &newsize_loc, sizeof(uint64_t));	/* newsize */
-	ret = afc_dispatch_packet(client, AFC_OP_FILE_SET_SIZE, buffer, 16, NULL, 0, &bytes);
-	free(buffer);
-	buffer = NULL;
+	truncinfo.handle = handle;
+	truncinfo.newsize = htole64(newsize);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_SET_SIZE, (const char*)&truncinfo, sizeof(truncinfo), NULL, 0, &bytes);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
