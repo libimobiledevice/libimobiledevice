@@ -173,20 +173,17 @@ afc_error_t afc_client_free(afc_client_t client)
  * Dispatches an AFC packet over a client.
  * 
  * @param client The client to send data through.
- * @param data The data to send.
- * @param length The length to send.
- * @param bytes_sent The number of bytes actually sent.
+ * @param operation The operation to perform.
+ * @param data The data to send together with the header.
+ * @param data_length The length of the data to send with the header.
+ * @param payload The data to send after the header has been sent.
+ * @param payload_length The length of data to send after the header.
+ * @param bytes_sent The total number of bytes actually sent.
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
- * 
- * @warning set client->afc_packet->this_length and
- *          client->afc_packet->entire_length to 0 before calling this.  The
- *          reason is that if you set them to different values, it indicates
- *          you want to send the data as two packets.
  */
-static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, uint32_t length, uint32_t *bytes_sent)
+static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, const char *data, uint32_t data_length, const char* payload, uint32_t payload_length, uint32_t *bytes_sent)
 {
-	uint32_t offset = 0;
 	uint32_t sent = 0;
 
 	if (!client || !client->parent || !client->afc_packet)
@@ -194,117 +191,89 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, const char *data, ui
 
 	*bytes_sent = 0;
 
-	if (!data || !length)
-		length = 0;
+	if (!data || !data_length)
+		data_length = 0;
+	if (!payload || !payload_length)
+		payload_length = 0;
 
 	client->afc_packet->packet_num++;
-	if (!client->afc_packet->entire_length) {
-		client->afc_packet->entire_length = (length) ? sizeof(AFCPacket) + length : sizeof(AFCPacket);
-		client->afc_packet->this_length = client->afc_packet->entire_length;
-	}
-	if (!client->afc_packet->this_length) {
-		client->afc_packet->this_length = sizeof(AFCPacket);
-	}
-	/* We want to send two segments; buffer+sizeof(AFCPacket) to this_length
-	   is the parameters and everything beyond that is the next packet.
-	   (for writing) */
-	if (client->afc_packet->this_length != client->afc_packet->entire_length) {
-		offset = client->afc_packet->this_length - sizeof(AFCPacket);
+	client->afc_packet->operation = operation;
+	client->afc_packet->entire_length = sizeof(AFCPacket) + data_length + payload_length;
+	client->afc_packet->this_length = sizeof(AFCPacket) + data_length;
 
-		debug_info("Offset: %i", offset);
-		if ((length) < (client->afc_packet->entire_length - client->afc_packet->this_length)) {
-			debug_info("Length did not resemble what it was supposed to based on packet");
-			debug_info("length minus offset: %i", length - offset);
-			debug_info("rest of packet: %i", client->afc_packet->entire_length - client->afc_packet->this_length);
-			return AFC_E_INTERNAL_ERROR;
-		}
+	debug_info("packet length = %i", client->afc_packet->this_length);
 
-		/* send AFC packet header */
-		AFCPacket_to_LE(client->afc_packet);
-		sent = 0;
-		service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
-		AFCPacket_from_LE(client->afc_packet);
-		if (sent == 0) {
-			/* FIXME: should this be handled as success?! */
-			return AFC_E_SUCCESS;
-		}
-		*bytes_sent += sent;
+	debug_buffer((char*)client->afc_packet, sizeof(AFCPacket));
 
-		/* send AFC packet data */
-		sent = 0;
-		service_send(client->parent, data, offset, &sent);
-		if (sent == 0) {
-			return AFC_E_SUCCESS;
-		}
-		*bytes_sent += sent;
-
-		debug_info("sent the first now go with the second");
-		debug_info("Length: %i", length - offset);
-		debug_info("Buffer: ");
-		debug_buffer(data + offset, length - offset);
-
-		sent = 0;
-		service_send(client->parent, data + offset, length - offset, &sent);
-
-		*bytes_sent = sent;
-		return AFC_E_SUCCESS;
-	} else {
-		debug_info("doin things the old way");
-		debug_info("packet length = %i", client->afc_packet->this_length);
-
-		debug_buffer((char*)client->afc_packet, sizeof(AFCPacket));
-
-		/* send AFC packet header */
-		AFCPacket_to_LE(client->afc_packet);
-		sent = 0;
-		service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
-		AFCPacket_from_LE(client->afc_packet);
-		if (sent == 0) {
-			return AFC_E_SUCCESS;
-		}
-		*bytes_sent += sent;
-		/* send AFC packet data (if there's data to send) */
-		if (length > 0) {
-			debug_info("packet data follows");
-
-			debug_buffer(data, length);
-			service_send(client->parent, data, length, &sent);
-			*bytes_sent += sent;
-		}
+	/* send AFC packet header */
+	AFCPacket_to_LE(client->afc_packet);
+	sent = 0;
+	service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket), &sent);
+	AFCPacket_from_LE(client->afc_packet);
+	*bytes_sent += sent;
+	if (sent < sizeof(AFCPacket)) {
 		return AFC_E_SUCCESS;
 	}
-	return AFC_E_INTERNAL_ERROR;
+
+	/* send AFC packet data (if there's data to send) */
+	sent = 0;
+	if (data_length > 0) {
+		debug_info("packet data follows");
+		debug_buffer(data, data_length);
+		service_send(client->parent, data, data_length, &sent);
+	}
+	*bytes_sent += sent;
+	if (sent < data_length) {
+		return AFC_E_SUCCESS;
+	}
+
+	sent = 0;
+	if (payload_length > 0) {
+		debug_info("packet payload follows");
+		debug_buffer(payload, payload_length);
+		service_send(client->parent, payload, payload_length, &sent);
+	}
+	*bytes_sent += sent;
+	if (sent < payload_length) {
+		return AFC_E_SUCCESS;
+	}
+
+	return AFC_E_SUCCESS;
 }
 
 /**
  * Receives data through an AFC client and sets a variable to the received data.
  * 
  * @param client The client to receive data on.
- * @param dump_here The char* to point to the newly-received data.
+ * @param bytes The char* to point to the newly-received data.
  * @param bytes_recv How much data was received.
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint32_t *bytes_recv)
+static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t *bytes_recv)
 {
 	AFCPacket header;
 	uint32_t entire_len = 0;
 	uint32_t this_len = 0;
 	uint32_t current_count = 0;
 	uint64_t param1 = -1;
+	char* dump_here = NULL;
 
-	*bytes_recv = 0;
+	if (bytes_recv) {
+		*bytes_recv = 0;
+	}
+	if (bytes) {
+		*bytes = NULL;
+	}
 
 	/* first, read the AFC header */
 	service_receive(client->parent, (char*)&header, sizeof(AFCPacket), bytes_recv);
 	AFCPacket_from_LE(&header);
 	if (*bytes_recv == 0) {
 		debug_info("Just didn't get enough.");
-		*dump_here = NULL;
 		return AFC_E_MUX_ERROR;
 	} else if (*bytes_recv < sizeof(AFCPacket)) {
 		debug_info("Did not even get the AFCPacket header");
-		*dump_here = NULL;
 		return AFC_E_MUX_ERROR;
 	}
 
@@ -317,19 +286,16 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 	if (header.packet_num != client->afc_packet->packet_num) {
 		/* otherwise print a warning but do not abort */
 		debug_info("ERROR: Unexpected packet number (%lld != %lld) aborting.", header.packet_num, client->afc_packet->packet_num);
-		*dump_here = NULL;
 		return AFC_E_OP_HEADER_INVALID;
 	}
 
 	/* then, read the attached packet */
 	if (header.this_length < sizeof(AFCPacket)) {
 		debug_info("Invalid AFCPacket header received!");
-		*dump_here = NULL;
 		return AFC_E_OP_HEADER_INVALID;
 	} else if ((header.this_length == header.entire_length)
 			&& header.entire_length == sizeof(AFCPacket)) {
 		debug_info("Empty AFCPacket received!");
-		*dump_here = NULL;
 		*bytes_recv = 0;
 		if (header.operation == AFC_OP_DATA) {
 			return AFC_E_SUCCESS;
@@ -348,17 +314,15 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 		fprintf(stderr, "%s: entire_len is larger than MAXIMUM_PACKET_SIZE, (%d > %d)!", __func__, entire_len, MAXIMUM_PACKET_SIZE);
 	}
 
-	*dump_here = (char*)malloc(entire_len);
+	dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
-		service_receive(client->parent, *dump_here, this_len, bytes_recv);
+		service_receive(client->parent, dump_here, this_len, bytes_recv);
 		if (*bytes_recv <= 0) {
-			free(*dump_here);
-			*dump_here = NULL;
+			free(dump_here);
 			debug_info("Did not get packet contents!");
 			return AFC_E_NOT_ENOUGH_DATA;
 		} else if (*bytes_recv < this_len) {
-			free(*dump_here);
-			*dump_here = NULL;
+			free(dump_here);
 			debug_info("Could not receive this_len=%d bytes", this_len);
 			return AFC_E_NOT_ENOUGH_DATA;
 		}
@@ -368,7 +332,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
-			service_receive(client->parent, (*dump_here)+current_count, entire_len - current_count, bytes_recv);
+			service_receive(client->parent, dump_here+current_count, entire_len - current_count, bytes_recv);
 			if (*bytes_recv <= 0) {
 				debug_info("Error receiving data (recv returned %d)", *bytes_recv);
 				break;
@@ -381,12 +345,12 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 	}
 
 	if (current_count >= sizeof(uint64_t)) {
-		param1 = le64toh(*(uint64_t*)(*dump_here));
+		param1 = le64toh(*(uint64_t*)(dump_here));
 	}
 
 	debug_info("packet data size = %i", current_count);
 	debug_info("packet data follows");
-	debug_buffer(*dump_here, current_count);
+	debug_buffer(dump_here, current_count);
 
 	/* check operation types */
 	if (header.operation == AFC_OP_STATUS) {
@@ -396,8 +360,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 		if (param1 != AFC_E_SUCCESS) {
 			/* error status */
 			/* free buffer */
-			free(*dump_here);
-			*dump_here = NULL;
+			free(dump_here);
 			return (afc_error_t)param1;
 		}
 	} else if (header.operation == AFC_OP_DATA) {
@@ -411,8 +374,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 		debug_info("got a tell response, position=%lld", param1);
 	} else {
 		/* unknown operation code received */
-		free(*dump_here);
-		*dump_here = NULL;
+		free(dump_here);
 		*bytes_recv = 0;
 
 		debug_info("WARNING: Unknown operation code received 0x%llx param1=%lld", header.operation, param1);
@@ -421,6 +383,12 @@ static afc_error_t afc_receive_data(afc_client_t client, char **dump_here, uint3
 #endif
 
 		return AFC_E_OP_NOT_SUPPORTED;
+	}
+
+	if (bytes) {
+		*bytes = dump_here;
+	} else {
+		free(dump_here);
 	}
 
 	*bytes_recv = current_count;
@@ -493,10 +461,7 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 	afc_lock(client);
 
 	/* Send the command */
-	client->afc_packet->operation = AFC_OP_READ_DIR;
-	client->afc_packet->entire_length = 0;
-	client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, dir, strlen(dir)+1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_READ_DIR, dir, strlen(dir)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -504,6 +469,8 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 	/* Receive the data */
 	ret = afc_receive_data(client, &data, &bytes);
 	if (ret != AFC_E_SUCCESS) {
+		if (data)
+			free(data);
 		afc_unlock(client);
 		return ret;
 	}
@@ -541,9 +508,7 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 	afc_lock(client);
 
 	/* Send the command */
-	client->afc_packet->operation = AFC_OP_GET_DEVINFO;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, NULL, 0, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_GET_DEVINFO, NULL, 0, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -551,6 +516,8 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 	/* Receive the data */
 	ret = afc_receive_data(client, &data, &bytes);
 	if (ret != AFC_E_SUCCESS) {
+		if (data)
+			free(data);
 		afc_unlock(client);
 		return ret;
 	}
@@ -614,7 +581,6 @@ afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char *
  */
 afc_error_t afc_remove_path(afc_client_t client, const char *path)
 {
-	char *response = NULL;
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
@@ -624,17 +590,13 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 	afc_lock(client);
 
 	/* Send command */
-	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	client->afc_packet->operation = AFC_OP_REMOVE_PATH;
-	ret = afc_dispatch_packet(client, path, strlen(path)+1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_REMOVE_PATH, path, strlen(path)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	/* special case; unknown error actually means directory not empty */
 	if (ret == AFC_E_UNKNOWN_ERROR)
@@ -656,7 +618,6 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
  */
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
 {
-	char *response = NULL;
 	char *send = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -669,18 +630,15 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 	/* Send command */
 	memcpy(send, from, strlen(from) + 1);
 	memcpy(send + strlen(from) + 1, to, strlen(to) + 1);
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_OP_RENAME_PATH;
-	ret = afc_dispatch_packet(client, send, strlen(to)+1 + strlen(from)+1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_RENAME_PATH, send, strlen(to)+1 + strlen(from)+1, NULL, 0, &bytes);
 	free(send);
+
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -699,7 +657,6 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 {
 	uint32_t bytes = 0;
-	char *response = NULL;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	if (!client)
@@ -708,17 +665,13 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 	afc_lock(client);
 
 	/* Send command */
-	client->afc_packet->operation = AFC_OP_MAKE_DIR;
-	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	ret = afc_dispatch_packet(client, dir, strlen(dir)+1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_MAKE_DIR, dir, strlen(dir)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -748,9 +701,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
 	afc_lock(client);
 
 	/* Send command */
-	client->afc_packet->operation = AFC_OP_GET_FILE_INFO;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, path, strlen(path)+1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_GET_FILE_INFO, path, strlen(path)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -781,7 +732,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t
+idevice_error_t
 afc_file_open(afc_client_t client, const char *filename,
 					 afc_file_mode_t file_mode, uint64_t *handle)
 {
@@ -802,9 +753,7 @@ afc_file_open(afc_client_t client, const char *filename,
 	memcpy(data, &file_mode_loc, 8);
 	memcpy(data + 8, filename, strlen(filename));
 	data[8 + strlen(filename)] = '\0';
-	client->afc_packet->operation = AFC_OP_FILE_OPEN;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, data, 8 + strlen(filename) + 1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_OPEN, data, 8 + strlen(filename) + 1, NULL, 0, &bytes);
 	free(data);
 
 	if (ret != AFC_E_SUCCESS) {
@@ -841,7 +790,7 @@ afc_file_open(afc_client_t client, const char *filename,
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t
+idevice_error_t
 afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
 {
 	char *input = NULL;
@@ -864,9 +813,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
 		AFCFilePacket *packet = (AFCFilePacket *) malloc(sizeof(AFCFilePacket));
 		packet->filehandle = handle;
 		packet->size = htole64(((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE);
-		client->afc_packet->operation = AFC_OP_READ;
-		client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-		ret = afc_dispatch_packet(client, (char *) packet, sizeof(AFCFilePacket), &bytes_loc);
+		ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)packet, sizeof(AFCFilePacket), NULL, 0, &bytes_loc);
 		free(packet);
 
 		if (ret != AFC_E_SUCCESS) {
@@ -915,15 +862,11 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t
+idevice_error_t
 afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
 {
-	char *acknowledgement = NULL;
-	const uint32_t MAXIMUM_WRITE_SIZE = 1 << 15;
-	uint32_t current_count = 0, i = 0;
-	uint32_t segments = (length / MAXIMUM_WRITE_SIZE);
+	uint32_t current_count = 0;
 	uint32_t bytes_loc = 0;
-	char *out_buffer = NULL;
 	afc_error_t ret = AFC_E_SUCCESS;
 
 	if (!client || !client->afc_packet || !client->parent || !bytes_written || (handle == 0))
@@ -933,53 +876,9 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
 
 	debug_info("Write length: %i", length);
 
-	/* Divide the file into segments. */
-	for (i = 0; i < segments; i++) {
-		/* Send the segment */
-		client->afc_packet->this_length = sizeof(AFCPacket) + 8;
-		client->afc_packet->entire_length = client->afc_packet->this_length + MAXIMUM_WRITE_SIZE;
-		client->afc_packet->operation = AFC_OP_WRITE;
-		out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
-		memcpy(out_buffer, (char *)&handle, sizeof(uint64_t));
-		memcpy(out_buffer + 8, data + current_count, MAXIMUM_WRITE_SIZE);
-		ret = afc_dispatch_packet(client, out_buffer, MAXIMUM_WRITE_SIZE + 8, &bytes_loc);
-		if (ret != AFC_E_SUCCESS) {
-			afc_unlock(client);
-			return AFC_E_NOT_ENOUGH_DATA;
-		}
-		free(out_buffer);
-		out_buffer = NULL;
+	ret = afc_dispatch_packet(client, AFC_OP_WRITE, (const char*)&handle, 8, data, length, &bytes_loc);
 
-		current_count += bytes_loc;
-		ret = afc_receive_data(client, &acknowledgement, &bytes_loc);
-		if (ret != AFC_E_SUCCESS) {
-			afc_unlock(client);
-			return ret;
-		} else {
-			free(acknowledgement);
-		}
-	}
-
-	/* By this point, we should be at the end. i.e. the last segment that didn't
-	   get sent in the for loop. This length is fine because it's always
-	   sizeof(AFCPacket) + 8, but to be sure we do it again */
-	if (current_count == length) {
-		afc_unlock(client);
-		*bytes_written = current_count;
-		return ret;
-	}
-
-	client->afc_packet->this_length = sizeof(AFCPacket) + 8;
-	client->afc_packet->entire_length = client->afc_packet->this_length + (length - current_count);
-	client->afc_packet->operation = AFC_OP_WRITE;
-	out_buffer = (char *) malloc(sizeof(char) * client->afc_packet->entire_length - sizeof(AFCPacket));
-	memcpy(out_buffer, (char *) &handle, sizeof(uint64_t));
-	memcpy(out_buffer + 8, data + current_count, (length - current_count));
-	ret = afc_dispatch_packet(client, out_buffer, (length - current_count) + 8, &bytes_loc);
-	free(out_buffer);
-	out_buffer = NULL;
-
-	current_count += bytes_loc;
+	current_count += bytes_loc - (sizeof(AFCPacket) + 8);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -987,12 +886,10 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
 		return AFC_E_SUCCESS;
 	}
 
-	ret = afc_receive_data(client, &acknowledgement, &bytes_loc);
+	ret = afc_receive_data(client, NULL, &bytes_loc);
 	afc_unlock(client);
 	if (ret != AFC_E_SUCCESS) {
 		debug_info("uh oh?");
-	} else {
-		free(acknowledgement);
 	}
 	*bytes_written = current_count;
 	return ret;
@@ -1006,7 +903,6 @@ afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t 
  */
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 {
-	char *buffer = malloc(sizeof(char) * 8);
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
@@ -1018,12 +914,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 	debug_info("File handle %i", handle);
 
 	/* Send command */
-	memcpy(buffer, &handle, sizeof(uint64_t));
-	client->afc_packet->operation = AFC_OP_FILE_CLOSE;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, buffer, 8, &bytes);
-	free(buffer);
-	buffer = NULL;
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_CLOSE, (const char*)&handle, 8, NULL, 0, &bytes);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -1031,9 +922,7 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 	}
 
 	/* Receive the response */
-	ret = afc_receive_data(client, &buffer, &bytes);
-	if (buffer)
-		free(buffer);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -1070,9 +959,7 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 	memcpy(buffer, &handle, sizeof(uint64_t));
 	memcpy(buffer + 8, &op, 8);
 
-	client->afc_packet->operation = AFC_OP_FILE_LOCK;
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	ret = afc_dispatch_packet(client, buffer, 16, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_LOCK, buffer, 16, NULL, 0, &bytes);
 	free(buffer);
 	buffer = NULL;
 
@@ -1082,11 +969,8 @@ afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t op
 		return AFC_E_UNKNOWN_ERROR;
 	}
 	/* Receive the response */
-	ret = afc_receive_data(client, &buffer, &bytes);
-	if (buffer) {
-		debug_buffer(buffer, bytes);
-		free(buffer);
-	}
+	ret = afc_receive_data(client, NULL, &bytes);
+
 	afc_unlock(client);
 
 	return ret;
@@ -1119,9 +1003,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 	memcpy(buffer, &handle, sizeof(uint64_t));	/* handle */
 	memcpy(buffer + 8, &whence_loc, sizeof(uint64_t));	/* fromwhere */
 	memcpy(buffer + 16, &offset_loc, sizeof(uint64_t));	/* offset */
-	client->afc_packet->operation = AFC_OP_FILE_SEEK;
-	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	ret = afc_dispatch_packet(client, buffer, 24, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_SEEK, buffer, 24, NULL, 0, &bytes);
 	free(buffer);
 	buffer = NULL;
 
@@ -1130,9 +1012,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &buffer, &bytes);
-	if (buffer)
-		free(buffer);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -1160,12 +1040,7 @@ afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *positi
 	afc_lock(client);
 
 	/* Send the command */
-	memcpy(buffer, &handle, sizeof(uint64_t));	/* handle */
-	client->afc_packet->operation = AFC_OP_FILE_TELL;
-	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	ret = afc_dispatch_packet(client, buffer, 8, &bytes);
-	free(buffer);
-	buffer = NULL;
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_TELL, (const char*)&handle, 8, NULL, 0, &bytes);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -1214,9 +1089,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 	/* Send command */
 	memcpy(buffer, &handle, sizeof(uint64_t));	/* handle */
 	memcpy(buffer + 8, &newsize_loc, sizeof(uint64_t));	/* newsize */
-	client->afc_packet->operation = AFC_OP_FILE_SET_SIZE;
-	client->afc_packet->this_length = client->afc_packet->entire_length = 0;
-	ret = afc_dispatch_packet(client, buffer, 16, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_SET_SIZE, buffer, 16, NULL, 0, &bytes);
 	free(buffer);
 	buffer = NULL;
 
@@ -1225,9 +1098,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &buffer, &bytes);
-	if (buffer)
-		free(buffer);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -1245,7 +1116,6 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
  */
 afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
-	char *response = NULL;
 	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t size_requested = htole64(newsize);
@@ -1259,18 +1129,15 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
 	/* Send command */
 	memcpy(send, &size_requested, 8);
 	memcpy(send + 8, path, strlen(path) + 1);
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_OP_TRUNCATE;
-	ret = afc_dispatch_packet(client, send, 8 + strlen(path) + 1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_TRUNCATE, send, 8 + strlen(path) + 1, NULL, 0, &bytes);
 	free(send);
+
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -1289,7 +1156,6 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
  */
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
 {
-	char *response = NULL;
 	char *send = (char *) malloc(sizeof(char) * (strlen(target)+1 + strlen(linkname)+1 + 8));
 	uint32_t bytes = 0;
 	uint64_t type = htole64(linktype);
@@ -1308,18 +1174,14 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 	memcpy(send, &type, 8);
 	memcpy(send + 8, target, strlen(target) + 1);
 	memcpy(send + 8 + strlen(target) + 1, linkname, strlen(linkname) + 1);
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_OP_MAKE_LINK;
-	ret = afc_dispatch_packet(client, send, 8 + strlen(linkname) + 1 + strlen(target) + 1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_MAKE_LINK, send, 8 + strlen(linkname) + 1 + strlen(target) + 1, NULL, 0, &bytes);
 	free(send);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
@@ -1337,7 +1199,6 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
  */
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
 {
-	char *response = NULL;
 	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t mtime_loc = htole64(mtime);
@@ -1351,18 +1212,14 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	/* Send command */
 	memcpy(send, &mtime_loc, 8);
 	memcpy(send + 8, path, strlen(path) + 1);
-	client->afc_packet->entire_length = client->afc_packet->this_length = 0;
-	client->afc_packet->operation = AFC_OP_SET_FILE_TIME;
-	ret = afc_dispatch_packet(client, send, 8 + strlen(path) + 1, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_SET_FILE_TIME, send, 8 + strlen(path) + 1, NULL, 0, &bytes);
 	free(send);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive response */
-	ret = afc_receive_data(client, &response, &bytes);
-	if (response)
-		free(response);
+	ret = afc_receive_data(client, NULL, &bytes);
 
 	afc_unlock(client);
 
