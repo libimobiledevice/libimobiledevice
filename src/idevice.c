@@ -820,7 +820,10 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 
 #ifdef HAVE_OPENSSL
 	if (connection->ssl_data->session) {
-		SSL_shutdown(connection->ssl_data->session);
+		/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
+		if (SSL_shutdown(connection->ssl_data->session) == 0) {
+			SSL_shutdown(connection->ssl_data->session);
+		}
 	}
 #else
 	if (connection->ssl_data->session) {
