@@ -262,6 +262,11 @@ static void print_xml(plist_t node)
 		puts(xml);
 }
 
+static ssize_t mim_upload_cb(void* buf, size_t size, void* userdata)
+{
+	return fread(buf, 1, size, (FILE*)userdata);
+}
+
 int main(int argc, char **argv)
 {
 	idevice_t device = NULL;
@@ -271,6 +276,7 @@ int main(int argc, char **argv)
 	lockdownd_service_descriptor_t service = NULL;
 	int res = -1;
 	char *image_path = NULL;
+	size_t image_size = 0;
 	char *image_sig_path = NULL;
 
 	parse_opts(argc, argv);
@@ -304,6 +310,21 @@ int main(int argc, char **argv)
 		goto leave;
 	}
 
+	plist_t pver = NULL;
+	char *product_version = NULL;
+	lockdownd_get_value(lckd, NULL, "ProductVersion", &pver);
+	if (pver && plist_get_node_type(pver) == PLIST_STRING) {
+		plist_get_string_val(pver, &product_version);
+	}
+	int ge70 = 0;
+	if (product_version) {
+		int maj = 0;
+		int min = 0;
+		if (sscanf(product_version, "%d.%d.%*d", &maj, &min) == 2) {
+			ge70 = (maj >= 7);
+		}
+	}
+
 	lockdownd_start_service(lckd, "com.apple.mobile.mobile_image_mounter", &service);
 
 	if (!service || service->port == 0) {
@@ -323,23 +344,26 @@ int main(int argc, char **argv)
 
 	if (!list_mode) {
 		struct stat fst;
-		if ((lockdownd_start_service(lckd, "com.apple.afc", &service) !=
-			 LOCKDOWN_E_SUCCESS) || !service || !service->port) {
-			fprintf(stderr, "Could not start com.apple.afc!\n");
-			goto leave;
-		}
-		if (afc_client_new(device, service, &afc) != AFC_E_SUCCESS) {
-			fprintf(stderr, "Could not connect to AFC!\n");
-			goto leave;
-		}
-		if (service) {
-			lockdownd_service_descriptor_free(service);
-			service = NULL;
+		if (!ge70) {
+			if ((lockdownd_start_service(lckd, "com.apple.afc", &service) !=
+				 LOCKDOWN_E_SUCCESS) || !service || !service->port) {
+				fprintf(stderr, "Could not start com.apple.afc!\n");
+				goto leave;
+			}
+			if (afc_client_new(device, service, &afc) != AFC_E_SUCCESS) {
+				fprintf(stderr, "Could not connect to AFC!\n");
+				goto leave;
+			}
+			if (service) {
+				lockdownd_service_descriptor_free(service);
+				service = NULL;
+			}
 		}
 		if (stat(image_path, &fst) != 0) {
 			fprintf(stderr, "ERROR: stat: %s: %s\n", image_path, strerror(errno));
 			goto leave;
 		}
+		image_size = fst.st_size;
 		if (stat(image_sig_path, &fst) != 0) {
 			fprintf(stderr, "ERROR: stat: %s: %s\n", image_sig_path, strerror(errno));
 			goto leave;
@@ -401,66 +425,72 @@ int main(int argc, char **argv)
 			goto leave;
 		}
 
-		printf("Copying '%s' --> '%s'\n", image_path, targetname);
 
-		char **strs = NULL;
-		if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {
-			if (afc_make_directory(afc, PKG_PATH) != AFC_E_SUCCESS) {
-				fprintf(stderr, "WARNING: Could not create directory '%s' on device!\n", PKG_PATH);
+		if (!imagetype) {
+			imagetype = strdup("Developer");
+		}
+
+		if (ge70) {
+			printf("Uploading %s\n", image_path);
+			err = mobile_image_mounter_upload_image(mim, imagetype, image_size, mim_upload_cb, f);
+		} else {
+			printf("Uploading %s --> afc:///%s\n", image_path, targetname);
+			char **strs = NULL;
+			if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {
+				if (afc_make_directory(afc, PKG_PATH) != AFC_E_SUCCESS) {
+					fprintf(stderr, "WARNING: Could not create directory '%s' on device!\n", PKG_PATH);
+				}
 			}
-		}
-		if (strs) {
-			int i = 0;
-			while (strs[i]) {
-				free(strs[i]);
-				i++;
+			if (strs) {
+				int i = 0;
+				while (strs[i]) {
+					free(strs[i]);
+					i++;
+				}
+				free(strs);
 			}
-			free(strs);
-		}
 
-		uint64_t af = 0;
-		if ((afc_file_open(afc, targetname, AFC_FOPEN_WRONLY, &af) !=
-			 AFC_E_SUCCESS) || !af) {
-			fclose(f);
-			fprintf(stderr, "afc_file_open on '%s' failed!\n", targetname);
-			goto leave;
-		}
+			uint64_t af = 0;
+			if ((afc_file_open(afc, targetname, AFC_FOPEN_WRONLY, &af) !=
+				 AFC_E_SUCCESS) || !af) {
+				fclose(f);
+				fprintf(stderr, "afc_file_open on '%s' failed!\n", targetname);
+				goto leave;
+			}
 
-		char buf[8192];
-		size_t amount = 0;
-		do {
-			amount = fread(buf, 1, sizeof(buf), f);
-			if (amount > 0) {
-				uint32_t written, total = 0;
-				while (total < amount) {
-					written = 0;
-					if (afc_file_write(afc, af, buf, amount, &written) !=
-						AFC_E_SUCCESS) {
-						fprintf(stderr, "AFC Write error!\n");
-						break;
+			char buf[8192];
+			size_t amount = 0;
+			do {
+				amount = fread(buf, 1, sizeof(buf), f);
+				if (amount > 0) {
+					uint32_t written, total = 0;
+					while (total < amount) {
+						written = 0;
+						if (afc_file_write(afc, af, buf, amount, &written) !=
+							AFC_E_SUCCESS) {
+							fprintf(stderr, "AFC Write error!\n");
+							break;
+						}
+						total += written;
 					}
-					total += written;
-				}
-				if (total != amount) {
-					fprintf(stderr, "Error: wrote only %d of %d\n", total,
-							(unsigned int)amount);
-					afc_file_close(afc, af);
-					fclose(f);
-					goto leave;
+					if (total != amount) {
+						fprintf(stderr, "Error: wrote only %d of %d\n", total,
+								(unsigned int)amount);
+						afc_file_close(afc, af);
+						fclose(f);
+						goto leave;
+					}
 				}
 			}
-		}
-		while (amount > 0);
+			while (amount > 0);
 
-		afc_file_close(afc, af);
+			afc_file_close(afc, af);
+		}
 		fclose(f);
 
 		printf("done.\n");
 
 		printf("Mounting...\n");
-		if (!imagetype) {
-			imagetype = strdup("Developer");
-		}
 		err = mobile_image_mounter_mount_image(mim, mountname, sig, sig_length, imagetype, &result);
 		free(imagetype);
 		if (err == MOBILE_IMAGE_MOUNTER_E_SUCCESS) {

@@ -267,6 +267,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
 		usbmuxd_disconnect((int)(long)connection->data);
+		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
@@ -276,6 +277,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 		free(connection->udid);
 
 	free(connection);
+	connection = NULL;
 
 	return result;
 }
@@ -383,7 +385,15 @@ idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connecti
 
 	if (connection->ssl_data) {
 #ifdef HAVE_OPENSSL
-		int received = SSL_read(connection->ssl_data->session, (void*)data, (int)len);
+		uint32_t received = 0;
+		while (received < len) {
+			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
+			if (r > 0) {
+				received += r;
+			} else {
+				break;
+			}
+		}
 		debug_info("SSL_read %d, received %d", len, received);
 #else
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
@@ -597,28 +607,28 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 #ifndef STRIP_DEBUG_CODE
 static const char *errorstring(int e)
 {
-    switch(e) {
-	case SSL_ERROR_NONE:
-	    return "SSL_ERROR_NONE";
-	case SSL_ERROR_SSL:
-	    return "SSL_ERROR_SSL";
-	case SSL_ERROR_WANT_READ:
-	    return "SSL_ERROR_WANT_READ";
-	case SSL_ERROR_WANT_WRITE:
-	    return "SSL_ERROR_WANT_WRITE";
-	case SSL_ERROR_WANT_X509_LOOKUP:
-	    return "SSL_ERROR_WANT_X509_LOOKUP";
-	case SSL_ERROR_SYSCALL:
-	    return "SSL_ERROR_SYSCALL";
-	case SSL_ERROR_ZERO_RETURN:
-	    return "SSL_ERROR_ZERO_RETURN";
-        case SSL_ERROR_WANT_CONNECT:
-	    return "SSL_ERROR_WANT_CONNECT";
-	case SSL_ERROR_WANT_ACCEPT:
-	    return "SSL_ERROR_WANT_ACCEPT";
-	default:
-	    return "UNKOWN_ERROR_VALUE";
-    }
+	switch(e) {
+		case SSL_ERROR_NONE:
+			return "SSL_ERROR_NONE";
+		case SSL_ERROR_SSL:
+			return "SSL_ERROR_SSL";
+		case SSL_ERROR_WANT_READ:
+			return "SSL_ERROR_WANT_READ";
+		case SSL_ERROR_WANT_WRITE:
+			return "SSL_ERROR_WANT_WRITE";
+		case SSL_ERROR_WANT_X509_LOOKUP:
+			return "SSL_ERROR_WANT_X509_LOOKUP";
+		case SSL_ERROR_SYSCALL:
+			return "SSL_ERROR_SYSCALL";
+		case SSL_ERROR_ZERO_RETURN:
+			return "SSL_ERROR_ZERO_RETURN";
+		case SSL_ERROR_WANT_CONNECT:
+			return "SSL_ERROR_WANT_CONNECT";
+		case SSL_ERROR_WANT_ACCEPT:
+			return "SSL_ERROR_WANT_ACCEPT";
+		default:
+			return "UNKOWN_ERROR_VALUE";
+	}
 }
 #endif
 #endif
@@ -728,13 +738,12 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return_me = SSL_do_handshake(ssl);
         if (return_me != 1) {
 		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
-		BIO_free(ssl_bio);
+		SSL_free(ssl);
 		SSL_CTX_free(ssl_ctx);
 	} else {
 		ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 		ssl_data_loc->session = ssl;
 		ssl_data_loc->ctx = ssl_ctx;
-		ssl_data_loc->bio = ssl_bio;
 		connection->ssl_data = ssl_data_loc;
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
@@ -811,7 +820,10 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 
 #ifdef HAVE_OPENSSL
 	if (connection->ssl_data->session) {
-		SSL_shutdown(connection->ssl_data->session);
+		/* Perform a bidirectional (2 step) SSL shutdown */
+		if (0 == SSL_shutdown(connection->ssl_data->session)) {
+			SSL_shutdown(connection->ssl_data->session);
+		}
 	}
 #else
 	if (connection->ssl_data->session) {
@@ -828,22 +840,64 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 }
 
 /**
-* Sets the usbmuxd tcp port
-*
-* @param The new tcp port
-*
-* @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
-* is zero.
-*/
+ * Sets the usbmuxd tcp port
+ *
+ * @param The new tcp port
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when port
+ * is zero.
+ */
 idevice_error_t idevice_set_usbmuxd_port(uint16_t port)
 {
-	if (0 == port)
-	{
+	if (0 == port) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
 	libusbmuxd_set_socket_port(port);
 	return IDEVICE_E_SUCCESS;
+}
+
+/**
+ * Returns the SSL certificate for an ssl enabled connection.
+ * Currently implemented only for openssl.
+ *
+ * @param connection The ssl enabled connection.
+ * @param connection The ssl enabled connection.
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_SSL_ERROR on failure to retrieve 
+ *     certificate. IDEVICE_E_INVALID_ARG when device_cert is NULL, connection,  
+ *     is NULL, or doens't have ssl enabled. 
+ */
+idevice_error_t idevice_get_device_ssl_cert(idevice_connection_t connection, plist_t * device_cert)
+{
+	if (!device_cert || !connection || !connection->ssl_data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+		
+	#ifdef HAVE_OPENSSL
+		plist_t peer_cert_node = NULL;
+		X509 * dev_cert = SSL_get_peer_certificate(connection->ssl_data->session);
+		BIO * dev_cert_mem = BIO_new(BIO_s_mem());
+
+		if (dev_cert && dev_cert_mem && PEM_write_bio_X509(dev_cert_mem, dev_cert) > 0) {
+			/* Get the cert's data */
+			char * dev_cert_data = NULL;
+			unsigned int device_cert_size = BIO_get_mem_data(dev_cert_mem, &dev_cert_data);
+			
+			peer_cert_node = plist_new_data(dev_cert_data, device_cert_size);
+		}
+
+		if (dev_cert_mem) {
+			BIO_free(dev_cert_mem);
+		}
+
+		if (peer_cert_node) {
+			*device_cert = peer_cert_node;
+			return IDEVICE_E_SUCCESS;
+		}
+	#endif
+
+	return IDEVICE_E_SSL_ERROR;
 }
 
 /**

@@ -1538,7 +1538,7 @@ int main(int argc, char *argv[])
 	} else if (cmd != CMD_CLOUD) {
 		/* backup directory must contain an Info.plist */
 		info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
-		if (cmd == CMD_RESTORE) {
+		if (cmd == CMD_RESTORE || cmd == CMD_UNBACK) {
 			if (stat(info_path, &st) != 0) {
 				free(info_path);
 				printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
@@ -1577,7 +1577,11 @@ int main(int argc, char *argv[])
 					free(backup_password);
 				}
 				idevice_free(device);
-				printf("ERROR: a backup password is required to restore an encrypted backup. Cannot continue.\n");
+				if (cmd == CMD_RESTORE) {
+					printf("ERROR: a backup password is required to restore an encrypted backup. Cannot continue.\n");
+				} else if (cmd == CMD_UNBACK) {
+					printf("ERROR: a backup password is required to unback an encrypted backup. Cannot continue.\n");
+				}
 				return -1;
 			}
 		}

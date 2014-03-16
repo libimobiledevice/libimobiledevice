@@ -2,6 +2,7 @@
  * installation_proxy.c
  * com.apple.mobile.installation_proxy service implementation.
  *
+ * Copyright (c) 2013 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -77,6 +78,8 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
 			return INSTPROXY_E_PLIST_ERROR;
 		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
 			return INSTPROXY_E_CONN_FAILED;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return INSTPROXY_E_RECEIVE_TIMEOUT;
 		default:
 			break;
 	}
@@ -228,7 +231,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_opt
 		browsing = 0;
 		dict = NULL;
 		res = instproxy_error(property_list_service_receive_plist(client->parent, &dict));
-		if (res != INSTPROXY_E_SUCCESS) {
+		if (res != INSTPROXY_E_SUCCESS && res != INSTPROXY_E_RECEIVE_TIMEOUT) {
 			break;
 		}
 		if (dict) {
@@ -295,9 +298,9 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
 
 	do {
 		instproxy_lock(client);
-		res = instproxy_error(property_list_service_receive_plist_with_timeout(client->parent, &dict, 30000));
+		res = instproxy_error(property_list_service_receive_plist_with_timeout(client->parent, &dict, 1000));
 		instproxy_unlock(client);
-		if (res != INSTPROXY_E_SUCCESS) {
+		if (res != INSTPROXY_E_SUCCESS && res != INSTPROXY_E_RECEIVE_TIMEOUT) {
 			debug_info("could not receive plist, error %d", res);
 			break;
 		}
@@ -374,7 +377,7 @@ static void* instproxy_status_updater(void* arg)
 	instproxy_lock(data->client);
 	debug_info("done, cleaning up.");
 	if (data->operation) {
-	    free(data->operation);
+		free(data->operation);
 	}
 	data->client->status_updater = (thread_t)NULL;
 	instproxy_unlock(data->client);
@@ -548,15 +551,10 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	}
 
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "ApplicationIdentifier", plist_new_string(appid));
-	plist_dict_insert_item(dict, "Command", plist_new_string("Uninstall"));
 
 	instproxy_lock(client);
 	res = instproxy_send_command(client, "Uninstall", client_options, appid, NULL);
 	instproxy_unlock(client);
-
-	plist_free(dict);
 
 	if (res != INSTPROXY_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);

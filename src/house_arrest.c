@@ -40,19 +40,19 @@
  */
 static house_arrest_error_t house_arrest_error(property_list_service_error_t err)
 {
-       switch (err) {
-                case PROPERTY_LIST_SERVICE_E_SUCCESS:
-                        return HOUSE_ARREST_E_SUCCESS;
-                case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
-                        return HOUSE_ARREST_E_INVALID_ARG;
-                case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
-                        return HOUSE_ARREST_E_PLIST_ERROR;
-                case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
-                        return HOUSE_ARREST_E_CONN_FAILED;
-                default:
-                        break;
-        }
-        return HOUSE_ARREST_E_UNKNOWN_ERROR;
+	switch (err) {
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
+			return HOUSE_ARREST_E_SUCCESS;
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+			return HOUSE_ARREST_E_INVALID_ARG;
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+			return HOUSE_ARREST_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return HOUSE_ARREST_E_CONN_FAILED;
+		default:
+			break;
+	}
+	return HOUSE_ARREST_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -151,16 +151,16 @@ house_arrest_error_t house_arrest_client_free(house_arrest_client_t client)
 house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict)
 {
 	if (!client || !client->parent || !dict)
-                return HOUSE_ARREST_E_INVALID_ARG;
+		return HOUSE_ARREST_E_INVALID_ARG;
 	if (plist_get_node_type(dict) != PLIST_DICT)
 		return HOUSE_ARREST_E_PLIST_ERROR;
 	if (client->mode != HOUSE_ARREST_CLIENT_MODE_NORMAL)
 		return HOUSE_ARREST_E_INVALID_MODE;
 
 	house_arrest_error_t res = house_arrest_error(property_list_service_send_xml_plist(client->parent, dict));
-        if (res != HOUSE_ARREST_E_SUCCESS) {
-                debug_info("could not send plist, error %d", res);
-        }
+	if (res != HOUSE_ARREST_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+	}
 	return res;
 }
 
@@ -186,7 +186,7 @@ house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, pli
 house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid)
 {
 	if (!client || !client->parent || !command || !appid)
-                return HOUSE_ARREST_E_INVALID_ARG;
+		return HOUSE_ARREST_E_INVALID_ARG;
 	if (client->mode != HOUSE_ARREST_CLIENT_MODE_NORMAL)
 		return HOUSE_ARREST_E_INVALID_MODE;
 
@@ -220,18 +220,18 @@ house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, con
 house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict)
 {
 	if (!client || !client->parent)
-                return HOUSE_ARREST_E_INVALID_ARG;
+		return HOUSE_ARREST_E_INVALID_ARG;
 	if (client->mode != HOUSE_ARREST_CLIENT_MODE_NORMAL)
 		return HOUSE_ARREST_E_INVALID_MODE;
 
 	house_arrest_error_t res = house_arrest_error(property_list_service_receive_plist(client->parent, dict));
-        if (res != HOUSE_ARREST_E_SUCCESS) {
-                debug_info("could not get result, error %d", res);
-                if (*dict) {
-                        plist_free(*dict);
-                        *dict = NULL;
-                }
-        }
+	if (res != HOUSE_ARREST_E_SUCCESS) {
+		debug_info("could not get result, error %d", res);
+		if (*dict) {
+			plist_free(*dict);
+			*dict = NULL;
+		}
+	}
 	return res;
 }
 

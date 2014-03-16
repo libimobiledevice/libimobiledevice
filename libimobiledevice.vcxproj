@@ -57,13 +57,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;HAVE_OPENSSL;plist_EXPORTS;__LITTLE_ENDIAN__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\usbmuxd\libusbmuxd</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\libusbmuxd\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\Debug;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcnary.lib;libusbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
     </Link>
@@ -77,7 +77,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBIMOBILEDEVICE_EXPORTS;HAVE_OPENSSL;plist_EXPORTS;STRIP_DEBUG_CODE;__LITTLE_ENDIAN__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\usbmuxd\libusbmuxd</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;include;include\windows;..\libplist\include;..\openssl-0.9.8a\include;..\libusbmuxd\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
@@ -86,7 +86,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>libimobiledevice.def</ModuleDefinitionFile>
-      <AdditionalDependencies>libcnary.lib;usbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcnary.lib;libusbmuxd.lib;libeay32_a.lib;ssleay32_a.lib;zlib.lib;iconv_a.lib;libxml2_a.lib;Ws2_32.lib;libplist.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Release;..\openssl-0.9.8a\lib;..\libxml2-2.7.8\lib;..\iconv-1.9.2\lib;..\zlib-1.2.5\lib</AdditionalLibraryDirectories>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
@@ -153,7 +153,7 @@
     <ClCompile Include="common\thread.c" />
     <ClCompile Include="common\userpref.c" />
     <ClCompile Include="common\utils.c" />
-    <ClCompile Include="memory.c" />
+    <ClCompile Include="src\memory.c" />
     <ClCompile Include="src\afc.c" />
     <ClCompile Include="src\device_link_service.c" />
     <ClCompile Include="src\diagnostics_relay.c" />
