@@ -80,8 +80,13 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
 	client_loc->connection = connection;
 
 	/* enable SSL if requested */
-	if (service->ssl_enabled == 1)
-		service_enable_ssl(client_loc);
+	if (service->ssl_enabled == 1) {
+		service_error_t result = service_enable_ssl(client_loc);
+		if (SERVICE_E_SUCCESS != result) {
+			service_client_free(client_loc);
+			return result;
+		}
+	}
 
 	/* all done, return success */
 	*client = client_loc;

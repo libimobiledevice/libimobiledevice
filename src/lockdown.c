@@ -955,15 +955,19 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 		if (!host_id) {
 			return LOCKDOWN_E_DICT_ERROR;
 		}
-
+		
 		/* Try to start the session */
 		debug_info("Staring a new session");
 		lockdownd_error_t ret = lockdownd_start_session(client, host_id, NULL, NULL);
 		
 		plist_free_memory(host_id);		
-		if (LOCKDOWN_E_SUCCESS == ret) {
-			session_was_started = 1;
+		if (LOCKDOWN_E_SUCCESS != ret) {
+			debug_info("Failed to start a new session");
+			userpref_remove_device_record(client->udid);
+			return ret;
 		}
+
+		session_was_started = 1;
 	}
 
 	/* If we have an open, ssl enabled, lockdown session - we'll try to get the 
@@ -971,10 +975,12 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 	 * doesn't contain one (happens on ValidatePair). */
 	int device_cert_retrieved = 0;
 	plist_t device_cert = NULL;
+	int got_device_cert_from_device = 0;
 	if (client->session_id) {
 		if (client->ssl_enabled) {
 			debug_info("Retrieving the device certificate from the device");
 			idevice_get_device_ssl_cert(client->parent->parent->connection, &device_cert);
+			got_device_cert_from_device = (NULL != device_cert);
 		}
 		else {
 			debug_info("Session doesn't have ssl enabled, we'll use the DeviceCertificate from the device's response");
@@ -1011,10 +1017,7 @@ static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t
 	}
 
 	/* Cleanup */
-	if (escrow_bag) {
-		plist_free(escrow_bag);
-	}
-	if (device_cert) {
+	if (device_cert && got_device_cert_from_device) {
 		plist_free(device_cert);
 	}
 
@@ -1132,7 +1135,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			} else {
 				if (!strcmp("Pair", verb) || force_record_store) {
 					/* Store the EscrowBag and DeviceCertificate */
-					lockdownd_store_successful_pair_info(client, dict_record, dict, force_record_store);
+					ret = lockdownd_store_successful_pair_info(client, dict_record, dict, force_record_store);
 				}
 			}
 		} else {
