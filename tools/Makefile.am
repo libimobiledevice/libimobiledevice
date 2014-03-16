@@ -3,12 +3,17 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgcrypt_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgcrypt_LIBS) $(openssl_LIBS) $(libplist_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate idevicebackup idevicebackup2 ideviceprovision idevicedebugserverproxy idevicediagnostics
+bin_PROGRAMS = idevice_id ideviceinfo idevicename idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate idevicebackup idevicebackup2 ideviceprovision idevicedebugserverproxy idevicediagnostics
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
 ideviceinfo_LDFLAGS = $(AM_LDFLAGS)
 ideviceinfo_LDADD = ../src/libimobiledevice.la
+
+idevicename_SOURCES = idevicename.c
+idevicename_CFLAGS = $(AM_CFLAGS)
+idevicename_LDFLAGS = $(AM_LDFLAGS)
+idevicename_LDADD = ../src/libimobiledevice.la
 
 idevicepair_SOURCES = idevicepair.c
 idevicepair_CFLAGS = $(AM_CFLAGS)

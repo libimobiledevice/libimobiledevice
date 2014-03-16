@@ -217,6 +217,15 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 		client->session_id = NULL;
 	}
 
+	if (client->ssl_enabled) {
+		if (PROPERTY_LIST_SERVICE_E_SUCCESS == property_list_service_disable_ssl(client->parent)) {
+			client->ssl_enabled = 0;
+		}
+		else {
+			ret = LOCKDOWN_E_SSL_ERROR;
+		}
+	}
+
 	return ret;
 }
 
@@ -233,6 +242,10 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 		}
 	}
 
+	if (client->session_id) {
+		free(client->session_id);
+		client->session_id = NULL;
+	}
 	if (client->udid) {
 		free(client->udid);
 	}
@@ -241,6 +254,7 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 	}
 
 	free(client);
+	client = NULL;
 
 	return ret;
 }
@@ -680,7 +694,6 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 		return LOCKDOWN_E_INVALID_ARG;
 
 	static struct lockdownd_service_descriptor service;
-
 	service.port = 0xf27e;
 	service.ssl_enabled = 0;
 
@@ -896,6 +909,122 @@ leave:
 }
 
 /**
+ * Function used internally by lockdownd_do_pair to store the EscrowBag and
+ * DeviceCertificate after a successfull pairing.
+ *
+ * @param client The lockdown client we've paired with.
+ * @param pair_record The pair record used for the pairing.
+ * @param pairing_response The device's response for the pairing request.
+ * @param force_record_store Should we store the pairing record, even on ValidatePair. 
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_DICT_ERROR on failure to retrieve
+ *	the host id, lockdownd_start_session's return value on lockdownd_start_session's 
+ *	failure.
+ */
+static lockdownd_error_t lockdownd_store_successful_pair_info(lockdownd_client_t client, plist_t pairing_record, plist_t pairing_response, int force_record_store)
+{
+	/* Try to get the EscrowBag from the device's response */
+	plist_t escrow_bag = plist_dict_get_item(pairing_response, USERPREF_ESCROW_BAG_KEY);
+	if (!escrow_bag) {
+		debug_info("Device response doens't contain an EscrowBag");
+	}
+
+	/* It seems that when we "re-pair" with our preconfigured lockdown conf,
+	 * the device won't update its certificate (with the new one we've generated), 
+	 * but keep the ceritificate that was generated during the first pair. This means
+	 * that the pairing record might contain the wrong certificate (although we use the same
+	 * root key\certificate and device public key, the certificates won't be identical). 
+	 * This breaks iTunes' SSL certificate validation (which, upon handshake, compares 
+	 * the received certificate with the one we have in the stored pairing record). 
+	 * To overcome this, we'll try to start a new lockdown session, hopefully ssl
+	 * enabled, and get the certificate actually used by the device. 
+	 * Note: We care about iTunes because usbmuxd's preflight uses us to
+	 * perform the pairing, which can later be used by iTunes. */
+	
+	/* Try to start a new lockdown session, if we don't already have one open (we
+	 * should never really have a session at this point) */
+	int session_was_started = 0;
+	if (!(client->session_id)) {
+		/* Get the host_id */
+		plist_t host_id_node = plist_dict_get_item(pairing_record, USERPREF_HOST_ID_KEY);
+		char * host_id = NULL;
+		if (!host_id_node) {
+			return LOCKDOWN_E_DICT_ERROR;
+		}
+		plist_get_string_val(host_id_node, &host_id);
+		if (!host_id) {
+			return LOCKDOWN_E_DICT_ERROR;
+		}
+		
+		/* Try to start the session */
+		debug_info("Staring a new session");
+		lockdownd_error_t ret = lockdownd_start_session(client, host_id, NULL, NULL);
+		
+		plist_free_memory(host_id);		
+		if (LOCKDOWN_E_SUCCESS != ret) {
+			debug_info("Failed to start a new session");
+			userpref_remove_device_record(client->udid);
+			return ret;
+		}
+
+		session_was_started = 1;
+	}
+
+	/* If we have an open, ssl enabled, lockdown session - we'll try to get the 
+	 * device's cert. We'll also try to get the escrowbag if the pairing response
+	 * doesn't contain one (happens on ValidatePair). */
+	int device_cert_retrieved = 0;
+	plist_t device_cert = NULL;
+	int got_device_cert_from_device = 0;
+	if (client->session_id) {
+		if (client->ssl_enabled) {
+			debug_info("Retrieving the device certificate from the device");
+			idevice_get_device_ssl_cert(client->parent->parent->connection, &device_cert);
+			got_device_cert_from_device = (NULL != device_cert);
+		}
+		else {
+			debug_info("Session doesn't have ssl enabled, we'll use the DeviceCertificate from the device's response");
+		}
+
+		/* If needed - try to get the EscrowBag (only possible once we've established a session) */
+		if (!escrow_bag && force_record_store) {
+			debug_info("Retrieving EscrowBag from lockdownd");
+			lockdownd_get_value(client, NULL, USERPREF_ESCROW_BAG_KEY, &escrow_bag);
+		}
+
+		/* If we've started the session (which should always be the case) -  stop it */
+		if (session_was_started) {
+			lockdownd_stop_session(client, client->session_id);
+		}
+	}
+	
+	/* Store the escrow bag if available */
+	if (escrow_bag && plist_get_node_type(escrow_bag) == PLIST_DATA) {
+		userpref_device_record_set_value(client->udid, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
+	}
+	else {
+		debug_info("Failed to retrieve the escrow bag");
+	}
+
+	/* If we didn't get the device's cert from the device - get it from the pairing record */
+	if (!device_cert) {
+		device_cert = plist_dict_get_item(pairing_record, USERPREF_DEVICE_CERTIFICATE_KEY);
+	}
+	
+	/* Store the device certificate */
+	if (device_cert && plist_get_node_type(device_cert) == PLIST_DATA) {
+		userpref_device_record_set_value(client->udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_copy(device_cert));
+	}
+
+	/* Cleanup */
+	if (device_cert && got_device_cert_from_device) {
+		plist_free(device_cert);
+	}
+
+	return LOCKDOWN_E_SUCCESS;
+}
+
+/**
  * Function used internally by lockdownd_pair() and lockdownd_validate_pair()
  *
  * @param client The lockdown client to pair with.
@@ -903,6 +1032,7 @@ leave:
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  * @param verb This is either "Pair", "ValidatePair" or "Unpair".
+ * @param force_record_store Should we store the pairing record, even on ValidatePair. 
  *
  * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
@@ -910,7 +1040,7 @@ leave:
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb)
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb, int force_record_store)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -940,7 +1070,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		}
 	}
 
-	if (!strcmp("Pair", verb)) {
+	if (!strcmp("Pair", verb) || force_record_store) {
 		/* get wifi mac */
 		plist_t wifi_mac_node = NULL;
 		lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_mac_node);
@@ -1003,22 +1133,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 				/* remove public key from config */
 				userpref_remove_device_record(client->udid);
 			} else {
-				if (!strcmp("Pair", verb)) {
-					debug_info("getting EscrowBag from response");
-
-					/* add returned escrow bag if available */
-					plist_t escrow_bag = plist_dict_get_item(dict, "EscrowBag");
-					if (escrow_bag && plist_get_node_type(escrow_bag) == PLIST_DATA) {
-						userpref_device_record_set_value(client->udid, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
-						plist_free(escrow_bag);
-						escrow_bag = NULL;
-					}
-
-					/* store DeviceCertificate upon successful pairing */
-					plist_t devcrt = plist_dict_get_item(dict_record, USERPREF_DEVICE_CERTIFICATE_KEY);
-					if (devcrt && plist_get_node_type(devcrt) == PLIST_DATA) {
-						userpref_device_record_set_value(client->udid, USERPREF_DEVICE_CERTIFICATE_KEY, plist_copy(devcrt));
-					}
+				if (!strcmp("Pair", verb) || force_record_store) {
+					/* Store the EscrowBag and DeviceCertificate */
+					ret = lockdownd_store_successful_pair_info(client, dict_record, dict, force_record_store);
 				}
 			}
 		} else {
@@ -1078,7 +1195,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
  */
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Pair");
+	return lockdownd_do_pair(client, pair_record, "Pair", 0);
 }
 
 /** 
@@ -1100,7 +1217,12 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_recor
  */
 lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "ValidatePair");
+	return lockdownd_do_pair(client, pair_record, "ValidatePair", 0);
+}
+
+lockdownd_error_t lockdownd_validate_pair_force_store(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
+{
+	return lockdownd_do_pair(client, pair_record, "ValidatePair", 1);
 }
 
 /** 
@@ -1119,7 +1241,7 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_p
  */
 lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Unpair");
+	return lockdownd_do_pair(client, pair_record, "Unpair", 0);
 }
 
 /**
@@ -1195,6 +1317,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 	}
 	plist_free(dict);
 	dict = NULL;
+
 	return ret;
 }
 
@@ -1419,6 +1542,9 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
 
 		gnutls_x509_privkey_init(&fake_privkey);
+		gnutls_x509_privkey_init(&root_privkey);
+		gnutls_x509_privkey_init(&host_privkey);
+
 		gnutls_x509_crt_init(&dev_cert);
 		gnutls_x509_crt_init(&root_cert);
 		gnutls_x509_crt_init(&host_cert);
@@ -1426,9 +1552,6 @@ lockdownd_error_t lockdownd_gen_pair_cert_for_udid(const char *udid, key_data_t 
 		if (GNUTLS_E_SUCCESS ==
 			gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null,
 											   &essentially_null, &essentially_null)) {
-
-			gnutls_x509_privkey_init(&root_privkey);
-			gnutls_x509_privkey_init(&host_privkey);
 
 			uret = userpref_device_record_get_keys_and_certs(udid, root_privkey, root_cert, host_privkey, host_cert);
 
@@ -1548,7 +1671,6 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* if we have a running session, stop current one first */
 	if (client->session_id) {
 		lockdownd_stop_session(client, client->session_id);
-		free(client->session_id);
 	}
 
 	/* setup request plist */

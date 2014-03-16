@@ -101,7 +101,10 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 
 	property_list_service_error_t err = service_to_property_list_service_error(service_client_free(client->parent));
+
 	free(client);
+	client = NULL;
+
 	return err;
 }
 
@@ -226,7 +229,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 	*plist = NULL;
 	service_error_t serr = service_receive_with_timeout(client->parent, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
 	if ((serr == SERVICE_E_SUCCESS) && (bytes == 0)) {
-		return PROPERTY_LIST_SERVICE_E_TIMEOUT;
+		return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;
 	}
 	debug_info("initial read=%i", bytes);
 	if (bytes < 4) {

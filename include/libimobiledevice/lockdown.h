@@ -96,6 +96,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client,
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_validate_pair_force_store(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
