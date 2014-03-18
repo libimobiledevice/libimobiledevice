@@ -754,9 +754,9 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 		if (strcmp("com.apple.mobile.lockdown", type)) {
 			debug_info("Warning QueryType request returned \"%s\".", type);
 		}
-		if (type)
-			free(type);
 	}
+	if (type)
+		free(type);
 
 	userpref_device_record_get_host_id(client_loc->udid, &host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
