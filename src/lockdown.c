@@ -748,19 +748,13 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	if (type)
 		free(type);
 
-	debug_info("reading pair record");
-
 	plist_t pair_record = NULL;
 	userpref_read_pair_record(client_loc->udid, &pair_record);
-
-	debug_info("reading HostID");
 
 	pair_record_get_host_id(pair_record, &host_id);
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
-
-	debug_info("HostID: %s", host_id);
 
 	if (LOCKDOWN_E_SUCCESS == ret && !pair_record) {
 		/* attempt pairing */
