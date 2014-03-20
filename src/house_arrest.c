@@ -193,8 +193,8 @@ house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, con
 	house_arrest_error_t res = HOUSE_ARREST_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Command", plist_new_string(command));
-	plist_dict_insert_item(dict, "Identifier", plist_new_string(appid));
+	plist_dict_set_item(dict, "Command", plist_new_string(command));
+	plist_dict_set_item(dict, "Identifier", plist_new_string(appid));
 
 	res = house_arrest_send_request(client, dict);
 

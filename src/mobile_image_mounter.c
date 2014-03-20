@@ -168,8 +168,8 @@ mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_moun
 	mobile_image_mounter_lock(client);
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict,"Command", plist_new_string("LookupImage"));
-	plist_dict_insert_item(dict,"ImageType", plist_new_string(image_type));
+	plist_dict_set_item(dict,"Command", plist_new_string("LookupImage"));
+	plist_dict_set_item(dict,"ImageType", plist_new_string(image_type));
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -211,9 +211,9 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
 	plist_t result = NULL;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Command", plist_new_string("ReceiveBytes"));
-	plist_dict_insert_item(dict, "ImageSize", plist_new_uint(image_size));
-	plist_dict_insert_item(dict, "ImageType", plist_new_string(image_type));
+	plist_dict_set_item(dict, "Command", plist_new_string("ReceiveBytes"));
+	plist_dict_set_item(dict, "ImageSize", plist_new_uint(image_size));
+	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -340,10 +340,10 @@ mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mount
 	mobile_image_mounter_lock(client);
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Command", plist_new_string("MountImage"));
-	plist_dict_insert_item(dict, "ImagePath", plist_new_string(image_path));
-	plist_dict_insert_item(dict, "ImageSignature", plist_new_data(image_signature, signature_length));
-	plist_dict_insert_item(dict, "ImageType", plist_new_string(image_type));
+	plist_dict_set_item(dict, "Command", plist_new_string("MountImage"));
+	plist_dict_set_item(dict, "ImagePath", plist_new_string(image_path));
+	plist_dict_set_item(dict, "ImageSignature", plist_new_data(image_signature, signature_length));
+	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -382,7 +382,7 @@ mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_cl
 	mobile_image_mounter_lock(client);
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Command", plist_new_string("Hangup"));
+	plist_dict_set_item(dict, "Command", plist_new_string("Hangup"));
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);

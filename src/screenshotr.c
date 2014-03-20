@@ -162,7 +162,7 @@ screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, cha
 	screenshotr_error_t res = SCREENSHOTR_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "MessageType", plist_new_string("ScreenShotRequest"));
+	plist_dict_set_item(dict, "MessageType", plist_new_string("ScreenShotRequest"));
 
 	res = screenshotr_error(device_link_service_send_process_message(client->parent, dict));
 	plist_free(dict);

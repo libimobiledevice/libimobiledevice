@@ -987,10 +987,10 @@ void mobilesync_actions_add(plist_t actions, ...)
 				plist_array_append_item(array, plist_new_string(entity_names[i]));
 			}
 
-			plist_dict_insert_item(actions, key, array);
+			plist_dict_set_item(actions, key, array);
 		} else if (!strcmp(key, "SyncDeviceLinkAllRecordsOfPulledEntityTypeSentKey")) {
 			int link_records = va_arg(args, int);
-			plist_dict_insert_item(actions, key, plist_new_bool(link_records));
+			plist_dict_set_item(actions, key, plist_new_bool(link_records));
 		}
 		free(key);
 		key = NULL;

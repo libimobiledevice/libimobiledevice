@@ -205,7 +205,7 @@ static mobilebackup_error_t mobilebackup_send_message(mobilebackup_client_t clie
 		} else {
 			dict = plist_new_dict();
 		}
-		plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string(message));
+		plist_dict_set_item(dict, "BackupMessageTypeKey", plist_new_string(message));
 
 		/* send it as DLMessageProcessMessage */
 		err = mobilebackup_error(device_link_service_send_process_message(client->parent, dict));
@@ -315,10 +315,10 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
 	/* construct request plist */
 	plist_t dict = plist_new_dict();
 	if (backup_manifest)
-		plist_dict_insert_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
-	plist_dict_insert_item(dict, "BackupComputerBasePathKey", plist_new_string(base_path));
-	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
-	plist_dict_insert_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
+		plist_dict_set_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
+	plist_dict_set_item(dict, "BackupComputerBasePathKey", plist_new_string(base_path));
+	plist_dict_set_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageBackupRequest"));
+	plist_dict_set_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
 
 	/* send request */
 	err = mobilebackup_send_message(client, NULL, dict);
@@ -409,13 +409,13 @@ mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, 
 
 	/* construct request plist */
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
-	plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("kBackupMessageRestoreRequest"));
-	plist_dict_insert_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
+	plist_dict_set_item(dict, "BackupManifestKey", plist_copy(backup_manifest));
+	plist_dict_set_item(dict, "BackupMessageTypeKey", plist_new_string("kBackupMessageRestoreRequest"));
+	plist_dict_set_item(dict, "BackupProtocolVersion", plist_new_string(proto_version));
 	/* add flags */
-	plist_dict_insert_item(dict, "BackupNotifySpringBoard", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_NOTIFY_SPRINGBOARD)));
-	plist_dict_insert_item(dict, "BackupPreserveSettings", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_SETTINGS)));
-	plist_dict_insert_item(dict, "BackupPreserveCameraRoll", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_CAMERA_ROLL)));
+	plist_dict_set_item(dict, "BackupNotifySpringBoard", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_NOTIFY_SPRINGBOARD)));
+	plist_dict_set_item(dict, "BackupPreserveSettings", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_SETTINGS)));
+	plist_dict_set_item(dict, "BackupPreserveCameraRoll", plist_new_bool(IS_FLAG_SET(flags, MB_RESTORE_PRESERVE_CAMERA_ROLL)));
 
 	/* send request */
 	err = mobilebackup_send_message(client, NULL, dict);
@@ -572,7 +572,7 @@ mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const
 
 	/* construct error plist */
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "BackupErrorReasonKey", plist_new_string(reason));
+	plist_dict_set_item(dict, "BackupErrorReasonKey", plist_new_string(reason));
 
 	err = mobilebackup_send_message(client, "BackupMessageError", dict);
 	plist_free(dict);

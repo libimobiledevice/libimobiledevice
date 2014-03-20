@@ -252,13 +252,13 @@ static int internal_set_value(const char *config_file, const char *key, plist_t 
 	plist_read_from_filename(&config, config_file);
 	if (!config) {
 		config = plist_new_dict();
-		plist_dict_insert_item(config, key, value);
+		plist_dict_set_item(config, key, value);
 	} else {
 		plist_t n = plist_dict_get_item(config, key);
 		if (n) {
 			plist_dict_remove_item(config, key);
 		}
-		plist_dict_insert_item(config, key, value);
+		plist_dict_set_item(config, key, value);
 		remove(config_file);
 	}
 

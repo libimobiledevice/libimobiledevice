@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 
 			/* answer with a "pong" message */
 			message = plist_new_dict();
-			plist_dict_insert_item(message, "Command", plist_new_string("Polo"));
+			plist_dict_set_item(message, "Command", plist_new_string("Polo"));
 			heartbeat_send(heartbeat, message);
 
 			printf("< polo\n");

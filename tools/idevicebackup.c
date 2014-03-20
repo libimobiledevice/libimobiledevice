@@ -298,42 +298,42 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid)
 
 	/* set fields we understand */
 	value_node = plist_dict_get_item(root_node, "BuildVersion");
-	plist_dict_insert_item(ret, "Build Version", plist_copy(value_node));
+	plist_dict_set_item(ret, "Build Version", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "DeviceName");
-	plist_dict_insert_item(ret, "Device Name", plist_copy(value_node));
-	plist_dict_insert_item(ret, "Display Name", plist_copy(value_node));
+	plist_dict_set_item(ret, "Device Name", plist_copy(value_node));
+	plist_dict_set_item(ret, "Display Name", plist_copy(value_node));
 
 	/* FIXME: How is the GUID generated? */
-	plist_dict_insert_item(ret, "GUID", plist_new_string("---"));
+	plist_dict_set_item(ret, "GUID", plist_new_string("---"));
 
 	value_node = plist_dict_get_item(root_node, "InternationalMobileEquipmentIdentity");
 	if (value_node)
-		plist_dict_insert_item(ret, "IMEI", plist_copy(value_node));
+		plist_dict_set_item(ret, "IMEI", plist_copy(value_node));
 
-	plist_dict_insert_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
+	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
-	plist_dict_insert_item(ret, "Product Type", plist_copy(value_node));
+	plist_dict_set_item(ret, "Product Type", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "ProductVersion");
-	plist_dict_insert_item(ret, "Product Version", plist_copy(value_node));
+	plist_dict_set_item(ret, "Product Version", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "SerialNumber");
-	plist_dict_insert_item(ret, "Serial Number", plist_copy(value_node));
+	plist_dict_set_item(ret, "Serial Number", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "UniqueDeviceID");
-	plist_dict_insert_item(ret, "Target Identifier", plist_new_string(udid));
+	plist_dict_set_item(ret, "Target Identifier", plist_new_string(udid));
 
 	/* uppercase */
 	udid_uppercase = str_toupper((char*)udid);
-	plist_dict_insert_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
+	plist_dict_set_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
 	free(udid_uppercase);
 
 	/* FIXME: Embed files as <data> nodes */
 	plist_t files = plist_new_dict();
-	plist_dict_insert_item(ret, "iTunes Files", files);
-	plist_dict_insert_item(ret, "iTunes Version", plist_new_string("9.0.2"));
+	plist_dict_set_item(ret, "iTunes Files", files);
+	plist_dict_set_item(ret, "iTunes Version", plist_new_string("9.0.2"));
 
 	plist_free(root_node);
 
@@ -466,7 +466,7 @@ static void mobilebackup_write_status(const char *path, int status)
 {
 	struct stat st;
 	plist_t status_plist = plist_new_dict();
-	plist_dict_insert_item(status_plist, "Backup Success", plist_new_bool(status));
+	plist_dict_set_item(status_plist, "Backup Success", plist_new_bool(status));
 	char *file_path = mobilebackup_build_path(path, "Status", ".plist");
 
 	if (stat(file_path, &st) == 0)
@@ -1509,12 +1509,12 @@ files_out:
 						printf("Restoring file %s %d/%d (%d%%)... ", file_path, cur_file, total_files, (cur_file*100/total_files));
 
 						/* add additional device link file information keys */
-						plist_dict_insert_item(file_info, "DLFileAttributesKey", plist_copy(node));
-						plist_dict_insert_item(file_info, "DLFileSource", plist_new_string(file_info_path));
-						plist_dict_insert_item(file_info, "DLFileDest", plist_new_string("/tmp/RestoreFile.plist"));
-						plist_dict_insert_item(file_info, "DLFileIsEncrypted", plist_new_bool(is_encrypted));
-						plist_dict_insert_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
-						plist_dict_insert_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
+						plist_dict_set_item(file_info, "DLFileAttributesKey", plist_copy(node));
+						plist_dict_set_item(file_info, "DLFileSource", plist_new_string(file_info_path));
+						plist_dict_set_item(file_info, "DLFileDest", plist_new_string("/tmp/RestoreFile.plist"));
+						plist_dict_set_item(file_info, "DLFileIsEncrypted", plist_new_bool(is_encrypted));
+						plist_dict_set_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
+						plist_dict_set_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
 
 						/* read data from file */
 						free(file_info_path);
@@ -1531,10 +1531,10 @@ files_out:
 								file_status = DEVICE_LINK_FILE_STATUS_HUNK;
 							
 							plist_dict_remove_item(file_info, "DLFileOffsetKey");
-							plist_dict_insert_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
+							plist_dict_set_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
 
 							plist_dict_remove_item(file_info, "DLFileStatusKey");
-							plist_dict_insert_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
+							plist_dict_set_item(file_info, "DLFileStatusKey", plist_new_uint(file_status));
 
 							send_file_node = plist_new_array();
 
@@ -1615,8 +1615,8 @@ files_out:
 						tmp_node = plist_dict_get_item(node, "AppInfo");
 
 						dict = plist_new_dict();
-						plist_dict_insert_item(dict, "AppInfo", plist_copy(tmp_node));
-						plist_dict_insert_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageRestoreApplicationSent"));
+						plist_dict_set_item(dict, "AppInfo", plist_copy(tmp_node));
+						plist_dict_set_item(dict, "BackupMessageTypeKey", plist_new_string("BackupMessageRestoreApplicationSent"));
 
 						array = plist_new_array();
 						plist_array_append_item(array, plist_new_string("DLMessageProcessMessage"));

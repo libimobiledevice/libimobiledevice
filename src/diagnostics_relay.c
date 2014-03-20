@@ -216,7 +216,7 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Request", plist_new_string("Goodbye"));
+	plist_dict_set_item(dict, "Request", plist_new_string("Goodbye"));
 
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
@@ -261,7 +261,7 @@ diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t cli
 
 	plist_t dict = plist_new_dict();
 
-	plist_dict_insert_item(dict,"Request", plist_new_string("Sleep"));
+	plist_dict_set_item(dict,"Request", plist_new_string("Sleep"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
@@ -292,18 +292,18 @@ static diagnostics_relay_error_t internal_diagnostics_relay_action(diagnostics_r
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict,"Request", plist_new_string(name));
+	plist_dict_set_item(dict,"Request", plist_new_string(name));
 
 	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT) {
-		plist_dict_insert_item(dict, "WaitForDisconnect", plist_new_bool(1));
+		plist_dict_set_item(dict, "WaitForDisconnect", plist_new_bool(1));
 	}
 
 	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS) {
-		plist_dict_insert_item(dict, "DisplayPass", plist_new_bool(1));
+		plist_dict_set_item(dict, "DisplayPass", plist_new_bool(1));
 	}
 
 	if (flags & DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL) {
-		plist_dict_insert_item(dict, "DisplayFail", plist_new_bool(1));
+		plist_dict_set_item(dict, "DisplayFail", plist_new_bool(1));
 	}
 
 	ret = diagnostics_relay_send(client, dict);
@@ -376,7 +376,7 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict,"Request", plist_new_string(type));
+	plist_dict_set_item(dict,"Request", plist_new_string(type));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
@@ -417,8 +417,8 @@ diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_rela
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict,"MobileGestaltKeys", plist_copy(keys));
-	plist_dict_insert_item(dict,"Request", plist_new_string("MobileGestalt"));
+	plist_dict_set_item(dict,"MobileGestaltKeys", plist_copy(keys));
+	plist_dict_set_item(dict,"Request", plist_new_string("MobileGestalt"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
@@ -460,10 +460,10 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_r
 
 	plist_t dict = plist_new_dict();
 	if (name)
-		plist_dict_insert_item(dict,"EntryName", plist_new_string(name));
+		plist_dict_set_item(dict,"EntryName", plist_new_string(name));
 	if (class)
-		plist_dict_insert_item(dict,"EntryClass", plist_new_string(class));
-	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
+		plist_dict_set_item(dict,"EntryClass", plist_new_string(class));
+	plist_dict_set_item(dict,"Request", plist_new_string("IORegistry"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
@@ -504,8 +504,8 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_r
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict,"CurrentPlane", plist_new_string(plane));
-	plist_dict_insert_item(dict,"Request", plist_new_string("IORegistry"));
+	plist_dict_set_item(dict,"CurrentPlane", plist_new_string(plane));
+	plist_dict_set_item(dict,"Request", plist_new_string("IORegistry"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;

@@ -144,7 +144,7 @@ file_relay_error_t file_relay_request_sources_timeout(file_relay_client_t client
 		i++;
 	}	
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "Sources", array);
+	plist_dict_set_item(dict, "Sources", array);
 
 	if (property_list_service_send_xml_plist(client->parent, dict) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		debug_info("ERROR: Could not send request to device!");

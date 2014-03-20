@@ -85,7 +85,7 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 {
 	if (plist && label) {
 		if (plist_get_node_type(plist) == PLIST_DICT)
-			plist_dict_insert_item(plist, "Label", plist_new_string(label));
+			plist_dict_set_item(plist, "Label", plist_new_string(label));
 	}
 }
 
@@ -218,7 +218,7 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("QueryType"));
+	plist_dict_set_item(dict,"Request", plist_new_string("QueryType"));
 
 	debug_info("called");
 	ret = restored_send(client, dict);
@@ -289,9 +289,9 @@ restored_error_t restored_query_value(restored_client_t client, const char *key,
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	if (key) {
-		plist_dict_insert_item(dict,"QueryKey", plist_new_string(key));
+		plist_dict_set_item(dict,"QueryKey", plist_new_string(key));
 	}
-	plist_dict_insert_item(dict,"Request", plist_new_string("QueryValue"));
+	plist_dict_set_item(dict,"Request", plist_new_string("QueryValue"));
 
 	/* send to device */
 	ret = restored_send(client, dict);
@@ -422,7 +422,7 @@ restored_error_t restored_goodbye(restored_client_t client)
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("Goodbye"));
+	plist_dict_set_item(dict,"Request", plist_new_string("Goodbye"));
 
 	debug_info("called");
 
@@ -465,11 +465,11 @@ restored_error_t restored_start_restore(restored_client_t client, plist_t option
 
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("StartRestore"));
+	plist_dict_set_item(dict,"Request", plist_new_string("StartRestore"));
 	if (options) {
-		plist_dict_insert_item(dict, "RestoreOptions", plist_copy(options));
+		plist_dict_set_item(dict, "RestoreOptions", plist_copy(options));
 	}
-	plist_dict_insert_item(dict,"RestoreProtocolVersion", plist_new_uint(version));
+	plist_dict_set_item(dict,"RestoreProtocolVersion", plist_new_uint(version));
 
 	/* send to device */
 	ret = restored_send(client, dict);
@@ -497,7 +497,7 @@ restored_error_t restored_reboot(restored_client_t client)
 
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("Reboot"));
+	plist_dict_set_item(dict,"Request", plist_new_string("Reboot"));
 
 	/* send to device */
 	ret = restored_send(client, dict);

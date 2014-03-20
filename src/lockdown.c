@@ -158,7 +158,7 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 {
 	if (plist && label) {
 		if (plist_get_node_type(plist) == PLIST_DICT)
-			plist_dict_insert_item(plist, "Label", plist_new_string(label));
+			plist_dict_set_item(plist, "Label", plist_new_string(label));
 	}
 }
 
@@ -186,8 +186,8 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("StopSession"));
-	plist_dict_insert_item(dict,"SessionID", plist_new_string(session_id));
+	plist_dict_set_item(dict,"Request", plist_new_string("StopSession"));
+	plist_dict_set_item(dict,"SessionID", plist_new_string(session_id));
 
 	debug_info("stopping session %s", session_id);
 
@@ -368,7 +368,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("QueryType"));
+	plist_dict_set_item(dict,"Request", plist_new_string("QueryType"));
 
 	debug_info("called");
 	ret = lockdownd_send(client, dict);
@@ -426,12 +426,12 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	if (domain) {
-		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
+		plist_dict_set_item(dict,"Domain", plist_new_string(domain));
 	}
 	if (key) {
-		plist_dict_insert_item(dict,"Key", plist_new_string(key));
+		plist_dict_set_item(dict,"Key", plist_new_string(key));
 	}
-	plist_dict_insert_item(dict,"Request", plist_new_string("GetValue"));
+	plist_dict_set_item(dict,"Request", plist_new_string("GetValue"));
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -490,13 +490,13 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	if (domain) {
-		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
+		plist_dict_set_item(dict,"Domain", plist_new_string(domain));
 	}
 	if (key) {
-		plist_dict_insert_item(dict,"Key", plist_new_string(key));
+		plist_dict_set_item(dict,"Key", plist_new_string(key));
 	}
-	plist_dict_insert_item(dict,"Request", plist_new_string("SetValue"));
-	plist_dict_insert_item(dict,"Value", value);
+	plist_dict_set_item(dict,"Request", plist_new_string("SetValue"));
+	plist_dict_set_item(dict,"Value", value);
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -549,12 +549,12 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
 	if (domain) {
-		plist_dict_insert_item(dict,"Domain", plist_new_string(domain));
+		plist_dict_set_item(dict,"Domain", plist_new_string(domain));
 	}
 	if (key) {
-		plist_dict_insert_item(dict,"Key", plist_new_string(key));
+		plist_dict_set_item(dict,"Key", plist_new_string(key));
 	}
-	plist_dict_insert_item(dict,"Request", plist_new_string("RemoveValue"));
+	plist_dict_set_item(dict,"Request", plist_new_string("RemoveValue"));
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -818,11 +818,11 @@ static plist_t lockdownd_pair_record_to_plist(lockdownd_pair_record_t pair_recor
 
 	/* setup request plist */
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "DeviceCertificate", plist_new_data(pair_record->device_certificate, strlen(pair_record->device_certificate)));
-	plist_dict_insert_item(dict, "HostCertificate", plist_new_data(pair_record->host_certificate, strlen(pair_record->host_certificate)));
-	plist_dict_insert_item(dict, "HostID", plist_new_string(pair_record->host_id));
-	plist_dict_insert_item(dict, "RootCertificate", plist_new_data(pair_record->root_certificate, strlen(pair_record->root_certificate)));
-	plist_dict_insert_item(dict, "SystemBUID", plist_new_string(pair_record->system_buid));
+	plist_dict_set_item(dict, "DeviceCertificate", plist_new_data(pair_record->device_certificate, strlen(pair_record->device_certificate)));
+	plist_dict_set_item(dict, "HostCertificate", plist_new_data(pair_record->host_certificate, strlen(pair_record->host_certificate)));
+	plist_dict_set_item(dict, "HostID", plist_new_string(pair_record->host_id));
+	plist_dict_set_item(dict, "RootCertificate", plist_new_data(pair_record->root_certificate, strlen(pair_record->root_certificate)));
+	plist_dict_set_item(dict, "SystemBUID", plist_new_string(pair_record->system_buid));
 
 	return dict;
 }
@@ -878,11 +878,11 @@ static lockdownd_error_t generate_pair_record_plist(lockdownd_client_t client, p
 
 	/* setup request plist */
 	*pair_record_plist = plist_new_dict();
-	plist_dict_insert_item(*pair_record_plist, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
-	plist_dict_insert_item(*pair_record_plist, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
-	plist_dict_insert_item(*pair_record_plist, "HostID", plist_new_string(host_id));
-	plist_dict_insert_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
-	plist_dict_insert_item(*pair_record_plist, "SystemBUID", plist_new_string(system_buid));
+	plist_dict_set_item(*pair_record_plist, "DeviceCertificate", plist_new_data((const char*)device_cert.data, device_cert.size));
+	plist_dict_set_item(*pair_record_plist, "HostCertificate", plist_new_data((const char*)host_cert.data, host_cert.size));
+	plist_dict_set_item(*pair_record_plist, "HostID", plist_new_string(host_id));
+	plist_dict_set_item(*pair_record_plist, "RootCertificate", plist_new_data((const char*)root_cert.data, root_cert.size));
+	plist_dict_set_item(*pair_record_plist, "SystemBUID", plist_new_string(system_buid));
 
 leave:
 	if (host_id)
@@ -962,13 +962,13 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	/* setup pair request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict, "PairRecord", plist_copy(dict_record));
-	plist_dict_insert_item(dict, "Request", plist_new_string(verb));
-	plist_dict_insert_item(dict, "ProtocolVersion", plist_new_string(LOCKDOWN_PROTOCOL_VERSION));
+	plist_dict_set_item(dict, "PairRecord", plist_copy(dict_record));
+	plist_dict_set_item(dict, "Request", plist_new_string(verb));
+	plist_dict_set_item(dict, "ProtocolVersion", plist_new_string(LOCKDOWN_PROTOCOL_VERSION));
 
 	plist_t options = plist_new_dict();
-	plist_dict_insert_item(options, "ExtendedPairingErrors", plist_new_bool(1));
-	plist_dict_insert_item(dict, "PairingOptions", options);
+	plist_dict_set_item(options, "ExtendedPairingErrors", plist_new_bool(1));
+	plist_dict_set_item(dict, "PairingOptions", options);
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -1144,7 +1144,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("EnterRecovery"));
+	plist_dict_set_item(dict,"Request", plist_new_string("EnterRecovery"));
 
 	debug_info("telling device to enter recovery mode");
 
@@ -1181,7 +1181,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client)
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("Goodbye"));
+	plist_dict_set_item(dict,"Request", plist_new_string("Goodbye"));
 
 	debug_info("called");
 
@@ -1560,18 +1560,18 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 	/* setup request plist */
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("StartSession"));
+	plist_dict_set_item(dict,"Request", plist_new_string("StartSession"));
 
 	/* add host id */
 	if (host_id) {
-		plist_dict_insert_item(dict, "HostID", plist_new_string(host_id));
+		plist_dict_set_item(dict, "HostID", plist_new_string(host_id));
 	}
 
 	/* add system buid */
 	char *system_buid = NULL;
 	userpref_get_system_buid(&system_buid);
 	if (system_buid) {
-		plist_dict_insert_item(dict, "SystemBUID", plist_new_string(system_buid));
+		plist_dict_set_item(dict, "SystemBUID", plist_new_string(system_buid));
 		if (system_buid) {
 			free(system_buid);
 			system_buid = NULL;
@@ -1685,8 +1685,8 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("StartService"));
-	plist_dict_insert_item(dict,"Service", plist_new_string(identifier));
+	plist_dict_set_item(dict,"Request", plist_new_string("StartService"));
+	plist_dict_set_item(dict,"Service", plist_new_string(identifier));
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -1785,8 +1785,8 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("Activate"));
-	plist_dict_insert_item(dict,"ActivationRecord", plist_copy(activation_record));
+	plist_dict_set_item(dict,"Request", plist_new_string("Activate"));
+	plist_dict_set_item(dict,"ActivationRecord", plist_copy(activation_record));
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);
@@ -1843,7 +1843,7 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client)
 
 	plist_t dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
-	plist_dict_insert_item(dict,"Request", plist_new_string("Deactivate"));
+	plist_dict_set_item(dict,"Request", plist_new_string("Deactivate"));
 
 	ret = lockdownd_send(client, dict);
 	plist_free(dict);

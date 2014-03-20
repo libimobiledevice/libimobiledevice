@@ -178,12 +178,12 @@ webinspector_error_t webinspector_send(webinspector_client_t client, plist_t pli
 		plist_t outplist = plist_new_dict();
 		if (!is_final_message) {
 			/* split packet into partial chunks */
-			plist_dict_insert_item(outplist, "WIRPartialMessageKey", plist_new_data(packet + offset, WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE));
+			plist_dict_set_item(outplist, "WIRPartialMessageKey", plist_new_data(packet + offset, WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE));
 			offset += WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE;
 			packet_length -= WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE;
 		} else {
 			/* send final chunk */
-			plist_dict_insert_item(outplist, "WIRFinalMessageKey", plist_new_data(packet + offset, packet_length));
+			plist_dict_set_item(outplist, "WIRFinalMessageKey", plist_new_data(packet + offset, packet_length));
 			offset += packet_length;
 			packet_length -= packet_length;
 		}

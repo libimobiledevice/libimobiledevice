@@ -167,9 +167,9 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "command", plist_new_string("getIconState"));
+	plist_dict_set_item(dict, "command", plist_new_string("getIconState"));
 	if (format_version) {
-		plist_dict_insert_item(dict, "formatVersion", plist_new_string(format_version));
+		plist_dict_set_item(dict, "formatVersion", plist_new_string(format_version));
 	}
 
 	sbs_lock(client);
@@ -216,8 +216,8 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "command", plist_new_string("setIconState"));
-	plist_dict_insert_item(dict, "iconState", plist_copy(newstate));
+	plist_dict_set_item(dict, "command", plist_new_string("setIconState"));
+	plist_dict_set_item(dict, "iconState", plist_copy(newstate));
 
 	sbs_lock(client);
 
@@ -257,8 +257,8 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "command", plist_new_string("getIconPNGData"));
-	plist_dict_insert_item(dict, "bundleId", plist_new_string(bundleId));
+	plist_dict_set_item(dict, "command", plist_new_string("getIconPNGData"));
+	plist_dict_set_item(dict, "bundleId", plist_new_string(bundleId));
 
 	sbs_lock(client);
 
@@ -303,7 +303,7 @@ sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t clie
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "command", plist_new_string("getInterfaceOrientation"));
+	plist_dict_set_item(dict, "command", plist_new_string("getInterfaceOrientation"));
 
 	sbs_lock(client);
 
@@ -355,7 +355,7 @@ sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_clien
 	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "command", plist_new_string("getHomeScreenWallpaperPNGData"));
+	plist_dict_set_item(dict, "command", plist_new_string("getHomeScreenWallpaperPNGData"));
 
 	sbs_lock(client);
 
