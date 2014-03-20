@@ -69,27 +69,29 @@ typedef gnutls_datum_t key_data_t;
 
 typedef int16_t userpref_error_t;
 
-#ifdef HAVE_OPENSSL
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt);
-#else
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt);
-#endif
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_set_keys_and_certs(const char *udid, key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert, key_data_t *pem_device_cert);
-
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t userpref_set_device_record(const char *udid, plist_t device_record);
-userpref_error_t userpref_remove_device_record(const char *udid);
-LIBIMOBILEDEVICE_INTERNAL int userpref_has_device_record(const char *udid);
-
-userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
-void userpref_device_record_get_host_id(const char *udid, char **host_id);
-void userpref_get_system_buid(char **system_buid);
 const char *userpref_get_config_dir();
+int userpref_read_system_buid(char **system_buid);
+userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record);
+userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);
+userpref_error_t userpref_delete_pair_record(const char *udid);
 
-userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_record);
-int userpref_get_value(const char *key, plist_t *value);
-int userpref_set_value(const char *key, plist_t value);
-int userpref_device_record_get_value(const char *udid, const char *key, plist_t *value);
-int userpref_device_record_set_value(const char *udid, const char *key, plist_t value);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record, key_data_t public_key);
+#ifdef HAVE_OPENSSL
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, key_data_t* key);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, key_data_t* cert);
+#else
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, gnutls_x509_privkey_t key);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, gnutls_x509_crt_t cert);
+#endif
+
+userpref_error_t pair_record_get_host_id(plist_t pair_record, char** host_id);
+userpref_error_t pair_record_set_host_id(plist_t pair_record, const char* host_id);
+userpref_error_t pair_record_get_item_as_key_data(plist_t pair_record, const char* name, key_data_t *value);
+userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const char* name, key_data_t *value);
+
+/* deprecated */
+userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
+LIBIMOBILEDEVICE_INTERNAL int userpref_has_pair_record(const char *udid);
 
 #endif

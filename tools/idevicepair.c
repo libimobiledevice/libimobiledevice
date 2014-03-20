@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
 	if (op == OP_SYSTEMBUID) {
 		char *systembuid = NULL;
-		userpref_get_system_buid(&systembuid);
+		userpref_read_system_buid(&systembuid);
 
 		printf("%s\n", systembuid);
 
@@ -184,13 +184,19 @@ int main(int argc, char **argv)
 	}
 
 	if (op == OP_HOSTID) {
+		plist_t pair_record = NULL;
 		char *hostid = NULL;
-		userpref_device_record_get_host_id(udid, &hostid);
+
+		userpref_read_pair_record(udid, &pair_record);
+		pair_record_get_host_id(pair_record, &hostid);
 
 		printf("%s\n", hostid);
 
 		if (hostid)
 			free(hostid);
+
+		if (pair_record)
+			plist_free(pair_record);
 
 		return EXIT_SUCCESS;
 	}
@@ -254,7 +260,7 @@ int main(int argc, char **argv)
 		lerr = lockdownd_unpair(client, NULL);
 		if (lerr == LOCKDOWN_E_SUCCESS) {
 			/* also remove local device record */
-			userpref_remove_device_record(udid);
+			userpref_delete_pair_record(udid);
 			printf("SUCCESS: Unpaired with device %s\n", udid);
 		} else {
 			result = EXIT_FAILURE;

@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "utils.h"
 
@@ -105,6 +106,35 @@ char *string_concat(const char *str, ...)
 	va_end(args);
 
 	return result;
+}
+
+static int get_rand(int min, int max)
+{
+	int retval = (rand() % (max - min)) + min;
+	return retval;
+}
+
+char *generate_uuid()
+{
+	const char *chars = "ABCDEF0123456789";
+	int i = 0;
+	char *uuid = (char *) malloc(sizeof(char) * 37);
+
+	srand(time(NULL));
+
+	for (i = 0; i < 36; i++) {
+		if (i == 8 || i == 13 || i == 18 || i == 23) {
+			uuid[i] = '-';
+			continue;
+		} else {
+			uuid[i] = chars[get_rand(0, 16)];
+		}
+	}
+
+	/* make it a real string */
+	uuid[36] = '\0';
+
+	return uuid;
 }
 
 void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length)

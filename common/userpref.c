@@ -35,6 +35,7 @@
 #include <pwd.h>
 #endif
 #include <unistd.h>
+#include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -58,6 +59,17 @@
 #include "userpref.h"
 #include "debug.h"
 #include "utils.h"
+
+#ifndef HAVE_OPENSSL
+const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
+	{"PKCS1", 536872976, 0},
+	{0, 1073741836, 0},
+	{"RSAPublicKey", 536870917, 0},
+	{"modulus", 1073741827, 0},
+	{"publicExponent", 3, 0},
+	{0, 0, 0}
+};
+#endif
 
 #ifdef WIN32
 #define DIR_SEP '\\'
@@ -158,274 +170,20 @@ const char *userpref_get_config_dir()
 	return __config_dir;
 }
 
-static int __mkdir(const char *dir, int mode)
-{
-#ifdef WIN32
-	return mkdir(dir);
-#else
-	return mkdir(dir, mode);
-#endif
-}
-
-static int mkdir_with_parents(const char *dir, int mode)
-{
-	if (!dir) return -1;
-	if (__mkdir(dir, mode) == 0) {
-		return 0;
-	} else {
-		if (errno == EEXIST) return 0;	
-	}
-	int res;
-	char *parent = strdup(dir);
-	char* parentdir = dirname(parent);
-	if (parentdir) {
-		res = mkdir_with_parents(parentdir, mode);
-	} else {
-		res = -1;
-	}
-	free(parent);
-	return res;
-}
-
-/**
- * Creates a freedesktop compatible configuration directory.
- */
-static void userpref_create_config_dir(void)
-{
-	const char *config_path = userpref_get_config_dir();
-	struct stat st;
-	if (stat(config_path, &st) != 0) {
-		mkdir_with_parents(config_path, 0755);
-	}
-}
-
-static int get_rand(int min, int max)
-{
-	int retval = (rand() % (max - min)) + min;
-	return retval;
-}
-
-/**
- * Generates a valid HostID (which is actually a UUID).
- *
- * @return A null terminated string containing a valid HostID.
- */
-static char *userpref_generate_host_id(int idx)
-{
-	/* HostID's are just UUID's, and UUID's are 36 characters long */
-	char *hostid = (char *) malloc(sizeof(char) * 37);
-	const char *chars = "ABCDEF0123456789";
-	srand(time(NULL) - idx);
-	int i = 0;
-
-	for (i = 0; i < 36; i++) {
-		if (i == 8 || i == 13 || i == 18 || i == 23) {
-			hostid[i] = '-';
-			continue;
-		} else {
-			hostid[i] = chars[get_rand(0, 16)];
-		}
-	}
-	/* make it a real string */
-	hostid[36] = '\0';
-	return hostid;
-}
-
-/**
- * Generates a valid BUID for this system (which is actually a UUID).
- *
- * @return A null terminated string containing a valid BUID.
- */
-static char *userpref_generate_system_buid()
-{
-	return userpref_generate_host_id(1);
-}
-
-static int internal_set_value(const char *config_file, const char *key, plist_t value)
-{
-	if (!config_file)
-		return 0;
-
-	/* read file into plist */
-	plist_t config = NULL;
-
-	plist_read_from_filename(&config, config_file);
-	if (!config) {
-		config = plist_new_dict();
-		plist_dict_set_item(config, key, value);
-	} else {
-		plist_t n = plist_dict_get_item(config, key);
-		if (n) {
-			plist_dict_remove_item(config, key);
-		}
-		plist_dict_set_item(config, key, value);
-		remove(config_file);
-	}
-
-	/* store in config file */
-	char *value_string = NULL;
-	if (plist_get_node_type(value) == PLIST_STRING) {
-		plist_get_string_val(value, &value_string);
-		debug_info("setting key %s to %s in config_file %s", key, value_string, config_file);
-		if (value_string)
-			free(value_string);
-	} else {
-		debug_info("setting key %s in config_file %s", key, config_file);
-	}
-
-	plist_write_to_filename(config, config_file, PLIST_FORMAT_XML);
-
-	plist_free(config);
-
-	return 1;
-}
-
-int userpref_set_value(const char *key, plist_t value)
-{
-	const char *config_path = NULL;
-	char *config_file = NULL;
-
-	/* Make sure config directory exists */
-	userpref_create_config_dir();
-
-	config_path = userpref_get_config_dir();
-	config_file = string_concat(config_path, DIR_SEP_S, USERPREF_CONFIG_FILE, NULL);
-
-	int result = internal_set_value(config_file, key, value);
-
-	free(config_file);
-
-	return result;
-}
-
-int userpref_device_record_set_value(const char *udid, const char *key, plist_t value)
-{
-	const char *config_path = NULL;
-	char *config_file = NULL;
-
-	/* Make sure config directory exists */
-	userpref_create_config_dir();
-
-	config_path = userpref_get_config_dir();
-	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
-
-	int result = internal_set_value(config_file, key, value);
-
-	free(config_file);
-
-	return result;
-}
-
-static int internal_get_value(const char* config_file, const char *key, plist_t *value)
-{
-	*value = NULL;
-
-	/* now parse file to get the SystemBUID */
-	plist_t config = NULL;
-	if (plist_read_from_filename(&config, config_file)) {
-		debug_info("reading key %s from config_file %s", key, config_file);
-		plist_t n = plist_dict_get_item(config, key);
-		if (n) {
-			*value = plist_copy(n);
-			n = NULL;
-		}
-	}
-	plist_free(config);
-
-	return 1;
-}
-
-int userpref_get_value(const char *key, plist_t *value)
-{
-	const char *config_path = NULL;
-	char *config_file = NULL;
-
-	config_path = userpref_get_config_dir();
-	config_file = string_concat(config_path, DIR_SEP_S, USERPREF_CONFIG_FILE, NULL);
-
-	int result = internal_get_value(config_file, key, value);
-
-	free(config_file);
-
-	return result;
-}
-
-int userpref_device_record_get_value(const char *udid, const char *key, plist_t *value)
-{
-	const char *config_path = NULL;
-	char *config_file = NULL;
-
-	config_path = userpref_get_config_dir();
-	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
-
-	int result = internal_get_value(config_file, key, value);
-
-	free(config_file);
-
-	return result;
-}
-
-/**
- * Store SystemBUID in config file.
- *
- * @param host_id A null terminated string containing a valid SystemBUID.
- */
-static int userpref_set_system_buid(const char *system_buid)
-{
-	return userpref_set_value(USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
-}
-
 /**
  * Reads the BUID from a previously generated configuration file.
  *
  * @note It is the responsibility of the calling function to free the returned system_buid
- *
- * @return The string containing the BUID or NULL
+ * @param system_buid A null terminated string containing a valid SystemBUID.
+ * @return 1 if the system buid could be retrieved or 0 otherwise.
  */
-void userpref_get_system_buid(char **system_buid)
+int userpref_read_system_buid(char **system_buid)
 {
-	plist_t value = NULL;
-
-	userpref_get_value(USERPREF_SYSTEM_BUID_KEY, &value);
-
-	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
-		plist_get_string_val(value, system_buid);
-		debug_info("got %s %s", USERPREF_SYSTEM_BUID_KEY, *system_buid);
-	}
-
-	if (value)
-		plist_free(value);
-
-	if (!*system_buid) {
-		/* no config, generate system_buid */
-		debug_info("no previous %s found", USERPREF_SYSTEM_BUID_KEY);
-		*system_buid = userpref_generate_system_buid();
-		userpref_set_system_buid(*system_buid);
-	}
+	int res = usbmuxd_read_buid(system_buid);
 
 	debug_info("using %s as %s", *system_buid, USERPREF_SYSTEM_BUID_KEY);
-}
 
-void userpref_device_record_get_host_id(const char *udid, char **host_id)
-{
-	plist_t value = NULL;
-
-	userpref_device_record_get_value(udid, USERPREF_HOST_ID_KEY, &value);
-
-	if (value && (plist_get_node_type(value) == PLIST_STRING)) {
-		plist_get_string_val(value, host_id);
-	}
-
-	if (value)
-		plist_free(value);
-
-	if (!*host_id) {
-		/* no config, generate host_id */
-		*host_id = userpref_generate_host_id(0);
-		userpref_device_record_set_value(udid, USERPREF_HOST_ID_KEY, plist_new_string(*host_id));
-	}
-
-	debug_info("using %s as %s", *host_id, USERPREF_HOST_ID_KEY);
+	return res;
 }
 
 /**
@@ -436,7 +194,7 @@ void userpref_device_record_get_host_id(const char *udid, char **host_id)
  * @return 1 if the device has been connected previously to this configuration
  *         or 0 otherwise.
  */
-int userpref_has_device_record(const char *udid)
+int userpref_has_pair_record(const char *udid)
 {
 	int ret = 0;
 	const char *config_path = NULL;
@@ -536,50 +294,61 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 }
 
 /**
- * Mark the device as having connected to this configuration.
+ * Save a pair record for a device.
  *
  * @param udid The device UDID as given by the device
- * @param device_record The device record with full configuration
+ * @param pair_record The pair record to save
  *
  * @return 1 on success and 0 if no device record is given or if it has already
- *         been marked as connected previously.
+ *         been saved previously.
  */
-userpref_error_t userpref_set_device_record(const char *udid, plist_t device_record)
+userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record)
 {
-	/* ensure config directory exists */
-	userpref_create_config_dir();
+	char* record_data = NULL;
+	uint32_t record_size = 0;
 
-	/* build file path */
-	const char *config_path = userpref_get_config_dir();
-	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+	plist_to_bin(pair_record, &record_data, &record_size);
 
-	remove(device_record_file);
+	int res = usbmuxd_save_pair_record(udid, record_data, record_size);
 
-	/* store file */
-	if (!plist_write_to_filename(device_record, device_record_file, PLIST_FORMAT_XML)) {
-		debug_info("could not open '%s' for writing: %s", device_record_file, strerror(errno));
-	}
-	free(device_record_file);
+	free(record_data);
 
-	return USERPREF_E_SUCCESS;
+	return res == 0 ? USERPREF_E_SUCCESS: USERPREF_E_UNKNOWN_ERROR;
 }
 
-userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_record)
+/**
+ * Read a pair record for a device.
+ *
+ * @param udid The device UDID as given by the device
+ * @param pair_record The pair record to read
+ *
+ * @return 1 on success and 0 if no device record is given or if it has already
+ *         been saved previously.
+ */
+userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record)
 {
-	/* ensure config directory exists */
-	userpref_create_config_dir();
+	char* record_data = NULL;
+	uint32_t record_size = 0;
 
-	/* build file path */
-	const char *config_path = userpref_get_config_dir();
-	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
+	int res = usbmuxd_read_pair_record(udid, &record_data, &record_size);
 
-	/* read file */
-	if (!plist_read_from_filename(device_record, device_record_file)) {
-		debug_info("could not open '%s' for reading: %s", device_record_file, strerror(errno));
+	if (res < 0) {
+		if (record_data)
+			free(record_data);
+
+		return USERPREF_E_INVALID_CONF;
 	}
-	free(device_record_file);
 
-	return USERPREF_E_SUCCESS;
+	*pair_record = NULL;
+	if (memcmp(record_data, "bplist00", 8) == 0) {
+		plist_from_bin(record_data, record_size, pair_record);
+	} else {
+		plist_from_xml(record_data, record_size, pair_record);
+	}
+
+	free(record_data);
+
+	return res == 0 ? USERPREF_E_SUCCESS: USERPREF_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -589,87 +358,33 @@ userpref_error_t userpref_get_device_record(const char *udid, plist_t *device_re
  *
  * @return USERPREF_E_SUCCESS on success.
  */
-userpref_error_t userpref_remove_device_record(const char *udid)
+userpref_error_t userpref_delete_pair_record(const char *udid)
 {
-	userpref_error_t res = USERPREF_E_SUCCESS;
-	if (!userpref_has_device_record(udid))
-		return res;
+	int res = usbmuxd_delete_pair_record(udid);
 
-	/* build file path */
-	const char *config_path = userpref_get_config_dir();
-	char *device_record_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
-
-	/* remove file */
-	if (remove(device_record_file) != 0) {
-		debug_info("could not remove %s: %s", device_record_file, strerror(errno));
-		res = USERPREF_E_UNKNOWN_ERROR;
-	}
-
-	free(device_record_file);
-
-	return res;
+	return res == 0 ? USERPREF_E_SUCCESS: USERPREF_E_UNKNOWN_ERROR;
 }
 
-#if 0
-/**
- * Private function which reads the given file into a key_data_t structure.
- *
- * @param file The filename of the file to read
- * @param data The pointer at which to store the data.
- *
- * @return 1 if the file contents where read successfully and 0 otherwise.
- */
-static int userpref_get_file_contents(const char *file, key_data_t * data)
+#ifdef HAVE_OPENSSL
+static int X509_add_ext_helper(X509 *cert, int nid, char *value)
 {
-	int success = 0;
-	unsigned long int size = 0;
-	unsigned char *content = NULL;
-	const char *config_path = NULL;
-	char *filepath;
-	FILE *fd;
+	X509_EXTENSION *ex;
+	X509V3_CTX ctx;
 
-	if (NULL == file || NULL == data)
+	/* No configuration database */
+	X509V3_set_ctx_nodb(&ctx);
+
+	X509V3_set_ctx(&ctx, NULL, cert, NULL, NULL, 0);
+	ex = X509V3_EXT_conf_nid(NULL, &ctx, nid, value);
+	if (!ex) {
+		debug_info("ERROR: X509V3_EXT_conf_nid(%d, %s) failed", nid, value);
 		return 0;
-
-	/* Read file */
-	config_path = userpref_get_config_dir();
-	filepath = string_concat(config_path, DIR_SEP_S, file, NULL);
-
-	fd = fopen(filepath, "rb");
-	if (fd) {
-		fseek(fd, 0, SEEK_END);
-		size = ftell(fd);
-		fseek(fd, 0, SEEK_SET);
-
-		// prevent huge files
-		if (size > 0xFFFFFF) {
-			fprintf(stderr, "%s: file is too big (> 16MB). Refusing to read the contents to memory!", __func__);
-		} else {
-			size_t p = 0;
-			content = (unsigned char*)malloc(size);
-			while (!feof(fd)) {
-				p += fread(content+p, 1, size-p, fd);
-				if (ferror(fd) != 0) {
-					break;
-				}
-				if (p >= size) {
-					success = 1;
-					break;
-				}
-			}
-		}
-		fclose(fd);
 	}
 
-	free(filepath);
+	X509_add_ext(cert, ex, -1);
+	X509_EXTENSION_free(ex);
 
-	/* Add it to the key_data_t structure */
-	if (success) {
-		data->data = (uint8_t*) content;
-		data->size = size;
-	}
-
-	return success;
+	return 1;
 }
 #endif
 
@@ -678,7 +393,7 @@ static int userpref_get_file_contents(const char *file, key_data_t * data)
  *
  * @return 1 if keys were successfully generated, 0 otherwise
  */
-static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udid)
+userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record)
 {
 	userpref_error_t ret = USERPREF_E_SSL_ERROR;
 
@@ -687,7 +402,8 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
 
-	debug_info("generating keys and certificates");
+	debug_info("Generating keys and certificates...");
+
 #ifdef HAVE_OPENSSL
 	BIGNUM *e = BN_new();
 	RSA* root_keypair = RSA_new();
@@ -719,11 +435,7 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 		X509_set_version(root_cert, 2);
 
 		/* set x509v3 basic constraints */
-		X509_EXTENSION* ext;
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:TRUE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
-		}
-		X509_add_ext(root_cert, ext, -1);
+		X509_add_ext_helper(root_cert, NID_basic_constraints, (char*)"critical,CA:TRUE");
 
 		/* set key validity */
 		ASN1_TIME* asn1time = ASN1_TIME_new();
@@ -735,6 +447,7 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 
 		/* use root public key for root cert */
 		X509_set_pubkey(root_cert, root_pkey);
+
 		/* sign root cert with root private key */
 		X509_sign(root_cert, root_pkey, EVP_sha1());
 	}
@@ -752,17 +465,10 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 		X509_set_version(host_cert, 2);
 
 		/* set x509v3 basic constraints */
-		X509_EXTENSION* ext;
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_basic_constraints, (char*)"critical,CA:FALSE"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
-		}
-		X509_add_ext(host_cert, ext, -1);
+		X509_add_ext_helper(host_cert, NID_basic_constraints, (char*)"critical,CA:FALSE");
 
 		/* set x509v3 key usage */
-		if (!(ext = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage, (char*)"digitalSignature,keyEncipherment"))) {
-			debug_info("ERROR: X509V3_EXT_conf_nid failed");
-		}
-		X509_add_ext(host_cert, ext, -1);
+		X509_add_ext_helper(host_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
 
 		/* set key validity */
 		ASN1_TIME* asn1time = ASN1_TIME_new();
@@ -907,8 +613,11 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
 		ret = USERPREF_E_SUCCESS;
 
-	/* store values in config file */
-	userpref_device_record_set_keys_and_certs(udid, &root_key_pem, &root_cert_pem, &host_key_pem, &host_cert_pem);
+	/* now set keys and certificates */
+	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_key_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &root_cert_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_key_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &host_cert_pem);
 
 	if (root_key_pem.data)
 		free(root_key_pem.data);
@@ -923,6 +632,284 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
 }
 
 /**
+ * Generates the device certificate from the public key as well as the host
+ * and root certificates.
+ *
+ * @param pair_record The pair record to use for lookup of key pairs
+ * @param public_key The public key of the device to use for generation.
+ *
+ * @return USERPREF_E_SUCCESS on success, USERPREF_E_INVALID_ARG when a
+ *  parameter is NULL, USERPREF_E_INVALID_CONF if the internal configuration
+ *  system failed, USERPREF_E_SSL_ERROR if the certificates could not be
+ *  generated
+ */
+userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record, key_data_t public_key)
+{
+	if (!pair_record || !public_key.data)
+		return USERPREF_E_INVALID_ARG;
+
+	userpref_error_t uret = USERPREF_E_UNKNOWN_ERROR;
+
+#ifdef HAVE_OPENSSL
+	BIO *membio = BIO_new_mem_buf(public_key.data, public_key.size);
+	RSA *pubkey = NULL;
+	if (!PEM_read_bio_RSAPublicKey(membio, &pubkey, NULL, NULL)) {
+		debug_info("Could not read public key");
+	}
+	BIO_free(membio);
+
+	/* now generate certificates */
+	key_data_t root_privkey, host_privkey;
+	key_data_t root_cert, host_cert;
+
+	X509* dev_cert = X509_new();
+
+	root_cert.data = NULL;
+	root_cert.size = 0;
+	host_cert.data = NULL;
+	host_cert.size = 0;
+
+	root_privkey.data = NULL;
+	root_privkey.size = 0;
+	host_privkey.data = NULL;
+	host_privkey.size = 0;
+
+	uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
+	uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert);
+	uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
+	uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_privkey);
+
+	if (USERPREF_E_SUCCESS == uret) {
+		/* generate device certificate */
+		ASN1_INTEGER* sn = ASN1_INTEGER_new();
+		ASN1_INTEGER_set(sn, 0);
+		X509_set_serialNumber(dev_cert, sn);
+		ASN1_INTEGER_free(sn);
+		X509_set_version(dev_cert, 2);
+
+		X509_add_ext_helper(dev_cert, NID_basic_constraints, (char*)"critical,CA:FALSE");
+
+		ASN1_TIME* asn1time = ASN1_TIME_new();
+		ASN1_TIME_set(asn1time, time(NULL));
+		X509_set_notBefore(dev_cert, asn1time);
+		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		X509_set_notAfter(dev_cert, asn1time);
+		ASN1_TIME_free(asn1time);
+
+		/* read root certificate */
+		BIO* membp;
+		X509* rootCert = NULL;
+		membp = BIO_new_mem_buf(root_cert.data, root_cert.size);
+		PEM_read_bio_X509(membp, &rootCert, NULL, NULL);
+		BIO_free(membp);
+		if (!rootCert) {
+			debug_info("Could not read RootCertificate");
+		} else {
+			debug_info("RootCertificate loaded");
+			EVP_PKEY* pkey = EVP_PKEY_new();
+			EVP_PKEY_assign_RSA(pkey, pubkey);
+			X509_set_pubkey(dev_cert, pkey);
+			EVP_PKEY_free(pkey);
+			X509_free(rootCert);
+		}
+
+		X509_add_ext_helper(dev_cert, NID_subject_key_identifier, (char*)"hash");
+		X509_add_ext_helper(dev_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
+
+		/* read root private key */
+		EVP_PKEY* rootPriv = NULL;
+		membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
+		PEM_read_bio_PrivateKey(membp, &rootPriv, NULL, NULL);
+		BIO_free(membp);
+		if (!rootPriv) {
+			debug_info("Could not read RootPrivateKey");
+		} else {
+			debug_info("RootPrivateKey loaded");
+			if (X509_sign(dev_cert, rootPriv, EVP_sha1())) {
+				uret = USERPREF_E_SUCCESS;
+			} else {
+				debug_info("signing failed");
+			}
+			EVP_PKEY_free(rootPriv);
+		}
+
+		if (USERPREF_E_SUCCESS == uret) {
+			/* if everything went well, export in PEM format */
+			key_data_t pem_root_cert = { NULL, 0 };
+			key_data_t pem_host_cert = { NULL, 0 };
+
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
+
+			if (USERPREF_E_SUCCESS == uret) {
+				/* set new keys and certs in pair record */
+				membp = BIO_new(BIO_s_mem());
+				if (membp && PEM_write_bio_X509(membp, dev_cert) > 0) {
+					void *datap;
+					int size = BIO_get_mem_data(membp, &datap);
+					plist_dict_set_item(pair_record, USERPREF_DEVICE_CERTIFICATE_KEY, plist_new_data(datap, size));
+				}
+				if (membp)
+					BIO_free(membp);
+
+				plist_dict_set_item(pair_record, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data((char*)pem_host_cert.data, pem_host_cert.size));
+				plist_dict_set_item(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data((char*)pem_root_cert.data, pem_root_cert.size));
+				plist_dict_set_item(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data((char*)root_privkey.data, root_privkey.size));
+				plist_dict_set_item(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data((char*)host_privkey.data, host_privkey.size));
+
+				free(pem_root_cert.data);
+				free(pem_host_cert.data);
+			}
+		}
+	}
+	X509V3_EXT_cleanup();
+	X509_free(dev_cert);
+
+	if (root_cert.data)
+		free(root_cert.data);
+	if (host_cert.data)
+		free(host_cert.data);
+	if (root_privkey.data)
+		free(root_privkey.data);
+	if (host_privkey.data)
+		free(host_privkey.data);
+#else
+	gnutls_datum_t modulus = { NULL, 0 };
+	gnutls_datum_t exponent = { NULL, 0 };
+
+	/* now decode the PEM encoded key */
+	gnutls_datum_t der_pub_key;
+	if (GNUTLS_E_SUCCESS == gnutls_pem_base64_decode_alloc("RSA PUBLIC KEY", &public_key, &der_pub_key)) {
+
+		/* initalize asn.1 parser */
+		ASN1_TYPE pkcs1 = ASN1_TYPE_EMPTY;
+		if (ASN1_SUCCESS == asn1_array2tree(pkcs1_asn1_tab, &pkcs1, NULL)) {
+
+			ASN1_TYPE asn1_pub_key = ASN1_TYPE_EMPTY;
+			asn1_create_element(pkcs1, "PKCS1.RSAPublicKey", &asn1_pub_key);
+
+			if (ASN1_SUCCESS == asn1_der_decoding(&asn1_pub_key, der_pub_key.data, der_pub_key.size, NULL)) {
+
+				/* get size to read */
+				int ret1 = asn1_read_value(asn1_pub_key, "modulus", NULL, (int*)&modulus.size);
+				int ret2 = asn1_read_value(asn1_pub_key, "publicExponent", NULL, (int*)&exponent.size);
+
+				modulus.data = gnutls_malloc(modulus.size);
+				exponent.data = gnutls_malloc(exponent.size);
+
+				ret1 = asn1_read_value(asn1_pub_key, "modulus", modulus.data, (int*)&modulus.size);
+				ret2 = asn1_read_value(asn1_pub_key, "publicExponent", exponent.data, (int*)&exponent.size);
+				if (ASN1_SUCCESS == ret1 && ASN1_SUCCESS == ret2)
+					uret = USERPREF_E_SUCCESS;
+			}
+			if (asn1_pub_key)
+				asn1_delete_structure(&asn1_pub_key);
+		}
+		if (pkcs1)
+			asn1_delete_structure(&pkcs1);
+	}
+
+	/* now generate certificates */
+	if (USERPREF_E_SUCCESS == uret && 0 != modulus.size && 0 != exponent.size) {
+
+		gnutls_global_init();
+		gnutls_datum_t essentially_null = { (unsigned char*)strdup("abababababababab"), strlen("abababababababab") };
+
+		gnutls_x509_privkey_t fake_privkey, root_privkey, host_privkey;
+		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
+
+		gnutls_x509_privkey_init(&fake_privkey);
+		gnutls_x509_privkey_init(&root_privkey);
+		gnutls_x509_privkey_init(&host_privkey);
+
+		gnutls_x509_crt_init(&dev_cert);
+		gnutls_x509_crt_init(&root_cert);
+		gnutls_x509_crt_init(&host_cert);
+
+		if (GNUTLS_E_SUCCESS ==
+			gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null,
+											   &essentially_null, &essentially_null)) {
+
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, root_cert);
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, host_cert);
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
+			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
+
+			if (USERPREF_E_SUCCESS == uret) {
+				/* generate device certificate */
+				gnutls_x509_crt_set_key(dev_cert, fake_privkey);
+				gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+				gnutls_x509_crt_set_version(dev_cert, 3);
+				gnutls_x509_crt_set_ca_status(dev_cert, 0);
+				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
+				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+
+				/* use custom hash generation for compatibility with the "Apple ecosystem" */
+				const gnutls_digest_algorithm_t dig_sha1 = GNUTLS_DIG_SHA1;
+				size_t hash_size = gnutls_hash_get_len(dig_sha1);
+				unsigned char hash[hash_size];
+				if (gnutls_hash_fast(dig_sha1, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
+					debug_info("ERROR: Failed to generate SHA1 for public key");
+				} else {
+					gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
+				}
+
+				gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
+				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
+
+				if (LOCKDOWN_E_SUCCESS == ret) {
+					/* if everything went well, export in PEM format */
+					size_t export_size = 0;
+					gnutls_datum_t dev_pem = { NULL, 0 };
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &export_size);
+					dev_pem.data = gnutls_malloc(export_size);
+					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &export_size);
+					dev_pem.size = export_size;
+
+					gnutls_datum_t pem_root_cert = { NULL, 0 };
+					gnutls_datum_t pem_host_cert = { NULL, 0 };
+
+					uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
+					uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
+
+					if (USERPREF_E_SUCCESS == uret) {
+						/* set new keys and certs in pair record */
+						plist_dict_set_item(pair_record, USERPREF_DEVICE_CERTIFICATE_KEY, plist_new_data(dev_pem.data, dev_pem.size));
+						plist_dict_set_item(pair_record, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data(pem_host_cert.data, pem_host_cert.size));
+						plist_dict_set_item(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data(pem_root_cert.data, pem_root_cert.size));
+						plist_dict_set_item(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data(root_privkey.data, root_privkey.size));
+						plist_dict_set_item(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data(host_privkey.data, host_privkey.size));
+
+						gnutls_free(pem_root_cert.data);
+						gnutls_free(pem_host_cert.data);
+
+						if (dev_pem.data)
+							gnutls_free(dev_pem.data);
+					}
+				}
+			}
+		}
+
+		if (essentially_null.data)
+			free(essentially_null.data);
+
+		gnutls_x509_crt_deinit(dev_cert);
+		gnutls_x509_crt_deinit(root_cert);
+		gnutls_x509_crt_deinit(host_cert);
+		gnutls_x509_privkey_deinit(fake_privkey);
+		gnutls_x509_privkey_deinit(root_privkey);
+		gnutls_x509_privkey_deinit(host_privkey);
+	}
+
+	gnutls_free(modulus.data);
+	gnutls_free(exponent.data);
+
+	gnutls_free(der_pub_key.data);
+#endif
+	return uret;
+}
+
+/**
  * Private function which import the given key into a gnutls structure.
  *
  * @param name The name of the private key to import.
@@ -931,9 +918,9 @@ static userpref_error_t userpref_device_record_gen_keys_and_cert(const char* udi
  * @return 1 if the key was successfully imported.
  */
 #ifdef HAVE_OPENSSL
-static userpref_error_t userpref_device_record_import_key(const char* udid, const char* name, key_data_t* key)
+userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, key_data_t* key)
 #else
-static userpref_error_t userpref_device_record_import_key(const char* udid, const char* name, gnutls_x509_privkey_t key)
+userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, gnutls_x509_privkey_t key)
 #endif
 {
 #ifdef HAVE_OPENSSL
@@ -941,33 +928,20 @@ static userpref_error_t userpref_device_record_import_key(const char* udid, cons
 		return USERPREF_E_SUCCESS;
 #endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	char* buffer = NULL;
-	uint64_t length = 0;
 
-	plist_t crt = NULL;
-	if (userpref_device_record_get_value(udid, name, &crt)) {
-		if (crt && plist_get_node_type(crt) == PLIST_DATA) {
-			plist_get_data_val(crt, &buffer, &length);
 #ifdef HAVE_OPENSSL
-			key->data = (unsigned char*)malloc(length);
-			memcpy(key->data, buffer, length);
-			key->size = length;
-			ret = USERPREF_E_SUCCESS;
+		ret = pair_record_get_item_as_key_data(pair_record, name, key);
 #else
-			key_data_t pem = { (unsigned char*)buffer, length };
-			if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem, GNUTLS_X509_FMT_PEM))
-				ret = USERPREF_E_SUCCESS;
-			else
-				ret = USERPREF_E_SSL_ERROR;
+		key_data_t pem = { NULL, 0 };
+		ret = pair_record_get_item_as_key_data(pair_record, name, pem);
+		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(cert, &pem, GNUTLS_X509_FMT_PEM))
+			ret = USERPREF_E_SUCCESS;
+		else
+			ret = USERPREF_E_SSL_ERROR;
+
+		if (pem.data)
+			free(pem.data);
 #endif
-		}
-	}
-
-	if (crt)
-		plist_free(crt);
-
-	if (buffer)
-		free(buffer);
 
 	return ret;
 }
@@ -981,9 +955,9 @@ static userpref_error_t userpref_device_record_import_key(const char* udid, cons
  * @return IDEVICE_E_SUCCESS if the certificate was successfully imported.
  */
 #ifdef HAVE_OPENSSL
-static userpref_error_t userpref_device_record_import_crt(const char* udid, const char* name, key_data_t* cert)
+userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, key_data_t* cert)
 #else
-static userpref_error_t userpref_device_record_import_crt(const char* udid, const char* name, gnutls_x509_crt_t cert)
+userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, gnutls_x509_crt_t cert)
 #endif
 {
 #ifdef HAVE_OPENSSL
@@ -991,206 +965,83 @@ static userpref_error_t userpref_device_record_import_crt(const char* udid, cons
 		return USERPREF_E_SUCCESS;
 #endif
 	userpref_error_t ret = USERPREF_E_INVALID_CONF;
-	char* buffer = NULL;
-	uint64_t length = 0;
 
-	plist_t crt = NULL;
-	if (userpref_device_record_get_value(udid, name, &crt)) {
-		if (crt && plist_get_node_type(crt) == PLIST_DATA) {
-			plist_get_data_val(crt, &buffer, &length);
 #ifdef HAVE_OPENSSL
-			cert->data = (unsigned char*)malloc(length);
-			memcpy(cert->data, buffer, length);
-			cert->size = length;
+		ret = pair_record_get_item_as_key_data(pair_record, name, cert);
+#else
+		key_data_t pem = { NULL, 0 };
+		ret = pair_record_get_item_as_key_data(pair_record, name, pem);
+		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem, GNUTLS_X509_FMT_PEM))
 			ret = USERPREF_E_SUCCESS;
-#else
-			key_data_t pem = { (unsigned char*)buffer, length };
-			if (GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem, GNUTLS_X509_FMT_PEM))
-				ret = USERPREF_E_SUCCESS;
-			else
-				ret = USERPREF_E_SSL_ERROR;
+		else
+			ret = USERPREF_E_SSL_ERROR;
+
+		if (pem.data)
+			free(pem.data);
 #endif
-		}
-	}
-
-	if (crt)
-		plist_free(crt);
-
-	if (buffer)
-		free(buffer);
 
 	return ret;
 }
 
-/**
- * Function to retrieve host keys and certificates.
- * This function trigger key generation if they do not exists yet or are invalid.
- *
- * @note This function can take few seconds to complete (typically 5 seconds)
- *
- * @param root_privkey The root private key.
- * @param root_crt The root certificate.
- * @param host_privkey The host private key.
- * @param host_crt The host certificate.
- *
- * @return 1 if the keys and certificates were successfully retrieved, 0 otherwise
- */
-#ifdef HAVE_OPENSSL
-userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, key_data_t* root_privkey, key_data_t* root_crt, key_data_t* host_privkey, key_data_t* host_crt)
-#else
-userpref_error_t userpref_device_record_get_keys_and_certs(const char *udid, gnutls_x509_privkey_t root_privkey, gnutls_x509_crt_t root_crt, gnutls_x509_privkey_t host_privkey, gnutls_x509_crt_t host_crt)
-#endif
+userpref_error_t pair_record_get_host_id(plist_t pair_record, char** host_id)
 {
-	userpref_error_t ret = USERPREF_E_SUCCESS;
+	plist_t node = plist_dict_get_item(pair_record, USERPREF_HOST_ID_KEY);
 
-	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_device_record_import_key(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
-
-	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_device_record_import_key(udid, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
-
-	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, root_crt);
-
-	if (ret == USERPREF_E_SUCCESS)
-		ret = userpref_device_record_import_crt(udid, USERPREF_HOST_CERTIFICATE_KEY, host_crt);
-
-	if (USERPREF_E_SUCCESS != ret) {
-		/* we had problem reading or importing root cert, try with new ones */
-		ret = userpref_device_record_gen_keys_and_cert(udid);
-
-		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_device_record_import_key(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
-
-		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_device_record_import_key(udid, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
-
-		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, root_crt);
-
-		if (ret == USERPREF_E_SUCCESS)
-			ret = userpref_device_record_import_crt(udid, USERPREF_ROOT_CERTIFICATE_KEY, host_crt);
+	if (node && plist_get_node_type(node) == PLIST_STRING) {
+		plist_get_string_val(node, host_id);
 	}
 
-	return ret;
+	return USERPREF_E_SUCCESS;
 }
 
-/**
- * Function to retrieve certificates encoded in PEM format.
- *
- * @param pem_root_cert The root certificate.
- * @param pem_host_cert The host certificate.
- * @param pem_device_cert The device certificate (optional).
- *
- * @return 1 if the certificates were successfully retrieved, 0 otherwise
- */
-userpref_error_t userpref_device_record_get_certs_as_pem(const char *udid, key_data_t *pem_root_cert, key_data_t *pem_host_cert, key_data_t *pem_device_cert)
+userpref_error_t pair_record_set_host_id(plist_t pair_record, const char* host_id)
 {
-	if (!udid || !pem_root_cert || !pem_host_cert)
+	plist_dict_set_item(pair_record, USERPREF_HOST_ID_KEY, plist_new_string(host_id));
+
+	return USERPREF_E_SUCCESS;
+}
+
+userpref_error_t pair_record_get_item_as_key_data(plist_t pair_record, const char* name, key_data_t *value)
+{
+	if (!pair_record || !value)
 		return USERPREF_E_INVALID_ARG;
 
 	char* buffer = NULL;
 	uint64_t length = 0;
 
-	plist_t root_cert = NULL;
-	plist_t host_cert = NULL;
-	plist_t dev_cert = NULL;
+	plist_t node = plist_dict_get_item(pair_record, name);
 
-	if (userpref_device_record_get_value(udid, USERPREF_HOST_CERTIFICATE_KEY, &host_cert) &&
-		userpref_device_record_get_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert)) {
-		if (host_cert && plist_get_node_type(host_cert) == PLIST_DATA) {
-			plist_get_data_val(host_cert, &buffer, &length);
-			pem_host_cert->data = (unsigned char*)malloc(length);
-			memcpy(pem_host_cert->data, buffer, length);
-			pem_host_cert->size = length;
-			free(buffer);
-			buffer = NULL;
-		}
-		if (root_cert && plist_get_node_type(root_cert) == PLIST_DATA) {
-			plist_get_data_val(root_cert, &buffer, &length);
-			pem_root_cert->data = (unsigned char*)malloc(length);
-			memcpy(pem_root_cert->data, buffer, length);
-			pem_root_cert->size = length;
-			free(buffer);
-			buffer = NULL;
-		}
-
-		if (pem_device_cert) {
-			userpref_device_record_get_value(udid, USERPREF_DEVICE_CERTIFICATE_KEY, &dev_cert);
-			if (dev_cert && plist_get_node_type(dev_cert) == PLIST_DATA) {
-				plist_get_data_val(dev_cert, &buffer, &length);
-				pem_device_cert->data = (unsigned char*)malloc(length);
-				memcpy(pem_device_cert->data, buffer, length);
-				pem_device_cert->size = length;
-				free(buffer);
-				buffer = NULL;
-			}
-		}
-
-		if (root_cert)
-			plist_free(root_cert);
-		if (host_cert)
-			plist_free(host_cert);
-		if (dev_cert)
-			plist_free(dev_cert);
-
-		return USERPREF_E_SUCCESS;
-	} else {
-		if (pem_root_cert->data) {
-			free(pem_root_cert->data);
-			pem_root_cert->size = 0;
-		}
-		if (pem_host_cert->data) {
-			free(pem_host_cert->data);
-			pem_host_cert->size = 0;
-		}
+	if (node && plist_get_node_type(node) == PLIST_DATA) {
+		plist_get_data_val(node, &buffer, &length);
+		value->data = (unsigned char*)malloc(length);
+		memcpy(value->data, buffer, length);
+		value->size = length;
+		free(buffer);
+		buffer = NULL;
 	}
 
-	if (root_cert)
-		plist_free(root_cert);
-	if (host_cert)
-		plist_free(host_cert);
-	if (dev_cert)
-		plist_free(dev_cert);
+	if (node)
+		plist_free(node);
 
-	debug_info("configuration invalid");
-
-	return USERPREF_E_INVALID_CONF;
+	return USERPREF_E_SUCCESS;
 }
 
-/**
- * Create and save a configuration file containing the given data.
- *
- * @note: All fields must specified and be non-null
- *
- * @param root_key The root key
- * @param root_cert The root certificate
- * @param host_key The host key
- * @param host_cert The host certificate
- *
- * @return 1 on success and 0 otherwise.
- */
-userpref_error_t userpref_device_record_set_keys_and_certs(const char* udid, key_data_t * root_key, key_data_t * root_cert, key_data_t * host_key, key_data_t * host_cert)
+userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const char* name, key_data_t *value)
 {
 	userpref_error_t ret = USERPREF_E_SUCCESS;
 
-	debug_info("saving keys and certs for udid %s", udid);
-
-	if (!root_key || !host_key || !root_cert || !host_cert) {
-		debug_info("missing key or cert (root_key=%p, host_key=%p, root=cert=%p, host_cert=%p", root_key, host_key, root_cert, host_cert);
+	if (!pair_record || !value) {
 		return USERPREF_E_INVALID_ARG;
 	}
 
-	/* now write keys and certificates to disk */
-	if (userpref_device_record_set_value(udid, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data((char*)host_key->data, host_key->size)) &&
-		userpref_device_record_set_value(udid, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data((char*)host_cert->data, host_cert->size)) &&
-		userpref_device_record_set_value(udid, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data((char*)root_key->data, root_key->size)) &&
-		userpref_device_record_set_value(udid, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data((char*)root_cert->data, root_cert->size)))
-	{
-		ret = USERPREF_E_SUCCESS;
-	} else {
-		ret = 1;
+	/* remove any existing item */
+	if (plist_dict_get_item(pair_record, name)) {
+		plist_dict_remove_item(pair_record, name);
 	}
+
+	/* set new item */
+	plist_dict_set_item(pair_record, name, plist_new_data((char*)value->data, value->size));
 
 	return ret;
 }
+

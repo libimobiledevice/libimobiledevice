@@ -511,7 +511,7 @@ static ssize_t internal_ssl_read(gnutls_transport_ptr_t transport, char *buffer,
 
 	debug_info("pre-read client wants %zi bytes", length);
 
-	recv_buffer = (char *) malloc(sizeof(char) * this_len);
+	recv_buffer = (char *)malloc(sizeof(char) * this_len);
 
 	/* repeat until we have the full data or an error occurs */
 	do {
@@ -637,12 +637,12 @@ static const char *errorstring(int e)
 /**
  * Internally used gnutls callback function that gets called during handshake.
  */
-static int internal_cert_callback (gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr_st * st)
+static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr_st * st)
 {
 	int res = -1;
-	gnutls_certificate_type_t type = gnutls_certificate_type_get (session);
+	gnutls_certificate_type_t type = gnutls_certificate_type_get(session);
 	if (type == GNUTLS_CRT_X509) {
-		ssl_data_t ssl_data = (ssl_data_t)gnutls_session_get_ptr (session);
+		ssl_data_t ssl_data = (ssl_data_t)gnutls_session_get_ptr(session);
 		if (ssl_data && ssl_data->host_privkey && ssl_data->host_cert) {
 			debug_info("Passing certificate");
 			st->type = type;
@@ -673,15 +673,20 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
 	uint32_t return_me = 0;
+	plist_t pair_record = NULL;
+
+	userpref_read_pair_record(connection->udid, &pair_record);
+	if (!pair_record) {
+		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->udid);
+		return ret;
+	}
 
 #ifdef HAVE_OPENSSL
 	key_data_t root_cert = { NULL, 0 };
 	key_data_t root_privkey = { NULL, 0 };
 
-	userpref_error_t uerr = userpref_device_record_get_keys_and_certs(connection->udid, &root_privkey, &root_cert, NULL, NULL);
-	if (uerr != USERPREF_E_SUCCESS) {
-		debug_info("Error %d when loading keys and certificates! %d", uerr);
-	}
+	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
+	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
 
 	/* Set up OpenSSL */
 	if (openssl_init_done == 0) {
@@ -756,7 +761,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	errno = 0;
 	gnutls_global_init();
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
-	gnutls_certificate_client_set_retrieve_function (ssl_data_loc->certificate, internal_cert_callback);
+	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
 	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
 	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
@@ -767,10 +772,10 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_x509_privkey_init(&ssl_data_loc->root_privkey);
 	gnutls_x509_privkey_init(&ssl_data_loc->host_privkey);
 
-	userpref_error_t uerr = userpref_device_record_get_keys_and_certs(connection->udid, ssl_data_loc->root_privkey, ssl_data_loc->root_cert, ssl_data_loc->host_privkey, ssl_data_loc->host_cert);
-	if (uerr != USERPREF_E_SUCCESS) {
-		debug_info("Error %d when loading keys and certificates! %d", uerr);
-	}
+	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, ssl_data_loc->root_cert);
+	pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, ssl_data_loc->host_cert);
+	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, ssl_data_loc->root_privkey);
+	pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, ssl_data_loc->host_privkey);
 
 	debug_info("GnuTLS step 1...");
 	gnutls_transport_set_ptr(ssl_data_loc->session, (gnutls_transport_ptr_t)connection);
