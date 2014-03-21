@@ -43,8 +43,10 @@
 #include <openssl/x509v3.h>
 #else
 #include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 #include <gnutls/x509.h>
 #include <gcrypt.h>
+#include <libtasn1.h>
 #endif
 
 #include <dirent.h>
@@ -389,18 +391,26 @@ static int X509_add_ext_helper(X509 *cert, int nid, char *value)
 #endif
 
 /**
- * Private function which generate private keys and certificates.
+ * Private function to generate required private keys and certificates.
+ *
+ * @param pair_record a #PLIST_DICT that will be filled with the keys
+ *   and certificates
+ * @param public_key the public key to use (device public key)
  *
  * @return 1 if keys were successfully generated, 0 otherwise
  */
-userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record)
+userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_data_t public_key)
 {
 	userpref_error_t ret = USERPREF_E_SSL_ERROR;
 
+	key_data_t dev_cert_pem = { NULL, 0 };
 	key_data_t root_key_pem = { NULL, 0 };
 	key_data_t root_cert_pem = { NULL, 0 };
 	key_data_t host_key_pem = { NULL, 0 };
 	key_data_t host_cert_pem = { NULL, 0 };
+
+	if (!pair_record || !public_key.data)
+		return USERPREF_E_INVALID_ARG;
 
 	debug_info("Generating keys and certificates...");
 
@@ -531,6 +541,63 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record)
 		}
 	}
 
+	RSA *pubkey = NULL;
+	{
+		BIO *membp = BIO_new_mem_buf(public_key.data, public_key.size);
+		if (!PEM_read_bio_RSAPublicKey(membp, &pubkey, NULL, NULL)) {
+			debug_info("Could not read public key");
+		}
+		BIO_free(membp);
+	}
+
+	X509* dev_cert = X509_new();
+	if (pubkey && dev_cert) {
+		/* generate device certificate */
+		ASN1_INTEGER* sn = ASN1_INTEGER_new();
+		ASN1_INTEGER_set(sn, 0);
+		X509_set_serialNumber(dev_cert, sn);
+		ASN1_INTEGER_free(sn);
+		X509_set_version(dev_cert, 2);
+
+		X509_add_ext_helper(dev_cert, NID_basic_constraints, (char*)"critical,CA:FALSE");
+
+		ASN1_TIME* asn1time = ASN1_TIME_new();
+		ASN1_TIME_set(asn1time, time(NULL));
+		X509_set_notBefore(dev_cert, asn1time);
+		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
+		X509_set_notAfter(dev_cert, asn1time);
+		ASN1_TIME_free(asn1time);
+
+		EVP_PKEY* pkey = EVP_PKEY_new();
+		EVP_PKEY_assign_RSA(pkey, pubkey);
+		X509_set_pubkey(dev_cert, pkey);
+		EVP_PKEY_free(pkey);
+
+		X509_add_ext_helper(dev_cert, NID_subject_key_identifier, (char*)"hash");
+		X509_add_ext_helper(dev_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
+
+		/* sign device certificate with root private key */
+		if (X509_sign(dev_cert, root_pkey, EVP_sha1())) {
+			/* if signing succeeded, export in PEM format */
+			BIO* membp = BIO_new(BIO_s_mem());
+			if (PEM_write_bio_X509(membp, dev_cert) > 0) {
+				char *bdata = NULL;
+				dev_cert_pem.size = BIO_get_mem_data(membp, &bdata);
+				dev_cert_pem.data = (unsigned char*)malloc(dev_cert_pem.size);
+				if (dev_cert_pem.data) {
+					memcpy(dev_cert_pem.data, bdata, dev_cert_pem.size);
+				}
+				BIO_free(membp);
+				membp = NULL;
+			}
+		} else {
+			debug_info("ERROR: Signing device certificate with root private key failed!");
+		}
+	}
+
+	X509V3_EXT_cleanup();
+	X509_free(dev_cert);
+
 	EVP_PKEY_free(root_pkey);
 	EVP_PKEY_free(host_pkey);
 
@@ -605,175 +672,8 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record)
 	gnutls_x509_crt_export(host_cert, GNUTLS_X509_FMT_PEM, host_cert_pem.data, &host_cert_export_size);
 	host_cert_pem.size = host_cert_export_size;
 
-	/* restore gnutls env */
-	gnutls_global_deinit();
-	gnutls_global_init();
-#endif
-	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
-		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
-		ret = USERPREF_E_SUCCESS;
+	ret = USERPREF_E_UNKNOWN_ERROR;
 
-	/* now set keys and certificates */
-	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_key_pem);
-	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert_pem);
-	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_key_pem);
-	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert_pem);
-
-	if (root_key_pem.data)
-		free(root_key_pem.data);
-	if (root_cert_pem.data)
-		free(root_cert_pem.data);
-	if (host_key_pem.data)
-		free(host_key_pem.data);
-	if (host_cert_pem.data)
-		free(host_cert_pem.data);
-
-	return ret;
-}
-
-/**
- * Generates the device certificate from the public key as well as the host
- * and root certificates.
- *
- * @param pair_record The pair record to use for lookup of key pairs
- * @param public_key The public key of the device to use for generation.
- *
- * @return USERPREF_E_SUCCESS on success, USERPREF_E_INVALID_ARG when a
- *  parameter is NULL, USERPREF_E_INVALID_CONF if the internal configuration
- *  system failed, USERPREF_E_SSL_ERROR if the certificates could not be
- *  generated
- */
-userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record, key_data_t public_key)
-{
-	if (!pair_record || !public_key.data)
-		return USERPREF_E_INVALID_ARG;
-
-	userpref_error_t uret = USERPREF_E_UNKNOWN_ERROR;
-
-#ifdef HAVE_OPENSSL
-	BIO *membio = BIO_new_mem_buf(public_key.data, public_key.size);
-	RSA *pubkey = NULL;
-	if (!PEM_read_bio_RSAPublicKey(membio, &pubkey, NULL, NULL)) {
-		debug_info("Could not read public key");
-	}
-	BIO_free(membio);
-
-	/* now generate certificates */
-	key_data_t root_privkey, host_privkey;
-	key_data_t root_cert, host_cert;
-
-	X509* dev_cert = X509_new();
-
-	root_cert.data = NULL;
-	root_cert.size = 0;
-	host_cert.data = NULL;
-	host_cert.size = 0;
-
-	root_privkey.data = NULL;
-	root_privkey.size = 0;
-	host_privkey.data = NULL;
-	host_privkey.size = 0;
-
-	uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
-	uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert);
-	uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
-	uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_privkey);
-
-	if (USERPREF_E_SUCCESS == uret) {
-		/* generate device certificate */
-		ASN1_INTEGER* sn = ASN1_INTEGER_new();
-		ASN1_INTEGER_set(sn, 0);
-		X509_set_serialNumber(dev_cert, sn);
-		ASN1_INTEGER_free(sn);
-		X509_set_version(dev_cert, 2);
-
-		X509_add_ext_helper(dev_cert, NID_basic_constraints, (char*)"critical,CA:FALSE");
-
-		ASN1_TIME* asn1time = ASN1_TIME_new();
-		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(dev_cert, asn1time);
-		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(dev_cert, asn1time);
-		ASN1_TIME_free(asn1time);
-
-		/* read root certificate */
-		BIO* membp;
-		X509* rootCert = NULL;
-		membp = BIO_new_mem_buf(root_cert.data, root_cert.size);
-		PEM_read_bio_X509(membp, &rootCert, NULL, NULL);
-		BIO_free(membp);
-		if (!rootCert) {
-			debug_info("Could not read RootCertificate");
-		} else {
-			debug_info("RootCertificate loaded");
-			EVP_PKEY* pkey = EVP_PKEY_new();
-			EVP_PKEY_assign_RSA(pkey, pubkey);
-			X509_set_pubkey(dev_cert, pkey);
-			EVP_PKEY_free(pkey);
-			X509_free(rootCert);
-		}
-
-		X509_add_ext_helper(dev_cert, NID_subject_key_identifier, (char*)"hash");
-		X509_add_ext_helper(dev_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
-
-		/* read root private key */
-		EVP_PKEY* rootPriv = NULL;
-		membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
-		PEM_read_bio_PrivateKey(membp, &rootPriv, NULL, NULL);
-		BIO_free(membp);
-		if (!rootPriv) {
-			debug_info("Could not read RootPrivateKey");
-		} else {
-			debug_info("RootPrivateKey loaded");
-			if (X509_sign(dev_cert, rootPriv, EVP_sha1())) {
-				uret = USERPREF_E_SUCCESS;
-			} else {
-				debug_info("signing failed");
-			}
-			EVP_PKEY_free(rootPriv);
-		}
-
-		if (USERPREF_E_SUCCESS == uret) {
-			/* if everything went well, export in PEM format */
-			key_data_t pem_root_cert = { NULL, 0 };
-			key_data_t pem_host_cert = { NULL, 0 };
-
-			uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
-			uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
-
-			if (USERPREF_E_SUCCESS == uret) {
-				/* set new keys and certs in pair record */
-				membp = BIO_new(BIO_s_mem());
-				if (membp && PEM_write_bio_X509(membp, dev_cert) > 0) {
-					void *datap;
-					int size = BIO_get_mem_data(membp, &datap);
-					plist_dict_set_item(pair_record, USERPREF_DEVICE_CERTIFICATE_KEY, plist_new_data(datap, size));
-				}
-				if (membp)
-					BIO_free(membp);
-
-				plist_dict_set_item(pair_record, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data((char*)pem_host_cert.data, pem_host_cert.size));
-				plist_dict_set_item(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data((char*)pem_root_cert.data, pem_root_cert.size));
-				plist_dict_set_item(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data((char*)root_privkey.data, root_privkey.size));
-				plist_dict_set_item(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data((char*)host_privkey.data, host_privkey.size));
-
-				free(pem_root_cert.data);
-				free(pem_host_cert.data);
-			}
-		}
-	}
-	X509V3_EXT_cleanup();
-	X509_free(dev_cert);
-
-	if (root_cert.data)
-		free(root_cert.data);
-	if (host_cert.data)
-		free(host_cert.data);
-	if (root_privkey.data)
-		free(root_privkey.data);
-	if (host_privkey.data)
-		free(host_privkey.data);
-#else
 	gnutls_datum_t modulus = { NULL, 0 };
 	gnutls_datum_t exponent = { NULL, 0 };
 
@@ -800,7 +700,7 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 				ret1 = asn1_read_value(asn1_pub_key, "modulus", modulus.data, (int*)&modulus.size);
 				ret2 = asn1_read_value(asn1_pub_key, "publicExponent", exponent.data, (int*)&exponent.size);
 				if (ASN1_SUCCESS == ret1 && ASN1_SUCCESS == ret2)
-					uret = USERPREF_E_SUCCESS;
+					ret = USERPREF_E_SUCCESS;
 			}
 			if (asn1_pub_key)
 				asn1_delete_structure(&asn1_pub_key);
@@ -810,83 +710,45 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 	}
 
 	/* now generate certificates */
-	if (USERPREF_E_SUCCESS == uret && 0 != modulus.size && 0 != exponent.size) {
-
-		gnutls_global_init();
+	if (USERPREF_E_SUCCESS == ret && 0 != modulus.size && 0 != exponent.size) {
 		gnutls_datum_t essentially_null = { (unsigned char*)strdup("abababababababab"), strlen("abababababababab") };
 
-		gnutls_x509_privkey_t fake_privkey, root_privkey, host_privkey;
-		gnutls_x509_crt_t dev_cert, root_cert, host_cert;
+		gnutls_x509_privkey_t fake_privkey;
+		gnutls_x509_crt_t dev_cert;
 
 		gnutls_x509_privkey_init(&fake_privkey);
-		gnutls_x509_privkey_init(&root_privkey);
-		gnutls_x509_privkey_init(&host_privkey);
-
 		gnutls_x509_crt_init(&dev_cert);
-		gnutls_x509_crt_init(&root_cert);
-		gnutls_x509_crt_init(&host_cert);
 
-		if (GNUTLS_E_SUCCESS ==
-			gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null,
-											   &essentially_null, &essentially_null)) {
+		if (GNUTLS_E_SUCCESS == gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null, &essentially_null, &essentially_null)) {
+			/* generate device certificate */
+			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
+			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+			gnutls_x509_crt_set_version(dev_cert, 3);
+			gnutls_x509_crt_set_ca_status(dev_cert, 0);
+			gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
+			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 
-			uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, root_cert);
-			uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, host_cert);
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
+			/* use custom hash generation for compatibility with the "Apple ecosystem" */
+			const gnutls_digest_algorithm_t dig_sha1 = GNUTLS_DIG_SHA1;
+			size_t hash_size = gnutls_hash_get_len(dig_sha1);
+			unsigned char hash[hash_size];
+			if (gnutls_hash_fast(dig_sha1, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
+				debug_info("ERROR: Failed to generate SHA1 for public key");
+			} else {
+				gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
+			}
 
-			if (USERPREF_E_SUCCESS == uret) {
-				/* generate device certificate */
-				gnutls_x509_crt_set_key(dev_cert, fake_privkey);
-				gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
-				gnutls_x509_crt_set_version(dev_cert, 3);
-				gnutls_x509_crt_set_ca_status(dev_cert, 0);
-				gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
-				gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
+			gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
+			gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
 
-				/* use custom hash generation for compatibility with the "Apple ecosystem" */
-				const gnutls_digest_algorithm_t dig_sha1 = GNUTLS_DIG_SHA1;
-				size_t hash_size = gnutls_hash_get_len(dig_sha1);
-				unsigned char hash[hash_size];
-				if (gnutls_hash_fast(dig_sha1, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
-					debug_info("ERROR: Failed to generate SHA1 for public key");
-				} else {
-					gnutls_x509_crt_set_subject_key_id(dev_cert, hash, hash_size);
-				}
-
-				gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
-				gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
-
-				if (LOCKDOWN_E_SUCCESS == ret) {
-					/* if everything went well, export in PEM format */
-					size_t export_size = 0;
-					gnutls_datum_t dev_pem = { NULL, 0 };
-					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &export_size);
-					dev_pem.data = gnutls_malloc(export_size);
-					gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &export_size);
-					dev_pem.size = export_size;
-
-					gnutls_datum_t pem_root_cert = { NULL, 0 };
-					gnutls_datum_t pem_host_cert = { NULL, 0 };
-
-					uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
-					uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
-
-					if (USERPREF_E_SUCCESS == uret) {
-						/* set new keys and certs in pair record */
-						plist_dict_set_item(pair_record, USERPREF_DEVICE_CERTIFICATE_KEY, plist_new_data(dev_pem.data, dev_pem.size));
-						plist_dict_set_item(pair_record, USERPREF_HOST_CERTIFICATE_KEY, plist_new_data(pem_host_cert.data, pem_host_cert.size));
-						plist_dict_set_item(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, plist_new_data(pem_root_cert.data, pem_root_cert.size));
-						plist_dict_set_item(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, plist_new_data(root_privkey.data, root_privkey.size));
-						plist_dict_set_item(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, plist_new_data(host_privkey.data, host_privkey.size));
-
-						gnutls_free(pem_root_cert.data);
-						gnutls_free(pem_host_cert.data);
-
-						if (dev_pem.data)
-							gnutls_free(dev_pem.data);
-					}
-				}
+			if (USERPREF_E_SUCCESS == ret) {
+				/* if everything went well, export in PEM format */
+				size_t export_size = 0;
+				gnutls_datum_t dev_pem = { NULL, 0 };
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &export_size);
+				dev_pem.data = gnutls_malloc(export_size);
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &export_size);
+				dev_pem.size = export_size;
 			}
 		}
 
@@ -894,19 +756,46 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 			free(essentially_null.data);
 
 		gnutls_x509_crt_deinit(dev_cert);
-		gnutls_x509_crt_deinit(root_cert);
-		gnutls_x509_crt_deinit(host_cert);
 		gnutls_x509_privkey_deinit(fake_privkey);
-		gnutls_x509_privkey_deinit(root_privkey);
-		gnutls_x509_privkey_deinit(host_privkey);
 	}
+
+	gnutls_x509_crt_deinit(root_cert);
+	gnutls_x509_crt_deinit(host_cert);
+	gnutls_x509_privkey_deinit(root_privkey);
+	gnutls_x509_privkey_deinit(host_privkey);
 
 	gnutls_free(modulus.data);
 	gnutls_free(exponent.data);
 
 	gnutls_free(der_pub_key.data);
+
+	/* restore gnutls env */
+	gnutls_global_deinit();
+	gnutls_global_init();
 #endif
-	return uret;
+	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
+		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
+		ret = USERPREF_E_SUCCESS;
+
+	/* now set keys and certificates */
+	pair_record_set_item_from_key_data(pair_record, USERPREF_DEVICE_CERTIFICATE_KEY, &dev_cert_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_key_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_key_pem);
+	pair_record_set_item_from_key_data(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert_pem);
+
+	if (dev_cert_pem.data)
+		free(dev_cert_pem.data);
+	if (root_key_pem.data)
+		free(root_key_pem.data);
+	if (root_cert_pem.data)
+		free(root_cert_pem.data);
+	if (host_key_pem.data)
+		free(host_key_pem.data);
+	if (host_cert_pem.data)
+		free(host_cert_pem.data);
+
+	return ret;
 }
 
 /**
@@ -933,7 +822,7 @@ userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const cha
 		ret = pair_record_get_item_as_key_data(pair_record, name, key);
 #else
 		key_data_t pem = { NULL, 0 };
-		ret = pair_record_get_item_as_key_data(pair_record, name, pem);
+		ret = pair_record_get_item_as_key_data(pair_record, name, &pem);
 		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem, GNUTLS_X509_FMT_PEM))
 			ret = USERPREF_E_SUCCESS;
 		else
@@ -970,7 +859,7 @@ userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const cha
 		ret = pair_record_get_item_as_key_data(pair_record, name, cert);
 #else
 		key_data_t pem = { NULL, 0 };
-		ret = pair_record_get_item_as_key_data(pair_record, name, pem);
+		ret = pair_record_get_item_as_key_data(pair_record, name, &pem);
 		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_crt_import(cert, &pem, GNUTLS_X509_FMT_PEM))
 			ret = USERPREF_E_SUCCESS;
 		else

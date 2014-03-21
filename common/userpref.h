@@ -75,8 +75,7 @@ userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_recor
 userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);
 userpref_error_t userpref_delete_pair_record(const char *udid);
 
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record, key_data_t public_key);
+LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_data_t public_key);
 #ifdef HAVE_OPENSSL
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, key_data_t* key);
 LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, key_data_t* cert);

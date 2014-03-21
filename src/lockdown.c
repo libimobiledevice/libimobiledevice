@@ -852,21 +852,7 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 	*pair_record = plist_new_dict();
 
 	userpref_error_t uret = USERPREF_E_SUCCESS;
-	uret = pair_record_generate_keys_and_certs(*pair_record);
-	switch(uret) {
-		case USERPREF_E_INVALID_ARG:
-			ret = LOCKDOWN_E_INVALID_ARG;
-			break;
-		case USERPREF_E_INVALID_CONF:
-			ret = LOCKDOWN_E_INVALID_CONF;
-			break;
-		case USERPREF_E_SSL_ERROR:
-			ret = LOCKDOWN_E_SSL_ERROR;
-		default:
-			break;
-	}
-
-	uret = pair_record_generate_from_device_public_key(*pair_record, public_key);
+	uret = pair_record_generate_keys_and_certs(*pair_record, public_key);
 	switch(uret) {
 		case USERPREF_E_INVALID_ARG:
 			ret = LOCKDOWN_E_INVALID_ARG;
