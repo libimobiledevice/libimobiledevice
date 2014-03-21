@@ -880,8 +880,9 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 			break;
 	}
 
-	/* get systembuid and host id */
+	/* set SystemBUID */
 	userpref_read_system_buid(&system_buid);
+	plist_dict_set_item(*pair_record, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
 
 	pair_record_set_host_id(*pair_record, host_id);
 
