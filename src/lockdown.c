@@ -918,6 +918,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	plist_t dict = NULL;
 	plist_t pair_record_plist = NULL;
+	plist_t wifi_node = NULL;
 	int pairing_mode = 0; /* 0 = libimobiledevice, 1 = external */
 
 	if (pair_record && pair_record->system_buid && pair_record->host_id) {
@@ -940,6 +941,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 					plist_free(pair_record_plist);
 				return ret;
 			}
+
+			/* get wifi mac now, if we get it later we fail on iOS 7 which causes a reconnect */
+			lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_node);
 		} else {
 			/* use existing pair record */
 			if (userpref_has_pair_record(client->udid)) {
@@ -974,6 +978,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		plist_free(pair_record_plist);
+		if (wifi_node)
+			plist_free(wifi_node);
 		return ret;
 	}
 
@@ -982,6 +988,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		plist_free(pair_record_plist);
+		if (wifi_node)
+			plist_free(wifi_node);
 		return ret;
 	}
 
@@ -1007,26 +1015,21 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 				userpref_delete_pair_record(client->udid);
 			} else {
 				if (!strcmp("Pair", verb)) {
-					debug_info("Saving EscrowBag from response in pair record");
-
 					/* add returned escrow bag if available */
 					plist_t extra_node = plist_dict_get_item(dict, USERPREF_ESCROW_BAG_KEY);
 					if (extra_node && plist_get_node_type(extra_node) == PLIST_DATA) {
+						debug_info("Saving EscrowBag from response in pair record");
 						plist_dict_set_item(pair_record_plist, USERPREF_ESCROW_BAG_KEY, plist_copy(extra_node));
 						plist_free(extra_node);
 						extra_node = NULL;
 					}
 
-					debug_info("Saving WiFiAddress from device in pair record");
-
-					/* get wifi mac */
-					lockdownd_get_value(client, NULL, "WiFiAddress", &extra_node);
-
-					/* save wifi mac address in config */
-					if (extra_node) {
-						plist_dict_set_item(pair_record_plist, USERPREF_WIFI_MAC_ADDRESS_KEY, plist_copy(extra_node));
-						plist_free(extra_node);
-						extra_node = NULL;
+					/* save previously retrieved wifi mac address in pair record */
+					if (wifi_node) {
+						debug_info("Saving WiFiAddress from device in pair record");
+						plist_dict_set_item(pair_record_plist, USERPREF_WIFI_MAC_ADDRESS_KEY, plist_copy(wifi_node));
+						plist_free(wifi_node);
+						wifi_node = NULL;
 					}
 
 					userpref_save_pair_record(client->udid, pair_record_plist);
@@ -1065,6 +1068,11 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	if (pair_record_plist) {
 		plist_free(pair_record_plist);
 		pair_record_plist = NULL;
+	}
+
+	if (wifi_node) {
+		plist_free(wifi_node);
+		wifi_node = NULL;
 	}
 
 	plist_free(dict);
