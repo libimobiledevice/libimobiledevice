@@ -609,8 +609,6 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t host_cert;
 
-	gnutls_global_init();
-
 	/* use less secure random to speed up key generation */
 	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM);
 
@@ -770,8 +768,6 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_free(exponent.data);
 
 	gnutls_free(der_pub_key.data);
-
-	gnutls_global_deinit();
 #endif
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)

@@ -36,10 +36,89 @@
 #endif
 #include "idevice.h"
 #include "common/userpref.h"
+#include "common/thread.h"
 #include "common/debug.h"
 
 #ifdef HAVE_OPENSSL
-static int openssl_init_done = 0;
+static mutex_t *mutex_buf = NULL;
+static void locking_function(int mode, int n, const char* file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		mutex_lock(&mutex_buf[n]);
+	else
+		mutex_unlock(&mutex_buf[n]);
+}
+
+static unsigned long id_function(void)
+{
+	return ((unsigned long)THREAD_ID);
+}
+#endif
+
+static void internal_idevice_init(void)
+{
+#ifdef HAVE_OPENSSL
+	int i;
+	SSL_library_init();
+
+	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
+	if (!mutex_buf)
+		return;
+	for (i = 0; i < CRYPTO_num_locks(); i++)
+		mutex_init(&mutex_buf[i]);
+
+	CRYPTO_set_id_callback(id_function);
+	CRYPTO_set_locking_callback(locking_function);
+#else
+	gnutls_global_init();
+#endif
+}
+
+static void internal_idevice_deinit(void)
+{
+#ifdef HAVE_OPENSSL
+	int i;
+	if (!mutex_buf)
+		return;
+	CRYPTO_set_id_callback(NULL);
+	CRYPTO_set_locking_callback(NULL);
+	for (i = 0; i < CRYPTO_num_locks(); i++)
+		mutex_destroy(&mutex_buf[i]);
+	free(mutex_buf);
+	mutex_buf = NULL;
+#else
+	gnutls_global_deinit();
+#endif
+}
+
+static thread_once_t init_once = THREAD_ONCE_INIT;
+static thread_once_t deinit_once = THREAD_ONCE_INIT;
+
+#ifdef WIN32
+int APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
+{
+	switch (dwReason) {
+	case DLL_PROCESS_ATTACH:
+		thread_once(&init_once,	internal_idevice_init);
+		break;
+	case DLL_PROCESS_DETACH:
+		thread_once(&deinit_once, internal_idevice_deinit);
+		break;
+	default:
+		break;
+	}
+	return 1;
+}
+#else
+static void __attribute__((constructor)) libimobiledevice_initialize(void)
+{
+	thread_once(&init_once, internal_idevice_init);
+}
+
+static void __attribute__((destructor)) libimobiledevice_deinitialize(void)
+{
+	thread_once(&deinit_once, internal_idevice_deinit);
+}
 #endif
 
 static idevice_event_cb_t event_cb = NULL;
@@ -575,7 +654,6 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (ssl_data->ctx) {
 		SSL_CTX_free(ssl_data->ctx);
 	}
-	openssl_init_done = 0;
 #else
 	if (ssl_data->session) {
 		gnutls_deinit(ssl_data->session);
@@ -691,12 +769,6 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	if (pair_record)
 		plist_free(pair_record);
 
-	/* Set up OpenSSL */
-	if (openssl_init_done == 0) {
-		SSL_library_init();
-		openssl_init_done = 1;
-	}
-
 	BIO *ssl_bio = BIO_new(BIO_s_socket());
 	if (!ssl_bio) {
 		debug_info("ERROR: Could not create SSL bio.");
@@ -761,7 +833,6 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 
 	/* Set up GnuTLS... */
 	debug_info("enabling SSL mode");
-	gnutls_global_init();
 	errno = 0;
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
 	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
