@@ -952,7 +952,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			if (userpref_has_pair_record(client->udid)) {
 				userpref_read_pair_record(client->udid, &pair_record_plist);
 			} else {
-				return LOCKDOWN_E_PAIRING_FAILED;
+				return LOCKDOWN_E_INVALID_HOST_ID;
 			}
 		}
 	}
