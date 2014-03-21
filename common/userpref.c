@@ -1006,6 +1006,7 @@ userpref_error_t pair_record_get_item_as_key_data(plist_t pair_record, const cha
 	if (!pair_record || !value)
 		return USERPREF_E_INVALID_ARG;
 
+	userpref_error_t ret = USERPREF_E_SUCCESS;
 	char* buffer = NULL;
 	uint64_t length = 0;
 
@@ -1018,12 +1019,14 @@ userpref_error_t pair_record_get_item_as_key_data(plist_t pair_record, const cha
 		value->size = length;
 		free(buffer);
 		buffer = NULL;
+	} else {
+		ret = USERPREF_E_INVALID_CONF;
 	}
 
-	if (node)
-		plist_free(node);
+	if (buffer)
+		free(buffer);
 
-	return USERPREF_E_SUCCESS;
+	return ret;
 }
 
 userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const char* name, key_data_t *value)
