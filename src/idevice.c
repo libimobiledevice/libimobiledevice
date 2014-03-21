@@ -685,7 +685,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	key_data_t root_cert = { NULL, 0 };
 	key_data_t root_privkey = { NULL, 0 };
 
-	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
+	pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
 	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
 
 	/* Set up OpenSSL */
@@ -772,8 +772,8 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_x509_privkey_init(&ssl_data_loc->root_privkey);
 	gnutls_x509_privkey_init(&ssl_data_loc->host_privkey);
 
-	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, ssl_data_loc->root_cert);
-	pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, ssl_data_loc->host_cert);
+	pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, ssl_data_loc->root_cert);
+	pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, ssl_data_loc->host_cert);
 	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, ssl_data_loc->root_privkey);
 	pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, ssl_data_loc->host_privkey);
 
