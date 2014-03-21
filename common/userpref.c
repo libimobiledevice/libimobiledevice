@@ -609,7 +609,6 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_privkey_t host_privkey;
 	gnutls_x509_crt_t host_cert;
 
-	gnutls_global_deinit();
 	gnutls_global_init();
 
 	/* use less secure random to speed up key generation */
@@ -744,11 +743,10 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 			if (USERPREF_E_SUCCESS == ret) {
 				/* if everything went well, export in PEM format */
 				size_t export_size = 0;
-				gnutls_datum_t dev_pem = { NULL, 0 };
 				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, NULL, &export_size);
-				dev_pem.data = gnutls_malloc(export_size);
-				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_pem.data, &export_size);
-				dev_pem.size = export_size;
+				dev_cert_pem.data = gnutls_malloc(export_size);
+				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_cert_pem.data, &export_size);
+				dev_cert_pem.size = export_size;
 			}
 		}
 
@@ -769,9 +767,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	gnutls_free(der_pub_key.data);
 
-	/* restore gnutls env */
 	gnutls_global_deinit();
-	gnutls_global_init();
 #endif
 	if (NULL != root_cert_pem.data && 0 != root_cert_pem.size &&
 		NULL != host_cert_pem.data && 0 != host_cert_pem.size)
