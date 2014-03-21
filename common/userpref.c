@@ -674,8 +674,8 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 	host_privkey.data = NULL;
 	host_privkey.size = 0;
 
-	uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
-	uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert);
+	uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
+	uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &host_cert);
 	uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
 	uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, &host_privkey);
 
@@ -738,8 +738,8 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 			key_data_t pem_root_cert = { NULL, 0 };
 			key_data_t pem_host_cert = { NULL, 0 };
 
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
+			uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
+			uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
 
 			if (USERPREF_E_SUCCESS == uret) {
 				/* set new keys and certs in pair record */
@@ -830,8 +830,8 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 			gnutls_x509_privkey_import_rsa_raw(fake_privkey, &modulus, &exponent, &essentially_null, &essentially_null,
 											   &essentially_null, &essentially_null)) {
 
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, root_cert);
-			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, host_cert);
+			uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, root_cert);
+			uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, host_cert);
 			uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, root_privkey);
 			uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_PRIVATE_KEY_KEY, host_privkey);
 
@@ -869,8 +869,8 @@ userpref_error_t pair_record_generate_from_device_public_key(plist_t pair_record
 					gnutls_datum_t pem_root_cert = { NULL, 0 };
 					gnutls_datum_t pem_host_cert = { NULL, 0 };
 
-					uret = pair_record_import_key_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
-					uret = pair_record_import_key_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
+					uret = pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &pem_root_cert);
+					uret = pair_record_import_crt_with_name(pair_record, USERPREF_HOST_CERTIFICATE_KEY, &pem_host_cert);
 
 					if (USERPREF_E_SUCCESS == uret) {
 						/* set new keys and certs in pair record */
@@ -934,7 +934,7 @@ userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const cha
 #else
 		key_data_t pem = { NULL, 0 };
 		ret = pair_record_get_item_as_key_data(pair_record, name, pem);
-		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(cert, &pem, GNUTLS_X509_FMT_PEM))
+		if (ret == USERPREF_E_SUCCESS && GNUTLS_E_SUCCESS == gnutls_x509_privkey_import(key, &pem, GNUTLS_X509_FMT_PEM))
 			ret = USERPREF_E_SUCCESS;
 		else
 			ret = USERPREF_E_SSL_ERROR;
