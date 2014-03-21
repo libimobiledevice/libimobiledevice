@@ -545,7 +545,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	{
 		BIO *membp = BIO_new_mem_buf(public_key.data, public_key.size);
 		if (!PEM_read_bio_RSAPublicKey(membp, &pubkey, NULL, NULL)) {
-			debug_info("Could not read public key");
+			debug_info("WARNING: Could not read public key");
 		}
 		BIO_free(membp);
 	}
@@ -706,6 +706,8 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		}
 		if (pkcs1)
 			asn1_delete_structure(&pkcs1);
+	} else {
+		debug_info("WARNING: Could not read public key");
 	}
 
 	/* now generate certificates */
@@ -747,6 +749,8 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 				dev_cert_pem.data = gnutls_malloc(export_size);
 				gnutls_x509_crt_export(dev_cert, GNUTLS_X509_FMT_PEM, dev_cert_pem.data, &export_size);
 				dev_cert_pem.size = export_size;
+			} else {
+				debug_info("ERROR: Signing device certificate with root private key failed!");
 			}
 		}
 
