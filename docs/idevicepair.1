@@ -1,13 +1,13 @@
 .TH "idevicepair" 1
 .SH NAME
-idevicepair \- Manage pairings with devices and this host.
+idevicepair \- Manage host pairings with devices and usbmuxd.
 .SH SYNOPSIS
 .B idevicepair
 [OPTIONS] COMMAND
 
 .SH DESCRIPTION
 
-Manage pairings with devices and this host.
+Manage host pairings with devices and usbmuxd.
 
 .SH OPTIONS
 .TP
@@ -22,22 +22,27 @@ prints usage information.
 
 .SH COMMANDS
 .TP
+.B systembuid
+print the system buid of the usbmuxd host.
+.TP
 .B hostid
-print the host id of this computer.
+print the host id for target device.
 .TP
 .B pair
-pair device with this computer.
+pair device with this host.
 .TP
 .B validate
-validate if device is paired with this computer.
+validate if device is paired with this host.
 .TP
 .B unpair
-unpair device with this computer.
+unpair device with this host.
 .TP
 .B list
-list devices paired with this computer.
+list devices paired with this host.
 
 .SH AUTHORS
 Nikias Bassen
 
-Man page written to conform with Debian by Julien Lavergne.
+Martin Szulecki
+
+Julien Lavergne

@@ -56,15 +56,15 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	
 	name = strrchr(argv[0], '/');
-	printf("\n%s - Manage pairings with devices and this host.\n\n", (name ? name + 1: argv[0]));
+	printf("\n%s - Manage host pairings with devices and usbmuxd.\n\n", (name ? name + 1: argv[0]));
 	printf("Usage: %s [OPTIONS] COMMAND\n\n", (name ? name + 1: argv[0]));
 	printf(" Where COMMAND is one of:\n");
-	printf("  systembuid   print the system buid of this computer\n");
+	printf("  systembuid   print the system buid of the usbmuxd host\n");
 	printf("  hostid       print the host id for target device\n");
-	printf("  pair         pair device with this computer\n");
-	printf("  validate     validate if device is paired with this computer\n");
-	printf("  unpair       unpair device with this computer\n");
-	printf("  list         list devices paired with this computer\n\n");
+	printf("  pair         pair device with this host\n");
+	printf("  validate     validate if device is paired with this host\n");
+	printf("  unpair       unpair device with this host\n");
+	printf("  list         list devices paired with this host\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
