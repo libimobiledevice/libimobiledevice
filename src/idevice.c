@@ -761,8 +761,8 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 
 	/* Set up GnuTLS... */
 	debug_info("enabling SSL mode");
-	errno = 0;
 	gnutls_global_init();
+	errno = 0;
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
 	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
@@ -791,7 +791,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	gnutls_transport_set_pull_function(ssl_data_loc->session, (gnutls_pull_func) & internal_ssl_read);
 	debug_info("GnuTLS step 4 -- now handshaking...");
 	if (errno) {
-		debug_info("WARN: errno says %s before handshake!", strerror(errno));
+		debug_info("WARNING: errno says %s before handshake!", strerror(errno));
 	}
 	return_me = gnutls_handshake(ssl_data_loc->session);
 	debug_info("GnuTLS handshake done...");
