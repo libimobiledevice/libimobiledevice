@@ -762,6 +762,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	}
 
 	plist_free(pair_record);
+	pair_record = NULL;
 
 	/* in any case, we need to validate pairing to receive trusted host status */
 	ret = lockdownd_validate_pair(client_loc, NULL);
@@ -778,6 +779,12 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	}
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
+		if (!host_id) {
+			userpref_read_pair_record(client_loc->udid, &pair_record);
+			pair_record_get_host_id(pair_record, &host_id);
+			plist_free(pair_record);
+		}
+
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
 		if (LOCKDOWN_E_SUCCESS != ret) {
 			debug_info("Session opening failed.");
