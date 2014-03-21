@@ -32,9 +32,6 @@
 #include "common/debug.h"
 #include "endianness.h"
 
-/** The maximum size an AFC data packet can be */
-static const int MAXIMUM_PACKET_SIZE = (2 << 15);
-
 /**
  * Locks an AFC client, done for thread safety stuff
  * 
@@ -308,11 +305,6 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 
 	entire_len = (uint32_t)header.entire_length - sizeof(AFCPacket);
 	this_len = (uint32_t)header.this_length - sizeof(AFCPacket);
-
-	/* this is here as a check (perhaps a different upper limit is good?) */
-	if (entire_len > (uint32_t)MAXIMUM_PACKET_SIZE) {
-		fprintf(stderr, "%s: entire_len is larger than MAXIMUM_PACKET_SIZE, (%d > %d)!", __func__, entire_len, MAXIMUM_PACKET_SIZE);
-	}
 
 	dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
@@ -795,7 +787,6 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
 {
 	char *input = NULL;
 	uint32_t current_count = 0, bytes_loc = 0;
-	const uint32_t MAXIMUM_READ_SIZE = 1 << 16;
 	afc_error_t ret = AFC_E_SUCCESS;
 
 	if (!client || !client->afc_packet || !client->parent || handle == 0)
@@ -804,50 +795,42 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
 
 	afc_lock(client);
 
-	/* Looping here to get around the maximum amount of data that
-	   afc_receive_data can handle */
-	while (current_count < length) {
-		debug_info("current count is %i but length is %i", current_count, length);
+	/* Send the read command */
+	struct {
+		uint64_t handle;
+		uint64_t size;
+	} readinfo;
+	readinfo.handle = handle;
+	readinfo.size = htole64(length);
+	ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)&readinfo, sizeof(readinfo), NULL, 0, &bytes_loc);
 
-		/* Send the read command */
-		struct {
-			uint64_t handle;
-			uint64_t size;
-		} readinfo;
-		readinfo.handle = handle;
-		readinfo.size = htole64(((length - current_count) < MAXIMUM_READ_SIZE) ? (length - current_count) : MAXIMUM_READ_SIZE);
-		ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)&readinfo, sizeof(readinfo), NULL, 0, &bytes_loc);
-
-		if (ret != AFC_E_SUCCESS) {
-			afc_unlock(client);
-			return AFC_E_NOT_ENOUGH_DATA;
-		}
-		/* Receive the data */
-		ret = afc_receive_data(client, &input, &bytes_loc);
-		debug_info("afc_receive_data returned error: %d", ret);
-		debug_info("bytes returned: %i", bytes_loc);
-		if (ret != AFC_E_SUCCESS) {
-			afc_unlock(client);
-			return ret;
-		} else if (bytes_loc == 0) {
-			if (input)
-				free(input);
-			afc_unlock(client);
-			*bytes_read = current_count;
-			/* FIXME: check that's actually a success */
-			return ret;
-		} else {
-			if (input) {
-				debug_info("%d", bytes_loc);
-				memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
-				free(input);
-				input = NULL;
-				current_count += (bytes_loc > length) ? length : bytes_loc;
-			}
+	if (ret != AFC_E_SUCCESS) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+	/* Receive the data */
+	ret = afc_receive_data(client, &input, &bytes_loc);
+	debug_info("afc_receive_data returned error: %d", ret);
+	debug_info("bytes returned: %i", bytes_loc);
+	if (ret != AFC_E_SUCCESS) {
+		afc_unlock(client);
+		return ret;
+	} else if (bytes_loc == 0) {
+		if (input)
+			free(input);
+		afc_unlock(client);
+		*bytes_read = current_count;
+		/* FIXME: check that's actually a success */
+		return ret;
+	} else {
+		if (input) {
+			debug_info("%d", bytes_loc);
+			memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
+			free(input);
+			input = NULL;
+			current_count += (bytes_loc > length) ? length : bytes_loc;
 		}
 	}
-	debug_info("returning current_count as %i", current_count);
-
 	afc_unlock(client);
 	*bytes_read = current_count;
 	return ret;
