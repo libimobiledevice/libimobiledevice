@@ -1358,23 +1358,9 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
 		(*service)->ssl_enabled = 0;
 	}
 
-	plist_t pair_record = NULL;
-	userpref_read_pair_record(client->udid, &pair_record);
-
-	char *host_id = NULL;
-	pair_record_get_host_id(pair_record, &host_id);
-
-	plist_free(pair_record);
-
-	if (!host_id)
-		return LOCKDOWN_E_INVALID_CONF;
-
 	plist_t dict = NULL;
 	uint16_t port_loc = 0;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
-
-	free(host_id);
-	host_id = NULL;
 
 	dict = plist_new_dict();
 	plist_dict_add_label(dict, client->label);
