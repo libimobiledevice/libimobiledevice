@@ -1037,11 +1037,6 @@ userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const c
 		return USERPREF_E_INVALID_ARG;
 	}
 
-	/* remove any existing item */
-	if (plist_dict_get_item(pair_record, name)) {
-		plist_dict_remove_item(pair_record, name);
-	}
-
 	/* set new item */
 	plist_dict_set_item(pair_record, name, plist_new_data((char*)value->data, value->size));
 
