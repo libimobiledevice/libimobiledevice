@@ -31,12 +31,14 @@ typedef volatile struct {
 	int state;
 } thread_once_t;
 #define THREAD_ONCE_INIT {0, 0}
+#define THREAD_ID GetCurrentThreadId()
 #else
 #include <pthread.h>
 typedef pthread_t thread_t;
 typedef pthread_mutex_t mutex_t;
 typedef pthread_once_t thread_once_t;
 #define THREAD_ONCE_INIT PTHREAD_ONCE_INIT
+#define THREAD_ID pthread_self()
 #endif
 
 typedef void* (*thread_func_t)(void* data);
