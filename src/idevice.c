@@ -73,7 +73,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
 	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
 	if (res != 0) {
 		event_cb = NULL;
-		debug_info("Error %d when subscribing usbmux event callback!", res);
+		debug_info("ERROR: usbmuxd_subscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
 	return IDEVICE_E_SUCCESS;
@@ -90,7 +90,7 @@ idevice_error_t idevice_event_unsubscribe()
 	event_cb = NULL;
 	int res = usbmuxd_unsubscribe();
 	if (res != 0) {
-		debug_info("Error %d when unsubscribing usbmux event callback!", res);
+		debug_info("ERROR: usbmuxd_unsubscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
 	return IDEVICE_E_SUCCESS;
