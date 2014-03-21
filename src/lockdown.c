@@ -846,7 +846,7 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 	char* host_id = NULL;
 	char* system_buid = NULL;
 
-	/* generate new certificates if needed */
+	/* retrieve device public key */
 	ret = lockdownd_get_device_public_key_as_key_data(client, &public_key);
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		debug_info("device refused to send public key.");
@@ -856,6 +856,7 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 
 	*pair_record = plist_new_dict();
 
+	/* generate keys and certificates into pair record */
 	userpref_error_t uret = USERPREF_E_SUCCESS;
 	uret = pair_record_generate_keys_and_certs(*pair_record, public_key);
 	switch(uret) {
