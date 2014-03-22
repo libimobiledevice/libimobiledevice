@@ -2,7 +2,7 @@
  * userpref.h
  * contains methods to access user specific certificates IDs and more.
  *
- * Copyright (c) 2013 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2013-2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

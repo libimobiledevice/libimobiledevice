@@ -2,6 +2,7 @@
  * lockdown.h
  * Defines lockdown stuff, like the client struct.
  *
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

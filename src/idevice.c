@@ -2,8 +2,9 @@
  * idevice.c
  * Device discovery and communication interface.
  *
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2009-2014 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
- * Copyright (c) 2009 Nikias Bassen. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

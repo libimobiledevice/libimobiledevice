@@ -2,6 +2,7 @@
  * idevicepair.c
  * Manage pairings with devices and this host
  *
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

@@ -2,6 +2,8 @@
  * lockdown.c
  * com.apple.mobile.lockdownd service implementation.
  *
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2014 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
