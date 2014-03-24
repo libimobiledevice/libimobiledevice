@@ -29,6 +29,11 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef WIN32
+#include <windows.h>
+int APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved);
+#endif
+
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
