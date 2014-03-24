@@ -271,8 +271,6 @@ int main(int argc, char **argv)
 		case OP_UNPAIR:
 		lerr = lockdownd_unpair(client, NULL);
 		if (lerr == LOCKDOWN_E_SUCCESS) {
-			/* also remove local device record */
-			userpref_delete_pair_record(udid);
 			printf("SUCCESS: Unpaired with device %s\n", udid);
 		} else {
 			result = EXIT_FAILURE;
