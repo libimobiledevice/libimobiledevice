@@ -752,8 +752,9 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 
 	plist_t pair_record = NULL;
 	userpref_read_pair_record(client_loc->udid, &pair_record);
-
-	pair_record_get_host_id(pair_record, &host_id);
+	if (pair_record) {
+		pair_record_get_host_id(pair_record, &host_id);
+	}
 	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
@@ -783,8 +784,10 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		if (!host_id) {
 			userpref_read_pair_record(client_loc->udid, &pair_record);
-			pair_record_get_host_id(pair_record, &host_id);
-			plist_free(pair_record);
+			if (pair_record) {
+				pair_record_get_host_id(pair_record, &host_id);
+				plist_free(pair_record);
+			}
 		}
 
 		ret = lockdownd_start_session(client_loc, host_id, NULL, NULL);
@@ -950,6 +953,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			/* use existing pair record */
 			if (userpref_has_pair_record(client->udid)) {
 				userpref_read_pair_record(client->udid, &pair_record_plist);
+				if (!pair_record_plist) {
+					return LOCKDOWN_E_INVALID_CONF;
+				}
 			} else {
 				return LOCKDOWN_E_INVALID_HOST_ID;
 			}
