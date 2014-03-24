@@ -611,7 +611,7 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
  */
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
 {
-	char *send = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
+	char *buffer = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
@@ -621,10 +621,10 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 	afc_lock(client);
 
 	/* Send command */
-	memcpy(send, from, strlen(from) + 1);
-	memcpy(send + strlen(from) + 1, to, strlen(to) + 1);
-	ret = afc_dispatch_packet(client, AFC_OP_RENAME_PATH, send, strlen(to)+1 + strlen(from)+1, NULL, 0, &bytes);
-	free(send);
+	memcpy(buffer, from, strlen(from) + 1);
+	memcpy(buffer + strlen(from) + 1, to, strlen(to) + 1);
+	ret = afc_dispatch_packet(client, AFC_OP_RENAME_PATH, buffer, strlen(to)+1 + strlen(from)+1, NULL, 0, &bytes);
+	free(buffer);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -1101,7 +1101,7 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
  */
 afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
-	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
+	char *buffer = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t size_requested = htole64(newsize);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -1112,10 +1112,10 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
 	afc_lock(client);
 
 	/* Send command */
-	memcpy(send, &size_requested, 8);
-	memcpy(send + 8, path, strlen(path) + 1);
-	ret = afc_dispatch_packet(client, AFC_OP_TRUNCATE, send, 8 + strlen(path) + 1, NULL, 0, &bytes);
-	free(send);
+	memcpy(buffer, &size_requested, 8);
+	memcpy(buffer + 8, path, strlen(path) + 1);
+	ret = afc_dispatch_packet(client, AFC_OP_TRUNCATE, buffer, 8 + strlen(path) + 1, NULL, 0, &bytes);
+	free(buffer);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -1141,7 +1141,7 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
  */
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
 {
-	char *send = (char *) malloc(sizeof(char) * (strlen(target)+1 + strlen(linkname)+1 + 8));
+	char *buffer = (char *) malloc(sizeof(char) * (strlen(target)+1 + strlen(linkname)+1 + 8));
 	uint32_t bytes = 0;
 	uint64_t type = htole64(linktype);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -1156,11 +1156,11 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 	debug_info("linkname: %s, length:%d", linkname, strlen(linkname));
 
 	/* Send command */
-	memcpy(send, &type, 8);
-	memcpy(send + 8, target, strlen(target) + 1);
-	memcpy(send + 8 + strlen(target) + 1, linkname, strlen(linkname) + 1);
-	ret = afc_dispatch_packet(client, AFC_OP_MAKE_LINK, send, 8 + strlen(linkname) + 1 + strlen(target) + 1, NULL, 0, &bytes);
-	free(send);
+	memcpy(buffer, &type, 8);
+	memcpy(buffer + 8, target, strlen(target) + 1);
+	memcpy(buffer + 8 + strlen(target) + 1, linkname, strlen(linkname) + 1);
+	ret = afc_dispatch_packet(client, AFC_OP_MAKE_LINK, buffer, 8 + strlen(linkname) + 1 + strlen(target) + 1, NULL, 0, &bytes);
+	free(buffer);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -1184,7 +1184,7 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
  */
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
 {
-	char *send = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
+	char *buffer = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t mtime_loc = htole64(mtime);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -1195,10 +1195,10 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	afc_lock(client);
 
 	/* Send command */
-	memcpy(send, &mtime_loc, 8);
-	memcpy(send + 8, path, strlen(path) + 1);
-	ret = afc_dispatch_packet(client, AFC_OP_SET_FILE_TIME, send, 8 + strlen(path) + 1, NULL, 0, &bytes);
-	free(send);
+	memcpy(buffer, &mtime_loc, 8);
+	memcpy(buffer + 8, path, strlen(path) + 1);
+	ret = afc_dispatch_packet(client, AFC_OP_SET_FILE_TIME, buffer, 8 + strlen(path) + 1, NULL, 0, &bytes);
+	free(buffer);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
