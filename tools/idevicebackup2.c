@@ -702,7 +702,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 
 	sent = 0;
 	do {
-		length = ((total-sent) < sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
+		length = ((total-sent) < (long long)sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
 		/* send data size (file size + 1) */
 		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, sizeof(nlen));
