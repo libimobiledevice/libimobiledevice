@@ -1519,13 +1519,37 @@ files_out:
 						/* read data from file */
 						free(file_info_path);
 						file_info_path = mobilebackup_build_path(backup_directory, hash, ".mddata");
-						buffer_read_from_filename(file_info_path, &buffer, &length);
+
+						/* determine file size */
+#ifdef WIN32
+						struct _stati64 fst;
+						if (_stati64(file_info_path, &fst) != 0)
+#else
+						struct stat fst;
+						if (stat(file_info_path, &fst) != 0)
+#endif
+						{
+							printf("ERROR: stat() failed for '%s': %s\n", file_info_path, strerror(errno));
+							free(file_info_path);
+							break;
+						}
+						length = fst.st_size;
+
+						FILE *f = fopen(file_info_path, "rb");
+						if (!f) {
+							printf("ERROR: could not open local file '%s': %s\n", file_info_path, strerror(errno));
+							free(file_info_path);
+							break;
+						}
 						free(file_info_path);
 
 						/* send DLSendFile messages */
 						file_offset = 0;
 						do {
-							if ((length-file_offset) <= 8192)
+							char buf[8192];
+							size_t len = fread(buf, 1, sizeof(buf), f);
+
+							if ((length-file_offset) <= sizeof(buf))
 								file_status = DEVICE_LINK_FILE_STATUS_LAST_HUNK;
 							else
 								file_status = DEVICE_LINK_FILE_STATUS_HUNK;
@@ -1540,11 +1564,7 @@ files_out:
 
 							plist_array_append_item(send_file_node, plist_new_string("DLSendFile"));
 
-							if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK)
-								plist_array_append_item(send_file_node, plist_new_data(buffer+file_offset, length-file_offset));
-							else
-								plist_array_append_item(send_file_node, plist_new_data(buffer+file_offset, 8192));
-
+							plist_array_append_item(send_file_node, plist_new_data(buf, len));
 							plist_array_append_item(send_file_node, plist_copy(file_info));
 
 							err = mobilebackup_send(mobilebackup, send_file_node);
@@ -1562,7 +1582,7 @@ files_out:
 								}
 							}
 
-							file_offset += 8192;
+							file_offset += len;
 
 							if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK)
 								printf("DONE\n");
