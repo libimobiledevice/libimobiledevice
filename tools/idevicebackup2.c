@@ -50,6 +50,7 @@
 #include <termios.h>
 #include <sys/statvfs.h>
 #endif
+#include <sys/stat.h>
 
 #define CODE_SUCCESS 0x00
 #define CODE_ERROR_LOCAL 0x06
@@ -627,15 +628,24 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 	uint32_t bytes = 0;
 	char *localfile = build_path(backup_dir, path, NULL);
 	char buf[32768];
+#ifdef WIN32
+	struct _stati64 fst;
+#else
 	struct stat fst;
+#endif
 
 	FILE *f = NULL;
 	uint32_t slen = 0;
 	int errcode = -1;
 	int result = -1;
 	uint32_t length;
+#ifdef WIN32
+	uint64_t total;
+	uint64_t sent;
+#else
 	off_t total;
 	off_t sent;
+#endif
 
 	mobilebackup2_error_t err;
 
@@ -660,7 +670,12 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 		goto leave_proto_err;
 	}
 
-	if (stat(localfile, &fst) < 0) {
+#ifdef WIN32
+	if (_stati64(localfile, &fst) < 0)
+#else
+	if (stat(localfile, &fst) < 0)
+#endif
+	{
 		if (errno != ENOENT)
 			printf("%s: stat failed on '%s': %d\n", __func__, localfile, errno);
 		errcode = errno;
@@ -687,7 +702,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 
 	sent = 0;
 	do {
-		length = ((total-sent) < (off_t)sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
+		length = ((total-sent) < sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
 		/* send data size (file size + 1) */
 		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, sizeof(nlen));
