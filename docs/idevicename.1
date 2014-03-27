@@ -3,8 +3,7 @@
 idevicename \- Display the device name or set it to NAME if specified.
 .SH SYNOPSIS
 .B idevicename
-[OPTIONS]
-[NAME]
+[OPTIONS] [NAME]
 
 .SH DESCRIPTION
 
@@ -17,6 +16,9 @@ If
 is given the device name will be set to the name specified.
 
 .SH OPTIONS
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
 .TP
 .B \-u, \-\-udid UDID
 target specific device by its 40-digit device UDID.
