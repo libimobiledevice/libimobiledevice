@@ -91,16 +91,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	plist_t node = NULL;
-
 	if (argc == 0) {
 		// getting device name
 		char* name = NULL;
-		lerr = lockdownd_get_value(lockdown, NULL, "DeviceName", &node);
-		if (node) {
-			plist_get_string_val(node, &name);
-			plist_free(node);
-		}
+		lerr = lockdownd_get_device_name(lockdown, &name);
 		if (name) {
 			printf("%s\n", name);
 			free(name);
