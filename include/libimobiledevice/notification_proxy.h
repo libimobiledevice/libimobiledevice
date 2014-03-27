@@ -93,13 +93,103 @@ typedef np_client_private *np_client_t; /**< The client handle. */
 typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
+
+/**
+ * Connects to the notification_proxy on the specified device.
+ *
+ * @param device The device to connect to.
+ * @param service The service descriptor returned by lockdownd_start_service.
+ * @param client Pointer that will be set to a newly allocated np_client_t
+ *    upon successful return.
+ *
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when device is NULL,
+ *   or NP_E_CONN_FAILED when the connection to the device could not be
+ *   established.
+ */
 np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
+
+/**
+ * Starts a new notification proxy service on the specified device and connects to it.
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated
+ *     np_client_t upon successful return. Must be freed using
+ *     np_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *  Pass NULL to disable sending the label in requests to lockdownd.
+ *
+ * @return NP_E_SUCCESS on success, or an NP_E_* error
+ *     code otherwise.
+ */
 np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
+
+/**
+ * Disconnects a notification_proxy client from the device and frees up the
+ * notification_proxy client data.
+ *
+ * @param client The notification_proxy client to disconnect and free.
+ *
+ * @return NP_E_SUCCESS on success, or NP_E_INVALID_ARG when client is NULL.
+ */
 np_error_t np_client_free(np_client_t client);
 
+
+/**
+ * Sends a notification to the device's notification_proxy.
+ *
+ * @param client The client to send to
+ * @param notification The notification message to send
+ *
+ * @return NP_E_SUCCESS on success, or an error returned by np_plist_send
+ */
 np_error_t np_post_notification(np_client_t client, const char *notification);
+
+/**
+ * Tells the device to send a notification on the specified event.
+ *
+ * @param client The client to send to
+ * @param notification The notifications that should be observed.
+ *
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ *    notification are NULL, or an error returned by np_plist_send.
+ */
 np_error_t np_observe_notification(np_client_t client, const char *notification);
+
+/**
+ * Tells the device to send a notification on specified events.
+ *
+ * @param client The client to send to
+ * @param notification_spec Specification of the notifications that should be
+ *  observed. This is expected to be an array of const char* that MUST have a
+ *  terminating NULL entry.
+ *
+ * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client is null,
+ *   or an error returned by np_observe_notification.
+ */
 np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
+
+/**
+ * This function allows an application to define a callback function that will
+ * be called when a notification has been received.
+ * It will start a thread that polls for notifications and calls the callback
+ * function if a notification has been received.
+ * In case of an error condition when polling for notifications - e.g. device
+ * disconnect - the thread will call the callback function with an empty
+ * notification "" and terminate itself.
+ *
+ * @param client the NP client
+ * @param notify_cb pointer to a callback function or NULL to de-register a
+ *        previously set callback function.
+ * @param user_data Pointer that will be passed to the callback function as
+ *        user data. If notify_cb is NULL, this parameter is ignored.
+ *
+ * @note Only one callback function can be registered at the same time;
+ *       any previously set callback function will be removed automatically.
+ *
+ * @return NP_E_SUCCESS when the callback was successfully registered,
+ *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
+ *         the callback thread could no be created.
+ */
 np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
 
 #ifdef __cplusplus

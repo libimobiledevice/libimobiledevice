@@ -89,14 +89,6 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 	}
 }
 
-/**
- * Closes the restored client session if one is running and frees up the
- * restored_client struct.
- *
- * @param client The restore client
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
- */
 restored_error_t restored_client_free(restored_client_t client)
 {
 	if (!client)
@@ -127,13 +119,6 @@ restored_error_t restored_client_free(restored_client_t client)
 	return ret;
 }
 
-/**
- * Sets the label to send for requests to restored.
- *
- * @param client The restore client
- * @param label The label to set or NULL to disable sending a label
- *
- */
 void restored_client_set_label(restored_client_t client, const char *label)
 {
 	if (client) {
@@ -144,15 +129,6 @@ void restored_client_set_label(restored_client_t client, const char *label)
 	}
 }
 
-/**
- * Receives a plist from restored.
- *
- * @param client The restored client
- * @param plist The plist to store the received data
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client or
- *  plist is NULL
- */
 restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 {
 	if (!client || !plist || (plist && *plist))
@@ -172,18 +148,6 @@ restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 	return ret;
 }
 
-/**
- * Sends a plist to restored.
- *
- * @note This function is low-level and should only be used if you need to send
- *        a new type of message.
- *
- * @param client The restored client
- * @param plist The plist to send
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client or
- *  plist is NULL
- */
 restored_error_t restored_send(restored_client_t client, plist_t plist)
 {
 	if (!client || !plist)
@@ -199,16 +163,6 @@ restored_error_t restored_send(restored_client_t client, plist_t plist)
 	return ret;
 }
 
-/**
- * Query the type of the service daemon. Depending on whether the device is
- * queried in normal mode or restore mode, different types will be returned.
- *
- * @param client The restored client
- * @param type The type returned by the service daemon. Pass NULL to ignore.
- * @param version The restore protocol version. Pass NULL to ignore.
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
- */
 restored_error_t restored_query_type(restored_client_t client, char **type, uint64_t *version)
 {
 	if (!client)
@@ -268,15 +222,6 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 	return ret;
 }
 
-/**
- * Queries a value from the device specified by a key.
- *
- * @param client An initialized restored client.
- * @param key The key name to request
- * @param value A plist node representing the result value node
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL, RESTORE_E_PLIST_ERROR if value for key can't be found
- */
 restored_error_t restored_query_value(restored_client_t client, const char *key, plist_t *value)
 {
 	if (!client || !key)
@@ -319,16 +264,7 @@ restored_error_t restored_query_value(restored_client_t client, const char *key,
 	return ret;
 }
 
-/**
- * Retrieves a value from information plist specified by a key.
- *
- * @param client An initialized restored client.
- * @param key The key name to request or NULL to query for all keys
- * @param value A plist node representing the result value node
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL, RESTORE_E_PLIST_ERROR if value for key can't be found
- */
-restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value) 
+restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value)
 {
 	if (!client || !value || (value && *value))
 		return RESTORE_E_INVALID_ARG;
@@ -355,15 +291,6 @@ restored_error_t restored_get_value(restored_client_t client, const char *key, p
 	return ret;
 }
 
-/**
- * Creates a new restored client for the device.
- *
- * @param device The device to create a restored client for
- * @param client The pointer to the location of the new restored_client
- * @param label The label to use for communication. Usually the program name.
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
- */
 restored_error_t restored_client_new(idevice_t device, restored_client_t *client, const char *label)
 {
 	if (!client)
@@ -405,14 +332,6 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 	return ret;
 }
 
-/**
- * Sends the Goodbye request to restored signaling the end of communication.
- *
- * @param client The restore client
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
- *  RESTORE_E_PLIST_ERROR if the device did not acknowledge the request
- */
 restored_error_t restored_goodbye(restored_client_t client)
 {
 	if (!client)
@@ -445,16 +364,6 @@ restored_error_t restored_goodbye(restored_client_t client)
 	return ret;
 }
 
-/**
- * Requests to start a restore and retrieve it's port on success.
- *
- * @param client The restored client
- * @param options PLIST_DICT with options for the restore process or NULL
- * @param version the restore protocol version, see restored_query_type()
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
- *  is NULL, RESTORE_E_START_RESTORE_FAILED if the request fails
- */
 restored_error_t restored_start_restore(restored_client_t client, plist_t options, uint64_t version)
 {
 	if (!client)
@@ -479,14 +388,6 @@ restored_error_t restored_start_restore(restored_client_t client, plist_t option
 	return ret;
 }
 
-/**
- * Requests device to reboot.
- *
- * @param client The restored client
- *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
- *  is NULL
- */
 restored_error_t restored_reboot(restored_client_t client)
 {
 	if (!client)

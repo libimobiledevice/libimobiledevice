@@ -142,16 +142,6 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 	}
 }
 
-/**
- * Register a callback function that will be called when device add/remove
- * events occur.
- *
- * @param callback Callback function to call.
- * @param user_data Application-specific data passed as parameter
- *   to the registered callback function.
- *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
- */
 idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
 {
 	event_cb = callback;
@@ -164,12 +154,6 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
 	return IDEVICE_E_SUCCESS;
 }
 
-/**
- * Release the event callback function that has been registered with
- *  idevice_event_subscribe().
- *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
- */
 idevice_error_t idevice_event_unsubscribe()
 {
 	event_cb = NULL;
@@ -181,15 +165,6 @@ idevice_error_t idevice_event_unsubscribe()
 	return IDEVICE_E_SUCCESS;
 }
 
-/**
- * Get a list of currently available devices.
- *
- * @param devices List of udids of devices that are currently available.
- *   This list is terminated by a NULL pointer.
- * @param count Number of devices found.
- *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
- */
 idevice_error_t idevice_get_device_list(char ***devices, int *count)
 {
 	usbmuxd_device_info_t *dev_list;
@@ -220,13 +195,6 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 	return IDEVICE_E_SUCCESS;
 }
 
-/**
- * Free a list of device udids.
- *
- * @param devices List of udids to free.
- *
- * @return Always returnes IDEVICE_E_SUCCESS.
- */
 idevice_error_t idevice_device_list_free(char **devices)
 {
 	if (devices) {
@@ -240,19 +208,6 @@ idevice_error_t idevice_device_list_free(char **devices)
 	return IDEVICE_E_SUCCESS;
 }
 
-/**
- * Creates an idevice_t structure for the device specified by udid,
- *  if the device is available.
- *
- * @note The resulting idevice_t structure has to be freed with
- * idevice_free() if it is no longer used.
- *
- * @param device Upon calling this function, a pointer to a location of type
- *  idevice_t. On successful return, this location will be populated.
- * @param udid The UDID to match.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_new(idevice_t * device, const char *udid)
 {
 	usbmuxd_device_info_t muxdev;
@@ -270,13 +225,6 @@ idevice_error_t idevice_new(idevice_t * device, const char *udid)
 	return IDEVICE_E_NO_DEVICE;
 }
 
-/**
- * Cleans up an idevice structure, then frees the structure itself.
- * This is a library-level function; deals directly with the device to tear
- *  down relations, but otherwise is mostly internal.
- * 
- * @param device idevice_t to free.
- */
 idevice_error_t idevice_free(idevice_t device)
 {
 	if (!device)
@@ -297,16 +245,6 @@ idevice_error_t idevice_free(idevice_t device)
 	return ret;
 }
 
-/**
- * Set up a connection to the given device.
- *
- * @param device The device to connect to.
- * @param port The destination port to connect to.
- * @param connection Pointer to an idevice_connection_t that will be filled
- *   with the necessary data of the connection.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
 {
 	if (!device) {
@@ -333,13 +271,6 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-/**
- * Disconnect from the device and clean up the connection structure.
- *
- * @param connection The connection to close.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_disconnect(idevice_connection_t connection)
 {
 	if (!connection) {
@@ -390,17 +321,6 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 
 }
 
-/**
- * Send data to a device via the given connection.
- *
- * @param connection The connection to send data over.
- * @param data Buffer with data to send.
- * @param len Size of the buffer to send.
- * @param sent_bytes Pointer to an uint32_t that will be filled
- *   with the number of bytes actually sent.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
@@ -447,21 +367,6 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-/**
- * Receive data from a device via the given connection.
- * This function will return after the given timeout even if no data has been
- * received.
- *
- * @param connection The connection to receive data from.
- * @param data Buffer that will be filled with the received data.
- *   This buffer has to be large enough to hold len bytes.
- * @param len Buffer size or number of bytes to receive.
- * @param recv_bytes Number of bytes actually received.
- * @param timeout Timeout in milliseconds after which this function should
- *   return even if no data has been received.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
@@ -516,19 +421,6 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-/**
- * Receive data from a device via the given connection.
- * This function is like idevice_connection_receive_timeout, but with a
- * predefined reasonable timeout.
- *
- * @param connection The connection to receive data from.
- * @param data Buffer that will be filled with the received data.
- *   This buffer has to be large enough to hold len bytes.
- * @param len Buffer size or number of bytes to receive.
- * @param recv_bytes Number of bytes actually received.
- *
- * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
- */
 idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
@@ -552,9 +444,6 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
-/**
- * Gets the handle of the device. Depends on the connection type.
- */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
@@ -569,9 +458,6 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-/**
- * Gets the unique id for the device.
- */
 idevice_error_t idevice_get_udid(idevice_t device, char **udid)
 {
 	if (!device || !udid)
@@ -741,15 +627,6 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 }
 #endif
 
-/**
- * Enables SSL for the given connection.
- *
- * @param connection The connection to enable SSL for.
- *
- * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
- *     is NULL or connection->ssl_data is non-NULL, or IDEVICE_E_SSL_ERROR when
- *     SSL initialization, setup, or handshake fails.
- */
 idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 {
 	if (!connection || connection->ssl_data)
@@ -888,15 +765,6 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return ret;
 }
 
-/**
- * Disable SSL for the given connection.
- *
- * @param connection The connection to disable SSL for.
- *
- * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
- *     is NULL. This function also returns IDEVICE_E_SUCCESS when SSL is not
- *     enabled and does no further error checking on cleanup.
- */
 idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 {
 	if (!connection)
