@@ -33,8 +33,9 @@ static void print_usage()
 	printf("Usage: idevicename [OPTIONS] [NAME]\n");
 	printf("Display the device name or set it to NAME if specified.\n");
 	printf("\n");
-	printf("  --udid|-u UDID  use UDID to target a specific device\n");
-	printf("  --help|-h       print usage information\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -u, --udid UDID\tuse UDID to target a specific device\n");
+	printf("  -h, --help\t\tprint usage information\n");
 	printf("\n");
 }
 
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
 		{ NULL, 0, NULL, 0}
 	};
 
-	while ((c = getopt_long(argc, argv, "u:h", longopts, &optidx)) != -1) {
+	while ((c = getopt_long(argc, argv, "du:h", longopts, &optidx)) != -1) {
 		switch (c) {
 		case 'u':
 			udid = strdup(optarg);
@@ -59,6 +60,9 @@ int main(int argc, char** argv)
 		case 'h':
 			print_usage();
 			return 0;
+		case 'd':
+			idevice_set_debug_level(1);
+			break;
 		default:
 			print_usage();
 			return -1;
