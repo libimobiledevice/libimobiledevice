@@ -442,6 +442,8 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 	if (lockdown_check_result(dict, "GetValue") == RESULT_SUCCESS) {
 		debug_info("success");
 		ret = LOCKDOWN_E_SUCCESS;
+	} else {
+		ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	}
 	if (ret != LOCKDOWN_E_SUCCESS) {
 		plist_free(dict);
