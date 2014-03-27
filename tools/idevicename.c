@@ -30,7 +30,7 @@
 
 static void print_usage()
 {
-	printf("\nUsage: idevicename [OPTIONS] [NAME]\n");
+	printf("Usage: idevicename [OPTIONS] [NAME]\n");
 	printf("Display the device name or set it to NAME if specified.\n");
 	printf("\n");
 	printf("  --udid|-u UDID  use UDID to target a specific device\n");
