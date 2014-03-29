@@ -725,7 +725,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_open(afc_client_t client, const char *filename,
 					 afc_file_mode_t file_mode, uint64_t *handle)
 {
@@ -783,7 +783,7 @@ afc_file_open(afc_client_t client, const char *filename,
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
 {
 	char *input = NULL;
@@ -848,7 +848,7 @@ afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length,
  * 
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-idevice_error_t
+afc_error_t
 afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
 {
 	uint32_t current_count = 0;
