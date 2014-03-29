@@ -32,6 +32,7 @@ extern "C" {
 
 #define FILE_RELAY_SERVICE_NAME "com.apple.mobile.file_relay"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define FILE_RELAY_E_SUCCESS                0
@@ -46,6 +47,19 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t file_relay_error_t;
+#else
+/** File Relay Error Codes */
+typedef enum {
+	FILE_RELAY_E_SUCCESS              =  0,
+	FILE_RELAY_E_INVALID_ARG          = -1,
+	FILE_RELAY_E_PLIST_ERROR          = -2,
+	FILE_RELAY_E_MUX_ERROR            = -3,
+	FILE_RELAY_E_INVALID_SOURCE       = -4,
+	FILE_RELAY_E_STAGING_EMPTY        = -5,
+
+	FILE_RELAY_E_UNKNOWN_ERROR      = -256
+} file_relay_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct file_relay_client_private file_relay_client_private;
 typedef file_relay_client_private *file_relay_client_t; /**< The client handle. */

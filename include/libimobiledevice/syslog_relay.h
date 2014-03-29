@@ -32,6 +32,7 @@ extern "C" {
 
 #define SYSLOG_RELAY_SERVICE_NAME "com.apple.syslog_relay"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define SYSLOG_RELAY_E_SUCCESS                0
@@ -43,6 +44,16 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t syslog_relay_error_t;
+#else
+/** Syslog Relay Error Codes */
+typedef enum {
+	SYSLOG_RELAY_E_SUCCESS              =  0,
+	SYSLOG_RELAY_E_INVALID_ARG          = -1,
+	SYSLOG_RELAY_E_MUX_ERROR            = -2,
+	SYSLOG_RELAY_E_SSL_ERROR            = -3,
+	SYSLOG_RELAY_E_UNKNOWN_ERROR      = -256
+} syslog_relay_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct syslog_relay_client_private syslog_relay_client_private;
 typedef syslog_relay_client_private *syslog_relay_client_t; /**< The client handle. */

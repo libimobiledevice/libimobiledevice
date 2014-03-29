@@ -103,7 +103,11 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
  */
+#ifdef LEGACY_ERRORS
 service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code)
+#else
+service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int32_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int32_t *error_code)
+#endif
 {
 	*client = NULL;
 

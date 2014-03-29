@@ -33,6 +33,7 @@ extern "C" {
 
 #define HOUSE_ARREST_SERVICE_NAME "com.apple.mobile.house_arrest"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define HOUSE_ARREST_E_SUCCESS                0
@@ -46,6 +47,19 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t house_arrest_error_t;
+#else
+/** House Arrest Error Codes
+ */
+typedef enum {
+	HOUSE_ARREST_E_SUCCESS             =   0,
+	HOUSE_ARREST_E_INVALID_ARG         =  -1,
+	HOUSE_ARREST_E_PLIST_ERROR         =  -2,
+	HOUSE_ARREST_E_CONN_FAILED         =  -3,
+	HOUSE_ARREST_E_INVALID_MODE        =  -4,
+
+	HOUSE_ARREST_E_UNKNOWN_ERROR      = -256
+} house_arrest_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct house_arrest_client_private house_arrest_client_private;
 typedef house_arrest_client_private *house_arrest_client_t; /**< The client handle. */

@@ -32,6 +32,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <plist/plist.h>
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define IDEVICE_E_SUCCESS                0
@@ -45,6 +46,18 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t idevice_error_t;
+#else
+/** iDevice Error Codes */
+typedef enum {
+	IDEVICE_E_SUCCESS             =   0,
+	IDEVICE_E_INVALID_ARG         =  -1,
+	IDEVICE_E_UNKNOWN_ERROR       =  -2,
+	IDEVICE_E_NO_DEVICE           =  -3,
+	IDEVICE_E_NOT_ENOUGH_DATA     =  -4,
+	IDEVICE_E_BAD_HEADER          =  -5,
+	IDEVICE_E_SSL_ERROR           =  -6
+} idevice_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct idevice_private idevice_private;
 typedef idevice_private *idevice_t; /**< The device handle. */

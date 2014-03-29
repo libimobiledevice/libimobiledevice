@@ -30,6 +30,7 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define RESTORE_E_SUCCESS                     0
@@ -46,6 +47,21 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t restored_error_t;
+#else
+/** Restore Daemon Error Codes */
+typedef enum {
+	RESTORE_E_SUCCESS                   =  0,
+	RESTORE_E_INVALID_ARG               = -1,
+	RESTORE_E_INVALID_CONF              = -2,
+	RESTORE_E_PLIST_ERROR               = -3,
+	RESTORE_E_DICT_ERROR                = -4,
+	RESTORE_E_NOT_ENOUGH_DATA           = -5,
+	RESTORE_E_MUX_ERROR                 = -6,
+	RESTORE_E_START_RESTORE_FAILED      = -7,
+	RESTORE_E_DEVICE_ERROR              = -8,
+	RESTORE_E_UNKNOWN_ERROR           = -256
+} restored_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct restored_client_private restored_client_private;
 typedef restored_client_private *restored_client_t; /**< The client handle. */
