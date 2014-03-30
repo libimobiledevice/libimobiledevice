@@ -33,6 +33,7 @@ extern "C" {
 
 #define SCREENSHOTR_SERVICE_NAME "com.apple.mobile.screenshotr"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define SCREENSHOTR_E_SUCCESS                0
@@ -46,6 +47,18 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t screenshotr_error_t;
+#else
+/** Screenshooter Error Codes */
+typedef enum {
+	SCREENSHOTR_E_SUCCESS              =  0,
+	SCREENSHOTR_E_INVALID_ARG          = -1,
+	SCREENSHOTR_E_PLIST_ERROR          = -2,
+	SCREENSHOTR_E_MUX_ERROR            = -3,
+	SCREENSHOTR_E_BAD_VERSION          = -4,
+
+	SCREENSHOTR_E_UNKNOWN_ERROR      = -256
+} screenshotr_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct screenshotr_client_private screenshotr_client_private;
 typedef screenshotr_client_private *screenshotr_client_t; /**< The client handle. */

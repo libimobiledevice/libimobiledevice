@@ -822,6 +822,7 @@ static void print_usage(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
+	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	int i;
 	char* udid = NULL;
 	lockdownd_service_descriptor_t service = NULL;
@@ -936,8 +937,8 @@ int main(int argc, char *argv[])
 
 	/* start notification_proxy */
 	np_client_t np = NULL;
-	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
-	if ((ret == LOCKDOWN_E_SUCCESS) && service && service->port) {
+	ldret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
+	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		np_client_new(device, service, &np);
 		np_set_notify_callback(np, notify_cb, NULL);
 		const char *noties[5] = {
@@ -957,8 +958,8 @@ int main(int argc, char *argv[])
 		/* start AFC, we need this for the lock file */
 		service->port = 0;
 		service->ssl_enabled = 0;
-		ret = lockdownd_start_service(client, "com.apple.afc", &service);
-		if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
+		ldret = lockdownd_start_service(client, "com.apple.afc", &service);
+		if ((ldret == LOCKDOWN_E_SUCCESS) && service->port) {
 			afc_client_new(device, service, &afc);
 		}
 	}
@@ -969,8 +970,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* start mobilebackup service and retrieve port */
-	ret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &service);
-	if ((ret == LOCKDOWN_E_SUCCESS) && service && service->port) {
+	ldret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &service);
+	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, service->port);
 		mobilebackup_client_new(device, service, &mobilebackup);
 

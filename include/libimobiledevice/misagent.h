@@ -32,6 +32,7 @@ extern "C" {
 
 #define MISAGENT_SERVICE_NAME "com.apple.misagent"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define MISAGENT_E_SUCCESS                0
@@ -45,6 +46,18 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t misagent_error_t;
+#else
+/** MIS Agent Error Codes */
+typedef enum {
+	MISAGENT_E_SUCCESS              =  0,
+	MISAGENT_E_INVALID_ARG          = -1,
+	MISAGENT_E_PLIST_ERROR          = -2,
+	MISAGENT_E_CONN_FAILED          = -3,
+	MISAGENT_E_REQUEST_FAILED       = -4,
+
+	MISAGENT_E_UNKNOWN_ERROR      = -256
+} misagent_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct misagent_client_private misagent_client_private;
 typedef misagent_client_private *misagent_client_t; /**< The client handle. */

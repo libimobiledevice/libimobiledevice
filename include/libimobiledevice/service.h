@@ -30,6 +30,8 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+#ifdef LEGACY_ERRORS
+
 /** @name Error Codes */
 /*@{*/
 #define SERVICE_E_SUCCESS                0
@@ -42,15 +44,35 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t service_error_t;
+#else
+/** Service Error Codes */
+typedef enum {
+	SERVICE_E_SUCCESS              =  0,
+	SERVICE_E_INVALID_ARG          = -1,
+	SERVICE_E_MUX_ERROR            = -3,
+	SERVICE_E_SSL_ERROR            = -4,
+	SERVICE_E_START_SERVICE_ERROR  = -5,
+	SERVICE_E_UNKNOWN_ERROR      = -256
+} service_error_t;
+
+#endif // LEGACY_ERRORS
 
 typedef struct service_client_private service_client_private;
 typedef service_client_private* service_client_t; /**< The client handle. */
 
+#ifdef LEGACY_ERRORS
 #define SERVICE_CONSTRUCTOR(x) (int16_t (*)(idevice_t, lockdownd_service_descriptor_t, void**))(x)
+#else
+#define SERVICE_CONSTRUCTOR(x) (int32_t (*)(idevice_t, lockdownd_service_descriptor_t, void**))(x)
+#endif
 
 /* Interface */
 service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client);
+#ifdef LEGACY_ERRORS
 service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code);
+#else
+service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int32_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int32_t *error_code);
+#endif
 service_error_t service_client_free(service_client_t client);
 
 service_error_t service_send(service_client_t client, const char *data, uint32_t size, uint32_t *sent);

@@ -32,6 +32,7 @@ extern "C" {
 
 #define MOBILE_IMAGE_MOUNTER_SERVICE_NAME "com.apple.mobile.mobile_image_mounter"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define MOBILE_IMAGE_MOUNTER_E_SUCCESS                0
@@ -45,6 +46,18 @@ extern "C" {
 
 /** Represents an error code. */
 typedef int16_t mobile_image_mounter_error_t;
+#else
+/** Mobile Image Mounter Error Codes */
+typedef enum {
+	MOBILE_IMAGE_MOUNTER_E_SUCCESS              =  0,
+	MOBILE_IMAGE_MOUNTER_E_INVALID_ARG          = -1,
+	MOBILE_IMAGE_MOUNTER_E_PLIST_ERROR          = -2,
+	MOBILE_IMAGE_MOUNTER_E_CONN_FAILED          = -3,
+	MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED       = -4,
+
+	MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR      = -256
+} mobile_image_mounter_error_t;
+#endif // LEGACY_ERRORS
 
 typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_private;
 typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**< The client handle. */

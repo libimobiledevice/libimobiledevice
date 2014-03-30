@@ -362,7 +362,7 @@ restored_error_t restored_get_value(restored_client_t client, const char *key, p
  * @param client The pointer to the location of the new restored_client
  * @param label The label to use for communication. Usually the program name.
  *
- * @return RESTORE_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return RESTORE_E_SUCCESS on success, RESTORE_E_INVALID_ARG when client is NULL
  */
 restored_error_t restored_client_new(idevice_t device, restored_client_t *client, const char *label)
 {
@@ -370,6 +370,7 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 		return RESTORE_E_INVALID_ARG;
 
 	restored_error_t ret = RESTORE_E_SUCCESS;
+	idevice_error_t idev_ret;
 
 	static struct lockdownd_service_descriptor service = {
 		.port = 0xf27e,
@@ -390,9 +391,10 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 	if (label != NULL)
 		client_loc->label = strdup(label);
 
-	ret = idevice_get_udid(device, &client_loc->udid);
-	if (RESTORE_E_SUCCESS != ret) {
+	idev_ret = idevice_get_udid(device, &client_loc->udid);
+	if (IDEVICE_E_SUCCESS != idev_ret) {
 		debug_info("failed to get device udid.");
+		ret = RESTORE_E_DEVICE_ERROR;
 	}
 	debug_info("device udid: %s", client_loc->udid);
 

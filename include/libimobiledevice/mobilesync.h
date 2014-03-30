@@ -33,6 +33,7 @@ extern "C" {
 
 #define MOBILESYNC_SERVICE_NAME "com.apple.mobilesync"
 
+#ifdef LEGACY_ERRORS
 /** @name Error Codes */
 /*@{*/
 #define MOBILESYNC_E_SUCCESS                0
@@ -48,6 +49,25 @@ extern "C" {
 #define MOBILESYNC_E_UNKNOWN_ERROR       -256
 /*@}*/
 
+/** Represents an error code. */
+typedef int16_t mobilesync_error_t;
+#else
+/** Mobile Sync Error Codes */
+typedef enum {
+	MOBILESYNC_E_SUCCESS              =  0,
+	MOBILESYNC_E_INVALID_ARG          = -1,
+	MOBILESYNC_E_PLIST_ERROR          = -2,
+	MOBILESYNC_E_MUX_ERROR            = -3,
+	MOBILESYNC_E_BAD_VERSION          = -4,
+	MOBILESYNC_E_SYNC_REFUSED         = -5,
+	MOBILESYNC_E_CANCELLED            = -6,
+	MOBILESYNC_E_WRONG_DIRECTION      = -7,
+	MOBILESYNC_E_NOT_READY            = -8,
+
+	MOBILESYNC_E_UNKNOWN_ERROR      = -256
+} mobilesync_error_t;
+#endif // LEGACY_ERRORS
+
 /** The sync type of the current sync session. */
 typedef enum {
 	MOBILESYNC_SYNC_TYPE_FAST, /**< Fast-sync requires that only the changes made since the last synchronization should be reported by the computer. */
@@ -55,8 +75,6 @@ typedef enum {
 	MOBILESYNC_SYNC_TYPE_RESET /**< Reset-sync signals that the computer should send all data again. */
 } mobilesync_sync_type_t;
 
-/** Represents an error code. */
-typedef int16_t mobilesync_error_t;
 
 typedef struct mobilesync_client_private mobilesync_client_private;
 typedef mobilesync_client_private *mobilesync_client_t; /**< The client handle */
