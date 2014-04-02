@@ -90,6 +90,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
 lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
 lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
 lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
+lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
 lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
