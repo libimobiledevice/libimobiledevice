@@ -1641,7 +1641,11 @@ int main(int argc, char *argv[])
 
 	/* start mobilebackup service and retrieve port */
 	mobilebackup2_client_t mobilebackup2 = NULL;
-	ret = lockdownd_start_service(lockdown, MOBILEBACKUP2_SERVICE_NAME, &service);
+	plist_t mobilebackup2_service_options = plist_new_dict();
+	plist_dict_set_item(mobilebackup2_service_options, LOCKDOWN_START_SERVICE_OPT_SEND_ESCROW, plist_new_bool(1));
+	ret = lockdownd_start_service_with_options(lockdown, MOBILEBACKUP2_SERVICE_NAME, mobilebackup2_service_options, &service);
+	plist_free(mobilebackup2_service_options);
+	mobilebackup2_service_options = NULL;
 	if ((ret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		PRINT_VERBOSE(1, "Started \"%s\" service on port %d.\n", MOBILEBACKUP2_SERVICE_NAME, service->port);
 		mobilebackup2_client_new(device, service, &mobilebackup2);
