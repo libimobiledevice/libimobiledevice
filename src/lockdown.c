@@ -1346,37 +1346,18 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
 }
 
 /**
- * Requests to start a service and retrieve it's port on success.
- *
- * @param client The lockdownd client
- * @param identifier The identifier of the service to start
- * @param descriptor The service descriptor on success or NULL on failure
- 
- * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
- *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
- *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
- *  started by the device, LOCKDOWN_E_INVALID_CONF if the host id is missing from the 
- *  device record.
- */
-
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service)
-{
-	return lockdownd_start_service_with_options(client, identifier, NULL, service);
-}
-
-/**
  * Internal function used by lockdownd_start_service_with_options to
  * create the StartService request's plist.
  *
  * @param client The lockdownd client
  * @param identifier The identifier of the service to start
- * @param options Extended options to use 
+ * @param send_escrow_bag Should we send the device's escrow bag with the request 
  * @param request The request's plist on success, NULL on failure 
 
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_CONF on failure
- * to read the escrow bag from the device's record.
+ * to read the escrow bag from the device's record (when used).
  */
-static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_t client, const char *identifier, plist_t options, plist_t *request)
+static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_t client, const char *identifier, int send_escrow_bag, plist_t *request)
 {
 	plist_t dict = plist_new_dict();
 
@@ -1384,43 +1365,30 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
 	plist_dict_add_label(dict, client->label);
 	plist_dict_set_item(dict, "Request", plist_new_string("StartService"));
 	plist_dict_set_item(dict, "Service", plist_new_string(identifier));
-	if (!options) {
-		*request = dict;
-		return LOCKDOWN_E_SUCCESS;
-	}
 
-	/* Handle extended options */
-
-	/* Check if we need to send the escrow bag */
-	plist_t option_node = plist_dict_get_item(options, LOCKDOWN_START_SERVICE_OPT_SEND_ESCROW);
-	if (option_node && (plist_get_node_type(option_node) == PLIST_BOOLEAN)) {
-		uint8_t use_escrow_bag = 0;
-		plist_get_bool_val(option_node, &use_escrow_bag);
-
-		/* If needed - get the escrow bag for the device and send it with the request */
-		if (use_escrow_bag) {
-			/* Get the pairing record */
-			plist_t pair_record = NULL;
-			userpref_read_pair_record(client->udid, &pair_record);
-			if (!pair_record) {
-				debug_info("ERROR: failed to read pair record for device: %s", client->udid);
-				plist_free(dict);
-				return LOCKDOWN_E_INVALID_CONF;
-			}
-			
-			/* Try to read the escrow bag from the recrod */
-			plist_t escrow_bag = plist_dict_get_item(pair_record, USERPREF_ESCROW_BAG_KEY);
-			if (!escrow_bag || (PLIST_DATA != plist_get_node_type(escrow_bag))) {
-				debug_info("ERROR: Failed to retrieve the escrow bag from the device's recrod");
-				plist_free(dict);
-				plist_free(pair_record);
-				return LOCKDOWN_E_INVALID_CONF;
-			}
-
-			debug_info("Adding escrow bag to StartService for %s", identifier);
-			plist_dict_set_item(dict, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
-			plist_free(pair_record);
+	/* If needed - get the escrow bag for the device and send it with the request */
+	if (send_escrow_bag) {
+		/* Get the pairing record */
+		plist_t pair_record = NULL;
+		userpref_read_pair_record(client->udid, &pair_record);
+		if (!pair_record) {
+			debug_info("ERROR: failed to read pair record for device: %s", client->udid);
+			plist_free(dict);
+			return LOCKDOWN_E_INVALID_CONF;
 		}
+			
+		/* Try to read the escrow bag from the recrod */
+		plist_t escrow_bag = plist_dict_get_item(pair_record, USERPREF_ESCROW_BAG_KEY);
+		if (!escrow_bag || (PLIST_DATA != plist_get_node_type(escrow_bag))) {
+			debug_info("ERROR: Failed to retrieve the escrow bag from the device's recrod");
+			plist_free(dict);
+			plist_free(pair_record);
+			return LOCKDOWN_E_INVALID_CONF;
+		}
+
+		debug_info("Adding escrow bag to StartService for %s", identifier);
+		plist_dict_set_item(dict, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
+		plist_free(pair_record);
 	}
 
 	*request = dict;
@@ -1428,15 +1396,11 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
 }
 
 /**
- * Requests to start a service and retrieve it's port on success, supporting
- * extended options (currently to use the escrow bag).
+ * Function used internally by lockdownd_start_service and lockdownd_start_service_with_escrow_bag.
  *
  * @param client The lockdownd client
  * @param identifier The identifier of the service to start
- * @param options Extended options to use. Currently implemented:
- *		  - LOCKDOWN_START_SERVICE_OPT_SEND_ESCROW: Send the device's escrow 
- *			bag with the request. Use with care, as it seems to cause
- *			some services to fail.
+ * @param send_escrow_bag Should we send the device's escrow bag with the request
  * @param descriptor The service descriptor on success or NULL on failure
  
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
@@ -1445,7 +1409,7 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
  *  started by the device, LOCKDOWN_E_INVALID_CONF if the host id or escrow bag (when
  *  used) are missing from the device record.
  */
-lockdownd_error_t lockdownd_start_service_with_options(lockdownd_client_t client, const char *identifier, plist_t options, lockdownd_service_descriptor_t *service)
+static lockdownd_error_t lockdownd_do_start_service(lockdownd_client_t client, const char *identifier, int send_escrow_bag, lockdownd_service_descriptor_t *service)
 {
 	if (!client || !identifier || !service)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -1461,7 +1425,7 @@ lockdownd_error_t lockdownd_start_service_with_options(lockdownd_client_t client
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
 	/* Create StartService request */
-	ret = lockdownd_build_start_service_request(client, identifier, options, &dict);
+	ret = lockdownd_build_start_service_request(client, identifier, send_escrow_bag, &dict);
 	if (LOCKDOWN_E_SUCCESS != ret)
 		return ret;
 
@@ -1528,6 +1492,45 @@ lockdownd_error_t lockdownd_start_service_with_options(lockdownd_client_t client
 	plist_free(dict);
 	dict = NULL;
 	return ret;
+}
+
+/**
+ * Requests to start a service and retrieve it's port on success.
+ *
+ * @param client The lockdownd client
+ * @param identifier The identifier of the service to start
+ * @param descriptor The service descriptor on success or NULL on failure
+ 
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
+ *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
+ *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
+ *  started by the device, LOCKDOWN_E_INVALID_CONF if the host id is missing from the 
+ *  device record.
+ */
+
+lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service)
+{
+	return lockdownd_do_start_service(client, identifier, 0, service);
+}
+
+/**
+* Requests to start a service and retrieve it's port on success.
+* Sends the escrow bag from the device's pair record.
+*
+* @param client The lockdownd client
+* @param identifier The identifier of the service to start
+* @param descriptor The service descriptor on success or NULL on failure
+
+* @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
+*  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
+*  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
+*  started by the device, LOCKDOWN_E_INVALID_CONF if the host id or escrow bag are 
+*  missing from the device record.
+*/
+
+lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service)
+{
+	return lockdownd_do_start_service(client, identifier, 1, service);
 }
 
 /**
