@@ -187,7 +187,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
 
  * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
- *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
+ *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not be
  *  started by the device
  */
 lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
@@ -261,9 +261,9 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 
 /**
- * Validates if the device is paired with the given HostID. If succeeded them
+ * Validates if the device is paired with the given HostID. If successful the
  * specified host will become trusted host of the device indicated by the
- * lockdownd preference named TrustedHostAttached. Otherwise the host must because
+ * lockdownd preference named TrustedHostAttached. Otherwise the host must be
  * paired using lockdownd_pair() first.
  *
  * @param client The lockdown client to pair with.
