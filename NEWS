@@ -1,8 +1,61 @@
 Version 1.1.6
 ~~~~~~~~~~~~~
 
-* Development release
+* Development release "Way too overdue."
 * Changes:
+  - Remove segmentation code from afc_file_read() to provide raw interface and
+    more control to API consumer I/O logic
+  - Implement global thread safe library initialization, especially to control
+    SSL backend lifecycle
+  - Major refactoring of pair record code and logic to use new usbmuxd pair
+    record management interface
+  - Replace user level with system wide pair record file handling
+  - Bump dependency to libplist 1.11 and remove use of "plist_dict_insert_item"
+  - Bump dependency to libusbmuxd 1.0.9
+  - Finish pair record and trust dialog handling for iOS 7+
+  - Improve AFC write performance and memory usage
+  - Add support for custom output filename to idevicescreenshot
+  - Fix detection and compilation for Python 3.x
+  - API: Added file_relay_request_sources_timeout()
+  - Fix broken HouseArrestClient class in cython bindings
+  - Add new idevicecrashreport tool to retrieve crash reports and logs from a
+    device
+  - Prevent "Failed to restart/shutdown device" messages in idevicediagnostics
+  - Link against ws2_32.dll on Win32
+  - Add support for iOS 7+ disk image mounting to ideviceimagemounter
+  - Add new idevicename tool to get or set the device name
+  - Allow unbacking of encrypted backups with a given password to idevicebackup2
+  - Remove sending "Goodbye" request on lockdown
+  - Add support for newer PLIST_REAL based time type to idevicedate
+  - Add note about setting time not working on iOS 6+ to idevicedate
+  - Handle partial SSL reads correctly now to prevent random crashes
+  - Fix duplicated output in ideviceinfo output
+  - Remove a bunch of dead code
+  - Fix deprecated OpenSSL "RSA_generate_key" with "RSA_generate_key_ex" which
+    is available since OpenSSL 0.9.8 (July 2005)
+  - Improve debug messages
+  - Enforce "-fsigned-char" to fix issues on embedded platforms
+  - Fix compilation with Clang/LLVM
+  - Avoid versioning for shared library on Win32
+  - Add experimental support for controlling cloud backup mode to idevicebackup2
+  - Save EscrowBag when starting service for automatic unlocking in pair record
+  - Remove pairing logic which is obsoleted by usbmuxd's preflight handler
+  - Fix shutdown of SSL connection to be correct and no longer generate errors
+    on device
+  - Add support for GnuTLS 3.x and fix broken GnuTLS backend
+  - Add extensions to generated certificates to match native ones
+  - Add "systembuid" command to idevicepair
+  - Allow starting service without the need for a running SSL session
+  - Refactor more code into common module
+  - Add option to filerelaytest to specify a source to request
+  - Fix support for partial messages in webinspector implementation
+  - Implement support for encrypted backups in idevicebackup2
+  - API: Export SSL control functions for idevice_connection_t
+  - API: Make generic service client public to allow external service
+    implementations
+  - Implement *_start_service() helper for easier creation of service clients
+  - Add public *_SERVICE_NAME defines for each service
+  - Fix a great bunch of memory leaks after intensive valigrind session
   - Security: Fix insecure use of the /tmp directory (CVE-2013-2142)
   - A bunch of memory leak fixes
   - Python: Various fixes and support for "with" statement for AfcFile class

@@ -81,3 +81,19 @@ void mutex_unlock(mutex_t* mutex)
 	pthread_mutex_unlock(mutex);
 #endif
 }
+
+void thread_once(thread_once_t *once_control, void (*init_routine)(void))
+{
+#ifdef WIN32
+	while (InterlockedExchange(&(once_control->lock), 1) != 0) {
+		Sleep(1);
+	}
+	if (!once_control->state) {
+		once_control->state = 1;
+		init_routine();
+	}
+	InterlockedExchange(&(once_control->lock), 0);
+#else
+	pthread_once(once_control, init_routine);
+#endif	
+}

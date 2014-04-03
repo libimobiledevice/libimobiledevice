@@ -30,8 +30,12 @@
 
 static void print_usage()
 {
-	printf("\nUsage: idevicename [OPTIONS] [NAME]\n");
-	printf("  --udid|-u UDID  use UDID to target a specific device\n");
+	printf("Usage: idevicename [OPTIONS] [NAME]\n");
+	printf("Display the device name or set it to NAME if specified.\n");
+	printf("\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -u, --udid UDID\tuse UDID to target a specific device\n");
+	printf("  -h, --help\t\tprint usage information\n");
 	printf("\n");
 }
 
@@ -44,16 +48,24 @@ int main(int argc, char** argv)
 	int optidx = 0;
 	const struct option longopts[] = {
 		{ "udid", required_argument, NULL, 'u' },
+		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0}
 	};
 
-	while ((c = getopt_long(argc, argv, "u:", longopts, &optidx)) != -1) {
+	while ((c = getopt_long(argc, argv, "du:h", longopts, &optidx)) != -1) {
 		switch (c) {
 		case 'u':
 			udid = strdup(optarg);
 			break;
-		default:
+		case 'h':
+			print_usage();
+			return 0;
+		case 'd':
+			idevice_set_debug_level(1);
 			break;
+		default:
+			print_usage();
+			return -1;
 		}
 	}
 
@@ -79,16 +91,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	plist_t node = NULL;
-
 	if (argc == 0) {
 		// getting device name
 		char* name = NULL;
-		lerr = lockdownd_get_value(lockdown, NULL, "DeviceName", &node);
-		if (node) {
-			plist_get_string_val(node, &name);
-			plist_free(node);
-		}
+		lerr = lockdownd_get_device_name(lockdown, &name);
 		if (name) {
 			printf("%s\n", name);
 			free(name);

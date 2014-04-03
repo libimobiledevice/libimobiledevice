@@ -26,10 +26,19 @@
 #include <windows.h>
 typedef HANDLE thread_t;
 typedef CRITICAL_SECTION mutex_t;
+typedef volatile struct {
+	LONG lock;
+	int state;
+} thread_once_t;
+#define THREAD_ONCE_INIT {0, 0}
+#define THREAD_ID GetCurrentThreadId()
 #else
 #include <pthread.h>
 typedef pthread_t thread_t;
 typedef pthread_mutex_t mutex_t;
+typedef pthread_once_t thread_once_t;
+#define THREAD_ONCE_INIT PTHREAD_ONCE_INIT
+#define THREAD_ID pthread_self()
 #endif
 
 typedef void* (*thread_func_t)(void* data);
@@ -41,5 +50,7 @@ void mutex_init(mutex_t* mutex);
 void mutex_destroy(mutex_t* mutex);
 void mutex_lock(mutex_t* mutex);
 void mutex_unlock(mutex_t* mutex);
+
+void thread_once(thread_once_t *once_control, void (*init_routine)(void));
 
 #endif

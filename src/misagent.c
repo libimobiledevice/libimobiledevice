@@ -176,9 +176,9 @@ misagent_error_t misagent_install(misagent_client_t client, plist_t profile)
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "MessageType", plist_new_string("Install"));
-	plist_dict_insert_item(dict, "Profile", plist_copy(profile));
-	plist_dict_insert_item(dict, "ProfileType", plist_new_string("Provisioning"));
+	plist_dict_set_item(dict, "MessageType", plist_new_string("Install"));
+	plist_dict_set_item(dict, "Profile", plist_copy(profile));
+	plist_dict_set_item(dict, "ProfileType", plist_new_string("Provisioning"));
 
 	misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -227,8 +227,8 @@ misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles)
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "MessageType", plist_new_string("Copy"));
-	plist_dict_insert_item(dict, "ProfileType", plist_new_string("Provisioning"));
+	plist_dict_set_item(dict, "MessageType", plist_new_string("Copy"));
+	plist_dict_set_item(dict, "ProfileType", plist_new_string("Provisioning"));
 
 	misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -278,9 +278,9 @@ misagent_error_t misagent_remove(misagent_client_t client, const char* profileID
 	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	plist_dict_insert_item(dict, "MessageType", plist_new_string("Remove"));
-	plist_dict_insert_item(dict, "ProfileID", plist_new_string(profileID));
-	plist_dict_insert_item(dict, "ProfileType", plist_new_string("Provisioning"));
+	plist_dict_set_item(dict, "MessageType", plist_new_string("Remove"));
+	plist_dict_set_item(dict, "ProfileID", plist_new_string(profileID));
+	plist_dict_set_item(dict, "ProfileType", plist_new_string("Provisioning"));
 
 	misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);

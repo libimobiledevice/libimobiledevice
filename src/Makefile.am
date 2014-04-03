@@ -4,7 +4,7 @@ AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS) $(libpthread_LIBS) $(openssl_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice.la
-libimobiledevice_la_LIBADD = $(top_srcdir)/common/libinternalcommon.la
+libimobiledevice_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
 libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
 libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       service.c service.h\

@@ -49,10 +49,6 @@ typedef struct {
 	(x)->packet_num    = le64toh((x)->packet_num); \
 	(x)->operation     = le64toh((x)->operation);
 
-typedef struct {
-	uint64_t filehandle, size;
-} AFCFilePacket;
-
 struct afc_client_private {
 	service_client_t parent;
 	AFCPacket *afc_packet;

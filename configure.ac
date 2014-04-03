@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libimobiledevice, 1.1.6, nospam@nowhere.com)
+AC_INIT(libimobiledevice, 1.1.7, nospam@nowhere.com)
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -18,9 +18,9 @@ dnl libtool versioning
 LIBIMOBILEDEVICE_SO_VERSION=4:1:0
 
 dnl Minimum package versions
-LIBPLIST_VERSION=1.8
-LIBUSBMUXD_VERSION=1.0.8
-LIBPLISTMM_VERSION=1.8
+LIBPLIST_VERSION=1.11
+LIBUSBMUXD_VERSION=1.0.9
+LIBPLISTMM_VERSION=1.11
 
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 AC_SUBST(LIBPLIST_VERSION)

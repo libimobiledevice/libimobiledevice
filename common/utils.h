@@ -22,6 +22,10 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -33,6 +37,7 @@
 char *stpcpy(char * s1, const char * s2);
 #endif
 char *string_concat(const char *str, ...);
+char *generate_uuid();
 
 void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length);
 void buffer_write_to_filename(const char *filename, const char *buffer, uint64_t length);

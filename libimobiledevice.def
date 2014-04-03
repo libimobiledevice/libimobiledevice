@@ -30,6 +30,7 @@ EXPORTS
 	lockdownd_set_value
 	lockdownd_remove_value
 	lockdownd_start_service
+	lockdownd_start_service_with_escrow_bag
 	lockdownd_start_session
 	lockdownd_stop_session
 	lockdownd_send
@@ -88,6 +89,7 @@ EXPORTS
 	file_relay_client_start_service
 	file_relay_client_free
 	file_relay_request_sources
+	file_relay_request_sources_timeout
 
 	heartbeat_client_new
 	heartbeat_client_start_service

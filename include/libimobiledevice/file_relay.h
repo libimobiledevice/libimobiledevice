@@ -55,6 +55,7 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_start_service(idevice_
 LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_free(file_relay_client_t client);
 
 LIBIMOBILEDEVICE_API file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection);
+LIBIMOBILEDEVICE_API file_relay_error_t file_relay_request_sources_timeout(file_relay_client_t client, const char **sources, idevice_connection_t *connection, unsigned int timeout);
 
 #ifdef __cplusplus
 }
