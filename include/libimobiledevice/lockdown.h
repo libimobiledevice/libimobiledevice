@@ -95,7 +95,7 @@ typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
  * @param client The pointer to the location of the new lockdownd_client
  * @param label The label to use for communication. Usually the program name.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
 
@@ -113,7 +113,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
  * @param label The label to use for communication. Usually the program name.
  *  Pass NULL to disable sending the label in requests to lockdownd.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_INVALID_CONF if configuration data is wrong
  */
 lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
@@ -124,7 +124,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
  *
  * @param client The lockdown client
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
 
@@ -136,7 +136,7 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
  * @param client The lockdownd client
  * @param type The type returned by the service daemon. Pass NULL to ignore.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
 
@@ -148,7 +148,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
  * @param key The key name to request or NULL to query for all keys
  * @param value A plist node representing the result value node
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
 
@@ -160,7 +160,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
  * @param key the key name to set the value or NULL to set a value dict plist
  * @param value a plist node of any node type representing the value to set
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  value is NULL
  */
 lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
@@ -174,7 +174,7 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
  * @param domain The domain to query on or NULL for global domain
  * @param key The key name to remove or NULL remove all keys for the current domain
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
 
@@ -185,7 +185,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
  * @param identifier The identifier of the service to start
  * @param descriptor The service descriptor on success or NULL on failure
 
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG if a parameter
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
  *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not be
  *  started by the device
@@ -215,7 +215,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
  * @param client The lockdown client
  * @param session_id The id of a running session
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 
@@ -228,7 +228,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
  * @param client The lockdownd client
  * @param plist The plist to send
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  plist is NULL
  */
 lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
@@ -239,7 +239,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
  * @param client The lockdownd client
  * @param plist The plist to store the received data
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  plist is NULL
  */
 lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
@@ -252,7 +252,7 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
  *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
@@ -271,7 +271,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_recor
  *    passed, then the pair record is read from the internal pairing record
  *    management.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
  *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
@@ -287,7 +287,7 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_p
  * @param pair_record The pair record to use for unpair. If NULL is passed, then
  *    the pair records from the current machine are used.
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
  *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
@@ -305,7 +305,7 @@ lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_rec
  * @param client The lockdown client
  * @param activation_record The activation record plist dictionary
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client or
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  activation_record is NULL, LOCKDOWN_E_NO_RUNNING_SESSION if no session is
  *  open, LOCKDOWN_E_PLIST_ERROR if the received plist is broken,
  *  LOCKDOWN_E_ACTIVATION_FAILED if the activation failed,
@@ -320,7 +320,7 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
  *
  * @param client The lockdown client
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_NO_RUNNING_SESSION if no session is open,
  *  LOCKDOWN_E_PLIST_ERROR if the received plist is broken
  */
@@ -331,7 +331,7 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
  *
  * @param client The lockdown client
  *
- * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
 lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
 
