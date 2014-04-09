@@ -50,6 +50,15 @@ EXPORTS
 	lockdownd_data_classes_free
 	lockdownd_service_descriptor_free
 
+	property_list_service_client_new
+	property_list_service_client_free
+	property_list_service_send_xml_plist
+	property_list_service_send_binary_plist
+	property_list_service_receive_plist_with_timeout
+	property_list_service_receive_plist
+	property_list_service_enable_ssl
+	property_list_service_disable_ssl
+
 	afc_client_new
 	afc_client_start_service
 	afc_client_free

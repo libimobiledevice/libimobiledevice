@@ -171,6 +171,9 @@
     <ClInclude Include="common\utils.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="include\libimobiledevice\property_list_service.h">
+      <Filter>include\libimobiledevice</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\afc.c">

@@ -116,6 +116,7 @@
     <ClInclude Include="include\libimobiledevice\mobilesync.h" />
     <ClInclude Include="include\libimobiledevice\mobile_image_mounter.h" />
     <ClInclude Include="include\libimobiledevice\notification_proxy.h" />
+    <ClInclude Include="include\libimobiledevice\property_list_service.h" />
     <ClInclude Include="include\libimobiledevice\restore.h" />
     <ClInclude Include="include\libimobiledevice\sbservices.h" />
     <ClInclude Include="include\libimobiledevice\screenshotr.h" />

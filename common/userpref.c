@@ -137,9 +137,13 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 
 static int userpref_has_local_config()
 {
-#ifdef WIN32
-	return PathFileExists(USERPREF_LOCAL_CONFIG_FILE);
-#endif
+	struct stat config_file_st;
+
+	if (0 == stat(USERPREF_LOCAL_CONFIG_FILE, &config_file_st)) {
+		if (0 != config_file_st.st_size) {
+			return 1;
+		}
+	}
 
 	return 0;
 }
