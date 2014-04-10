@@ -300,6 +300,7 @@ EXPORTS
 	plist_to_bin
 	plist_from_xml
 	plist_from_bin
+	plist_xml_from_bin
 	plist_access_path
 	plist_access_pathv
 	plist_compare_node_value
