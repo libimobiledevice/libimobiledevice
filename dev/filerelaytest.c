@@ -18,6 +18,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <libimobiledevice/libimobiledevice.h>
@@ -100,6 +101,9 @@ int main(int argc, char **argv)
 	uint32_t len = 0;
 	char buf[4096];
 	FILE *f = fopen("dump.cpio.gz", "wb");
+	if (!f) {
+		err(EXIT_FAILURE, "dump.cpio.gz");
+	}
 	setbuf(stdout, NULL);
 	printf("receiving ");
 	while (idevice_connection_receive(dump, buf, 4096, &len) == IDEVICE_E_SUCCESS) {
