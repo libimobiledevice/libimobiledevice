@@ -1,0 +1,36 @@
+.TH "idevicerun" 1
+.SH NAME
+idevicerun \- Runs an app on a device.
+.SH SYNOPSIS
+.B idevicerun
+[OPTIONS] APPID [ARGS...]
+
+.SH DESCRIPTION
+
+Runs an app on a device.
+
+.SH OPTIONS
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP
+.B \-l, \-\-list
+list installed APPIDs.
+.TP
+.B \-D<NAME>=<VALUE>
+set an environment variable.
+.TP
+.B \-h, \-\-help
+prints usage information.
+.TP
+.B APPID
+the application CFBundleIdentifier name.
+.TP
+.B ARGS
+app NSProcessInfo command-line arguments.
+
+.SH AUTHOR
+Todd Wright

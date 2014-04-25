@@ -16,6 +16,7 @@ Version 1.1.6
     in order to improve code reuse
   - Fix broken byte order detection in configure.ac which could lead to broken
     AFC protocol communication on platforms without endian.h (Raspberry PI)
+  - Added idevicerun tool
 * API is UNSTABLE
 
 Version 1.1.5
