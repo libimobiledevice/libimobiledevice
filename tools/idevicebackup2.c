@@ -1543,7 +1543,7 @@ int main(int argc, char *argv[])
 	uint8_t is_encrypted = 0;
 	char *info_path = NULL; 
 	if (cmd == CMD_CHANGEPW) {
-		if (!interactive_mode && (!backup_password || !newpw)) {
+		if (!interactive_mode && !backup_password && !newpw) {
 			printf("ERROR: Can't get password input in non-interactive mode. Either pass password(s) on the command line, or enable interactive mode with -i or --interactive.\n");
 			return -1;
 		}
