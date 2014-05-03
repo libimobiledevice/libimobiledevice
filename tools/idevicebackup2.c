@@ -1544,6 +1544,7 @@ int main(int argc, char *argv[])
 	char *info_path = NULL; 
 	if (cmd == CMD_CHANGEPW) {
 		if (!interactive_mode && !backup_password && !newpw) {
+			idevice_free(device);
 			printf("ERROR: Can't get password input in non-interactive mode. Either pass password(s) on the command line, or enable interactive mode with -i or --interactive.\n");
 			return -1;
 		}
@@ -1552,6 +1553,7 @@ int main(int argc, char *argv[])
 		info_path = build_path(backup_directory, source_udid, "Info.plist", NULL);
 		if (cmd == CMD_RESTORE || cmd == CMD_UNBACK) {
 			if (stat(info_path, &st) != 0) {
+				idevice_free(device);
 				free(info_path);
 				printf("ERROR: Backup directory \"%s\" is invalid. No Info.plist found for UDID %s.\n", backup_directory, source_udid);
 				return -1;
@@ -1563,6 +1565,7 @@ int main(int argc, char *argv[])
 			plist_t manifest_plist = NULL;
 			plist_read_from_filename(&manifest_plist, manifest_path);
 			if (!manifest_plist) {
+				idevice_free(device);
 				free(info_path);
 				free(manifest_path);
 				printf("ERROR: Backup directory \"%s\" is invalid. No Manifest.plist found for UDID %s.\n", backup_directory, source_udid);
