@@ -2225,11 +2225,14 @@ checkpoint:
 					PRINT_VERBOSE(1, " Finished\n");
 				}
 
+files_out:
 				if (message)
 					plist_free(message);
 				message = NULL;
+				if (dlmsg)
+					free(dlmsg);
+				dlmsg = NULL;
 
-files_out:
 				if (quit_flag > 0) {
 					/* need to cancel the backup here */
 					//mobilebackup_send_error(mobilebackup, "Cancelling DLSendFile");
@@ -2360,6 +2363,10 @@ files_out:
 
 	idevice_free(device);
 	device = NULL;
+
+	if (backup_password) {
+		free(backup_password);
+	}
 
 	if (udid) {
 		free(udid);
