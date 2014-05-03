@@ -1503,7 +1503,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (cmd == CMD_CHANGEPW || cmd == CMD_CLOUD) {
-		backup_directory = strdup(".this_folder_is_not_present_on_purpose");
+		backup_directory = (char*)".this_folder_is_not_present_on_purpose";
 	} else {
 		if (backup_directory == NULL) {
 			printf("No target backup directory specified.\n");
