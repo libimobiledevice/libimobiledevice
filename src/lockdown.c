@@ -751,10 +751,6 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 	host_id = generate_uuid();
 	pair_record_set_host_id(*pair_record, host_id);
 
-	if (ret != LOCKDOWN_E_SUCCESS) {
-		goto leave;
-	}
-
 leave:
 	if (host_id)
 		free(host_id);
