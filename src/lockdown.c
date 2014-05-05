@@ -743,8 +743,9 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 	}
 
 	/* set SystemBUID */
-	userpref_read_system_buid(&system_buid);
-	plist_dict_set_item(*pair_record, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
+	if (userpref_read_system_buid(&system_buid)) {
+		plist_dict_set_item(*pair_record, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
+	}
 
 	/* set HostID */
 	host_id = generate_uuid();
