@@ -1614,6 +1614,8 @@ static lockdownd_error_t lockdownd_do_start_service(lockdownd_client_t client, c
 				ret = LOCKDOWN_E_INVALID_SERVICE;
 			} else if (!strcmp(error, "NoRunningSession")) {
 				ret = LOCKDOWN_E_NO_RUNNING_SESSION;
+			} else if (send_escrow_bag && (!strcmp(error, "EscrowLocked"))) {
+				ret = LOCKDOWN_E_ESCROW_LOCKED;
 			}
 			free(error);
 		}
