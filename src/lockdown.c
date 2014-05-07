@@ -1510,14 +1510,35 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
 		/* Try to read the escrow bag from the recrod */
 		plist_t escrow_bag = plist_dict_get_item(pair_record, USERPREF_ESCROW_BAG_KEY);
 		if (!escrow_bag || (PLIST_DATA != plist_get_node_type(escrow_bag))) {
-			debug_info("ERROR: Failed to retrieve the escrow bag from the device's recrod");
-			plist_free(dict);
-			plist_free(pair_record);
-			return LOCKDOWN_E_INVALID_CONF;
+			/* If we use our local config, and the device is escrow locked, we won't have
+			 * the escrow bag in the pairing record */
+			debug_info("Failed to retrieve the escrow bag from the device's recrod, retrieving EscrowBag from lockdownd");
+			lockdownd_get_value(client, NULL, USERPREF_ESCROW_BAG_KEY, &escrow_bag);
+			
+			/* Note: if escrow_bag is valid but isn't a PLIST_DATA node, we won't enter this block and leak the
+			 * node, but it should never happen */
+			if (escrow_bag && (plist_get_node_type(escrow_bag) == PLIST_DATA))
+			{
+				debug_info("Got the escrow bag from lockdownd, adding it to StartService for %s", identifier);
+				plist_dict_set_item(dict, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
+
+				/* Store the EscrowBag in the pair record */
+				plist_dict_set_item(pair_record, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
+				userpref_save_pair_record(client->udid, pair_record);
+
+				plist_free(escrow_bag);
+			} else {
+				plist_free(dict);
+				plist_free(pair_record);
+				return LOCKDOWN_E_ESCROW_LOCKED;
+			}
+		}
+		else
+		{
+			debug_info("Adding escrow bag to StartService for %s", identifier);
+			plist_dict_set_item(dict, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
 		}
 
-		debug_info("Adding escrow bag to StartService for %s", identifier);
-		plist_dict_set_item(dict, USERPREF_ESCROW_BAG_KEY, plist_copy(escrow_bag));
 		plist_free(pair_record);
 	}
 
