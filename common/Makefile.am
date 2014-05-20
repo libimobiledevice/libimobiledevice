@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libplist_LIBS) ${libpthread_LIBS}
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
+AM_LDFLAGS = $(libusbmuxd_LIBS) $(libplist_LIBS) ${libpthread_LIBS}
 
 noinst_LTLIBRARIES = libinternalcommon.la
 libinternalcommon_la_LIBADD = 
