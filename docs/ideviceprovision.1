@@ -14,6 +14,9 @@ Manage provisioning profiles on a device.
 .B \-u, \-\-udid UDID
 target specific device by its 40-digit device UDID.
 .TP 
+.B \-x, \-\-xml
+print XML output when using the 'dump' command.
+.TP 
 .B \-d, \-\-debug
 enable communication debugging.
 .TP 
@@ -36,6 +39,9 @@ as "UUID.mobileprovision".
 .TP
 .B remove UUID
 Removes the provisioning profile identified by UUID.
+.TP
+.B dump FILE
+Prints detailed information about the provisioning profile specified by FILE.
 
 .SH AUTHORS
 Nikias Bassen
