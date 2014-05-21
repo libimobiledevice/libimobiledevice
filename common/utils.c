@@ -322,7 +322,7 @@ static void plist_node_print_to_stream(plist_t node, int* indent_level, FILE* st
 
 	case PLIST_UINT:
 		plist_get_uint_val(node, &u);
-		fprintf(stream, "%"PRIu64"\n", (long long)u);
+		fprintf(stream, "%"PRIu64"\n", u);
 		break;
 
 	case PLIST_REAL:
