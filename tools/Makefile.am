@@ -7,7 +7,7 @@ bin_PROGRAMS = idevice_id ideviceinfo idevicename idevicepair idevicesyslog idev
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
-ideviceinfo_LDFLAGS = $(AM_LDFLAGS)
+ideviceinfo_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 ideviceinfo_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 idevicename_SOURCES = idevicename.c
