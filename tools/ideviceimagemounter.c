@@ -37,8 +37,7 @@
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/mobile_image_mounter.h>
 #include <asprintf.h>
-
-static int indent_level = 0;
+#include "common/utils.h"
 
 static int list_mode = 0;
 static int xml_mode = 0;
@@ -113,143 +112,6 @@ static void parse_opts(int argc, char **argv)
 			print_usage(argc, argv);
 			exit(2);
 		}
-	}
-}
-
-static void plist_node_to_string(plist_t node);
-
-static void plist_array_to_string(plist_t node)
-{
-	/* iterate over items */
-	int i, count;
-	plist_t subnode = NULL;
-
-	count = plist_array_get_size(node);
-
-	for (i = 0; i < count; i++) {
-		subnode = plist_array_get_item(node, i);
-		printf("%*s", indent_level, "");
-		printf("%d: ", i);
-		plist_node_to_string(subnode);
-	}
-}
-
-static void plist_dict_to_string(plist_t node)
-{
-	/* iterate over key/value pairs */
-	plist_dict_iter it = NULL;
-
-	char* key = NULL;
-	plist_t subnode = NULL;
-	plist_dict_new_iter(node, &it);
-	plist_dict_next_item(node, it, &key, &subnode);
-	while (subnode)
-	{
-		printf("%*s", indent_level, "");
-		printf("%s", key);
-		if (plist_get_node_type(subnode) == PLIST_ARRAY)
-			printf("[%d]: ", plist_array_get_size(subnode));
-		else
-			printf(": ");
-		free(key);
-		key = NULL;
-		plist_node_to_string(subnode);
-		plist_dict_next_item(node, it, &key, &subnode);
-	}
-	free(it);
-}
-
-static void plist_node_to_string(plist_t node)
-{
-	char *s = NULL;
-	char *data = NULL;
-	double d;
-	uint8_t b;
-	uint64_t u = 0;
-	struct timeval tv = { 0, 0 };
-
-	plist_type t;
-
-	if (!node)
-		return;
-
-	t = plist_get_node_type(node);
-
-	switch (t) {
-	case PLIST_BOOLEAN:
-		plist_get_bool_val(node, &b);
-		printf("%s\n", (b ? "true" : "false"));
-		break;
-
-	case PLIST_UINT:
-		plist_get_uint_val(node, &u);
-		printf("%"PRIu64"\n", (long long)u);
-		break;
-
-	case PLIST_REAL:
-		plist_get_real_val(node, &d);
-		printf("%f\n", d);
-		break;
-
-	case PLIST_STRING:
-		plist_get_string_val(node, &s);
-		printf("%s\n", s);
-		free(s);
-		break;
-
-	case PLIST_KEY:
-		plist_get_key_val(node, &s);
-		printf("%s: ", s);
-		free(s);
-		break;
-
-	case PLIST_DATA:
-		plist_get_data_val(node, &data, &u);
-		uint64_t i;
-		for (i = 0; i < u; i++) {
-			printf("%02x", (unsigned char)data[i]);
-		}
-		free(data);
-		printf("\n");
-		break;
-
-	case PLIST_DATE:
-		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
-		{
-			time_t ti = (time_t)tv.tv_sec;
-			struct tm *btime = localtime(&ti);
-			if (btime) {
-				s = (char*)malloc(24);
- 				memset(s, 0, 24);
-				if (strftime(s, 24, "%Y-%m-%dT%H:%M:%SZ", btime) <= 0) {
-					free (s);
-					s = NULL;
-				}
-			}
-		}
-		if (s) {
-			puts(s);
-			free(s);
-		}
-		puts("\n");
-		break;
-
-	case PLIST_ARRAY:
-		printf("\n");
-		indent_level++;
-		plist_array_to_string(node);
-		indent_level--;
-		break;
-
-	case PLIST_DICT:
-		printf("\n");
-		indent_level++;
-		plist_dict_to_string(node);
-		indent_level--;
-		break;
-
-	default:
-		break;
 	}
 }
 
@@ -388,7 +250,7 @@ int main(int argc, char **argv)
 			if (xml_mode) {
 				print_xml(result);
 			} else {
-				plist_dict_to_string(result);
+				plist_print_to_stream(result, stdout);
 			}
 		} else {
 			printf("Error: lookup_image returned %d\n", err);
@@ -508,7 +370,7 @@ int main(int argc, char **argv)
 							if (xml_mode) {
 								print_xml(result);
 							} else {
-								plist_dict_to_string(result);
+								plist_print_to_stream(result, stdout);
 							}
 						}
 						free(status);
@@ -517,7 +379,7 @@ int main(int argc, char **argv)
 						if (xml_mode) {
 							print_xml(result);
 						} else {
-							plist_dict_to_string(result);
+							plist_print_to_stream(result, stdout);
 						}
 					}
 				}
@@ -533,7 +395,7 @@ int main(int argc, char **argv)
 						if (xml_mode) {
 							print_xml(result);
 						} else {
-							plist_dict_to_string(result);
+							plist_print_to_stream(result, stdout);
 						}
 					}
 
@@ -541,7 +403,7 @@ int main(int argc, char **argv)
 					if (xml_mode) {
 						print_xml(result);
 					} else {
-						plist_dict_to_string(result);
+						plist_print_to_stream(result, stdout);
 					}
 				}
 			}

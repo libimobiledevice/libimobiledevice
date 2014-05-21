@@ -42,7 +42,7 @@ idevicebackup2_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
 ideviceimagemounter_CFLAGS = $(AM_CFLAGS)
-ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS)
+ideviceimagemounter_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 ideviceimagemounter_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 idevicescreenshot_SOURCES = idevicescreenshot.c
