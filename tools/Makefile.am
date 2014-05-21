@@ -62,7 +62,7 @@ idevicedate_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 ideviceprovision_SOURCES = ideviceprovision.c
 ideviceprovision_CFLAGS = $(AM_CFLAGS)
-ideviceprovision_LDFLAGS = $(AM_LDFLAGS)
+ideviceprovision_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 ideviceprovision_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 idevicedebugserverproxy_SOURCES = idevicedebugserverproxy.c
