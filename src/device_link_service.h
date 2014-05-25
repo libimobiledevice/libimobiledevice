@@ -52,5 +52,6 @@ device_link_service_error_t device_link_service_receive_process_message(device_l
 device_link_service_error_t device_link_service_disconnect(device_link_service_client_t client, const char *message);
 device_link_service_error_t device_link_service_send(device_link_service_client_t client, plist_t plist);
 device_link_service_error_t device_link_service_receive(device_link_service_client_t client, plist_t *plist);
+device_link_service_error_t device_link_service_receive_with_timeout(device_link_service_client_t client, plist_t *plist, unsigned int timeout);
 
 #endif

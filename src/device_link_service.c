@@ -461,3 +461,26 @@ device_link_service_error_t device_link_service_receive(device_link_service_clie
 	return DEVICE_LINK_SERVICE_E_SUCCESS;
 }
 
+/* Generic device link service receive function, with a custom timeout.
+ *
+ * @param client The device link service client to use for sending
+ * @param plist Pointer that will point to the property list received upon
+ *     successful return.
+ * @param timeout Maximum time in milliseconds to wait for data.
+ *
+ * @return DEVICE_LINK_SERVICE_E_SUCCESS on success,
+ *     DEVICE_LINK_SERVICE_E_INVALID_ARG when client or plist is NULL,
+ *     or DEVICE_LINK_SERVICE_E_MUX_ERROR when no property list could be
+ *     received.
+ */
+device_link_service_error_t device_link_service_receive_with_timeout(device_link_service_client_t client, plist_t *plist, unsigned int timeout)
+{
+	if (!client || !plist || (plist && *plist)) {
+		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
+	}
+
+	if (property_list_service_receive_plist_with_timeout(client->parent, plist, timeout) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+		return DEVICE_LINK_SERVICE_E_MUX_ERROR;
+	}
+	return DEVICE_LINK_SERVICE_E_SUCCESS;
+}
