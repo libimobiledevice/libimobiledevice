@@ -31,7 +31,6 @@
 
 #ifdef WIN32
 #include <windows.h>
-int APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved);
 #endif
 
 #include <usbmuxd.h>
@@ -101,7 +100,7 @@ static thread_once_t init_once = THREAD_ONCE_INIT;
 static thread_once_t deinit_once = THREAD_ONCE_INIT;
 
 #ifdef WIN32
-int APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
+BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 {
 	switch (dwReason) {
 	case DLL_PROCESS_ATTACH:
