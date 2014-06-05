@@ -199,12 +199,12 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 		return AFC_E_SUCCESS;
 	}
 
-    // If payload_length is > 0 and payload == NULL,
-    // then the caller is obliged to transmit the payload
-    // bytes immediately following this call
+    /* If payload_length is > 0 and payload == NULL,
+     * then the caller is obliged to transmit the payload
+     * bytes immediately following this call */
 	sent = 0;
     if (payload_length > 0 && payload) {
-		debug_info("packet payload follows");
+        debug_info("packet payload follows");
 		debug_buffer(payload, payload_length);
 		service_send(client->parent, payload, payload_length, &sent);
 	}
@@ -760,7 +760,7 @@ afc_error_t afc_file_write_from_fd(afc_client_t client, uint64_t handle, int fd,
     idevice_error_t dret = IDEVICE_E_SUCCESS;
     uint32_t packet_bytes_sent = 0;
 
-    // Fetch file length if we need it
+    /* Fetch file length if we need it */
     if (length == 0) {
         struct stat st;
         errno = 0;
@@ -774,10 +774,10 @@ afc_error_t afc_file_write_from_fd(afc_client_t client, uint64_t handle, int fd,
 
     afc_lock(client);
 
-    // Dispatch a write packet with NULL payload,
-    // but specifying the payload_length signalling
-    // that we intend to ship the payload ourselves
-    // after the write packet has been dispatched
+    /* Dispatch a write packet with NULL payload,
+     * but specifying the payload_length signalling
+     * that we intend to ship the payload ourselves
+     * after the write packet has been dispatched */
     ret = afc_dispatch_packet(client, AFC_OP_WRITE, (const char*)&handle, 8, NULL, length, &packet_bytes_sent);
     if (ret != AFC_E_SUCCESS) {
         afc_unlock(client);

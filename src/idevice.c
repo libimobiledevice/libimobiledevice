@@ -380,20 +380,23 @@ idevice_error_t idevice_connection_sendfile(idevice_connection_t connection, int
     conn_fd = (int)(long)connection->data;
     errno = 0;
 
+    /* TODO: Native sendfile() use on FreeBSD. Currently falls back to read/write.
+     *       It has yet a 3rd interface compared to Apple and Linux.
+     *       See http://www.freebsd.org/cgi/man.cgi?query=sendfile&sektion=2 */
+
 #ifdef __APPLE__
-    // int sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags);
+    /* int sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags); */
     off_t len = length;
     int result = sendfile(fd, conn_fd, 0, &len, NULL, 0);
     *sent_bytes = len;
     if (result == 0) {
-        // FIXME: check errno
         return IDEVICE_E_SUCCESS;
     } else {
         debug_info("ERROR: When calling sendfile(%d, %d, 0, %d) __APPLE__: %s", fd, conn_fd, length, strerror(errno));
         return IDEVICE_E_UNKNOWN_ERROR;
     }
 #elif __linux
-    // ssize_t sendfile(int out_fd, int in_fd, off_t * offset, size_t count);
+    /* ssize_t sendfile(int out_fd, int in_fd, off_t * offset, size_t count); */
     ssize_t len = sendfile(conn_fd, fd, NULL, length);
     *sent_bytes = len;
     if (len >= 0) {
@@ -403,8 +406,8 @@ idevice_error_t idevice_connection_sendfile(idevice_connection_t connection, int
         return IDEVICE_E_UNKNOWN_ERROR;
     }
 #else
-    // 10 pages of memory gives close to optimum performance,
-    // while not being too aggresive on memory consumption
+    /* 10 pages of memory gives close to optimum performance,
+     * while not being too aggresive on memory consumption */
     char     stack_buf[4096 * 10];
     char    *buf = &stack_buf[0];
     ssize_t  num_read;
@@ -418,12 +421,12 @@ idevice_error_t idevice_connection_sendfile(idevice_connection_t connection, int
             if (num_read == 0) {
                 break;
             } else if (num_read < 0) {
-                debug_info("ERROR: internal error in "__func__". Wrote more than we read!");
+                debug_info("ERROR: internal error. Wrote more than we read!");
                 return IDEVICE_E_UNKNOWN_ERROR;
             }
         }
         if (num_written < 0) {
-           debug_info("ERROR: write(%d,,) failed in "__func__": %s", conn_fd, strerror(errno));
+           debug_info("ERROR: write(%d,,) failed: %s", conn_fd, strerror(errno));
            return IDEVICE_E_UNKNOWN_ERROR;
         }
     }
@@ -431,7 +434,7 @@ idevice_error_t idevice_connection_sendfile(idevice_connection_t connection, int
     if (num_read == 0 && *sent_bytes == length) {
         return IDEVICE_E_SUCCESS;
     } else {
-        // must be a read error, write errors return from inner while loop
+        /* must be a read error, write errors return from inner while loop */
         debug_info("ERROR: read(%d,,): %s", fd, strerror(errno));
         return IDEVICE_E_UNKNOWN_ERROR;
     }
