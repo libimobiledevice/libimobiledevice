@@ -47,6 +47,11 @@ static char *imagetype = NULL;
 static const char PKG_PATH[] = "PublicStaging";
 static const char PATH_PREFIX[] = "/private/var/mobile/Media";
 
+typedef enum {
+	DISK_IMAGE_UPLOAD_TYPE_AFC,
+	DISK_IMAGE_UPLOAD_TYPE_UPLOAD_IMAGE
+} disk_image_upload_type_t;
+
 static void print_usage(int argc, char **argv)
 {
 	char *name = NULL;
@@ -178,12 +183,13 @@ int main(int argc, char **argv)
 	if (pver && plist_get_node_type(pver) == PLIST_STRING) {
 		plist_get_string_val(pver, &product_version);
 	}
-	int ge70 = 0;
+	disk_image_upload_type_t disk_image_upload_type = DISK_IMAGE_UPLOAD_TYPE_AFC;
+	int product_version_major = 0;
+	int product_version_minor = 0;
 	if (product_version) {
-		int maj = 0;
-		int min = 0;
-		if (sscanf(product_version, "%d.%d.%*d", &maj, &min) == 2) {
-			ge70 = (maj >= 7);
+		if (sscanf(product_version, "%d.%d.%*d", &product_version_major, &product_version_minor) == 2) {
+			if (product_version_major >= 7)
+				disk_image_upload_type = DISK_IMAGE_UPLOAD_TYPE_UPLOAD_IMAGE;
 		}
 	}
 
@@ -206,7 +212,7 @@ int main(int argc, char **argv)
 
 	if (!list_mode) {
 		struct stat fst;
-		if (!ge70) {
+		if (disk_image_upload_type == DISK_IMAGE_UPLOAD_TYPE_AFC) {
 			if ((lockdownd_start_service(lckd, "com.apple.afc", &service) !=
 				 LOCKDOWN_E_SUCCESS) || !service || !service->port) {
 				fprintf(stderr, "Could not start com.apple.afc!\n");
@@ -292,62 +298,67 @@ int main(int argc, char **argv)
 			imagetype = strdup("Developer");
 		}
 
-		if (ge70) {
-			printf("Uploading %s\n", image_path);
-			err = mobile_image_mounter_upload_image(mim, imagetype, image_size, mim_upload_cb, f);
-		} else {
-			printf("Uploading %s --> afc:///%s\n", image_path, targetname);
-			char **strs = NULL;
-			if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {
-				if (afc_make_directory(afc, PKG_PATH) != AFC_E_SUCCESS) {
-					fprintf(stderr, "WARNING: Could not create directory '%s' on device!\n", PKG_PATH);
+		switch(disk_image_upload_type) {
+			case DISK_IMAGE_UPLOAD_TYPE_UPLOAD_IMAGE:
+				printf("Uploading %s\n", image_path);
+				err = mobile_image_mounter_upload_image(mim, imagetype, image_size, sig, sig_length, mim_upload_cb, f);
+				break;
+			case DISK_IMAGE_UPLOAD_TYPE_AFC:
+			default:
+				printf("Uploading %s --> afc:///%s\n", image_path, targetname);
+				char **strs = NULL;
+				if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {
+					if (afc_make_directory(afc, PKG_PATH) != AFC_E_SUCCESS) {
+						fprintf(stderr, "WARNING: Could not create directory '%s' on device!\n", PKG_PATH);
+					}
 				}
-			}
-			if (strs) {
-				int i = 0;
-				while (strs[i]) {
-					free(strs[i]);
-					i++;
+				if (strs) {
+					int i = 0;
+					while (strs[i]) {
+						free(strs[i]);
+						i++;
+					}
+					free(strs);
 				}
-				free(strs);
-			}
 
-			uint64_t af = 0;
-			if ((afc_file_open(afc, targetname, AFC_FOPEN_WRONLY, &af) !=
-				 AFC_E_SUCCESS) || !af) {
-				fclose(f);
-				fprintf(stderr, "afc_file_open on '%s' failed!\n", targetname);
-				goto leave;
-			}
+				uint64_t af = 0;
+				if ((afc_file_open(afc, targetname, AFC_FOPEN_WRONLY, &af) !=
+					 AFC_E_SUCCESS) || !af) {
+					fclose(f);
+					fprintf(stderr, "afc_file_open on '%s' failed!\n", targetname);
+					goto leave;
+				}
 
-			char buf[8192];
-			size_t amount = 0;
-			do {
-				amount = fread(buf, 1, sizeof(buf), f);
-				if (amount > 0) {
-					uint32_t written, total = 0;
-					while (total < amount) {
-						written = 0;
-						if (afc_file_write(afc, af, buf, amount, &written) !=
-							AFC_E_SUCCESS) {
-							fprintf(stderr, "AFC Write error!\n");
-							break;
+				char buf[8192];
+				size_t amount = 0;
+				do {
+					amount = fread(buf, 1, sizeof(buf), f);
+					if (amount > 0) {
+						uint32_t written, total = 0;
+						while (total < amount) {
+							written = 0;
+							if (afc_file_write(afc, af, buf, amount, &written) !=
+								AFC_E_SUCCESS) {
+								fprintf(stderr, "AFC Write error!\n");
+								break;
+							}
+							total += written;
 						}
-						total += written;
-					}
-					if (total != amount) {
-						fprintf(stderr, "Error: wrote only %d of %d\n", total,
-								(unsigned int)amount);
-						afc_file_close(afc, af);
-						fclose(f);
-						goto leave;
+						if (total != amount) {
+							fprintf(stderr, "Error: wrote only %d of %d\n", total,
+									(unsigned int)amount);
+							afc_file_close(afc, af);
+							fclose(f);
+							goto leave;
+						}
 					}
 				}
-			}
-			while (amount > 0);
+				while (amount > 0);
 
-			afc_file_close(afc, af);
+				afc_file_close(afc, af);
+				break;
 		}
+
 		fclose(f);
 
 		printf("done.\n");
