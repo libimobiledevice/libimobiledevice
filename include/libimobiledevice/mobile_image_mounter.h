@@ -112,11 +112,15 @@ mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_clie
 mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result);
 
 /**
- * Uploads an image to the device.
+ * Uploads an image with an optional signature to the device.
  *
  * @param client The connected mobile_image_mounter client.
  * @param image_type Type of image that is being uploaded.
  * @param image_size Total size of the image.
+ * @param signature Buffer with a signature of the image being uploaded. If
+ *    NULL, no signature will be used.
+ * @param signature_size Total size of the image signature buffer. If 0, no
+ *    signature will be used.
  * @param upload_cb Callback function that gets the data chunks for uploading
  *    the image.
  * @param userdata User defined data for the upload callback function.
@@ -124,7 +128,7 @@ mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_moun
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on succes, or a
  *    MOBILE_IMAGE_MOUNTER_E_* error code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
+mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
 
 /**
  * Mounts an image on the device.
@@ -132,8 +136,8 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
  * @param client The connected mobile_image_mounter client.
  * @param image_path The absolute path of the image to mount. The image must
  *    be present before calling this function.
- * @param image_signature Pointer to a buffer holding the images' signature
- * @param signature_length Length of the signature image_signature points to
+ * @param signature Pointer to a buffer holding the images' signature
+ * @param signature_size Length of the signature image_signature points to
  * @param image_type Type of image to mount
  * @param result Pointer to a plist that will receive the result of the
  *    operation.
@@ -147,7 +151,7 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
  *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if on ore more parameters are
  *    invalid, or another error code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *image_signature, uint16_t signature_length, const char *image_type, plist_t *result);
+mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result);
 
 /**
  * Hangs up the connection to the mobile_image_mounter service.

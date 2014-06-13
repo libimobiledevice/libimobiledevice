@@ -141,7 +141,7 @@ leave_unlock:
 	return res;
 }
 
-mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
+mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
 {
 	if (!client || !image_type || (image_size == 0) || !upload_cb) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -151,6 +151,8 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
 
 	plist_t dict = plist_new_dict();
 	plist_dict_set_item(dict, "Command", plist_new_string("ReceiveBytes"));
+	if (signature && signature_size != 0)
+		plist_dict_set_item(dict, "ImageSignature", plist_new_data(signature, signature_size));
 	plist_dict_set_item(dict, "ImageSize", plist_new_uint(image_size));
 	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
 
@@ -250,9 +252,9 @@ leave_unlock:
 
 }
 
-mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *image_signature, uint16_t signature_length, const char *image_type, plist_t *result)
+mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result)
 {
-	if (!client || !image_path || !image_signature || (signature_length == 0) || !image_type || !result) {
+	if (!client || !image_path || !image_type || !result) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
 	}
 	mobile_image_mounter_lock(client);
@@ -260,7 +262,8 @@ mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mount
 	plist_t dict = plist_new_dict();
 	plist_dict_set_item(dict, "Command", plist_new_string("MountImage"));
 	plist_dict_set_item(dict, "ImagePath", plist_new_string(image_path));
-	plist_dict_set_item(dict, "ImageSignature", plist_new_data(image_signature, signature_length));
+	if (signature && signature_size != 0)
+		plist_dict_set_item(dict, "ImageSignature", plist_new_data(signature, signature_size));
 	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
