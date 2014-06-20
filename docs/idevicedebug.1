@@ -1,0 +1,34 @@
+.TH "idevicedebug" 1
+.SH NAME
+idevicedebug \- Interact with the debugserver service of a device.
+.SH SYNOPSIS
+.B idevicedebug
+[OPTIONS] COMMAND
+
+.SH DESCRIPTION
+
+Interact with the debug service of a device. Currently the only implemented
+command is "run" and allows execution of developer apps and watch the
+stdout/stderr of the process.
+
+.SH OPTIONS
+.TP 
+.B \-e, \-\-env NAME=VALUE
+set environment variable NAME to VALUE.
+.TP
+.B \-u, \-\-udid UDID
+target specific device by its 40-digit device UDID.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B run BUNDLEID [ARGS...]
+run app with BUNDLEID and optional ARGS on device.
+
+.SH AUTHORS
+Martin Szulecki
