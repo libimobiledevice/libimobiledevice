@@ -109,19 +109,6 @@ static void notify_cb(const char *notification, void *userdata)
 	}
 }
 
-static void free_dictionary(char **dictionary)
-{
-	int i = 0;
-
-	if (!dictionary)
-		return;
-
-	for (i = 0; dictionary[i]; i++) {
-		free(dictionary[i]);
-	}
-	free(dictionary);
-}
-
 static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *filename, char **data, uint64_t *size)
 {
 	if (!afc || !data || !size) {
@@ -130,7 +117,7 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 
 	char **fileinfo = NULL;
 	uint32_t fsize = 0;
-		
+
 	afc_get_file_info(afc, filename, &fileinfo);
 	if (!fileinfo) {
 		return;
@@ -142,12 +129,12 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 			break;
 		}
 	}
-	free_dictionary(fileinfo);
+	afc_dictionary_free(fileinfo);
 
 	if (fsize == 0) {
 		return;
 	}
-		
+
 	uint64_t f = 0;
 	afc_file_open(afc, filename, AFC_FOPEN_RDONLY, &f);
 	if (!f) {
