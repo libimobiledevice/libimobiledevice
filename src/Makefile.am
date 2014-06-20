@@ -26,6 +26,7 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       restore.c restore.h\
 		       diagnostics_relay.c diagnostics_relay.h\
 		       heartbeat.c heartbeat.h\
+		       debugserver.c debugserver.h\
 		       webinspector.c webinspector.h\
 		       syslog_relay.c syslog_relay.h
 
