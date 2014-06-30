@@ -18,9 +18,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
-#include <err.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/file_relay.h>
@@ -102,7 +103,8 @@ int main(int argc, char **argv)
 	char buf[4096];
 	FILE *f = fopen("dump.cpio.gz", "wb");
 	if (!f) {
-		err(EXIT_FAILURE, "dump.cpio.gz");
+		fprintf(stderr, "dump.cpio.gz: %s\n", strerror(errno));
+		return EXIT_FAILURE;
 	}
 	setbuf(stdout, NULL);
 	printf("receiving ");
