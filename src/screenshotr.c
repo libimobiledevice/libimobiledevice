@@ -58,21 +58,6 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
 	return SCREENSHOTR_E_UNKNOWN_ERROR;
 }
 
-/**
- * Connects to the screenshotr service on the specified device.
- *
- * @param device The device to connect to.
- * @param service The service descriptor returned by lockdownd_start_service.
- * @param client Pointer that will be set to a newly allocated
- *     screenshotr_client_t upon successful return.
- *
- * @note This service is only available if a developer disk image has been
- *     mounted.
- *
- * @return SCREENSHOTR_E_SUCCESS on success, SCREENSHOTR_E_INVALID ARG if one
- *     or more parameters are invalid, or SCREENSHOTR_E_CONN_FAILED if the
- *     connection to the device could not be established.
- */
 screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 					   screenshotr_client_t * client)
 {
@@ -101,19 +86,6 @@ screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_d
 	return ret;
 }
 
-/**
- * Starts a new screenshotr service on the specified device and connects to it.
- *
- * @param device The device to connect to.
- * @param client Pointer that will point to a newly allocated
- *     screenshotr_client_t upon successful return. Must be freed using
- *     screenshotr_client_free() after use.
- * @param label The label to use for communication. Usually the program name.
- *  Pass NULL to disable sending the label in requests to lockdownd.
- *
- * @return SCREENSHOTR_E_SUCCESS on success, or an SCREENSHOTR_E_* error
- *     code otherwise.
- */
 screenshotr_error_t screenshotr_client_start_service(idevice_t device, screenshotr_client_t * client, const char* label)
 {
 	screenshotr_error_t err = SCREENSHOTR_E_UNKNOWN_ERROR;
@@ -121,15 +93,6 @@ screenshotr_error_t screenshotr_client_start_service(idevice_t device, screensho
 	return err;
 }
 
-/**
- * Disconnects a screenshotr client from the device and frees up the
- * screenshotr client data.
- *
- * @param client The screenshotr client to disconnect and free.
- *
- * @return SCREENSHOTR_E_SUCCESS on success, or SCREENSHOTR_E_INVALID_ARG
- *     if client is NULL.
- */
 screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
 {
 	if (!client)
@@ -140,20 +103,6 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
 	return err;
 }
 
-/**
- * Get a screen shot from the connected device.
- *
- * @param client The connection screenshotr service client.
- * @param imgdata Pointer that will point to a newly allocated buffer
- *     containing TIFF image data upon successful return. It is up to the
- *     caller to free the memory.
- * @param imgsize Pointer to a uint64_t that will be set to the size of the
- *     buffer imgdata points to upon successful return.
- *
- * @return SCREENSHOTR_E_SUCCESS on success, SCREENSHOTR_E_INVALID_ARG if
- *     one or more parameters are invalid, or another error code if an
- *     error occured.
- */
 screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize)
 {
 	if (!client || !client->parent || !imgdata)
