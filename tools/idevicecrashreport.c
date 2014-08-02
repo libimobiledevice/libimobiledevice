@@ -191,7 +191,9 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 				}
 
 				/* create a symlink pointing to latest log */
-				symlink(b, target_filename);
+				if (symlink(b, target_filename) < 0) {
+					fprintf(stderr, "Can't create symlink to %s\n", b);
+				}
 #endif
 
 				if (!keep_crash_reports)
