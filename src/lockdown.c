@@ -743,7 +743,8 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 	}
 
 	/* set SystemBUID */
-	if (userpref_read_system_buid(&system_buid)) {
+	userpref_read_system_buid(&system_buid);
+	if (system_buid) {
 		plist_dict_set_item(*pair_record, USERPREF_SYSTEM_BUID_KEY, plist_new_string(system_buid));
 	}
 
