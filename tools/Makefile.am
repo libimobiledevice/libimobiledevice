@@ -32,12 +32,12 @@ idevice_id_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 idevicebackup_SOURCES = idevicebackup.c
 idevicebackup_CFLAGS = $(AM_CFLAGS)
-idevicebackup_LDFLAGS = $(AM_LDFLAGS)
+idevicebackup_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicebackup_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 idevicebackup2_SOURCES = idevicebackup2.c
 idevicebackup2_CFLAGS = $(AM_CFLAGS)
-idevicebackup2_LDFLAGS = $(AM_LDFLAGS)
+idevicebackup2_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicebackup2_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
