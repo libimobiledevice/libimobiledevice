@@ -173,18 +173,21 @@ const char *userpref_get_config_dir()
 }
 
 /**
- * Reads the BUID from a previously generated configuration file.
+ * Reads the SystemBUID from a previously generated configuration file.
  *
- * @note It is the responsibility of the calling function to free the returned system_buid
- * @param system_buid A null terminated string containing a valid SystemBUID.
- * @return 1 if the system buid could be retrieved or 0 otherwise.
+ * @note It is the responsibility of the calling function to free the returned system_buid.
+ * @param system_buid A pointer that will be set to a newly allocated string containing the
+ *   SystemBUID upon successful return.
+ * @return 0 if the SystemBUID has been successfully retrieved or < 0 otherwise.
  */
 int userpref_read_system_buid(char **system_buid)
 {
 	int res = usbmuxd_read_buid(system_buid);
-
-	debug_info("using %s as %s", *system_buid, USERPREF_SYSTEM_BUID_KEY);
-
+	if (res == 0) {
+		debug_info("using %s as %s", *system_buid, USERPREF_SYSTEM_BUID_KEY);
+	} else {
+		debug_info("could not read system buid, error %d", res);
+	}
 	return res;
 }
 
