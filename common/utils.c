@@ -161,7 +161,10 @@ void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *le
 	}
 
 	*buffer = (char*)malloc(sizeof(char)*(size+1));
-	fread(*buffer, sizeof(char), size, f);
+	if (fread(*buffer, sizeof(char), size, f) != size) {
+		fclose(f);
+		return;
+	}
 	fclose(f);
 
 	*length = size;
