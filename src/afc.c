@@ -616,6 +616,9 @@ idevice_error_t
 afc_file_open(afc_client_t client, const char *filename,
 					 afc_file_mode_t file_mode, uint64_t *handle)
 {
+	if (!client || !client->parent || !client->afc_packet)
+		return AFC_E_INVALID_ARG;
+
 	uint64_t file_mode_loc = htole64(file_mode);
 	uint32_t bytes = 0;
 	char *data = (char *) malloc(sizeof(char) * (8 + strlen(filename) + 1));
@@ -623,9 +626,6 @@ afc_file_open(afc_client_t client, const char *filename,
 
 	/* set handle to 0 so in case an error occurs, the handle is invalid */
 	*handle = 0;
-
-	if (!client || !client->parent || !client->afc_packet)
-		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -642,6 +642,7 @@ afc_file_open(afc_client_t client, const char *filename,
 		return AFC_E_NOT_ENOUGH_DATA;
 	}
 	/* Receive the data */
+	data = NULL;
 	ret = afc_receive_data(client, &data, &bytes);
 	if ((ret == AFC_E_SUCCESS) && (bytes > 0) && data) {
 		afc_unlock(client);
@@ -651,6 +652,8 @@ afc_file_open(afc_client_t client, const char *filename,
 		free(data);
 		return ret;
 	}
+	/* in case memory was allocated but no data received or an error occurred */
+	free(data);
 
 	debug_info("Didn't get any further data");
 
