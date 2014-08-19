@@ -846,7 +846,7 @@ afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, 
 
 afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position)
 {
-	char *buffer = (char *) malloc(sizeof(char) * 8);
+	char *buffer = NULL;
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
@@ -870,8 +870,7 @@ afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *positi
 		memcpy(position, buffer, sizeof(uint64_t));
 		*position = le64toh(*position);
 	}
-	if (buffer)
-		free(buffer);
+	free(buffer);
 
 	afc_unlock(client);
 
