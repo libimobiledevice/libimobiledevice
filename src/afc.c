@@ -531,12 +531,12 @@ afc_error_t afc_remove_path(afc_client_t client, const char *path)
 
 afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
 {
+	if (!client || !from || !to || !client->afc_packet || !client->parent)
+		return AFC_E_INVALID_ARG;
+
 	char *buffer = (char *) malloc(sizeof(char) * (strlen(from) + strlen(to) + 1 + sizeof(uint32_t)));
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
-
-	if (!client || !from || !to || !client->afc_packet || !client->parent)
-		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -910,13 +910,13 @@ afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t new
 
 afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
+	if (!client || !path || !client->afc_packet || !client->parent)
+		return AFC_E_INVALID_ARG;
+
 	char *buffer = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t size_requested = htole64(newsize);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
-
-	if (!client || !path || !client->afc_packet || !client->parent)
-		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -940,13 +940,13 @@ afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize
 
 afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
 {
+	if (!client || !target || !linkname || !client->afc_packet || !client->parent)
+		return AFC_E_INVALID_ARG;
+
 	char *buffer = (char *) malloc(sizeof(char) * (strlen(target)+1 + strlen(linkname)+1 + 8));
 	uint32_t bytes = 0;
 	uint64_t type = htole64(linktype);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
-
-	if (!client || !target || !linkname || !client->afc_packet || !client->parent)
-		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
@@ -974,13 +974,13 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
 
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
 {
+	if (!client || !path || !client->afc_packet || !client->parent)
+		return AFC_E_INVALID_ARG;
+
 	char *buffer = (char *) malloc(sizeof(char) * (strlen(path) + 1 + 8));
 	uint32_t bytes = 0;
 	uint64_t mtime_loc = htole64(mtime);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
-
-	if (!client || !path || !client->afc_packet || !client->parent)
-		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
