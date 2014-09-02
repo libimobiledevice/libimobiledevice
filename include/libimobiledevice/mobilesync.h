@@ -310,7 +310,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_remap_identifiers(mobilesync_
  *
  * @return A new #mobilesync_anchors_t struct. Must be freed using mobilesync_anchors_free().
  */
-LIBIMOBILEDEVICE_API 
+LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor);
 
 /**
  * Free memory used by anchors.
