@@ -1,8 +1,8 @@
- /* 
- * property_list_service.h
- * Definitions for the PropertyList service
+/*
+ * debugserver.h
+ * com.apple.debugserver service header file.
  * 
- * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,14 +19,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
  */
 
-#ifndef __PROPERTY_LIST_SERVICE_H
-#define __PROPERTY_LIST_SERVICE_H
+#ifndef _DEBUGSERVER_H
+#define _DEBUGSERVER_H
 
-#include "libimobiledevice/property_list_service.h"
+#include "libimobiledevice/debugserver.h"
 #include "service.h"
 
-struct property_list_service_client_private {
+#define DEBUGSERVER_CHECKSUM_HASH_LENGTH 0x3
+
+struct debugserver_client_private {
 	service_client_t parent;
+	int noack_mode;
+};
+
+struct debugserver_command_private {
+	char* name;
+	int argc;
+	char** argv;
 };
 
 #endif

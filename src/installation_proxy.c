@@ -86,17 +86,6 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
 	return INSTPROXY_E_UNKNOWN_ERROR;
 }
 
-/**
- * Connects to the installation_proxy service on the specified device.
- *
- * @param device The device to connect to
- * @param service The service descriptor returned by lockdownd_start_service.
- * @param client Pointer that will be set to a newly allocated
- *     instproxy_client_t upon successful return.
- *
- * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error value
- *     when an error occured.
- */
 instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client)
 {
 	property_list_service_client_t plistclient = NULL;
@@ -114,19 +103,6 @@ instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descr
 	return INSTPROXY_E_SUCCESS;
 }
 
-/**
- * Starts a new installation_proxy service on the specified device and connects to it.
- *
- * @param device The device to connect to.
- * @param client Pointer that will point to a newly allocated
- *     instproxy_client_t upon successful return. Must be freed using
- *     instproxy_client_free() after use.
- * @param label The label to use for communication. Usually the program name.
- *  Pass NULL to disable sending the label in requests to lockdownd.
- *
- * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error
- *     code otherwise.
- */
 instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
 {
 	instproxy_error_t err = INSTPROXY_E_UNKNOWN_ERROR;
@@ -134,15 +110,6 @@ instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_cli
 	return err;
 }
 
-/**
- * Disconnects an installation_proxy client from the device and frees up the
- * installation_proxy client data.
- *
- * @param client The installation_proxy client to disconnect and free.
- *
- * @return INSTPROXY_E_SUCCESS on success
- *      or INSTPROXY_E_INVALID_ARG if client is NULL.
- */
 instproxy_error_t instproxy_client_free(instproxy_client_t client)
 {
 	if (!client)
@@ -195,20 +162,6 @@ static instproxy_error_t instproxy_send_command(instproxy_client_t client, const
 	return err;
 }
 
-/**
- * List installed applications. This function runs synchronously.
- *
- * @param client The connected installation_proxy client
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Valid client options include:
- *          "ApplicationType" -> "User"
- *          "ApplicationType" -> "System"
- * @param result Pointer that will be set to a plist that will hold an array
- *        of PLIST_DICT holding information about the applications found.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- */
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	if (!client || !client->parent || !result)
@@ -461,85 +414,16 @@ static instproxy_error_t instproxy_install_or_upgrade(instproxy_client_t client,
 	return instproxy_create_status_updater(client, status_cb, command, user_data);
 }
 
-/**
- * Install an application on the device.
- *
- * @param client The connected installation_proxy client
- * @param pkg_path Path of the installation package (inside the AFC jail)
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Valid options include:
- *          "iTunesMetadata" -> PLIST_DATA
- *          "ApplicationSINF" -> PLIST_DATA
- *          "PackageType" -> "Developer"
- *        If PackageType -> Developer is specified, then pkg_path points to
- *        an .app directory instead of an install package.
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	return instproxy_install_or_upgrade(client, pkg_path, client_options, status_cb, "Install", user_data);
 }
 
-/**
- * Upgrade an application on the device. This function is nearly the same as
- * instproxy_install; the difference is that the installation progress on the
- * device is faster if the application is already installed.
- *
- * @param client The connected installation_proxy client
- * @param pkg_path Path of the installation package (inside the AFC jail)
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Valid options include:
- *          "iTunesMetadata" -> PLIST_DATA
- *          "ApplicationSINF" -> PLIST_DATA
- *          "PackageType" -> "Developer"
- *        If PackageType -> Developer is specified, then pkg_path points to
- *        an .app directory instead of an install package.
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	return instproxy_install_or_upgrade(client, pkg_path, client_options, status_cb, "Upgrade", user_data);
 }
 
-/**
- * Uninstall an application from the device.
- *
- * @param client The connected installation proxy client
- * @param appid ApplicationIdentifier of the app to uninstall
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Currently there are no known client options, so pass NULL here.
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	if (!client || !client->parent || !appid) {
@@ -564,20 +448,6 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
 	return instproxy_create_status_updater(client, status_cb, "Uninstall", user_data);
 }
 
-/**
- * List archived applications. This function runs synchronously.
- *
- * @see instproxy_archive
- *
- * @param client The connected installation_proxy client
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Currently there are no known client options, so pass NULL here.
- * @param result Pointer that will be set to a plist containing a PLIST_DICT
- *        holding information about the archived applications found.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- */
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	if (!client || !client->parent || !result)
@@ -604,30 +474,6 @@ leave_unlock:
 	return res;
 }
 
-/**
- * Archive an application on the device.
- * This function tells the device to make an archive of the specified
- * application. This results in the device creating a ZIP archive in the
- * 'ApplicationArchives' directory and uninstalling the application.
- *
- * @param client The connected installation proxy client
- * @param appid ApplicationIdentifier of the app to archive.
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Valid options include:
- *          "SkipUninstall" -> Boolean
- *          "ArchiveType" -> "ApplicationOnly" 
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	if (!client || !client->parent || !appid)
@@ -648,27 +494,6 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
 	return instproxy_create_status_updater(client, status_cb, "Archive", user_data);
 }
 
-/**
- * Restore a previously archived application on the device.
- * This function is the counterpart to instproxy_archive.
- * @see instproxy_archive
- *
- * @param client The connected installation proxy client
- * @param appid ApplicationIdentifier of the app to restore.
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Currently there are no known client options, so pass NULL here.
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	if (!client || !client->parent || !appid)
@@ -689,27 +514,6 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
 	return instproxy_create_status_updater(client, status_cb, "Restore", user_data);
 }
 
-/**
- * Removes a previously archived application from the device.
- * This function removes the ZIP archive from the 'ApplicationArchives'
- * directory.
- *
- * @param client The connected installation proxy client
- * @param appid ApplicationIdentifier of the archived app to remove.
- * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Currently there are no known client options, so passing NULL is fine.
- * @param status_cb Callback function for progress and status information. If
- *        NULL is passed, this function will run synchronously.
- * @param user_data Callback data passed to status_cb.
- *
- * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
- *
- * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
- */
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	if (!client || !client->parent || !appid)
@@ -730,26 +534,11 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 	return instproxy_create_status_updater(client, status_cb, "RemoveArchive", user_data);
 }
 
-/**
- * Create a new client_options plist.
- *
- * @return A new plist_t of type PLIST_DICT. 
- */
 plist_t instproxy_client_options_new()
 {
 	return plist_new_dict();
 }
 
-/**
- * Add one or more new key:value pairs to the given client_options.
- *
- * @param client_options The client options to modify.
- * @param ... KEY, VALUE, [KEY, VALUE], NULL
- *
- * @note The keys and values passed are expected to be strings, except for the
- *       keys "ApplicationSINF", "iTunesMetadata", "ReturnAttributes" which are
- *       expecting a plist_t node as value and "SkipUninstall" expects int.
- */
 void instproxy_client_options_add(plist_t client_options, ...)
 {
 	if (!client_options)
@@ -783,12 +572,6 @@ void instproxy_client_options_add(plist_t client_options, ...)
 	va_end(args);
 }
 
-/**
- * Free client_options plist.
- *
- * @param client_options The client options plist to free. Does nothing if NULL
- *        is passed.
- */
 void instproxy_client_options_free(plist_t client_options)
 {
 	if (client_options) {
@@ -796,21 +579,6 @@ void instproxy_client_options_free(plist_t client_options)
 	}
 }
 
-/**
- * Query the device for the path of an application.
- *
- * @param client The connected installation proxy client.
- * @param appid ApplicationIdentifier of app to retrieve the path for.
- * @param path Pointer to store the device path for the application
- *        which is set to NULL if it could not be determined.
- *
- * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_OP_FAILED if
- *         the path could not be determined or an INSTPROXY_E_* error
- *         value if an error occured.
- *
- * @note This implementation browses all applications and matches the
- *       right entry by the application identifier.
- */
 instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* appid, char** path)
 {
 	if (!client || !client->parent || !appid)

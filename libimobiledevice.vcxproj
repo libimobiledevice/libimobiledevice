@@ -103,6 +103,7 @@
     <ClInclude Include="include\asprintf.h" />
     <ClInclude Include="include\endianness.h" />
     <ClInclude Include="include\libimobiledevice\afc.h" />
+    <ClInclude Include="include\libimobiledevice\debugserver.h" />
     <ClInclude Include="include\libimobiledevice\diagnostics_relay.h" />
     <ClInclude Include="include\libimobiledevice\file_relay.h" />
     <ClInclude Include="include\libimobiledevice\heartbeat.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="include\windows\dirent.h" />
     <ClInclude Include="include\windows\unistd.h" />
     <ClInclude Include="src\afc.h" />
+    <ClInclude Include="src\debugserver.h" />
     <ClInclude Include="src\device_link_service.h" />
     <ClInclude Include="src\diagnostics_relay.h" />
     <ClInclude Include="src\file_relay.h" />
@@ -154,6 +156,7 @@
     <ClCompile Include="common\thread.c" />
     <ClCompile Include="common\userpref.c" />
     <ClCompile Include="common\utils.c" />
+    <ClCompile Include="src\debugserver.c" />
     <ClCompile Include="src\memory.c" />
     <ClCompile Include="src\afc.c" />
     <ClCompile Include="src\device_link_service.c" />

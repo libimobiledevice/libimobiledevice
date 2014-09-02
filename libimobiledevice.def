@@ -251,6 +251,23 @@ EXPORTS
 	webinspector_receive
 	webinspector_receive_with_timeout
 
+	debugserver_client_new
+	debugserver_client_start_service
+	debugserver_client_free
+	debugserver_client_send
+	debugserver_client_receive_with_timeout
+	debugserver_client_receive
+	debugserver_client_send_command
+	debugserver_client_receive_response
+	debugserver_client_set_argv
+	debugserver_client_set_environment_hex_encoded
+	debugserver_command_new
+	debugserver_command_free
+	debugserver_encode_string
+	debugserver_decode_string
+
+	plist_print_to_stream
+
 	plist_new_dict
 	plist_new_array
 	plist_new_string

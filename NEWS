@@ -1,3 +1,26 @@
+Version 1.1.7
+~~~~~~~~~~~~~
+
+* Development release "Cleaning up the yard."
+* Changes:
+  - ideviceimagemounter: Fix disk image upload with latest iOS
+  - ideviceprovision: Add new "dump" command to print information about a
+    provisioning profile
+  - Refactor plist print helper code and move it into common module for better
+    reuse accross the tools
+  - Do not crash if retrieving the system buid fails
+  - API: Make generic propery list service client public
+  - Moved doc comments from private to public headers
+  - Fix possible segfault when using lockdownd_get_value() due to always
+    returning success
+  - idevicebackup: Do not read files entirely into memory during restore
+  - idevicebackup2: Plug a few memory leaksnd fix invalid password check
+  - idevicebackup2: Add support for file sizes > 4GB  on Win32
+  - Fix declaration for DllMain on Win32
+  - Silence various compiler warnings
+  - Fix assert within pairing logic
+* API is UNSTABLE
+
 Version 1.1.6
 ~~~~~~~~~~~~~
 
