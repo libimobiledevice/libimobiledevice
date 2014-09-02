@@ -159,7 +159,7 @@ mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plis
 {
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
-	mobilesync_error_t ret = mobilesync_error(device_link_service_receive_with_timeout(client->parent, plist, 30000));
+	mobilesync_error_t ret = mobilesync_error(device_link_service_receive_with_timeout(client->parent, plist, 60000));
 	return ret;
 }
 
