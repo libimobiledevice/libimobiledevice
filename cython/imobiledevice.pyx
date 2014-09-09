@@ -7,7 +7,10 @@ cdef class BaseError(Exception):
 
     property message:
         def __get__(self):
-            return self._lookup_table[self._c_errcode]
+            if self._c_errcode in self._lookup_table:
+                return self._lookup_table[self._c_errcode]
+            else:
+                return "Unknown error ({0})".format(self._c_errcode)
 
     property code:
         def __get__(self):
