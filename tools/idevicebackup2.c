@@ -681,7 +681,6 @@ static void mb2_handle_send_files(mobilebackup2_client_t mobilebackup2, plist_t 
 
 	plist_t files = plist_array_get_item(message, 1);
 	cnt = plist_array_get_size(files);
-	if (cnt == 0) return;
 
 	for (i = 0; i < cnt; i++) {
 		plist_t val = plist_array_get_item(files, i);
