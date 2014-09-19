@@ -110,6 +110,9 @@ file_relay_error_t file_relay_request_sources_timeout(file_relay_client_t client
 			} else if (!strcmp(errmsg, "StagingEmpty")) {
 				debug_info("ERROR: StagingEmpty - No data available!");
 				err = FILE_RELAY_E_STAGING_EMPTY;
+			} else if (!strcmp(errmsg, "PermissionDenied")) {
+				debug_info("ERROR: Permission denied.");
+				err = FILE_RELAY_E_PERMISSION_DENIED;
 			} else {
 				debug_info("ERROR: Unknown error '%s'", errmsg);
 			}

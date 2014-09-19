@@ -40,6 +40,7 @@ extern "C" {
 #define FILE_RELAY_E_MUX_ERROR             -3
 #define FILE_RELAY_E_INVALID_SOURCE        -4
 #define FILE_RELAY_E_STAGING_EMPTY         -5
+#define FILE_RELAY_E_PERMISSION_DENIED     -6
 
 #define FILE_RELAY_E_UNKNOWN_ERROR       -256
 /*@}*/
