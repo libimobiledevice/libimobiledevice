@@ -83,14 +83,19 @@ static void internal_idevice_deinit(void)
 {
 #ifdef HAVE_OPENSSL
 	int i;
-	if (!mutex_buf)
-		return;
-	CRYPTO_set_id_callback(NULL);
-	CRYPTO_set_locking_callback(NULL);
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-		mutex_destroy(&mutex_buf[i]);
-	free(mutex_buf);
-	mutex_buf = NULL;
+	if (mutex_buf) {
+		CRYPTO_set_id_callback(NULL);
+		CRYPTO_set_locking_callback(NULL);
+		for (i = 0; i < CRYPTO_num_locks(); i++)
+			mutex_destroy(&mutex_buf[i]);
+		free(mutex_buf);
+		mutex_buf = NULL;
+	}
+
+	/* Since there is no SSL_library_deinit... */
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
 #else
 	gnutls_global_deinit();
 #endif
