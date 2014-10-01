@@ -35,6 +35,7 @@
 
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 #else
 #include <gnutls/gnutls.h>
@@ -83,14 +84,19 @@ static void internal_idevice_deinit(void)
 {
 #ifdef HAVE_OPENSSL
 	int i;
-	if (!mutex_buf)
-		return;
-	CRYPTO_set_id_callback(NULL);
-	CRYPTO_set_locking_callback(NULL);
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-		mutex_destroy(&mutex_buf[i]);
-	free(mutex_buf);
-	mutex_buf = NULL;
+	if (mutex_buf) {
+		CRYPTO_set_id_callback(NULL);
+		CRYPTO_set_locking_callback(NULL);
+		for (i = 0; i < CRYPTO_num_locks(); i++)
+			mutex_destroy(&mutex_buf[i]);
+		free(mutex_buf);
+		mutex_buf = NULL;
+	}
+
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+	ERR_remove_thread_state(NULL);
 #else
 	gnutls_global_deinit();
 #endif
@@ -710,6 +716,8 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
 	}
+	/* required for proper multi-thread clean up to prevent leaks */
+	ERR_remove_thread_state(NULL);
 #else
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
