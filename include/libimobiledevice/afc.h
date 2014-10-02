@@ -1,8 +1,9 @@
 /**
  * @file libimobiledevice/afc.h
- * @brief Access the filesystem.
+ * @brief Access the filesystem on the device.
  * \internal
  *
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2009 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -102,11 +103,11 @@ typedef afc_client_private *afc_client_t; /**< The client handle. */
  * @param device The device to connect to.
  * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated afc_client_t
- *     upon successful return.
+ *        upon successful return.
  *
  * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if device or service is
- *  invalid, AFC_E_MUX_ERROR if the connection cannot be established,
- *  or AFC_E_NO_MEM if there is a memory allocation problem.
+ *         invalid, AFC_E_MUX_ERROR if the connection cannot be established,
+ *         or AFC_E_NO_MEM if there is a memory allocation problem.
  */
 afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t *client);
 
@@ -114,20 +115,18 @@ afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t serv
  * Starts a new AFC service on the specified device and connects to it.
  *
  * @param device The device to connect to.
- * @param client Pointer that will point to a newly allocated
- *     afc_client_t upon successful return. Must be freed using
- *     afc_client_free() after use.
+ * @param client Pointer that will point to a newly allocated afc_client_t upon
+ *        successful return. Must be freed using afc_client_free() after use.
  * @param label The label to use for communication. Usually the program name.
- *  Pass NULL to disable sending the label in requests to lockdownd.
+ *        Pass NULL to disable sending the label in requests to lockdownd.
  *
- * @return AFC_E_SUCCESS on success, or an AFC_E_* error
- *     code otherwise.
+ * @return AFC_E_SUCCESS on success, or an AFC_E_* error code otherwise.
  */
 afc_error_t afc_client_start_service(idevice_t device, afc_client_t* client, const char* label);
 
 /**
- * Frees up an AFC client. If the connection was created by the
- * client itself, the connection will be closed.
+ * Frees up an AFC client. If the connection was created by the client itself,
+ * the connection will be closed.
  *
  * @param client The client to free.
  */
@@ -179,9 +178,9 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char **
  * @param client The client to use to open the file.
  * @param filename The file to open. (must be a fully-qualified path)
  * @param file_mode The mode to use to open the file. Can be AFC_FILE_READ or
- * 		    AFC_FILE_WRITE; the former lets you read and write,
- * 		    however, and the second one will *create* the file,
- * 		    destroying anything previously there.
+ *        AFC_FILE_WRITE; the former lets you read and write, however, and the
+ *        second one will *create* the file, destroying anything previously
+ *        there.
  * @param handle Pointer to a uint64_t that will hold the handle of the file
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
@@ -199,14 +198,14 @@ afc_error_t afc_file_close(afc_client_t client, uint64_t handle);
 /**
  * Locks or unlocks a file on the device.
  *
- * makes use of flock on the device, see
- * http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
+ * Makes use of flock on the device.
+ * @see http://developer.apple.com/documentation/Darwin/Reference/ManPages/man2/flock.2.html
  *
  * @param client The client to lock the file with.
  * @param handle File handle of a previously opened file.
  * @param operation the lock or unlock operation to perform, this is one of
- *        AFC_LOCK_SH (shared lock), AFC_LOCK_EX (exclusive lock),
- *        or AFC_LOCK_UN (unlock).
+ *        AFC_LOCK_SH (shared lock), AFC_LOCK_EX (exclusive lock), or
+ *        AFC_LOCK_UN (unlock).
  */
 afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation);
 
