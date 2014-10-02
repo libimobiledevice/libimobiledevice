@@ -387,7 +387,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 
 	lockdownd_client_t lockdown = NULL;
 
-	if (lockdownd_client_new_with_handshake(device, &lockdown, "idevicebackup") != LOCKDOWN_E_SUCCESS) {
+	if (lockdownd_client_new_with_handshake(device, &lockdown, "idevicebackup2") != LOCKDOWN_E_SUCCESS) {
 		return;
 	}
 
@@ -1498,7 +1498,7 @@ int main(int argc, char *argv[])
 	}
 
 	lockdownd_client_t lockdown = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown, "idevicebackup")) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown, "idevicebackup2")) {
 		idevice_free(device);
 		return -1;
 	}
