@@ -2,6 +2,7 @@
  * afc.c 
  * Contains functions for the built-in AFC client.
  * 
+ * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2009-2014 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -679,7 +680,7 @@ afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, uint
 	} readinfo;
 	readinfo.handle = handle;
 	readinfo.size = htole64(length);
-	ret = afc_dispatch_packet(client, AFC_OP_READ, (const char*)&readinfo, sizeof(readinfo), NULL, 0, &bytes_loc);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_READ, (const char*)&readinfo, sizeof(readinfo), NULL, 0, &bytes_loc);
 
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
@@ -726,7 +727,7 @@ afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *dat
 
 	debug_info("Write length: %i", length);
 
-	ret = afc_dispatch_packet(client, AFC_OP_WRITE, (const char*)&handle, 8, data, length, &bytes_loc);
+	ret = afc_dispatch_packet(client, AFC_OP_FILE_WRITE, (const char*)&handle, 8, data, length, &bytes_loc);
 
 	current_count += bytes_loc - (sizeof(AFCPacket) + 8);
 
@@ -983,7 +984,7 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	/* Send command */
 	memcpy(buffer, &mtime_loc, 8);
 	memcpy(buffer + 8, path, strlen(path) + 1);
-	ret = afc_dispatch_packet(client, AFC_OP_SET_FILE_TIME, buffer, 8 + strlen(path) + 1, NULL, 0, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_SET_FILE_MOD_TIME, buffer, 8 + strlen(path) + 1, NULL, 0, &bytes);
 	free(buffer);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
