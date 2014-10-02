@@ -353,6 +353,13 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
  */
 afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value);
 
+/**
+ * Frees up a char dictionary as returned by some AFC functions.
+ *
+ * @param dictionary The char array terminated by an empty string.
+ *
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
+ */
 afc_error_t afc_dictionary_free(char **dictionary);
 
 #ifdef __cplusplus
