@@ -1526,7 +1526,7 @@ int main(int argc, char *argv[])
 		/* start AFC, we need this for the lock file */
 		service->port = 0;
 		service->ssl_enabled = 0;
-		ret = lockdownd_start_service(lockdown, "com.apple.afc", &service);
+		ret = lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service);
 		if ((ret == LOCKDOWN_E_SUCCESS) && service->port) {
 			afc_client_new(device, service, &afc);
 		}
