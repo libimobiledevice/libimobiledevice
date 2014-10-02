@@ -184,13 +184,29 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
  * @param client The lockdownd client
  * @param identifier The identifier of the service to start
  * @param descriptor The service descriptor on success or NULL on failure
-
+ *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
  *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not be
  *  started by the device
  */
 lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
+
+/**
+ * Requests to start a service and retrieve it's port on success.
+ * Sends the escrow bag from the device's pair record.
+ *
+ * @param client The lockdownd client
+ * @param identifier The identifier of the service to start
+ * @param descriptor The service descriptor on success or NULL on failure
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
+ *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
+ *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not because
+ *  started by the device, LOCKDOWN_E_INVALID_CONF if the host id or escrow bag are 
+ *  missing from the device record.
+ */
+lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
 
 /**
  * Opens a session with lockdownd and switches to SSL mode if device wants it.
