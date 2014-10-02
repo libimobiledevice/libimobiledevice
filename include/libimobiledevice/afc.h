@@ -338,6 +338,18 @@ afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const c
  */
 afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime);
 
+/**
+ * Deletes a file or directory including possible contents.
+ *
+ * @param client The client to use.
+ * @param path The path to delete. (must be a fully-qualified path)
+ * @since libimobiledevice 1.1.7
+ * @note Only available in iOS 6 and later.
+ *
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
+ */
+afc_error_t afc_remove_path_and_contents(afc_client_t client, const char *path);
+
 /* Helper functions */
 
 /**

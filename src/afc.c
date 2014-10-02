@@ -998,6 +998,30 @@ afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mt
 	return ret;
 }
 
+afc_error_t afc_remove_path_and_contents(afc_client_t client, const char *path)
+{
+	uint32_t bytes = 0;
+	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
+
+	if (!client || !path || !client->afc_packet || !client->parent)
+		return AFC_E_INVALID_ARG;
+
+	afc_lock(client);
+
+	/* Send command */
+	ret = afc_dispatch_packet(client, AFC_OP_REMOVE_PATH_AND_CONTENTS, path, strlen(path)+1, NULL, 0, &bytes);
+	if (ret != AFC_E_SUCCESS) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+	/* Receive response */
+	ret = afc_receive_data(client, NULL, &bytes);
+
+	afc_unlock(client);
+
+	return ret;
+}
+
 afc_error_t afc_dictionary_free(char **dictionary)
 {
 	int i = 0;
