@@ -139,37 +139,39 @@ afc_error_t afc_client_free(afc_client_t client);
  * and blocksize on the accessed disk partition.
  *
  * @param client The client to get device info for.
- * @param infos A char ** list of parameters as given by AFC or NULL if there
- *  was an error.
+ * @param device_information A char list of device information terminated by an
+ *        empty string or NULL if there was an error. Free with
+ *        afc_dictionary_free().
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t afc_get_device_info(afc_client_t client, char ***infos);
+afc_error_t afc_get_device_info(afc_client_t client, char ***device_information);
 
 /**
  * Gets a directory listing of the directory requested.
  *
  * @param client The client to get a directory listing from.
- * @param dir The directory to list. (must be a fully-qualified path)
- * @param list A char list of files in that directory, terminated by an empty
- *         string or NULL if there was an error.
+ * @param path The directory for listing. (must be a fully-qualified path)
+ * @param directory_information A char list of files in the directory
+ *        terminated by an empty string or NULL if there was an error. Free with
+ *        afc_dictionary_free().
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***list);
+afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***directory_information);
 
 /**
  * Gets information about a specific file.
  *
  * @param client The client to use to get the information of the file.
  * @param path The fully-qualified path to the file.
- * @param infolist Pointer to a buffer that will be filled with a NULL-terminated
- *                 list of strings with the file information.
- *                 Set to NULL before calling this function.
+ * @param file_information Pointer to a buffer that will be filled with a
+ *        NULL-terminated list of strings with the file information. Set to NULL
+ *        before calling this function. Free with afc_dictionary_free().
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char ***infolist);
+afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char ***file_information);
 
 /**
  * Opens a file on the device.
@@ -296,12 +298,12 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
  * Creates a directory on the device.
  *
  * @param client The client to use to make a directory.
- * @param dir The directory's path. (must be a fully-qualified path, I assume
+ * @param path The directory's path. (must be a fully-qualified path, I assume
  *        all other mkdir restrictions apply as well)
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t afc_make_directory(afc_client_t client, const char *dir);
+afc_error_t afc_make_directory(afc_client_t client, const char *path);
 
 /**
  * Sets the size of a file on the device without prior opening it.

@@ -402,19 +402,19 @@ static char **make_strings_list(char *tokens, uint32_t length)
 	return list;
 }
 
-afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***list)
+afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***directory_information)
 {
 	uint32_t bytes = 0;
 	char *data = NULL, **list_loc = NULL;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !dir || !list || (list && *list))
+	if (!client || !path || !directory_information || (directory_information && *directory_information))
 		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
 
 	/* Send the command */
-	ret = afc_dispatch_packet(client, AFC_OP_READ_DIR, dir, strlen(dir)+1, NULL, 0, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_READ_DIR, path, strlen(path)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -433,18 +433,18 @@ afc_error_t afc_read_directory(afc_client_t client, const char *dir, char ***lis
 		free(data);
 
 	afc_unlock(client);
-	*list = list_loc;
+	*directory_information = list_loc;
 
 	return ret;
 }
 
-afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
+afc_error_t afc_get_device_info(afc_client_t client, char ***device_information)
 {
 	uint32_t bytes = 0;
 	char *data = NULL, **list = NULL;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !infos)
+	if (!client || !device_information)
 		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -470,7 +470,7 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***infos)
 
 	afc_unlock(client);
 
-	*infos = list;
+	*device_information = list;
 
 	return ret;
 }
@@ -559,7 +559,7 @@ afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *t
 	return ret;
 }
 
-afc_error_t afc_make_directory(afc_client_t client, const char *dir)
+afc_error_t afc_make_directory(afc_client_t client, const char *path)
 {
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -570,7 +570,7 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 	afc_lock(client);
 
 	/* Send command */
-	ret = afc_dispatch_packet(client, AFC_OP_MAKE_DIR, dir, strlen(dir)+1, NULL, 0, &bytes);
+	ret = afc_dispatch_packet(client, AFC_OP_MAKE_DIR, path, strlen(path)+1, NULL, 0, &bytes);
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return AFC_E_NOT_ENOUGH_DATA;
@@ -583,13 +583,13 @@ afc_error_t afc_make_directory(afc_client_t client, const char *dir)
 	return ret;
 }
 
-afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***infolist)
+afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***file_information)
 {
 	char *received = NULL;
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
-	if (!client || !path || !infolist)
+	if (!client || !path || !file_information)
 		return AFC_E_INVALID_ARG;
 
 	afc_lock(client);
@@ -604,7 +604,7 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***inf
 	/* Receive data */
 	ret = afc_receive_data(client, &received, &bytes);
 	if (received) {
-		*infolist = make_strings_list(received, bytes);
+		*file_information = make_strings_list(received, bytes);
 		free(received);
 	}
 
