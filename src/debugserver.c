@@ -456,8 +456,9 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		}
 	}
 
-	if (response)
+	if (response) {
 		debug_info("response: %s", *response);
+	}
 
 	if (buffer)
 		free(buffer);
@@ -515,8 +516,9 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugse
 		goto cleanup;
 	}
 
-	if (response)
+	if (response) {
 		debug_info("received response: %s", *response);
+	}
 
 	/* disable sending ack on the client */
 	if (!strncmp(command->name, "QStartNoAckMode", 16)) {
