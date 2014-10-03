@@ -32,8 +32,8 @@
 #include <time.h>
 
 #include "debug.h"
-#include "idevice.h"
 #include "libimobiledevice/libimobiledevice.h"
+#include "src/idevice.h"
 
 #ifndef STRIP_DEBUG_CODE
 #include "asprintf.h"
