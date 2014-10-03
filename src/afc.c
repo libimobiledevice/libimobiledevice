@@ -28,11 +28,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "afc.h"
 #include "idevice.h"
 #include "common/debug.h"
 #include "endianness.h"
+
+/* sendfile support for Apple+Linux.
+ * Other OSes fall back to read/write */
+#ifdef __APPLE__
+#include <sys/socket.h>
+#include <sys/uio.h>
+#elif __linux
+#include <sys/sendfile.h>
+#endif
 
 /**
  * Locks an AFC client, done for thread safety stuff
@@ -145,6 +158,9 @@ afc_error_t afc_client_free(afc_client_t client)
  * @param data The data to send together with the header.
  * @param data_length The length of the data to send with the header.
  * @param payload The data to send after the header has been sent.
+ *   If this is NULL and payload_length is non-zero the caller is
+ *   responsible for immediately transmitting payload_length bytes
+ *   following this call.
  * @param payload_length The length of data to send after the header.
  * @param bytes_sent The total number of bytes actually sent.
  *
@@ -161,8 +177,6 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 
 	if (!data || !data_length)
 		data_length = 0;
-	if (!payload || !payload_length)
-		payload_length = 0;
 
 	client->afc_packet->packet_num++;
 	client->afc_packet->operation = operation;
@@ -195,9 +209,12 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 		return AFC_E_SUCCESS;
 	}
 
+    /* If payload_length is > 0 and payload == NULL,
+     * then the caller is obliged to transmit the payload
+     * bytes immediately following this call */
 	sent = 0;
-	if (payload_length > 0) {
-		debug_info("packet payload follows");
+    if (payload_length > 0 && payload) {
+        debug_info("packet payload follows");
 		debug_buffer(payload, payload_length);
 		service_send(client->parent, payload, payload_length, &sent);
 	}
@@ -746,6 +763,160 @@ afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *dat
 	return ret;
 }
 
+/**
+ * Internal API: Send data from a file over the connection.
+ *
+ * This method is more efficient than regular read/write calls as it will
+ * avoid copying data to user space, but let the kernel handle the memory
+ * paging directly. It may not necessarily be much faster than regular
+ * writing (although it can be), but it will put noticably smaller load
+ * on the system when transfering files this way.
+ *
+ * For systems that do not support the sendfile() syscall (Windows in particular)
+ * this call will fall back to regular read/write IO.
+ *
+ * @param connection The connection to send data over
+ * @param fd File descriptor to send data from. Must be a regular file.
+ *   If the operation succeeds the file descriptors position will be advanced.
+ * @param length Number of bytes to send from fd. If 0 is passed the full file will be sent.
+ * @param sent_bytes Return location to store the total number of bytes sent.
+ *
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
+ */
+static idevice_error_t internal_afc_sendfile(idevice_connection_t connection, int fd, off_t length, off_t *sent_bytes)
+{
+    struct stat st;
+    int conn_fd;
+
+    if (!connection) {
+        return IDEVICE_E_INVALID_ARG;
+    }
+
+    fstat(fd, &st);
+    if (!S_ISREG(st.st_mode)) {
+        debug_info("ERROR: Unable to use sendfile() input fd is not a regular file");
+        return IDEVICE_E_INVALID_ARG;
+    }
+
+    if (length == 0) {
+        length = st.st_size;
+    }
+
+    conn_fd = (int)(long)connection->data;
+    errno = 0;
+
+    /* TODO: Native sendfile() use on FreeBSD. Currently falls back to read/write.
+     *       It has yet a 3rd interface compared to Apple and Linux.
+     *       See http://www.freebsd.org/cgi/man.cgi?query=sendfile&sektion=2 */
+
+#ifdef __APPLE__
+    /* int sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags); */
+    off_t len = length;
+    int result = sendfile(fd, conn_fd, 0, &len, NULL, 0);
+    *sent_bytes = len;
+    if (result == 0) {
+        return IDEVICE_E_SUCCESS;
+    } else {
+        debug_info("ERROR: When calling sendfile(%d, %d, 0, %d) __APPLE__: %s", fd, conn_fd, length, strerror(errno));
+        return IDEVICE_E_UNKNOWN_ERROR;
+    }
+#elif __linux
+    /* ssize_t sendfile(int out_fd, int in_fd, off_t * offset, size_t count); */
+    ssize_t len = sendfile(conn_fd, fd, NULL, length);
+    *sent_bytes = len;
+    if (len >= 0) {
+        return IDEVICE_E_SUCCESS;
+    } else {
+        debug_info("ERROR: When calling sendfile(%d, %d, NULL, %d) __linux: %s", conn_fd, fd, length, strerror(errno));
+        return IDEVICE_E_UNKNOWN_ERROR;
+    }
+#else
+    /* 10 pages of memory gives close to optimum performance,
+     * while not being too aggresive on memory consumption */
+    char     stack_buf[4096 * 10];
+    char    *buf = &stack_buf[0];
+    ssize_t  num_read;
+
+    while ((num_read = read(fd, (void *) buf, sizeof(stack_buf))) > 0) {
+
+        ssize_t num_written = 0;
+        while ((num_written = write(conn_fd, (void *) (buf + num_written), num_read)) > 0) {
+            *sent_bytes += num_written;
+            num_read -= num_written;
+            if (num_read == 0) {
+                break;
+            } else if (num_read < 0) {
+                debug_info("ERROR: internal error. Wrote more than we read!");
+                return IDEVICE_E_UNKNOWN_ERROR;
+            }
+        }
+        if (num_written < 0) {
+           debug_info("ERROR: write(%d,,) failed: %s", conn_fd, strerror(errno));
+           return IDEVICE_E_UNKNOWN_ERROR;
+        }
+    }
+
+    if (num_read == 0 && *sent_bytes == length) {
+        return IDEVICE_E_SUCCESS;
+    } else {
+        /* must be a read error, write errors return from inner while loop */
+        debug_info("ERROR: read(%d,,): %s", fd, strerror(errno));
+        return IDEVICE_E_UNKNOWN_ERROR;
+    }
+#endif
+}
+
+afc_error_t afc_file_write_from_fd(afc_client_t client, uint64_t handle, int fd, off_t length, off_t *bytes_written)
+{
+    afc_error_t ret = AFC_E_SUCCESS;
+    idevice_error_t dret = IDEVICE_E_SUCCESS;
+    uint32_t packet_bytes_sent = 0;
+
+    /* Fetch file length if we need it */
+    if (length == 0) {
+        struct stat st;
+        errno = 0;
+        if (fstat(fd, &st) == 0){
+            length = st.st_size;
+        } else {
+            debug_info("ERROR: Unable to write from fd %d. fstat failed: %s", fd, strerror(errno));
+            return AFC_E_IO_ERROR;
+        }
+    }
+
+    afc_lock(client);
+
+    /* Dispatch a write packet with NULL payload,
+     * but specifying the payload_length signalling
+     * that we intend to ship the payload ourselves
+     * after the write packet has been dispatched */
+    ret = afc_dispatch_packet(client, AFC_OP_WRITE, (const char*)&handle, 8, NULL, length, &packet_bytes_sent);
+    if (ret != AFC_E_SUCCESS) {
+        afc_unlock(client);
+        debug_info("Failed to send packet header for sendfile()");
+        return ret;
+    }
+
+    dret = internal_afc_sendfile(client->parent->connection, fd, length, bytes_written);
+    if (dret != IDEVICE_E_SUCCESS) {
+        afc_unlock(client);
+        debug_info("Failed to send payload from fd %d: %s", fd, strerror(errno));
+        return AFC_E_IO_ERROR;
+    }
+
+    ret = afc_receive_data(client, NULL, &packet_bytes_sent);
+
+    afc_unlock(client);
+
+    return AFC_E_SUCCESS;
+}
+
+/**
+ * Closes a file on the device.
+ * 
+ * @param client The client to close the file with.
+ * @param handle File handle of a previously opened file.
+ */
 afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 {
 	uint32_t bytes = 0;
