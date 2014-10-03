@@ -89,7 +89,7 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 	}
 }
 
-restored_error_t restored_client_free(restored_client_t client)
+LIBIMOBILEDEVICE_API restored_error_t restored_client_free(restored_client_t client)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -119,7 +119,7 @@ restored_error_t restored_client_free(restored_client_t client)
 	return ret;
 }
 
-void restored_client_set_label(restored_client_t client, const char *label)
+LIBIMOBILEDEVICE_API void restored_client_set_label(restored_client_t client, const char *label)
 {
 	if (client) {
 		if (client->label)
@@ -129,7 +129,7 @@ void restored_client_set_label(restored_client_t client, const char *label)
 	}
 }
 
-restored_error_t restored_receive(restored_client_t client, plist_t *plist)
+LIBIMOBILEDEVICE_API restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 {
 	if (!client || !plist || (plist && *plist))
 		return RESTORE_E_INVALID_ARG;
@@ -148,7 +148,7 @@ restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 	return ret;
 }
 
-restored_error_t restored_send(restored_client_t client, plist_t plist)
+LIBIMOBILEDEVICE_API restored_error_t restored_send(restored_client_t client, plist_t plist)
 {
 	if (!client || !plist)
 		return RESTORE_E_INVALID_ARG;
@@ -163,7 +163,7 @@ restored_error_t restored_send(restored_client_t client, plist_t plist)
 	return ret;
 }
 
-restored_error_t restored_query_type(restored_client_t client, char **type, uint64_t *version)
+LIBIMOBILEDEVICE_API restored_error_t restored_query_type(restored_client_t client, char **type, uint64_t *version)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -222,7 +222,7 @@ restored_error_t restored_query_type(restored_client_t client, char **type, uint
 	return ret;
 }
 
-restored_error_t restored_query_value(restored_client_t client, const char *key, plist_t *value)
+LIBIMOBILEDEVICE_API restored_error_t restored_query_value(restored_client_t client, const char *key, plist_t *value)
 {
 	if (!client || !key)
 		return RESTORE_E_INVALID_ARG;
@@ -264,7 +264,7 @@ restored_error_t restored_query_value(restored_client_t client, const char *key,
 	return ret;
 }
 
-restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value)
+LIBIMOBILEDEVICE_API restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value)
 {
 	if (!client || !value || (value && *value))
 		return RESTORE_E_INVALID_ARG;
@@ -291,7 +291,7 @@ restored_error_t restored_get_value(restored_client_t client, const char *key, p
 	return ret;
 }
 
-restored_error_t restored_client_new(idevice_t device, restored_client_t *client, const char *label)
+LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, restored_client_t *client, const char *label)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -332,7 +332,7 @@ restored_error_t restored_client_new(idevice_t device, restored_client_t *client
 	return ret;
 }
 
-restored_error_t restored_goodbye(restored_client_t client)
+LIBIMOBILEDEVICE_API restored_error_t restored_goodbye(restored_client_t client)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -364,7 +364,7 @@ restored_error_t restored_goodbye(restored_client_t client)
 	return ret;
 }
 
-restored_error_t restored_start_restore(restored_client_t client, plist_t options, uint64_t version)
+LIBIMOBILEDEVICE_API restored_error_t restored_start_restore(restored_client_t client, plist_t options, uint64_t version)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -388,7 +388,7 @@ restored_error_t restored_start_restore(restored_client_t client, plist_t option
 	return ret;
 }
 
-restored_error_t restored_reboot(restored_client_t client)
+LIBIMOBILEDEVICE_API restored_error_t restored_reboot(restored_client_t client)
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
@@ -419,4 +419,3 @@ restored_error_t restored_reboot(restored_client_t client)
 	dict = NULL;
 	return ret;
 }
-

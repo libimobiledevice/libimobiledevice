@@ -54,7 +54,7 @@ static property_list_service_error_t service_to_property_list_service_error(serv
 	return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 }
 
-property_list_service_error_t property_list_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, property_list_service_client_t *client)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_client_new(idevice_t device, lockdownd_service_descriptor_t service, property_list_service_client_t *client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
@@ -74,7 +74,7 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 	return PROPERTY_LIST_SERVICE_E_SUCCESS;
 }
 
-property_list_service_error_t property_list_service_client_free(property_list_service_client_t client)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_client_free(property_list_service_client_t client)
 {
 	if (!client)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
@@ -147,12 +147,12 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	return res;
 }
 
-property_list_service_error_t property_list_service_send_xml_plist(property_list_service_client_t client, plist_t plist)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_send_xml_plist(property_list_service_client_t client, plist_t plist)
 {
 	return internal_plist_send(client, plist, 0);
 }
 
-property_list_service_error_t property_list_service_send_binary_plist(property_list_service_client_t client, plist_t plist)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_send_binary_plist(property_list_service_client_t client, plist_t plist)
 {
 	return internal_plist_send(client, plist, 1);
 }
@@ -250,24 +250,24 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 	return res;
 }
 
-property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_receive_plist_with_timeout(property_list_service_client_t client, plist_t *plist, unsigned int timeout)
 {
 	return internal_plist_receive_timeout(client, plist, timeout);
 }
 
-property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
 	return internal_plist_receive_timeout(client, plist, 10000);
 }
 
-property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
 {
 	if (!client || !client->parent)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	return service_to_property_list_service_error(service_enable_ssl(client->parent));
 }
 
-property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client)
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client)
 {
 	if (!client || !client->parent)
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;

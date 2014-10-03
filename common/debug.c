@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include "debug.h"
+#include "idevice.h"
 #include "libimobiledevice/libimobiledevice.h"
 
 #ifndef STRIP_DEBUG_CODE
@@ -46,7 +47,7 @@ int debug_level = 0;
  *
  * @param level Set to 0 for no debugging or 1 for debugging.
  */
-void idevice_set_debug_level(int level)
+LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
 {
 	debug_level = level;
 }

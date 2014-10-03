@@ -52,7 +52,7 @@ static service_error_t idevice_to_service_error(idevice_error_t err)
 	return SERVICE_E_UNKNOWN_ERROR;
 }
 
-service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client)
+LIBIMOBILEDEVICE_API service_error_t service_client_new(idevice_t device, lockdownd_service_descriptor_t service, service_client_t *client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
 		return SERVICE_E_INVALID_ARG;
@@ -76,7 +76,7 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
 	return SERVICE_E_SUCCESS;
 }
 
-service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code)
+LIBIMOBILEDEVICE_API service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int16_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int16_t *error_code)
 {
 	*client = NULL;
 
@@ -115,7 +115,7 @@ service_error_t service_client_factory_start_service(idevice_t device, const cha
 	return (ec == SERVICE_E_SUCCESS) ? SERVICE_E_SUCCESS : SERVICE_E_START_SERVICE_ERROR;
 }
 
-service_error_t service_client_free(service_client_t client)
+LIBIMOBILEDEVICE_API service_error_t service_client_free(service_client_t client)
 {
 	if (!client)
 		return SERVICE_E_INVALID_ARG;
@@ -128,7 +128,7 @@ service_error_t service_client_free(service_client_t client)
 	return err;
 }
 
-service_error_t service_send(service_client_t client, const char* data, uint32_t size, uint32_t *sent)
+LIBIMOBILEDEVICE_API service_error_t service_send(service_client_t client, const char* data, uint32_t size, uint32_t *sent)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -149,7 +149,7 @@ service_error_t service_send(service_client_t client, const char* data, uint32_t
 	return res;
 }
  
-service_error_t service_receive_with_timeout(service_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
+LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -169,19 +169,19 @@ service_error_t service_receive_with_timeout(service_client_t client, char* data
 	return res;
 }
 
-service_error_t service_receive(service_client_t client, char* data, uint32_t size, uint32_t *received)
+LIBIMOBILEDEVICE_API service_error_t service_receive(service_client_t client, char* data, uint32_t size, uint32_t *received)
 {
 	return service_receive_with_timeout(client, data, size, received, 10000);
 }
 
-service_error_t service_enable_ssl(service_client_t client)
+LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client)
 {
 	if (!client || !client->connection)
 		return SERVICE_E_INVALID_ARG;
 	return idevice_to_service_error(idevice_connection_enable_ssl(client->connection));
 }
 
-service_error_t service_disable_ssl(service_client_t client)
+LIBIMOBILEDEVICE_API service_error_t service_disable_ssl(service_client_t client)
 {
 	if (!client || !client->connection)
 		return SERVICE_E_INVALID_ARG;

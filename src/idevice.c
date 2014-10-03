@@ -147,7 +147,7 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 	}
 }
 
-idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
 {
 	event_cb = callback;
 	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
@@ -159,7 +159,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
 	return IDEVICE_E_SUCCESS;
 }
 
-idevice_error_t idevice_event_unsubscribe()
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe()
 {
 	event_cb = NULL;
 	int res = usbmuxd_unsubscribe();
@@ -170,7 +170,7 @@ idevice_error_t idevice_event_unsubscribe()
 	return IDEVICE_E_SUCCESS;
 }
 
-idevice_error_t idevice_get_device_list(char ***devices, int *count)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, int *count)
 {
 	usbmuxd_device_info_t *dev_list;
 
@@ -200,7 +200,7 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count)
 	return IDEVICE_E_SUCCESS;
 }
 
-idevice_error_t idevice_device_list_free(char **devices)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices)
 {
 	if (devices) {
 		int i = 0;
@@ -213,7 +213,7 @@ idevice_error_t idevice_device_list_free(char **devices)
 	return IDEVICE_E_SUCCESS;
 }
 
-idevice_error_t idevice_new(idevice_t * device, const char *udid)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char *udid)
 {
 	usbmuxd_device_info_t muxdev;
 	int res = usbmuxd_get_device_by_udid(udid, &muxdev);
@@ -230,7 +230,7 @@ idevice_error_t idevice_new(idevice_t * device, const char *udid)
 	return IDEVICE_E_NO_DEVICE;
 }
 
-idevice_error_t idevice_free(idevice_t device)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_free(idevice_t device)
 {
 	if (!device)
 		return IDEVICE_E_INVALID_ARG;
@@ -250,7 +250,7 @@ idevice_error_t idevice_free(idevice_t device)
 	return ret;
 }
 
-idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection)
 {
 	if (!device) {
 		return IDEVICE_E_INVALID_ARG;
@@ -276,7 +276,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-idevice_error_t idevice_disconnect(idevice_connection_t connection)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_disconnect(idevice_connection_t connection)
 {
 	if (!connection) {
 		return IDEVICE_E_INVALID_ARG;
@@ -326,7 +326,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 
 }
 
-idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IDEVICE_E_INVALID_ARG;
@@ -372,7 +372,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IDEVICE_E_INVALID_ARG;
@@ -426,7 +426,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
 	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
 		return IDEVICE_E_INVALID_ARG;
@@ -449,7 +449,7 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
-idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
 		return IDEVICE_E_INVALID_ARG;
@@ -463,7 +463,7 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
-idevice_error_t idevice_get_udid(idevice_t device, char **udid)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid)
 {
 	if (!device || !udid)
 		return IDEVICE_E_INVALID_ARG;
@@ -632,7 +632,7 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 }
 #endif
 
-idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 {
 	if (!connection || connection->ssl_data)
 		return IDEVICE_E_INVALID_ARG;
@@ -772,7 +772,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	return ret;
 }
 
-idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 {
 	if (!connection)
 		return IDEVICE_E_INVALID_ARG;
@@ -801,4 +801,3 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 
 	return IDEVICE_E_SUCCESS;
 }
-

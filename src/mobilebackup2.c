@@ -61,7 +61,7 @@ static mobilebackup2_error_t mobilebackup2_error(device_link_service_error_t err
 	return MOBILEBACKUP2_E_UNKNOWN_ERROR;
 }
 
-mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service,
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 						mobilebackup2_client_t * client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
@@ -89,14 +89,14 @@ mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_servi
 	return ret;
 }
 
-mobilebackup2_error_t mobilebackup2_client_start_service(idevice_t device, mobilebackup2_client_t * client, const char* label)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_start_service(idevice_t device, mobilebackup2_client_t * client, const char* label)
 {
 	mobilebackup2_error_t err = MOBILEBACKUP2_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, MOBILEBACKUP2_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilebackup2_client_new), &err);
 	return err;
 }
 
-mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client)
 {
 	if (!client)
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -109,7 +109,7 @@ mobilebackup2_error_t mobilebackup2_client_free(mobilebackup2_client_t client)
 	return err;
 }
 
-mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, const char *message, plist_t options)
 {
 	if (!client || !client->parent || (!message && !options))
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -207,12 +207,12 @@ leave:
 	return err;
 }
 
-mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage)
 {
 	return mobilebackup2_error(device_link_service_receive_message(client->parent, msg_plist, dlmessage));
 }
 
-mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes)
 {
 	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -238,7 +238,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
 	}
 }
 
-mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
 {
 	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -265,7 +265,7 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 	}
 }
 
-mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version)
 {
 	int i;
 
@@ -323,7 +323,7 @@ leave:
 	return err;
 }
 
-mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, const char *request, const char *target_identifier, const char *source_identifier, plist_t options)
 {
 	if (!client || !client->parent || !request || !target_identifier)
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -354,7 +354,7 @@ mobilebackup2_error_t mobilebackup2_send_request(mobilebackup2_client_t client, 
 	return err;
 }
 
-mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2)
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_status_response(mobilebackup2_client_t client, int status_code, const char *status1, plist_t status2)
 {
 	if (!client || !client->parent)
 		return MOBILEBACKUP2_E_INVALID_ARG;

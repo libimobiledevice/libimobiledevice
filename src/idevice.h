@@ -33,6 +33,16 @@
 #include <gnutls/x509.h>
 #endif
 
+#ifdef WIN32
+#define LIBIMOBILEDEVICE_API __declspec( dllexport )
+#else
+#ifdef HAVE_FVISIBILITY
+#define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
+#else
+#define LIBIMOBILEDEVICE_API
+#endif
+#endif
+
 #include "common/userpref.h"
 
 #include "libimobiledevice/libimobiledevice.h"

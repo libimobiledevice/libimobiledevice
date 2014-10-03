@@ -60,7 +60,7 @@ static debugserver_error_t debugserver_error(service_error_t err)
 	return DEBUGSERVER_E_UNKNOWN_ERROR;
 }
 
-debugserver_error_t debugserver_client_new(idevice_t device, lockdownd_service_descriptor_t service, debugserver_client_t* client)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device, lockdownd_service_descriptor_t service, debugserver_client_t* client)
 {
 	*client = NULL;
 
@@ -88,14 +88,14 @@ debugserver_error_t debugserver_client_new(idevice_t device, lockdownd_service_d
 	return 0;
 }
 
-debugserver_error_t debugserver_client_start_service(idevice_t device, debugserver_client_t * client, const char* label)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_start_service(idevice_t device, debugserver_client_t * client, const char* label)
 {
 	debugserver_error_t err = DEBUGSERVER_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, DEBUGSERVER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(debugserver_client_new), &err);
 	return err;
 }
 
-debugserver_error_t debugserver_client_free(debugserver_client_t client)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_free(debugserver_client_t client)
 {
 	if (!client)
 		return DEBUGSERVER_E_INVALID_ARG;
@@ -107,7 +107,7 @@ debugserver_error_t debugserver_client_free(debugserver_client_t client)
 	return err;
 }
 
-debugserver_error_t debugserver_client_send(debugserver_client_t client, const char* data, uint32_t size, uint32_t *sent)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send(debugserver_client_t client, const char* data, uint32_t size, uint32_t *sent)
 {
 	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -128,7 +128,7 @@ debugserver_error_t debugserver_client_send(debugserver_client_t client, const c
 	return res;
 }
 
-debugserver_error_t debugserver_client_receive_with_timeout(debugserver_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout(debugserver_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -148,12 +148,12 @@ debugserver_error_t debugserver_client_receive_with_timeout(debugserver_client_t
 	return res;
 }
 
-debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
 {
 	return debugserver_client_receive_with_timeout(client, data, size, received, 1000);
 }
 
-debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command)
 {
 	int i;
 	debugserver_command_t tmp = (debugserver_command_t) malloc(sizeof(struct debugserver_command_private));
@@ -178,7 +178,7 @@ debugserver_error_t debugserver_command_new(const char* name, int argc, const ch
 	return DEBUGSERVER_E_SUCCESS;
 }
 
-debugserver_error_t debugserver_command_free(debugserver_command_t command)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_free(debugserver_command_t command)
 {
 	int i;
 	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
@@ -256,7 +256,7 @@ static int debugserver_response_is_checksum_valid(const char* response, uint32_t
 	return 1;
 }
 
-void debugserver_encode_string(const char* buffer, char** encoded_buffer, uint32_t* encoded_length)
+LIBIMOBILEDEVICE_API void debugserver_encode_string(const char* buffer, char** encoded_buffer, uint32_t* encoded_length)
 {
 	uint32_t position;
 	uint32_t index;
@@ -272,7 +272,7 @@ void debugserver_encode_string(const char* buffer, char** encoded_buffer, uint32
 	}
 }
 
-void debugserver_decode_string(const char *encoded_buffer, size_t encoded_length, char** buffer)
+LIBIMOBILEDEVICE_API void debugserver_decode_string(const char *encoded_buffer, size_t encoded_length, char** buffer)
 {
 	*buffer = malloc(sizeof(char) * ((encoded_length / 2)+1));
 	char* t = *buffer;
@@ -367,7 +367,7 @@ static int debugserver_client_receive_internal_check(debugserver_client_t client
 	return did_receive_char;
 }
 
-debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
 
@@ -468,7 +468,7 @@ debugserver_error_t debugserver_client_receive_response(debugserver_client_t cli
 	return res;
 }
 
-debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
 	int i;
@@ -533,7 +533,7 @@ cleanup:
 	return res;
 }
 
-debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_client_t client, const char* env, char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_client_t client, const char* env, char** response)
 {
 	if (!client || !env)
 		return DEBUGSERVER_E_INVALID_ARG;
@@ -549,7 +549,7 @@ debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_c
 	return result;
 }
 
-debugserver_error_t debugserver_client_set_argv(debugserver_client_t client, int argc, char* argv[], char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver_client_t client, int argc, char* argv[], char** response)
 {
 	if (!client || !argc)
 		return DEBUGSERVER_E_INVALID_ARG;

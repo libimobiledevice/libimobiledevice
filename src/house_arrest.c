@@ -55,7 +55,7 @@ static house_arrest_error_t house_arrest_error(property_list_service_error_t err
 	return HOUSE_ARREST_E_UNKNOWN_ERROR;
 }
 
-house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service_descriptor_t service, house_arrest_client_t *client)
 {
 	property_list_service_client_t plistclient = NULL;
 	house_arrest_error_t err = house_arrest_error(property_list_service_client_new(device, service, &plistclient));
@@ -71,14 +71,14 @@ house_arrest_error_t house_arrest_client_new(idevice_t device, lockdownd_service
 	return HOUSE_ARREST_E_SUCCESS;
 }
 
-house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t * client, const char* label)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_start_service(idevice_t device, house_arrest_client_t * client, const char* label)
 {
 	house_arrest_error_t err = HOUSE_ARREST_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, HOUSE_ARREST_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(house_arrest_client_new), &err);
 	return err;
 }
 
-house_arrest_error_t house_arrest_client_free(house_arrest_client_t client)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_client_free(house_arrest_client_t client)
 {
 	if (!client)
 		return HOUSE_ARREST_E_INVALID_ARG;
@@ -93,7 +93,7 @@ house_arrest_error_t house_arrest_client_free(house_arrest_client_t client)
 	return err;
 }
 
-house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict)
 {
 	if (!client || !client->parent || !dict)
 		return HOUSE_ARREST_E_INVALID_ARG;
@@ -109,7 +109,7 @@ house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, pli
 	return res;
 }
 
-house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid)
 {
 	if (!client || !client->parent || !command || !appid)
 		return HOUSE_ARREST_E_INVALID_ARG;
@@ -129,7 +129,7 @@ house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, con
 	return res;
 }
 
-house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict)
+LIBIMOBILEDEVICE_API house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict)
 {
 	if (!client || !client->parent)
 		return HOUSE_ARREST_E_INVALID_ARG;
@@ -147,7 +147,7 @@ house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist
 	return res;
 }
 
-afc_error_t afc_client_new_from_house_arrest_client(house_arrest_client_t client, afc_client_t *afc_client)
+LIBIMOBILEDEVICE_API afc_error_t afc_client_new_from_house_arrest_client(house_arrest_client_t client, afc_client_t *afc_client)
 {
 	if (!client || !client->parent || (client->mode == HOUSE_ARREST_CLIENT_MODE_AFC)) {
 		return AFC_E_INVALID_ARG;

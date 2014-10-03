@@ -61,7 +61,7 @@ static syslog_relay_error_t syslog_relay_error(service_error_t err)
 	return SYSLOG_RELAY_E_UNKNOWN_ERROR;
 }
 
-syslog_relay_error_t syslog_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, syslog_relay_client_t * client)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, syslog_relay_client_t * client)
 {
 	*client = NULL;
 
@@ -89,14 +89,14 @@ syslog_relay_error_t syslog_relay_client_new(idevice_t device, lockdownd_service
 	return 0;
 }
 
-syslog_relay_error_t syslog_relay_client_start_service(idevice_t device, syslog_relay_client_t * client, const char* label)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_start_service(idevice_t device, syslog_relay_client_t * client, const char* label)
 {
 	syslog_relay_error_t err = SYSLOG_RELAY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, SYSLOG_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(syslog_relay_client_new), &err);
 	return err;
 }
 
-syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client)
 {
 	if (!client)
 		return SYSLOG_RELAY_E_INVALID_ARG;
@@ -112,12 +112,12 @@ syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client)
 	return err;
 }
 
-syslog_relay_error_t syslog_relay_receive(syslog_relay_client_t client, char* data, uint32_t size, uint32_t *received)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive(syslog_relay_client_t client, char* data, uint32_t size, uint32_t *received)
 {
 	return syslog_relay_receive_with_timeout(client, data, size, received, 1000);
 }
 
-syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	syslog_relay_error_t res = SYSLOG_RELAY_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -171,7 +171,7 @@ void *syslog_relay_worker(void *arg)
 	return NULL;
 }
 
-syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data)
 {
 	if (!client || !callback)
 		return SYSLOG_RELAY_E_INVALID_ARG;
@@ -198,7 +198,7 @@ syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, sy
 	return res;
 }
 
-syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client)
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay_client_t client)
 {
 	if (client->worker) {
 		/* notify thread to finish */

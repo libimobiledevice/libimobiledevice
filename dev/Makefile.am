@@ -18,7 +18,7 @@ lckd_client_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 afccheck_SOURCES = afccheck.c
 afccheck_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
-afccheck_LDFLAGS = $(AM_LDFLAGS)
+afccheck_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 afccheck_LDADD = $(top_builddir)/src/libimobiledevice.la
 
 filerelaytest_SOURCES = filerelaytest.c

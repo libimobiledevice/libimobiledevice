@@ -69,7 +69,7 @@ static int diagnostics_relay_check_result(plist_t dict)
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client)
 {
 	if (!device || !service || service->port == 0 || !client || *client) {
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -89,14 +89,14 @@ diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdow
 	return DIAGNOSTICS_RELAY_E_SUCCESS;
 }
 
-diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t * client, const char* label)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t * client, const char* label)
 {
 	diagnostics_relay_error_t err = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, DIAGNOSTICS_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(diagnostics_relay_client_new), &err);
 	return err;
 }
 
-diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client)
 {
 	if (!client)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -162,7 +162,7 @@ static diagnostics_relay_error_t diagnostics_relay_send(diagnostics_relay_client
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client)
 {
 	if (!client)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -196,7 +196,7 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client)
 {
 	if (!client)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -272,17 +272,17 @@ static diagnostics_relay_error_t internal_diagnostics_relay_action(diagnostics_r
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags)
 {
 	return internal_diagnostics_relay_action(client, "Restart", flags);
 }
 
-diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags)
 {
 	return internal_diagnostics_relay_action(client, "Shutdown", flags);
 }
 
-diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics)
 {
 	if (!client || diagnostics == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -323,7 +323,7 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result)
 {
 	if (!client || plist_get_node_type(keys) != PLIST_ARRAY || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -365,7 +365,7 @@ diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_rela
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
 {
 	if (!client || (name == NULL && class == NULL) || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
@@ -410,7 +410,7 @@ diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_r
 	return ret;
 }
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result)
 {
 	if (!client || plane == NULL || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
