@@ -397,7 +397,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive_changes(mobilesync_cl
 
 	if (actions != NULL) {
 		actions_node = plist_array_get_item(msg, 4);
-		if (plist_get_node_type(actions) == PLIST_DICT)
+		if (plist_get_node_type(actions_node) == PLIST_DICT)
 			*actions = plist_copy(actions_node);
 		else
 			*actions = NULL;
