@@ -27,6 +27,11 @@
 #include <unistd.h>
 #include <libgen.h>
 
+#ifdef WIN32
+#include <windows.h>
+#define sleep(x) Sleep(x*1000)
+#endif
+
 #include <libimobiledevice/installation_proxy.h>
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/debugserver.h>
