@@ -3,19 +3,31 @@ Version 1.1.7
 
 * Development release "Cleaning up the yard."
 * Changes:
-  - ideviceimagemounter: Fix disk image upload with latest iOS
-  - ideviceprovision: Add new "dump" command to print information about a
-    provisioning profile
+  - Avoid exporting non-public symbols for better ABI stability
+  - Fix failing backup process for devices having a passcode set and entering
+    lock state during the process in idevicebackup2
+  - API: Added lockdownd_start_service_with_escrow_bag()
+  - API: Added afc_remove_path_and_contents() for recursive deletion
+  - Fix last memory leak with OpenSSL through proper library deinitialization
+  - Add new idevicedebug tool to interact with debugserver on a device
+  - API: Add debugserver service implementation
+  - Handle new PermissionDenied error of file_relay due new security in iOS 8+
+  - Fix retry loop problem when device requests 0 files in idevicebackup2
+  - Add trust dialog related error codes to Cython bindings
+  - Fix various memory leaks in AFC implementation
+  - Fix disk image upload with latest iOS 8 in ideviceimagemounter
+  - Add new "dump" command to print information about a provisioning profile in
+    ideviceprovision
   - Refactor plist print helper code and move it into common module for better
     reuse accross the tools
   - Do not crash if retrieving the system buid fails
-  - API: Make generic propery list service client public
+  - API: Make generic "propery_list_service_client" public
   - Moved doc comments from private to public headers
   - Fix possible segfault when using lockdownd_get_value() due to always
     returning success
-  - idevicebackup: Do not read files entirely into memory during restore
-  - idevicebackup2: Plug a few memory leaksnd fix invalid password check
-  - idevicebackup2: Add support for file sizes > 4GB  on Win32
+  - Do not read files entirely into memory during restore in idevicebackup
+  - Plug a few memory leaks and fix invalid password check in idevicebackup2
+  - Add support for file sizes > 4GB on Win32 in idevicebackup2
   - Fix declaration for DllMain on Win32
   - Silence various compiler warnings
   - Fix assert within pairing logic
