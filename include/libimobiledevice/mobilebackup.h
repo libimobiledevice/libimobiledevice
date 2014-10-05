@@ -32,20 +32,16 @@ extern "C" {
 
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 
-/** @name Error Codes */
-/*@{*/
-#define MOBILEBACKUP_E_SUCCESS                0
-#define MOBILEBACKUP_E_INVALID_ARG           -1
-#define MOBILEBACKUP_E_PLIST_ERROR           -2
-#define MOBILEBACKUP_E_MUX_ERROR             -3
-#define MOBILEBACKUP_E_BAD_VERSION           -4
-#define MOBILEBACKUP_E_REPLY_NOT_OK          -5
-
-#define MOBILEBACKUP_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t mobilebackup_error_t;
+/** Error Codes */
+typedef enum {
+	MOBILEBACKUP_E_SUCCESS       =  0,
+	MOBILEBACKUP_E_INVALID_ARG   = -1,
+	MOBILEBACKUP_E_PLIST_ERROR   = -2,
+	MOBILEBACKUP_E_MUX_ERROR     = -3,
+	MOBILEBACKUP_E_BAD_VERSION   = -4,
+	MOBILEBACKUP_E_REPLY_NOT_OK  = -5,
+	MOBILEBACKUP_E_UNKNOWN_ERROR = -256
+} mobilebackup_error_t;
 
 typedef struct mobilebackup_client_private mobilebackup_client_private;
 typedef mobilebackup_client_private *mobilebackup_client_t; /**< The client handle. */
@@ -56,7 +52,6 @@ typedef enum {
 	MB_RESTORE_PRESERVE_CAMERA_ROLL = 1 << 2
 } mobilebackup_flags_t;
 
-	
 /**
  * Connects to the mobilebackup service on the specified device.
  *

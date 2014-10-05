@@ -154,7 +154,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_send(restored_client_t client, pl
 		return RESTORE_E_INVALID_ARG;
 
 	restored_error_t ret = RESTORE_E_SUCCESS;
-	idevice_error_t err;
+	property_list_service_error_t err;
 
 	err = property_list_service_send_xml_plist(client->parent, plist);
 	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -297,6 +297,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 		return RESTORE_E_INVALID_ARG;
 
 	restored_error_t ret = RESTORE_E_SUCCESS;
+	idevice_error_t idev_ret;
 
 	static struct lockdownd_service_descriptor service = {
 		.port = 0xf27e,
@@ -317,9 +318,10 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	if (label != NULL)
 		client_loc->label = strdup(label);
 
-	ret = idevice_get_udid(device, &client_loc->udid);
-	if (RESTORE_E_SUCCESS != ret) {
+	idev_ret = idevice_get_udid(device, &client_loc->udid);
+	if (IDEVICE_E_SUCCESS != idev_ret) {
 		debug_info("failed to get device udid.");
+		ret = RESTORE_E_DEVICE_ERROR;
 	}
 	debug_info("device udid: %s", client_loc->udid);
 

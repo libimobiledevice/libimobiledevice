@@ -32,16 +32,15 @@ extern "C" {
 
 #define DIAGNOSTICS_RELAY_SERVICE_NAME "com.apple.mobile.diagnostics_relay"
 
-/** @name Error Codes */
-/*@{*/
-#define DIAGNOSTICS_RELAY_E_SUCCESS                0
-#define DIAGNOSTICS_RELAY_E_INVALID_ARG           -1
-#define DIAGNOSTICS_RELAY_E_PLIST_ERROR           -2
-#define DIAGNOSTICS_RELAY_E_MUX_ERROR             -3
-#define DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST       -4
-
-#define DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR       -256
-/*@}*/
+/** Error Codes */
+typedef enum {
+	DIAGNOSTICS_RELAY_E_SUCCESS         =  0,
+	DIAGNOSTICS_RELAY_E_INVALID_ARG     = -1,
+	DIAGNOSTICS_RELAY_E_PLIST_ERROR     = -2,
+	DIAGNOSTICS_RELAY_E_MUX_ERROR       = -3,
+	DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST = -4,
+	DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR   = -256
+} diagnostics_relay_error_t;
 
 #define DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT (1 << 1)
 #define DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS        (1 << 2)
@@ -51,9 +50,6 @@ extern "C" {
 #define DIAGNOSTICS_RELAY_REQUEST_TYPE_WIFI               "WiFi"
 #define DIAGNOSTICS_RELAY_REQUEST_TYPE_GAS_GAUGE          "GasGauge"
 #define DIAGNOSTICS_RELAY_REQUEST_TYPE_NAND               "NAND"
-
-/** Represents an error code. */
-typedef int16_t diagnostics_relay_error_t;
 
 typedef struct diagnostics_relay_client_private diagnostics_relay_client_private;
 typedef diagnostics_relay_client_private *diagnostics_relay_client_t; /**< The client handle. */

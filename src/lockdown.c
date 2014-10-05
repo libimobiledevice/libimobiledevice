@@ -287,7 +287,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client,
 		return LOCKDOWN_E_INVALID_ARG;
 
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	idevice_error_t err;
+	property_list_service_error_t err;
 
 	err = property_list_service_send_xml_plist(client->parent, plist);
 	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -1031,6 +1031,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_goodbye(lockdownd_client_t clie
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+	property_list_service_error_t plret;
 	plist_t dict = NULL;
 
 	if (!client || !host_id)
@@ -1113,8 +1114,9 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_
 		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
 
 		if (use_ssl) {
-			ret = property_list_service_enable_ssl(client->parent);
-			if (ret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+			plret = property_list_service_enable_ssl(client->parent);
+			if (plret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
+				ret = LOCKDOWN_E_SUCCESS;
 				client->ssl_enabled = 1;
 			} else {
 				ret = LOCKDOWN_E_SSL_ERROR;

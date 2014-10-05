@@ -32,18 +32,15 @@ extern "C" {
 
 #define WEBINSPECTOR_SERVICE_NAME "com.apple.webinspector"
 
-/** @name Error Codes */
-/*@{*/
-#define WEBINSPECTOR_E_SUCCESS                0
-#define WEBINSPECTOR_E_INVALID_ARG           -1
-#define WEBINSPECTOR_E_PLIST_ERROR           -2
-#define WEBINSPECTOR_E_MUX_ERROR             -3
-#define WEBINSPECTOR_E_SSL_ERROR             -4
-#define WEBINSPECTOR_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t webinspector_error_t;
+/** Error Codes */
+typedef enum {
+	WEBINSPECTOR_E_SUCCESS       =  0,
+	WEBINSPECTOR_E_INVALID_ARG   = -1,
+	WEBINSPECTOR_E_PLIST_ERROR   = -2,
+	WEBINSPECTOR_E_MUX_ERROR     = -3,
+	WEBINSPECTOR_E_SSL_ERROR     = -4,
+	WEBINSPECTOR_E_UNKNOWN_ERROR = -256
+} webinspector_error_t;
 
 typedef struct webinspector_client_private webinspector_client_private;
 typedef webinspector_client_private *webinspector_client_t; /**< The client handle. */

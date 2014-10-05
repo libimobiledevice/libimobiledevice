@@ -32,18 +32,15 @@ extern "C" {
 
 #define DEBUGSERVER_SERVICE_NAME "com.apple.debugserver"
 
-/** @name Error Codes */
-/*@{*/
-#define DEBUGSERVER_E_SUCCESS                0
-#define DEBUGSERVER_E_INVALID_ARG           -1
-#define DEBUGSERVER_E_MUX_ERROR             -2
-#define DEBUGSERVER_E_SSL_ERROR             -3
-#define DEBUGSERVER_E_RESPONSE_ERROR        -4
-#define DEBUGSERVER_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t debugserver_error_t;
+/** Error Codes */
+typedef enum {
+	DEBUGSERVER_E_SUCCESS        =  0,
+	DEBUGSERVER_E_INVALID_ARG    = -1,
+	DEBUGSERVER_E_MUX_ERROR      = -2,
+	DEBUGSERVER_E_SSL_ERROR      = -3,
+	DEBUGSERVER_E_RESPONSE_ERROR = -4,
+	DEBUGSERVER_E_UNKNOWN_ERROR  = -256
+} debugserver_error_t;
 
 typedef struct debugserver_client_private debugserver_client_private;
 typedef debugserver_client_private *debugserver_client_t; /**< The client handle. */

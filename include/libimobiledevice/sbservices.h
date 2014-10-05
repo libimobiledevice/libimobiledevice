@@ -32,15 +32,14 @@ extern "C" {
 
 #define SBSERVICES_SERVICE_NAME "com.apple.springboardservices"
 
-/** @name Error Codes */
-/*@{*/
-#define SBSERVICES_E_SUCCESS                0
-#define SBSERVICES_E_INVALID_ARG           -1
-#define SBSERVICES_E_PLIST_ERROR           -2
-#define SBSERVICES_E_CONN_FAILED           -3
-
-#define SBSERVICES_E_UNKNOWN_ERROR       -256
-/*@}*/
+/** Error Codes */
+typedef enum {
+	SBSERVICES_E_SUCCESS       =  0,
+	SBSERVICES_E_INVALID_ARG   = -1,
+	SBSERVICES_E_PLIST_ERROR   = -2,
+	SBSERVICES_E_CONN_FAILED   = -3,
+	SBSERVICES_E_UNKNOWN_ERROR = -256
+} sbservices_error_t;
 
 /** @name Orientation of the user interface on the device */
 /*@{*/
@@ -52,9 +51,6 @@ typedef enum {
   SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_LEFT         = 4
 } sbservices_interface_orientation_t;
 /*@}*/
-
-/** Represents an error code. */
-typedef int16_t sbservices_error_t;
 
 typedef struct sbservices_client_private sbservices_client_private;
 typedef sbservices_client_private *sbservices_client_t; /**< The client handle. */

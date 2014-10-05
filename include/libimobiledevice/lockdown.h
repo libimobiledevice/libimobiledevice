@@ -31,35 +31,31 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
-/** @name Error Codes */
-/*@{*/
-#define LOCKDOWN_E_SUCCESS                     0
-#define LOCKDOWN_E_INVALID_ARG                -1
-#define LOCKDOWN_E_INVALID_CONF               -2
-#define LOCKDOWN_E_PLIST_ERROR                -3
-#define LOCKDOWN_E_PAIRING_FAILED             -4
-#define LOCKDOWN_E_SSL_ERROR                  -5
-#define LOCKDOWN_E_DICT_ERROR                 -6
-#define LOCKDOWN_E_START_SERVICE_FAILED       -7
-#define LOCKDOWN_E_NOT_ENOUGH_DATA            -8
-#define LOCKDOWN_E_SET_VALUE_PROHIBITED       -9
-#define LOCKDOWN_E_GET_VALUE_PROHIBITED      -10
-#define LOCKDOWN_E_REMOVE_VALUE_PROHIBITED   -11
-#define LOCKDOWN_E_MUX_ERROR                 -12
-#define LOCKDOWN_E_ACTIVATION_FAILED         -13
-#define LOCKDOWN_E_PASSWORD_PROTECTED        -14
-#define LOCKDOWN_E_NO_RUNNING_SESSION        -15
-#define LOCKDOWN_E_INVALID_HOST_ID           -16
-#define LOCKDOWN_E_INVALID_SERVICE           -17
-#define LOCKDOWN_E_INVALID_ACTIVATION_RECORD -18
-#define LOCKDOWN_E_PAIRING_DIALOG_PENDING    -20
-#define LOCKDOWN_E_USER_DENIED_PAIRING       -21
-
-#define LOCKDOWN_E_UNKNOWN_ERROR            -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t lockdownd_error_t;
+/** Error Codes */
+typedef enum {
+	LOCKDOWN_E_SUCCESS                   =   0,
+	LOCKDOWN_E_INVALID_ARG               =  -1,
+	LOCKDOWN_E_INVALID_CONF              =  -2,
+	LOCKDOWN_E_PLIST_ERROR               =  -3,
+	LOCKDOWN_E_PAIRING_FAILED            =  -4,
+	LOCKDOWN_E_SSL_ERROR                 =  -5,
+	LOCKDOWN_E_DICT_ERROR                =  -6,
+	LOCKDOWN_E_START_SERVICE_FAILED      =  -7,
+	LOCKDOWN_E_NOT_ENOUGH_DATA           =  -8,
+	LOCKDOWN_E_SET_VALUE_PROHIBITED      =  -9,
+	LOCKDOWN_E_GET_VALUE_PROHIBITED      = -10,
+	LOCKDOWN_E_REMOVE_VALUE_PROHIBITED   = -11,
+	LOCKDOWN_E_MUX_ERROR                 = -12,
+	LOCKDOWN_E_ACTIVATION_FAILED         = -13,
+	LOCKDOWN_E_PASSWORD_PROTECTED        = -14,
+	LOCKDOWN_E_NO_RUNNING_SESSION        = -15,
+	LOCKDOWN_E_INVALID_HOST_ID           = -16,
+	LOCKDOWN_E_INVALID_SERVICE           = -17,
+	LOCKDOWN_E_INVALID_ACTIVATION_RECORD = -18,
+	LOCKDOWN_E_PAIRING_DIALOG_PENDING    = -20,
+	LOCKDOWN_E_USER_DENIED_PAIRING       = -21,
+	LOCKDOWN_E_UNKNOWN_ERROR             = -256
+} lockdownd_error_t;
 
 typedef struct lockdownd_client_private lockdownd_client_private;
 typedef lockdownd_client_private *lockdownd_client_t; /**< The client handle. */

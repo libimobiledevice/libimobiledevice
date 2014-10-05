@@ -32,21 +32,17 @@ extern "C" {
 
 #define INSTPROXY_SERVICE_NAME "com.apple.mobile.installation_proxy"
 
-/** @name Error Codes */
-/*@{*/
-#define INSTPROXY_E_SUCCESS                0
-#define INSTPROXY_E_INVALID_ARG           -1
-#define INSTPROXY_E_PLIST_ERROR           -2
-#define INSTPROXY_E_CONN_FAILED           -3
-#define INSTPROXY_E_OP_IN_PROGRESS        -4
-#define INSTPROXY_E_OP_FAILED             -5
-#define INSTPROXY_E_RECEIVE_TIMEOUT       -6
-
-#define INSTPROXY_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t instproxy_error_t;
+/** Error Codes */
+typedef enum {
+	INSTPROXY_E_SUCCESS         =  0,
+	INSTPROXY_E_INVALID_ARG     = -1,
+	INSTPROXY_E_PLIST_ERROR     = -2,
+	INSTPROXY_E_CONN_FAILED     = -3,
+	INSTPROXY_E_OP_IN_PROGRESS  = -4,
+	INSTPROXY_E_OP_FAILED       = -5,
+	INSTPROXY_E_RECEIVE_TIMEOUT = -6,
+	INSTPROXY_E_UNKNOWN_ERROR   = -256
+} instproxy_error_t;
 
 typedef struct instproxy_client_private instproxy_client_private;
 typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */

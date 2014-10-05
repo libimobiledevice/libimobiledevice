@@ -33,20 +33,19 @@ extern "C" {
 
 #define MOBILESYNC_SERVICE_NAME "com.apple.mobilesync"
 
-/** @name Error Codes */
-/*@{*/
-#define MOBILESYNC_E_SUCCESS                0
-#define MOBILESYNC_E_INVALID_ARG           -1
-#define MOBILESYNC_E_PLIST_ERROR           -2
-#define MOBILESYNC_E_MUX_ERROR             -3
-#define MOBILESYNC_E_BAD_VERSION           -4
-#define MOBILESYNC_E_SYNC_REFUSED          -5
-#define MOBILESYNC_E_CANCELLED             -6
-#define MOBILESYNC_E_WRONG_DIRECTION       -7
-#define MOBILESYNC_E_NOT_READY             -8
-
-#define MOBILESYNC_E_UNKNOWN_ERROR       -256
-/*@}*/
+/** Error Codes */
+typedef enum {
+	MOBILESYNC_E_SUCCESS         =  0,
+	MOBILESYNC_E_INVALID_ARG     = -1,
+	MOBILESYNC_E_PLIST_ERROR     = -2,
+	MOBILESYNC_E_MUX_ERROR       = -3,
+	MOBILESYNC_E_BAD_VERSION     = -4,
+	MOBILESYNC_E_SYNC_REFUSED    = -5,
+	MOBILESYNC_E_CANCELLED       = -6,
+	MOBILESYNC_E_WRONG_DIRECTION = -7,
+	MOBILESYNC_E_NOT_READY       = -8,
+	MOBILESYNC_E_UNKNOWN_ERROR   = -256
+} mobilesync_error_t;
 
 /** The sync type of the current sync session. */
 typedef enum {
@@ -54,9 +53,6 @@ typedef enum {
 	MOBILESYNC_SYNC_TYPE_SLOW, /**< Slow-sync requires that all data from the computer needs to be synchronized/sent. */
 	MOBILESYNC_SYNC_TYPE_RESET /**< Reset-sync signals that the computer should send all data again. */
 } mobilesync_sync_type_t;
-
-/** Represents an error code. */
-typedef int16_t mobilesync_error_t;
 
 typedef struct mobilesync_client_private mobilesync_client_private;
 typedef mobilesync_client_private *mobilesync_client_t; /**< The client handle */

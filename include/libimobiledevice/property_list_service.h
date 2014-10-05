@@ -29,18 +29,15 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 /* Error Codes */
-/*@{*/
-#define PROPERTY_LIST_SERVICE_E_SUCCESS                0
-#define PROPERTY_LIST_SERVICE_E_INVALID_ARG           -1
-#define PROPERTY_LIST_SERVICE_E_PLIST_ERROR           -2
-#define PROPERTY_LIST_SERVICE_E_MUX_ERROR             -3
-#define PROPERTY_LIST_SERVICE_E_SSL_ERROR             -4
-#define PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT       -5
-#define PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code */
-typedef int16_t property_list_service_error_t;
+typedef enum {
+	PROPERTY_LIST_SERVICE_E_SUCCESS         =  0,
+	PROPERTY_LIST_SERVICE_E_INVALID_ARG     = -1,
+	PROPERTY_LIST_SERVICE_E_PLIST_ERROR     = -2,
+	PROPERTY_LIST_SERVICE_E_MUX_ERROR       = -3,
+	PROPERTY_LIST_SERVICE_E_SSL_ERROR       = -4,
+	PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT = -5,
+	PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR   = -256
+} property_list_service_error_t;
 
 typedef struct property_list_service_client_private property_list_service_private;
 typedef property_list_service_private* property_list_service_client_t; /**< The client handle. */

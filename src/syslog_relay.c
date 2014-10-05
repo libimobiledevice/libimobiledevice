@@ -139,7 +139,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive_with_timeout(sysl
 
 void *syslog_relay_worker(void *arg)
 {
-	service_error_t ret = SERVICE_E_UNKNOWN_ERROR;
+	syslog_relay_error_t ret = SYSLOG_RELAY_E_UNKNOWN_ERROR;
 	struct syslog_relay_worker_thread *srwt = (struct syslog_relay_worker_thread*)arg;
 
 	if (!srwt)

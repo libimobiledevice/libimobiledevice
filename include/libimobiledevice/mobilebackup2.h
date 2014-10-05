@@ -32,21 +32,17 @@ extern "C" {
 
 #define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
 
-/** @name Error Codes */
-/*@{*/
-#define MOBILEBACKUP2_E_SUCCESS                0
-#define MOBILEBACKUP2_E_INVALID_ARG           -1
-#define MOBILEBACKUP2_E_PLIST_ERROR           -2
-#define MOBILEBACKUP2_E_MUX_ERROR             -3
-#define MOBILEBACKUP2_E_BAD_VERSION           -4
-#define MOBILEBACKUP2_E_REPLY_NOT_OK          -5
-#define MOBILEBACKUP2_E_NO_COMMON_VERSION     -6
-
-#define MOBILEBACKUP2_E_UNKNOWN_ERROR       -256
-/*@}*/
-
-/** Represents an error code. */
-typedef int16_t mobilebackup2_error_t;
+/** Error Codes */
+typedef enum {
+	MOBILEBACKUP2_E_SUCCESS           =  0,
+	MOBILEBACKUP2_E_INVALID_ARG       = -1,
+	MOBILEBACKUP2_E_PLIST_ERROR       = -2,
+	MOBILEBACKUP2_E_MUX_ERROR         = -3,
+	MOBILEBACKUP2_E_BAD_VERSION       = -4,
+	MOBILEBACKUP2_E_REPLY_NOT_OK      = -5,
+	MOBILEBACKUP2_E_NO_COMMON_VERSION = -6,
+	MOBILEBACKUP2_E_UNKNOWN_ERROR     = -256
+} mobilebackup2_error_t;
 
 typedef struct mobilebackup2_client_private mobilebackup2_client_private;
 typedef mobilebackup2_client_private *mobilebackup2_client_t; /**< The client handle. */
