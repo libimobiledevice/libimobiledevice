@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* start and connect to debugserver */
-			if (debugserver_client_start_service(device, &debugserver_client, "idevicerun") != LOCKDOWN_E_SUCCESS) {
+			if (debugserver_client_start_service(device, &debugserver_client, "idevicerun") != DEBUGSERVER_E_SUCCESS) {
 				fprintf(stderr,
 					"Could not start com.apple.debugserver!\n"
 					"Please make sure to mount the developer disk image first:\n"
