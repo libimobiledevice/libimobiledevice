@@ -24,16 +24,16 @@
 #include <string.h>
 #include <time.h>
 #if HAVE_LANGINFO_CODESET
-# include <langinfo.h>
+#include <langinfo.h>
 #endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
 #ifdef _DATE_FMT
-# define DATE_FMT_LANGINFO() nl_langinfo (_DATE_FMT)
+#define DATE_FMT_LANGINFO() nl_langinfo (_DATE_FMT)
 #else
-# define DATE_FMT_LANGINFO() ""
+#define DATE_FMT_LANGINFO() ""
 #endif
 
 static void print_usage(int argc, char **argv)
