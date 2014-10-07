@@ -37,6 +37,10 @@
 #ifdef HAVE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#if OPENSSL_VERSION_NUMBER >= 0x10000001L
+/* since OpenSSL 1.0.0-beta1 */
+#define HAVE_ERR_REMOVE_THREAD_STATE 1
+#endif
 #else
 #include <gnutls/gnutls.h>
 #endif
@@ -96,7 +100,11 @@ static void internal_idevice_deinit(void)
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+#ifdef HAVE_ERR_REMOVE_THREAD_STATE
 	ERR_remove_thread_state(NULL);
+#else
+	ERR_remove_state(0);
+#endif
 #else
 	gnutls_global_deinit();
 #endif
@@ -717,7 +725,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
 	}
 	/* required for proper multi-thread clean up to prevent leaks */
+#ifdef HAVE_ERR_REMOVE_THREAD_STATE
 	ERR_remove_thread_state(NULL);
+#else
+	ERR_remove_state(0);
+#endif
 #else
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
