@@ -113,7 +113,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send(debugserver_cli
 	int bytes = 0;
 
 	if (!client || !data || (size == 0)) {
-		return SERVICE_E_INVALID_ARG;
+		return DEBUGSERVER_E_INVALID_ARG;
 	}
 
 	debug_info("sending %d bytes", size);
