@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 	lerr = lockdownd_client_new(device, &client, "idevicepair");
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(device);
-		printf("ERROR: lockdownd_client_new failed with error code %d\n", lerr);
+		printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
 		return EXIT_FAILURE;
 	}
 

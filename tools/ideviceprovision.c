@@ -244,6 +244,7 @@ static int profile_read_from_file(const char* path, unsigned char **profile_data
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
+	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	lockdownd_service_descriptor_t service = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
@@ -377,7 +378,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "ideviceprovision")) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "ideviceprovision"))) {
+		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;
 	}

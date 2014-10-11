@@ -843,7 +843,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "idevicebackup")) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "idevicebackup"))) {
+		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;
 	}

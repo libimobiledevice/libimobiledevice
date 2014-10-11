@@ -138,6 +138,7 @@ int main(int argc, char **argv)
 {
 	idevice_t device = NULL;
 	lockdownd_client_t lckd = NULL;
+	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	mobile_image_mounter_client_t mim = NULL;
 	afc_client_t afc = NULL;
 	lockdownd_service_descriptor_t service = NULL;
@@ -172,8 +173,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, "ideviceimagemounter")) {
-		printf("ERROR: could not connect to lockdown. Exiting.\n");
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, "ideviceimagemounter"))) {
+		printf("ERROR: Could not connect to lockdown, error code %d.\n", ldret);
 		goto leave;
 	}
 

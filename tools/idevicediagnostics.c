@@ -173,9 +173,9 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lockdown_client, "idevicediagnostics")) {
+	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &lockdown_client, "idevicediagnostics"))) {
 		idevice_free(device);
-		printf("Unable to connect to lockdownd.\n");
+		printf("ERROR: Could not connect to lockdownd, error code %d\n", ret);
 		goto cleanup;
 	}
 

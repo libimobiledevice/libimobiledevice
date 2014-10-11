@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 	lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, "idevicename");
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(device);
-		fprintf(stderr, "ERROR: lockdown connection failed, lockdown error %d\n", lerr);
+		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lerr);
 		return -1;
 	}
 

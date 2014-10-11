@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 {
 	idevice_t device = NULL;
 	lockdownd_client_t lckd = NULL;
+	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	screenshotr_client_t shotr = NULL;
 	lockdownd_service_descriptor_t service = NULL;
 	int result = -1;
@@ -80,9 +81,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, NULL)) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, NULL))) {
 		idevice_free(device);
-		printf("Exiting.\n");
+		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		return -1;
 	}
 

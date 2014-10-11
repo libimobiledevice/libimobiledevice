@@ -369,6 +369,7 @@ int main(int argc, char* argv[]) {
 
 	lockdownd_error = lockdownd_client_new_with_handshake(device, &lockdownd, "idevicecrashreport");
 	if (lockdownd_error != LOCKDOWN_E_SUCCESS) {
+		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lockdownd_error);
 		idevice_free(device);
 		return -1;
 	}
