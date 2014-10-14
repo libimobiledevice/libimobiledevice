@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 			/* set arguments and run app */
 			debug_info("Setting argv...");
 			i++; /* i is the offset of the bundle identifier, thus skip it */
-			int app_argc = (argc - i + 1);
+			int app_argc = (argc - i + 2);
 			char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
 			app_argv[0] = path;
 			debug_info("app_argv[%d] = %s", 0, app_argv[0]);
