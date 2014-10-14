@@ -36,7 +36,7 @@ EXTRA_DIST = imobiledevice.pyx imobiledevice.pxd $(PXIINCLUDES)
 imobiledevicedir = $(pyexecdir)
 imobiledevice_LTLIBRARIES = imobiledevice.la
 imobiledevice_la_SOURCES = imobiledevice.pyx
-imobiledevice_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) $(AM_CFLAGS) -Wno-shadow -Wno-redundant-decls -Wno-switch-default -Wno-strict-aliasing -Wno-implicit-function-declaration
+imobiledevice_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) $(AM_CFLAGS) -Wno-shadow -Wno-redundant-decls -Wno-switch-default -Wno-strict-aliasing -Wno-implicit-function-declaration -fvisibility=default
 imobiledevice_la_LDFLAGS = -module -avoid-version -L$(libdir) $(PYTHON_LDFLAGS) $(AM_LDFLAGS) -no-undefined
 imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la
 
