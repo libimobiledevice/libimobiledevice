@@ -3,6 +3,10 @@ Version 1.1.7
 
 * Development release "Cleaning up the yard."
 * Changes:
+  - Fix broken app args, environment handling and memory leaks in idevicedebug
+  - Make all tools print an error if lockdown connection fails
+  - Convert int16_t macro error types into enum for better type-checking and
+    for various debugging benefits
   - Avoid exporting non-public symbols for better ABI stability
   - Fix failing backup process for devices having a passcode set and entering
     lock state during the process in idevicebackup2
