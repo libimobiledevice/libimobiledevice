@@ -413,14 +413,14 @@ int main(int argc, char *argv[])
 
 			/* set arguments and run app */
 			debug_info("Setting argv...");
-			int app_argc = (argc - i + 2);
-			debug_info("app_argc: %d", app_argc);
+			i++; /* i is the offset of the bundle identifier, thus skip it */
+			int app_argc = (argc - i + 1);
 			char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
 			app_argv[0] = path;
 			debug_info("app_argv[%d] = %s", 0, app_argv[0]);
 			app_argc = 1;
 			while (i < argc && argv && argv[i]) {
-				debug_info("app_argv[%d] = argv[%d]: %s", app_argc, i, argv[i]);
+				debug_info("app_argv[%d] = %s", app_argc, argv[i]);
 				app_argv[app_argc++] = argv[i];
 				i++;
 			}
