@@ -224,6 +224,7 @@ int main(int argc, char *argv[])
 	char* working_directory = NULL;
 	char **newlist = NULL;
 	char** environment = NULL;
+	int environment_index = 0;
 	int environment_count = 0;
 	char* response = NULL;
 	debugserver_command_t command = NULL;
@@ -404,11 +405,9 @@ int main(int argc, char *argv[])
 			/* set environment */
 			if (environment) {
 				debug_info("Setting environment...");
-				int environment_index = 0;
 				for (environment_index = 0; environment_index < environment_count; environment_index++) {
 					debug_info("setting environment variable: %s", environment[environment_index]);
 					debugserver_client_set_environment_hex_encoded(debugserver_client, environment[environment_index], NULL);
-					environment_index++;
 				}
 			}
 
@@ -504,10 +503,8 @@ int main(int argc, char *argv[])
 cleanup:
 	/* cleanup the house */
 	if (environment) {
-		int environment_index = 0;
 		for (environment_index = 0; environment_index < environment_count; environment_index++) {
 			free(environment[environment_index]);
-			environment_index++;
 		}
 		free(environment);
 	}
