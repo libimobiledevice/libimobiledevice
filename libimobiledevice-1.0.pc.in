@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: libimobiledevice
-Description: A library to communicate with services running on Apple iPhone/iPod Touch devices.
+Description: A library to communicate with services running on Apple iOS devices.
 Version: @VERSION@
 Requires: libplist >= @LIBPLIST_VERSION@ libusbmuxd >= @LIBUSBMUXD_VERSION@ @ssl_requires@
 Libs: -L${libdir} -limobiledevice
