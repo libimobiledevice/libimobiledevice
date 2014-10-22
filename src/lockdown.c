@@ -594,6 +594,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
 	lockdownd_client_t client_loc = NULL;
+	plist_t pair_record = NULL;
 	char *host_id = NULL;
 	char *type = NULL;
 
@@ -612,10 +613,8 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 			debug_info("Warning QueryType request returned \"%s\".", type);
 		}
 	}
-	if (type)
-		free(type);
+	free(type);
 
-	plist_t pair_record = NULL;
 	userpref_read_pair_record(client_loc->udid, &pair_record);
 	if (pair_record) {
 		pair_record_get_host_id(pair_record, &host_id);
@@ -637,8 +636,9 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 
 	/* if not paired yet, let's do it now */
 	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
+		free(host_id);
+		host_id = NULL;
 		ret = lockdownd_pair(client_loc, NULL);
-
 		if (LOCKDOWN_E_SUCCESS == ret) {
 			ret = lockdownd_validate_pair(client_loc, NULL);
 		} else if (LOCKDOWN_E_PAIRING_DIALOG_PENDING == ret) {
@@ -660,10 +660,6 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 			debug_info("Session opening failed.");
 		}
 
-		if (host_id) {
-			free(host_id);
-			host_id = NULL;
-		}
 	}
 	
 	if (LOCKDOWN_E_SUCCESS == ret) {
@@ -671,7 +667,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	} else {
 		lockdownd_client_free(client_loc);
 	}
-
+	free(host_id);
 	return ret;
 }
 
