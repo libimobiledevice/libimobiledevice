@@ -224,16 +224,6 @@ static void notify_cb(const char *notification, void *userdata)
 	}
 }
 
-static char *str_toupper(char* str)
-{
-	char *res = strdup(str);
-	unsigned int i;
-	for (i = 0; i < strlen(res); i++) {
-		res[i] = toupper(res[i]);
-	}
-	return res;
-}
-
 static char* format_size_for_display(uint64_t size)
 {
 	char buf[32];
@@ -295,7 +285,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid)
 	plist_dict_set_item(ret, "Target Identifier", plist_new_string(udid));
 
 	/* uppercase */
-	udid_uppercase = str_toupper((char*)udid);
+	udid_uppercase = string_toupper((char*)udid);
 	plist_dict_set_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
 	free(udid_uppercase);
 

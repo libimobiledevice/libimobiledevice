@@ -157,16 +157,6 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 	afc_file_close(afc, f);
 }
 
-static char *str_toupper(char* str)
-{
-	char *res = strdup(str);
-	unsigned int i;
-	for (i = 0; i < strlen(res); i++) {
-		res[i] = toupper(res[i]);
-	}
-	return res;
-}
-
 static int __mkdir(const char* path, int mode)
 {
 #ifdef WIN32
@@ -273,7 +263,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	plist_dict_set_item(ret, "Target Type", plist_new_string("Device"));
 
 	/* uppercase */
-	udid_uppercase = str_toupper((char*)udid);
+	udid_uppercase = string_toupper((char*)udid);
 	plist_dict_set_item(ret, "Unique Identifier", plist_new_string(udid_uppercase));
 	free(udid_uppercase);
 

@@ -38,6 +38,7 @@ char *stpcpy(char *s1, const char *s2);
 #endif
 char *string_concat(const char *str, ...);
 char *string_build_path(const char *elem, ...);
+char *string_toupper(char *str);
 char *generate_uuid();
 
 void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length);

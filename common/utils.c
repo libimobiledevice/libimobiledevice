@@ -139,6 +139,16 @@ char *string_build_path(const char *elem, ...)
 	return out;
 }
 
+char *string_toupper(char* str)
+{
+	char *res = strdup(str);
+	unsigned int i;
+	for (i = 0; i < strlen(res); i++) {
+		res[i] = toupper(res[i]);
+	}
+	return res;
+}
+
 static int get_rand(int min, int max)
 {
 	int retval = (rand() % (max - min)) + min;
