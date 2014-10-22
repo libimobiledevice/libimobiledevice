@@ -234,33 +234,6 @@ static char *str_toupper(char* str)
 	return res;
 }
 
-static char* build_path(const char* elem, ...)
-{
-	if (!elem) return NULL;
-	va_list args;
-	int len = strlen(elem)+1;
-	va_start(args, elem);
-	char *arg = va_arg(args, char*);
-	while (arg) {
-		len += strlen(arg)+1;
-		arg = va_arg(args, char*);
-	}
-	va_end(args);
-
-	char* out = (char*)malloc(len);
-	strcpy(out, elem);
-
-	va_start(args, elem);
-	arg = va_arg(args, char*);
-	while (arg) {
-		strcat(out, "/");
-		strcat(out, arg);
-		arg = va_arg(args, char*);
-	}
-	va_end(args);
-	return out;
-}
-
 static char* format_size_for_display(uint64_t size)
 {
 	char buf[32];
@@ -370,7 +343,7 @@ static char *mobilebackup_build_path(const char *backup_directory, const char *n
 	strcpy(filename, name);
 	if (extension != NULL)
 		strcat(filename, extension);
-	char *path = build_path(backup_directory, filename, NULL);
+	char *path = string_build_path(backup_directory, filename, NULL);
 	free(filename);
 	return path;
 }

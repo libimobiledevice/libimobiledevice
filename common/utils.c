@@ -29,6 +29,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#include <ctype.h>
 
 #include "utils.h"
 
@@ -108,6 +109,34 @@ char *string_concat(const char *str, ...)
 	va_end(args);
 
 	return result;
+}
+
+char *string_build_path(const char *elem, ...)
+{
+	if (!elem)
+		return NULL;
+	va_list args;
+	int len = strlen(elem)+1;
+	va_start(args, elem);
+	char *arg = va_arg(args, char*);
+	while (arg) {
+		len += strlen(arg)+1;
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+
+	char* out = (char*)malloc(len);
+	strcpy(out, elem);
+
+	va_start(args, elem);
+	arg = va_arg(args, char*);
+	while (arg) {
+		strcat(out, "/");
+		strcat(out, arg);
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+	return out;
 }
 
 static int get_rand(int min, int max)
