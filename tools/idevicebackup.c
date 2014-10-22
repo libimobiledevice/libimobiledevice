@@ -224,25 +224,6 @@ static void notify_cb(const char *notification, void *userdata)
 	}
 }
 
-static char* format_size_for_display(uint64_t size)
-{
-	char buf[32];
-	double sz;
-	if (size >= 1000000000LL) {
-		sz = ((double)size / 1000000000.0f);
-		sprintf(buf, "%0.1f GB", sz);
-	} else if (size >= 1000000LL) {
-		sz = ((double)size / 1000000.0f);
-		sprintf(buf, "%0.1f MB", sz);
-	} else if (size >= 1000LL) {
-		sz = ((double)size / 1000.0f);
-		sprintf(buf, "%0.1f kB", sz);
-	} else {
-		sprintf(buf, "%d Bytes", (int)size);
-	}
-	return strdup(buf);
-}
-
 static plist_t mobilebackup_factory_info_plist_new(const char* udid)
 {
 	/* gather data from lockdown */
@@ -1037,7 +1018,7 @@ int main(int argc, char *argv[])
 					node = plist_dict_get_item(node_tmp, "BackupTotalSizeKey");
 					if (node) {
 						plist_get_uint_val(node, &backup_total_size);
-						format_size = format_size_for_display(backup_total_size);
+						format_size = string_format_size(backup_total_size);
 						printf("Backup data requires %s on the disk.\n", format_size);
 						free(format_size);
 					}
@@ -1067,15 +1048,15 @@ int main(int argc, char *argv[])
 					plist_get_uint_val(node, &file_size);
 					backup_real_size += file_size;
 
-					format_size = format_size_for_display(backup_real_size);
+					format_size = string_format_size(backup_real_size);
 					printf("(%s", format_size);
 					free(format_size);
 
-					format_size = format_size_for_display(backup_total_size);
+					format_size = string_format_size(backup_total_size);
 					printf("/%s): ", format_size);
 					free(format_size);
 
-					format_size = format_size_for_display(file_size);
+					format_size = string_format_size(file_size);
 					printf("Receiving file %s (%s)... \n", filename_source, format_size);
 					free(format_size);
 

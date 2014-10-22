@@ -189,25 +189,6 @@ static int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
-static char* format_size_for_display(uint64_t size)
-{
-	char buf[32];
-	double sz;
-	if (size >= 1000000000LL) {
-		sz = ((double)size / 1000000000.0f);
-		sprintf(buf, "%0.1f GB", sz);
-	} else if (size >= 1000000LL) {
-		sz = ((double)size / 1000000.0f);
-		sprintf(buf, "%0.1f MB", sz);
-	} else if (size >= 1000LL) {
-		sz = ((double)size / 1000.0f);
-		sprintf(buf, "%0.1f kB", sz);
-	} else {
-		sprintf(buf, "%d Bytes", (int)size);
-	}
-	return strdup(buf);
-}
-
 static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_client_t lockdown, afc_client_t afc)
 {
 	/* gather data from lockdown */
@@ -404,10 +385,10 @@ static void print_progress(uint64_t current, uint64_t total)
 
 	print_progress_real((double)progress, 0);
 
-	format_size = format_size_for_display(current);
+	format_size = string_format_size(current);
 	PRINT_VERBOSE(1, " (%s", format_size);
 	free(format_size);
-	format_size = format_size_for_display(total);
+	format_size = string_format_size(total);
 	PRINT_VERBOSE(1, "/%s)     ", format_size);
 	free(format_size);
 
@@ -543,7 +524,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 
 	total = fst.st_size;
 
-	char *format_size = format_size_for_display(total);
+	char *format_size = string_format_size(total);
 	PRINT_VERBOSE(1, "Sending '%s' (%s)\n", path, format_size);
 	free(format_size);
 
