@@ -44,7 +44,7 @@
  * @return a pointer to the terminating `\0' character of @s1,
  * or NULL if @s1 or @s2 is NULL.
  */
-char *stpcpy(char * s1, const char * s2)
+char *stpcpy(char *s1, const char *s2)
 {
 	if (s1 == NULL || s2 == NULL)
 		return NULL;

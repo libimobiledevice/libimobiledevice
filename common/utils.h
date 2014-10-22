@@ -34,7 +34,7 @@
 #include <plist/plist.h>
 
 #ifndef HAVE_STPCPY
-char *stpcpy(char * s1, const char * s2);
+char *stpcpy(char *s1, const char *s2);
 #endif
 char *string_concat(const char *str, ...);
 char *generate_uuid();
