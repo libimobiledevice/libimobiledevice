@@ -50,14 +50,6 @@ typedef gnutls_datum_t key_data_t;
 #define USERPREF_SYSTEM_BUID_KEY "SystemBUID"
 #define USERPREF_WIFI_MAC_ADDRESS_KEY "WiFiMACAddress"
 
-#ifndef LIBIMOBILEDEVICE_INTERNAL
-#ifdef WIN32
-#define LIBIMOBILEDEVICE_INTERNAL
-#else
-#define LIBIMOBILEDEVICE_INTERNAL __attribute__((visibility("hidden")))
-#endif
-#endif
-
 #define USERPREF_E_SUCCESS             0
 #define USERPREF_E_INVALID_ARG        -1
 #define USERPREF_E_INVALID_CONF       -2
@@ -75,13 +67,13 @@ userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_recor
 userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);
 userpref_error_t userpref_delete_pair_record(const char *udid);
 
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_data_t public_key);
+userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_data_t public_key);
 #ifdef HAVE_OPENSSL
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, key_data_t* key);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, key_data_t* cert);
+userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, key_data_t* key);
+userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, key_data_t* cert);
 #else
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, gnutls_x509_privkey_t key);
-LIBIMOBILEDEVICE_INTERNAL userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, gnutls_x509_crt_t cert);
+userpref_error_t pair_record_import_key_with_name(plist_t pair_record, const char* name, gnutls_x509_privkey_t key);
+userpref_error_t pair_record_import_crt_with_name(plist_t pair_record, const char* name, gnutls_x509_crt_t cert);
 #endif
 
 userpref_error_t pair_record_get_host_id(plist_t pair_record, char** host_id);
@@ -91,6 +83,6 @@ userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const c
 
 /* deprecated */
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
-LIBIMOBILEDEVICE_INTERNAL int userpref_has_pair_record(const char *udid);
+int userpref_has_pair_record(const char *udid);
 
 #endif
