@@ -45,7 +45,7 @@ struct np_thread {
  */
 static void np_lock(np_client_t client)
 {
-	debug_info("NP: Locked");
+	debug_info("Locked");
 	mutex_lock(&client->mutex);
 }
 
@@ -56,7 +56,7 @@ static void np_lock(np_client_t client)
  */
 static void np_unlock(np_client_t client)
 {
-	debug_info("NP: Unlocked");
+	debug_info("Unlocked");
 	mutex_unlock(&client->mutex);
 }
 

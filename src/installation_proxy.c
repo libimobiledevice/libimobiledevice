@@ -43,7 +43,7 @@ struct instproxy_status_data {
  */
 static void instproxy_lock(instproxy_client_t client)
 {
-	debug_info("InstallationProxy: Locked");
+	debug_info("Locked");
 	mutex_lock(&client->mutex);
 }
 
@@ -54,7 +54,7 @@ static void instproxy_lock(instproxy_client_t client)
  */
 static void instproxy_unlock(instproxy_client_t client)
 {
-	debug_info("InstallationProxy: Unlocked");
+	debug_info("Unlocked");
 	mutex_unlock(&client->mutex);
 }
 

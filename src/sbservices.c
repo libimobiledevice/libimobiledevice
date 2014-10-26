@@ -35,7 +35,7 @@
  */
 static void sbs_lock(sbservices_client_t client)
 {
-	debug_info("SBServices: Locked");
+	debug_info("Locked");
 	mutex_lock(&client->mutex);
 }
 
@@ -46,7 +46,7 @@ static void sbs_lock(sbservices_client_t client)
  */
 static void sbs_unlock(sbservices_client_t client)
 {
-	debug_info("SBServices: Unlocked");
+	debug_info("Unlocked");
 	mutex_unlock(&client->mutex);
 }
 
