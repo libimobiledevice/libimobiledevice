@@ -44,8 +44,9 @@
 #endif
 
 #include "common/userpref.h"
-
 #include "libimobiledevice/libimobiledevice.h"
+
+int idevice_debug_level;
 
 enum connection_type {
 	CONNECTION_USBMUXD = 1

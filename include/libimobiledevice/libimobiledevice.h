@@ -49,9 +49,6 @@ typedef idevice_private *idevice_t; /**< The device handle. */
 typedef struct idevice_connection_private idevice_connection_private;
 typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
-/* generic */
-void idevice_set_debug_level(int level);
-
 /* discovery (events/asynchronous) */
 /** The event type for device add or removal */
 enum idevice_event_type {
@@ -72,6 +69,13 @@ typedef struct {
 typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_data);
 
 /* functions */
+
+/**
+ * Set the level of debugging.
+ *
+ * @param level Set to 0 for no debug output or 1 to enable debug output.
+ */
+void idevice_set_debug_level(int level);
 
 /**
  * Register a callback function that will be called when device add/remove

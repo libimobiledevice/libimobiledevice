@@ -44,6 +44,7 @@
 #else
 #include <gnutls/gnutls.h>
 #endif
+
 #include "idevice.h"
 #include "common/userpref.h"
 #include "common/thread.h"
@@ -219,6 +220,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices)
 		free(devices);
 	}
 	return IDEVICE_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
+{
+	idevice_debug_level = level;
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char *udid)

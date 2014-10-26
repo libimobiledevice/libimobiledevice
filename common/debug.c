@@ -41,19 +41,6 @@
 
 #define MAX_PRINT_LEN 16*1024
 
-int debug_level = 0;
-
-/**
- * Sets the level of debugging. Currently the only acceptable values are 0 and
- * 1.
- *
- * @param level Set to 0 for no debugging or 1 for debugging.
- */
-LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
-{
-	debug_level = level;
-}
-
 #ifndef STRIP_DEBUG_CODE
 static void debug_print_line(const char *func, const char *file, int line, const char *buffer)
 {
@@ -90,7 +77,7 @@ void debug_info_real(const char *func, const char *file, int line, const char *f
 	va_list args;
 	char *buffer = NULL;
 
-	if (!debug_level)
+	if (!idevice_debug_level)
 		return;
 
 	/* run the real fprintf */
@@ -111,7 +98,7 @@ void debug_buffer(const char *data, const int length)
 	int j;
 	unsigned char c;
 
-	if (debug_level) {
+	if (idevice_debug_level) {
 		for (i = 0; i < length; i += 16) {
 			fprintf(stderr, "%04x: ", i);
 			for (j = 0; j < 16; j++) {
@@ -142,7 +129,7 @@ void debug_buffer(const char *data, const int length)
 void debug_buffer_to_file(const char *file, const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
-	if (debug_level) {
+	if (idevice_debug_level) {
 		FILE *f = fopen(file, "wb");
 		fwrite(data, 1, length, f);
 		fflush(f);
