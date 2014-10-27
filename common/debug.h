@@ -48,4 +48,6 @@ void debug_plist_real(const char *func,
 											int	line,
 											plist_t plist);
 
+void internal_set_debug_level(int level);
+
 #endif

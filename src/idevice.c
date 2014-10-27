@@ -224,7 +224,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices)
 
 LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
 {
-	idevice_debug_level = level;
+	internal_set_debug_level(level);
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char *udid)
