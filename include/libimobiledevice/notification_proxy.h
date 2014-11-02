@@ -29,6 +29,7 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
+#include "idevice.h"
 
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
@@ -102,7 +103,7 @@ typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
  *   or NP_E_CONN_FAILED when the connection to the device could not be
  *   established.
  */
-np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
+LIBIMOBILEDEVICE_API np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t service, np_client_t *client);
 
 /**
  * Starts a new notification proxy service on the specified device and connects to it.
@@ -117,7 +118,7 @@ np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t servic
  * @return NP_E_SUCCESS on success, or an NP_E_* error
  *     code otherwise.
  */
-np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label);
 
 /**
  * Disconnects a notification_proxy client from the device and frees up the
@@ -127,7 +128,7 @@ np_error_t np_client_start_service(idevice_t device, np_client_t* client, const 
  *
  * @return NP_E_SUCCESS on success, or NP_E_INVALID_ARG when client is NULL.
  */
-np_error_t np_client_free(np_client_t client);
+LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client);
 
 
 /**
@@ -138,7 +139,7 @@ np_error_t np_client_free(np_client_t client);
  *
  * @return NP_E_SUCCESS on success, or an error returned by np_plist_send
  */
-np_error_t np_post_notification(np_client_t client, const char *notification);
+LIBIMOBILEDEVICE_API np_error_t np_post_notification(np_client_t client, const char *notification);
 
 /**
  * Tells the device to send a notification on the specified event.
@@ -149,7 +150,7 @@ np_error_t np_post_notification(np_client_t client, const char *notification);
  * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client or
  *    notification are NULL, or an error returned by np_plist_send.
  */
-np_error_t np_observe_notification(np_client_t client, const char *notification);
+LIBIMOBILEDEVICE_API np_error_t np_observe_notification(np_client_t client, const char *notification);
 
 /**
  * Tells the device to send a notification on specified events.
@@ -162,7 +163,7 @@ np_error_t np_observe_notification(np_client_t client, const char *notification)
  * @return NP_E_SUCCESS on success, NP_E_INVALID_ARG when client is null,
  *   or an error returned by np_observe_notification.
  */
-np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
+LIBIMOBILEDEVICE_API np_error_t np_observe_notifications(np_client_t client, const char **notification_spec);
 
 /**
  * This function allows an application to define a callback function that will
@@ -186,7 +187,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
  *         the callback thread could no be created.
  */
-np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
+LIBIMOBILEDEVICE_API np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
 
 #ifdef __cplusplus
 }

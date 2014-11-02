@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -72,7 +73,7 @@ static void internal_idevice_init(void)
 	int i;
 	SSL_library_init();
 
-	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
+	mutex_buf = (mutex_t*)malloc(CRYPTO_num_locks() * sizeof(mutex_t));
 	if (!mutex_buf)
 		return;
 	for (i = 0; i < CRYPTO_num_locks(); i++)
@@ -147,7 +148,7 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 {
 	idevice_event_t ev;
 
-	ev.event = event->event;
+	ev.event = (idevice_event_type)event->event;
 	ev.udid = event->device.udid;
 	ev.conn_type = CONNECTION_USBMUXD;
 
@@ -195,14 +196,14 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, in
 	int i, newcount = 0;
 
 	for (i = 0; dev_list[i].handle > 0; i++) {
-		newlist = realloc(*devices, sizeof(char*) * (newcount+1));
+		newlist = (char**)realloc(*devices, sizeof(char*) * (newcount+1));
 		newlist[newcount++] = strdup(dev_list[i].udid);
 		*devices = newlist;
 	}
 	usbmuxd_device_list_free(&dev_list);
 
 	*count = newcount;
-	newlist = realloc(*devices, sizeof(char*) * (newcount+1));
+	newlist = (char**)realloc(*devices, sizeof(char*) * (newcount+1));
 	newlist[newcount] = NULL;
 	*devices = newlist;
 

@@ -49,7 +49,14 @@
 #include <libtasn1.h>
 #endif
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#define _AMD64_
+#endif
 #include <dirent.h>
+#ifdef _MSC_VER
+#undef _AMD64_
+#endif
 #include <libgen.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -274,7 +281,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 					udids = listp;
 				} else {
 					listp->next = ne;
-					listp = listp->next;
+					listp = (slist_t*)listp->next;
 				}
 				found++;
 			}
@@ -286,7 +293,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 	while (udids) {
 		(*list)[i++] = udids->name;
 		struct slist_t *old = udids;
-		udids = udids->next;
+		udids = (slist_t*)udids->next;
 		free(old);
 	}
 	(*list)[i] = NULL;

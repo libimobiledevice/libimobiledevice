@@ -89,7 +89,7 @@ LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_new(idevice_t device
 LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_start_service(idevice_t device, screenshotr_client_t * client, const char* label)
 {
 	screenshotr_error_t err = SCREENSHOTR_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, SCREENSHOTR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(screenshotr_client_new), &err);
+	service_client_factory_start_service(device, SCREENSHOTR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(screenshotr_client_new), (int32_t*)&err);
 	return err;
 }
 

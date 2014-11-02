@@ -61,3 +61,7 @@ tools/idevicecrashreport
 cython/.libs/*
 cython/*.c
 doxygen.cfg
+Debug/
+Release/
+*.vcproj.*
+*.aps

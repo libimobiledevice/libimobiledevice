@@ -106,7 +106,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_new(idevice_t device, lo
 LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
 {
 	instproxy_error_t err = INSTPROXY_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, INSTPROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(instproxy_client_new), &err);
+	service_client_factory_start_service(device, INSTPROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(instproxy_client_new), (int32_t*)&err);
 	return err;
 }
 

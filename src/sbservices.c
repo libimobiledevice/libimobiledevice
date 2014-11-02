@@ -95,7 +95,7 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_new(idevice_t device, 
 LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t * client, const char* label)
 {
 	sbservices_error_t err = SBSERVICES_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, SBSERVICES_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(sbservices_client_new), &err);
+	service_client_factory_start_service(device, SBSERVICES_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(sbservices_client_new), (int32_t*)&err);
 	return err;
 }
 

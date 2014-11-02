@@ -300,8 +300,8 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	idevice_error_t idev_ret;
 
 	static struct lockdownd_service_descriptor service = {
-		.port = 0xf27e,
-		.ssl_enabled = 0
+		0xf27e,
+		0
 	};
 
 	property_list_service_client_t plistclient = NULL;

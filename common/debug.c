@@ -39,7 +39,11 @@
 #include "asprintf.h"
 #endif
 
-static int debug_level;
+#ifdef _DEBUG
+static int debug_level = 1;
+#else
+static int debug_level = 0;
+#endif
 
 void internal_set_debug_level(int level)
 {
@@ -73,6 +77,11 @@ static void debug_print_line(const char *func, const char *file, int line, const
 
 	/* flush this output, as we need to debug */
 	fflush (stdout);
+
+#ifdef WIN32
+	::OutputDebugStringA(header); ::OutputDebugStringA(": ");
+	::OutputDebugStringA(buffer); ::OutputDebugStringA("\n");
+#endif
 
 	free (header);
 }

@@ -95,7 +95,7 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_new(idevi
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t * client, const char* label)
 {
 	mobile_image_mounter_error_t err = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, MOBILE_IMAGE_MOUNTER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobile_image_mounter_new), &err);
+	service_client_factory_start_service(device, MOBILE_IMAGE_MOUNTER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobile_image_mounter_new), (int32_t*)&err);
 	return err;
 }
 

@@ -92,7 +92,7 @@ LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_new(idevice_t de
 LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_client_start_service(idevice_t device, mobilebackup2_client_t * client, const char* label)
 {
 	mobilebackup2_error_t err = MOBILEBACKUP2_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, MOBILEBACKUP2_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilebackup2_client_new), &err);
+	service_client_factory_start_service(device, MOBILEBACKUP2_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilebackup2_client_new), (int32_t*)&err);
 	return err;
 }
 

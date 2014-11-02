@@ -82,13 +82,13 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_new(idevice_t devi
 	*client = client_loc;
 
 	debug_info("webinspector_client successfully created.");
-	return 0;
+	return WEBINSPECTOR_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
 {
 	webinspector_error_t err = WEBINSPECTOR_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), &err);
+	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), (int32_t*)&err);
 	return err;
 }
 
