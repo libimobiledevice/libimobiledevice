@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,7 +66,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ssleay32.lib libplist.lib libgen.lib libusbmuxd.lib ws2_32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)OpenSSL-$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -91,6 +91,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
@@ -119,7 +120,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -141,7 +142,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ssleay32.lib libplist.lib libgen.lib libusbmuxd.lib ws2_32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)OpenSSL-$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="17"
@@ -166,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y"
+				CommandLine="xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
@@ -196,7 +197,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -217,7 +218,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ssleay32.lib libplist.lib libgen.lib libusbmuxd.lib ws2_32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)OpenSSL-$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -275,7 +276,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -296,7 +297,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ssleay32.lib libplist.lib libgen.lib libusbmuxd.lib ws2_32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)openssl-1.0.1j_$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)OpenSSL-$(PlatformName)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)\$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
