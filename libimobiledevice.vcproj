@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -121,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -198,7 +198,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -277,7 +277,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)include&quot;;&quot;$(SolutionDir)libgen&quot;;&quot;$(SolutionDir)..\libplist\include&quot;;&quot;$(SolutionDir)..\libusbmuxd\include&quot;;&quot;$(SolutionDir)vendors\include&quot;;&quot;$(SolutionDir)OpenSSL-$(PlatformName)\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB;HAVE_CONFIG_H"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ASN1_STATIC;HAVE_OPENSSL;__LITTLE_ENDIAN__;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -1327,19 +1327,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\include\libimobiledevice\afc.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\afc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\asprintf.h"
+				RelativePath=".\include\libimobiledevice\afc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\config.h"
+				RelativePath=".\include\asprintf.h"
 				>
 			</File>
 			<File
@@ -1375,11 +1371,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\heartbeat.h"
+				RelativePath=".\src\heartbeat.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\heartbeat.h"
+				RelativePath=".\include\libimobiledevice\heartbeat.h"
 				>
 			</File>
 			<File
@@ -1423,19 +1419,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\mobile_image_mounter.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\libimobiledevice\mobile_image_mounter.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\mobilebackup.h"
+				RelativePath=".\src\mobile_image_mounter.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\mobilebackup.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\libimobiledevice\mobilebackup.h"
 				>
 			</File>
 			<File
@@ -1455,6 +1451,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\common\msc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\libimobiledevice\notification_proxy.h"
 				>
 			</File>
@@ -1463,11 +1463,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\property_list_service.h"
+				RelativePath=".\include\libimobiledevice\property_list_service.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\property_list_service.h"
+				RelativePath=".\src\property_list_service.h"
 				>
 			</File>
 			<File
@@ -1475,11 +1475,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\restore.h"
+				RelativePath=".\src\restore.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\restore.h"
+				RelativePath=".\include\libimobiledevice\restore.h"
 				>
 			</File>
 			<File
@@ -1491,19 +1491,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\screenshotr.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\libimobiledevice\screenshotr.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\service.h"
+				RelativePath=".\src\screenshotr.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\service.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\libimobiledevice\service.h"
 				>
 			</File>
 			<File
@@ -1527,11 +1527,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\webinspector.h"
+				RelativePath=".\include\libimobiledevice\webinspector.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\webinspector.h"
+				RelativePath=".\src\webinspector.h"
 				>
 			</File>
 		</Filter>

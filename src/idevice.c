@@ -50,6 +50,7 @@
 #include "common/userpref.h"
 #include "common/thread.h"
 #include "common/debug.h"
+#include "common/msc.h"
 
 #ifdef HAVE_OPENSSL
 static mutex_t *mutex_buf = NULL;

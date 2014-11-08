@@ -48,6 +48,7 @@ static int wsa_init = 0;
 #include <arpa/inet.h>
 #endif
 #include "socket.h"
+#include "common/msc.h"
 
 #define RECV_TIMEOUT 20000
 
