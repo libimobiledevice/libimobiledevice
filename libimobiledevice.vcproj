@@ -1491,11 +1491,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\screenshotr.h"
+				RelativePath=".\src\screenshotr.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\screenshotr.h"
+				RelativePath=".\include\libimobiledevice\screenshotr.h"
 				>
 			</File>
 			<File
