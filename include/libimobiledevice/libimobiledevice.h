@@ -244,6 +244,17 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_ssl_cert(idevice_connection_t connection, plist_t * device_cert);
 
+/**
+ * Returns the underlying file descriptor for a connection.
+ *
+ * @param connection The connection.
+ * @param fd The connection's fd.
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
+ *     or fd are NULL.
+ */
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int * fd);
+
 /* misc */
 	
 /**

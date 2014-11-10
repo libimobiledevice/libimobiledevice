@@ -720,6 +720,16 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 	return IDEVICE_E_SUCCESS;
 }
 
+idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int * fd)
+{
+	if (!connection) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	*fd = (int)(connection->data);
+	return IDEVICE_E_SUCCESS;
+}
+
 /**
  * Sets the usbmuxd tcp port
  *
