@@ -24,6 +24,9 @@
 
 #ifdef WIN32
 #include <windows.h>
+#ifdef _MSC_VER
+	#include <process.h>
+#endif
 typedef HANDLE thread_t;
 typedef CRITICAL_SECTION mutex_t;
 typedef volatile struct {
@@ -45,6 +48,7 @@ typedef void* (*thread_func_t)(void* data);
 
 int thread_create(thread_t* thread, thread_func_t thread_func, void* data);
 void thread_join(thread_t thread);
+void thread_close(thread_t thread);
 
 void mutex_init(mutex_t* mutex);
 void mutex_destroy(mutex_t* mutex);

@@ -21,18 +21,51 @@
 
 #include "thread.h"
 
+#ifdef WIN32
+typedef struct
+{
+	thread_func_t thread_func;
+	void * data;
+} thread_data_t;
+
+static unsigned int __stdcall thread_start_proc(void* arg)
+{
+	thread_data_t * t = (thread_data_t *)arg;
+	t->thread_func(t->data);
+	free(t);
+	return 0;
+}
+#endif
+
 int thread_create(thread_t *thread, thread_func_t thread_func, void* data)
 {
 #ifdef WIN32
+	thread_data_t * thread_data = (thread_data_t *)malloc(sizeof(thread_data_t));
+	thread_data->thread_func = thread_func;
+	thread_data->data = data;
+
+	#ifdef _MSC_VER
+	HANDLE th = (HANDLE)_beginthreadex(NULL, 0, thread_start_proc, thread_data, 0, NULL);
+	#else
 	HANDLE th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread_func, data, 0, NULL);
-        if (th == NULL) {
+	#endif
+
+	if (th == NULL) {
+		free(thread_data);
 		return -1;
-        }
+	}
 	*thread = th;
 	return 0;
 #else
 	int res = pthread_create(thread, NULL, thread_func, data);
 	return res;
+#endif
+}
+
+void thread_close(thread_t thread)
+{
+#ifdef WIN32
+	CloseHandle(thread);
 #endif
 }
 
