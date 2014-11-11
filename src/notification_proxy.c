@@ -113,15 +113,46 @@ LIBIMOBILEDEVICE_API np_error_t np_client_start_service(idevice_t device, np_cli
 
 LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 {
+	plist_t dict;
+
 	if (!client)
 		return NP_E_INVALID_ARG;
 
-	property_list_service_client_free(client->parent);
-	client->parent = NULL;
+	dict = plist_new_dict();
+	plist_dict_set_item(dict,"Command", plist_new_string("Shutdown"));
+	property_list_service_send_xml_plist(client->parent, dict);
+	plist_free(dict);
+
 	if (client->notifier) {
 		debug_info("joining np callback");
 		thread_join(client->notifier);
+	} else {
+		dict = NULL;
+		property_list_service_receive_plist(client->parent, &dict);
+		if (dict) {
+#ifndef STRIP_DEBUG_CODE
+			char *cmd_value = NULL;
+			plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
+			if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
+				plist_get_string_val(cmd_value_node, &cmd_value);
+			}
+			if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
+				// this is the expected answer
+			} else {
+				debug_info("Did not get ProxyDeath but:");
+				debug_plist(dict);
+			}
+			if (cmd_value) {
+				free(cmd_value);
+			}
+#endif
+			plist_free(dict);
+		}
 	}
+
+	property_list_service_client_free(client->parent);
+	client->parent = NULL;
+
 	mutex_destroy(&client->mutex);
 	free(client);
 
@@ -142,39 +173,9 @@ LIBIMOBILEDEVICE_API np_error_t np_post_notification(np_client_t client, const c
 	np_error_t res = np_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
 
-	dict = plist_new_dict();
-	plist_dict_set_item(dict,"Command", plist_new_string("Shutdown"));
-
-	res = np_error(property_list_service_send_xml_plist(client->parent, dict));
-	plist_free(dict);
-
 	if (res != NP_E_SUCCESS) {
 		debug_info("Error sending XML plist to device!");
 	}
-
-	// try to read an answer, we just ignore errors here
-	dict = NULL;
-	property_list_service_receive_plist(client->parent, &dict);
-	if (dict) {
-#ifndef STRIP_DEBUG_CODE
-		char *cmd_value = NULL;
-		plist_t cmd_value_node = plist_dict_get_item(dict, "Command");
-		if (plist_get_node_type(cmd_value_node) == PLIST_STRING) {
-			plist_get_string_val(cmd_value_node, &cmd_value);
-		}
-
-		if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
-			// this is the expected answer
-		} else {
-			debug_plist(dict);
-		}
-		if (cmd_value) {
-			free(cmd_value);
-		}
-#endif
-		plist_free(dict);
-	}
-
 	np_unlock(client);
 	return res;
 }
@@ -279,7 +280,7 @@ static int np_get_notification(np_client_t client, char **notification)
 				res = 0;
 			}
 		} else if (cmd_value && !strcmp(cmd_value, "ProxyDeath")) {
-			debug_info("ERROR: NotificationProxy died!");
+			debug_info("NotificationProxy died!");
 			res = -1;
 		} else if (cmd_value) {
 			debug_info("unknown NotificationProxy command '%s' received!", cmd_value);
