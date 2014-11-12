@@ -91,7 +91,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R"
+				CommandLine="if exist &quot;C:\Program Files (x86)\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R"
+				CommandLine="if exist &quot;C:\Program Files\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
@@ -1327,11 +1327,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\src\afc.h"
+				RelativePath=".\include\libimobiledevice\afc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\afc.h"
+				RelativePath=".\src\afc.h"
 				>
 			</File>
 			<File
@@ -1351,11 +1351,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\diagnostics_relay.h"
+				RelativePath=".\include\libimobiledevice\diagnostics_relay.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\diagnostics_relay.h"
+				RelativePath=".\src\diagnostics_relay.h"
 				>
 			</File>
 			<File
@@ -1363,11 +1363,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\file_relay.h"
+				RelativePath=".\include\libimobiledevice\file_relay.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\file_relay.h"
+				RelativePath=".\src\file_relay.h"
 				>
 			</File>
 			<File
@@ -1379,11 +1379,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\house_arrest.h"
+				RelativePath=".\include\libimobiledevice\house_arrest.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\house_arrest.h"
+				RelativePath=".\src\house_arrest.h"
 				>
 			</File>
 			<File
@@ -1391,11 +1391,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\installation_proxy.h"
+				RelativePath=".\include\libimobiledevice\installation_proxy.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\installation_proxy.h"
+				RelativePath=".\src\installation_proxy.h"
 				>
 			</File>
 			<File
@@ -1411,19 +1411,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\misagent.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\misagent.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\mobile_image_mounter.h"
+				RelativePath=".\include\libimobiledevice\misagent.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\mobile_image_mounter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\libimobiledevice\mobile_image_mounter.h"
 				>
 			</File>
 			<File
@@ -1435,19 +1435,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\mobilebackup2.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\mobilebackup2.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\mobilesync.h"
+				RelativePath=".\include\libimobiledevice\mobilebackup2.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\mobilesync.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\libimobiledevice\mobilesync.h"
 				>
 			</File>
 			<File
@@ -1463,11 +1463,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\property_list_service.h"
+				RelativePath=".\src\property_list_service.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\property_list_service.h"
+				RelativePath=".\include\libimobiledevice\property_list_service.h"
 				>
 			</File>
 			<File
@@ -1475,11 +1475,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\restore.h"
+				RelativePath=".\include\libimobiledevice\restore.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\restore.h"
+				RelativePath=".\src\restore.h"
 				>
 			</File>
 			<File
@@ -1491,19 +1491,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\screenshotr.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\screenshotr.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\service.h"
+				RelativePath=".\include\libimobiledevice\screenshotr.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\libimobiledevice\service.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\service.h"
 				>
 			</File>
 			<File
@@ -1527,11 +1527,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\libimobiledevice\webinspector.h"
+				RelativePath=".\src\webinspector.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\webinspector.h"
+				RelativePath=".\include\libimobiledevice\webinspector.h"
 				>
 			</File>
 		</Filter>
