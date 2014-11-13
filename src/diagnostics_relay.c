@@ -92,7 +92,7 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_new(idev
 LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t * client, const char* label)
 {
 	diagnostics_relay_error_t err = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, DIAGNOSTICS_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(diagnostics_relay_client_new), &err);
+	service_client_factory_start_service(device, DIAGNOSTICS_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(diagnostics_relay_client_new), (int32_t*)&err);
 	return err;
 }
 
@@ -365,9 +365,9 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_mobileges
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* _class, plist_t* result)
 {
-	if (!client || (name == NULL && class == NULL) || result == NULL)
+	if (!client || (name == NULL && _class == NULL) || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
 
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
@@ -375,8 +375,8 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistr
 	plist_t dict = plist_new_dict();
 	if (name)
 		plist_dict_set_item(dict,"EntryName", plist_new_string(name));
-	if (class)
-		plist_dict_set_item(dict,"EntryClass", plist_new_string(class));
+	if (_class)
+		plist_dict_set_item(dict,"EntryClass", plist_new_string(_class));
 	plist_dict_set_item(dict,"Request", plist_new_string("IORegistry"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);

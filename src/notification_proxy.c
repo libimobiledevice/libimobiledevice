@@ -27,6 +27,7 @@
 #include "notification_proxy.h"
 #include "property_list_service.h"
 #include "common/debug.h"
+#include "common/msc.h"
 
 #ifdef WIN32
 #define sleep(x) Sleep(x*1000)
@@ -107,7 +108,7 @@ LIBIMOBILEDEVICE_API np_error_t np_client_new(idevice_t device, lockdownd_servic
 LIBIMOBILEDEVICE_API np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label)
 {
 	np_error_t err = NP_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, NP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(np_client_new), &err);
+	service_client_factory_start_service(device, NP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(np_client_new), (int32_t*)&err);
 	return err;
 }
 

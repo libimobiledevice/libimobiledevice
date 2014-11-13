@@ -23,6 +23,10 @@
 #ifndef __USERPREF_H
 #define __USERPREF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -84,5 +88,9 @@ userpref_error_t pair_record_set_item_from_key_data(plist_t pair_record, const c
 /* deprecated */
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count);
 int userpref_has_pair_record(const char *udid);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -27,9 +27,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifndef WIN32
 #include <sys/time.h>
+#endif
 #include <inttypes.h>
-#include <ctype.h>
 
 #include "utils.h"
 
@@ -92,7 +93,7 @@ char *string_concat(const char *str, ...)
 
 	/* Concat each string */
 
-	result = malloc(len);
+	result = (char*)malloc(len);
 	if (!result)
 		return NULL; /* errno remains set */
 
@@ -386,7 +387,11 @@ static void plist_node_print_to_stream(plist_t node, int* indent_level, FILE* st
 
 	case PLIST_UINT:
 		plist_get_uint_val(node, &u);
+#ifdef _MSC_VER
+		fprintf(stream, "%llu\n", u);
+#else
 		fprintf(stream, "%"PRIu64"\n", u);
+#endif
 		break;
 
 	case PLIST_REAL:

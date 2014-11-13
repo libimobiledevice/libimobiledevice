@@ -47,7 +47,7 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_new(idevice_t device, 
 LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_start_service(idevice_t device, file_relay_client_t * client, const char* label)
 {
 	file_relay_error_t err = FILE_RELAY_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, FILE_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(file_relay_client_new), &err);
+	service_client_factory_start_service(device, FILE_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(file_relay_client_new), (int32_t*)&err);
 	return err;
 }
 

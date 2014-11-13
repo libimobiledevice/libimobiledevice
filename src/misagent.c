@@ -106,7 +106,7 @@ LIBIMOBILEDEVICE_API misagent_error_t misagent_client_new(idevice_t device, lock
 LIBIMOBILEDEVICE_API misagent_error_t misagent_client_start_service(idevice_t device, misagent_client_t * client, const char* label)
 {
 	misagent_error_t err = MISAGENT_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, MISAGENT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(misagent_client_new), &err);
+	service_client_factory_start_service(device, MISAGENT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(misagent_client_new), (int32_t*)&err);
 	return err;
 }
 

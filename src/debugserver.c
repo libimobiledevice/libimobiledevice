@@ -85,13 +85,13 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	*client = client_loc;
 
 	debug_info("debugserver_client successfully created.");
-	return 0;
+	return DEBUGSERVER_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_start_service(idevice_t device, debugserver_client_t * client, const char* label)
 {
 	debugserver_error_t err = DEBUGSERVER_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, DEBUGSERVER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(debugserver_client_new), &err);
+	service_client_factory_start_service(device, DEBUGSERVER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(debugserver_client_new), (int32_t*)&err);
 	return err;
 }
 
@@ -165,7 +165,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* nam
 	tmp->argc = argc;
 	tmp->argv = NULL;
 	if (argc > 0) {
-		tmp->argv = malloc(sizeof(char*) * (argc + 2));
+		tmp->argv = (char**)malloc(sizeof(char*) * (argc + 2));
 		for (i = 0; i < argc; i++) {
 			tmp->argv[i] = strdup(argv[i]);
 		}
@@ -263,7 +263,7 @@ LIBIMOBILEDEVICE_API void debugserver_encode_string(const char* buffer, char** e
 	uint32_t length = strlen(buffer);
 	*encoded_length = (2 * length) + DEBUGSERVER_CHECKSUM_HASH_LENGTH + 1;
 
-	*encoded_buffer = malloc(sizeof(char) * (*encoded_length));
+	*encoded_buffer = (char*)malloc(sizeof(char) * (*encoded_length));
 	memset(*encoded_buffer, '\0', *encoded_length);
 	for (position = 0, index = 0; index < length; index++) {
 		position = (index * (2 * sizeof(char)));
@@ -274,7 +274,7 @@ LIBIMOBILEDEVICE_API void debugserver_encode_string(const char* buffer, char** e
 
 LIBIMOBILEDEVICE_API void debugserver_decode_string(const char *encoded_buffer, size_t encoded_length, char** buffer)
 {
-	*buffer = malloc(sizeof(char) * ((encoded_length / 2)+1));
+	*buffer = (char*)malloc(sizeof(char) * ((encoded_length / 2)+1));
 	char* t = *buffer;
 	const char *f = encoded_buffer;
 	const char *fend = f + encoded_length;

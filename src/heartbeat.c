@@ -82,13 +82,13 @@ LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_new(idevice_t device, lo
 	*client = client_loc;
 
 	debug_info("heartbeat_client successfully created.");
-	return 0;
+	return HEARTBEAT_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client, const char* label)
 {
 	heartbeat_error_t err = HEARTBEAT_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, HEARTBEAT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(heartbeat_client_new), &err);
+	service_client_factory_start_service(device, HEARTBEAT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(heartbeat_client_new), (int32_t*)&err);
 	return err;
 }
 

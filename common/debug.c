@@ -39,7 +39,11 @@
 #include "asprintf.h"
 #endif
 
-static int debug_level;
+#ifdef _DEBUG
+static int debug_level = 1;
+#else
+static int debug_level = 0;
+#endif
 
 void internal_set_debug_level(int level)
 {
@@ -60,7 +64,11 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
 
 	/* generate header text */
-	(void)asprintf(&header, "%s %s:%d %s()", str_time, file, line, func);
+	char threadIdText[0xFF] = "";
+#ifdef WIN32
+	_snprintf(threadIdText, sizeof(threadIdText) - 1, "[0x%0x] ", ::GetCurrentThreadId());
+#endif
+	(void)asprintf(&header, "%s %s%s:%d %s()", str_time, threadIdText, file, line, func);
 	free (str_time);
 
 	/* trim ending newlines */
@@ -73,6 +81,11 @@ static void debug_print_line(const char *func, const char *file, int line, const
 
 	/* flush this output, as we need to debug */
 	fflush (stdout);
+
+#ifdef WIN32
+	::OutputDebugStringA(header); ::OutputDebugStringA(": ");
+	::OutputDebugStringA(buffer); ::OutputDebugStringA("\n");
+#endif
 
 	free (header);
 }

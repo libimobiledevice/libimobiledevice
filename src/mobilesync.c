@@ -98,7 +98,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_new(idevice_t device, 
 LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t * client, const char* label)
 {
 	mobilesync_error_t err = MOBILESYNC_E_UNKNOWN_ERROR;
-	service_client_factory_start_service(device, MOBILESYNC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilesync_client_new), &err);
+	service_client_factory_start_service(device, MOBILESYNC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilesync_client_new), (int32_t*)&err);
 	return err;
 }
 
