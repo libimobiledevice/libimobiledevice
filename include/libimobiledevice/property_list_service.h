@@ -163,6 +163,18 @@ LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_enable_
  */
 LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client);
 
+/**
+ * Sets the protocol endianness (default is big endian)
+ *
+ * @param client The connected property list service client to update
+ * @param is_little_endian Should the protocol use little endian byte order
+ *
+ * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
+ *     PROPERTY_LIST_SERVICE_E_INVALID_ARG if client or client->connection is
+ *     NULL.
+ */
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_set_little_endian(property_list_service_client_t client, uint8_t is_little_endian);
+
 #ifdef __cplusplus
 }
 #endif

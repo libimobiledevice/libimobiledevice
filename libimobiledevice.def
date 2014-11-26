@@ -59,6 +59,7 @@ EXPORTS
 	property_list_service_receive_plist
 	property_list_service_enable_ssl
 	property_list_service_disable_ssl
+	property_list_service_set_little_endian
 
 	afc_client_new
 	afc_client_start_service

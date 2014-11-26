@@ -27,6 +27,7 @@
 
 struct property_list_service_client_private {
 	service_client_t parent;
+	uint8_t is_little_endian;
 };
 
 #endif

@@ -68,6 +68,7 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 	/* create client object */
 	property_list_service_client_t client_loc = (property_list_service_client_t)malloc(sizeof(struct property_list_service_client_private));
 	client_loc->parent = parent;
+	client_loc->is_little_endian = 0;
 
 	/* all done, return success */
 	*client = client_loc;
@@ -85,6 +86,15 @@ property_list_service_error_t property_list_service_client_free(property_list_se
 	client = NULL;
 
 	return err;
+}
+
+property_list_service_error_t property_list_service_set_little_endian(property_list_service_client_t client, uint8_t is_little_endian)
+{
+	if (!client)
+		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+
+	client->is_little_endian = is_little_endian;
+	return PROPERTY_LIST_SERVICE_E_SUCCESS;
 }
 
 /**
@@ -123,7 +133,9 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 		return PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
 
-	nlen = htobe32(length);
+	if (!client->is_little_endian) {
+		nlen = htobe32(length);
+	}
 	debug_info("sending %d bytes", length);
 	service_send(client->parent, (const char*)&nlen, sizeof(nlen), (uint32_t*)&bytes);
 	if (bytes == sizeof(nlen)) {
@@ -193,7 +205,9 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("initial read failed!");
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	} else {
-		pktlen = be32toh(pktlen);
+		if (!client->is_little_endian) {
+			pktlen = be32toh(pktlen);
+		}
 		if (pktlen < (1 << 24)) { /* prevent huge buffers */
 			uint32_t curlen = 0;
 			char *content = NULL;
