@@ -321,7 +321,7 @@ void mobilesync_anchors_free(mobilesync_anchors_t anchors);
  *
  * @return A new plist_t of type PLIST_DICT.
  */
-plist_t mobilesync_actions_new();
+plist_t mobilesync_actions_new(void);
 
 /**
  * Add one or more new key:value pairs to the given actions plist.

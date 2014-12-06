@@ -279,7 +279,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
  *
  * @return A new plist_t of type PLIST_DICT.
  */
-plist_t instproxy_client_options_new();
+plist_t instproxy_client_options_new(void);
 
 /**
  * Add one or more new key:value pairs to the given client_options.

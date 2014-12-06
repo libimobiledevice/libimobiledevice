@@ -95,7 +95,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
  */
-idevice_error_t idevice_event_unsubscribe();
+idevice_error_t idevice_event_unsubscribe(void);
 
 /* discovery (synchronous) */
 
