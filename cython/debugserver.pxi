@@ -114,6 +114,8 @@ cdef class DebugServerClient(BaseService):
     cpdef bytes send_command(self, DebugServerCommand command):
         cdef:
             char* c_response = NULL
+            bytes result
+
         try:
             self.handle_error(debugserver_client_send_command(self._c_client, command._c_command, &c_response))
             if c_response:
@@ -158,6 +160,7 @@ cdef class DebugServerClient(BaseService):
     cpdef bytes receive_response(self):
         cdef:
             char* c_response = NULL
+            bytes result
 
         try:
             self.handle_error(debugserver_client_receive_response(self._c_client, &c_response))
@@ -175,6 +178,7 @@ cdef class DebugServerClient(BaseService):
         cdef:
             char** c_argv = to_cstring_array(argv)
             char* c_response = NULL
+            bytes result
 
         try:
             self.handle_error(debugserver_client_set_argv(self._c_client, argc, c_argv, &c_response))
@@ -193,6 +197,7 @@ cdef class DebugServerClient(BaseService):
         cdef:
             char* c_env = env
             char* c_response = NULL
+            bytes result
 
         try:
             self.handle_error(debugserver_client_set_environment_hex_encoded(self._c_client, c_env, &c_response))
@@ -211,6 +216,7 @@ cdef class DebugServerClient(BaseService):
             char *c_buffer = buffer
             uint32_t encoded_length = len(c_buffer) * 2 + 0x3 + 1
             char* c_encoded_buffer = <char *>malloc(encoded_length)
+            bytes result
 
         try:
             debugserver_encode_string(c_buffer, &c_encoded_buffer, &encoded_length)
@@ -226,6 +232,7 @@ cdef class DebugServerClient(BaseService):
             char* c_encoded_buffer = encoded_buffer
             uint32_t encoded_length = len(c_encoded_buffer)
             char *c_buffer = <char *>malloc(encoded_length)
+            bytes result
 
         try:
             debugserver_decode_string(c_encoded_buffer, encoded_length, &c_buffer)
@@ -247,7 +254,7 @@ cdef class DebugServerClient(BaseService):
         elif response[0] == 'O':    # stdout/stderr
             result = self.decode_string(response[1:])
         elif response[0] == 'T':    # thread stopped information
-            result = "Thread stopped. Details:\n%s" % response[1:]
+            result = "Thread stopped. Details:\n%s\n" % response[1:]
         elif response[0] == 'E':    # Error
             result = "ERROR: %s\n" % response[1:]
         elif response[0] == 'W':    # Warnning
