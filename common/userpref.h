@@ -61,7 +61,7 @@ typedef gnutls_datum_t key_data_t;
 
 typedef int16_t userpref_error_t;
 
-const char *userpref_get_config_dir();
+const char *userpref_get_config_dir(void);
 int userpref_read_system_buid(char **system_buid);
 userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record);
 userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);

@@ -40,7 +40,7 @@ char *string_concat(const char *str, ...);
 char *string_build_path(const char *elem, ...);
 char *string_format_size(uint64_t size);
 char *string_toupper(char *str);
-char *generate_uuid();
+char *generate_uuid(void);
 
 void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *length);
 void buffer_write_to_filename(const char *filename, const char *buffer, uint64_t length);

@@ -28,7 +28,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
-static void print_usage()
+static void print_usage(void)
 {
 	printf("Usage: idevicename [OPTIONS] [NAME]\n");
 	printf("Display the device name or set it to NAME if specified.\n");

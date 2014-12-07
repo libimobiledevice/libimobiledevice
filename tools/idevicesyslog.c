@@ -48,7 +48,7 @@ static void syslog_callback(char c, void *user_data)
 	putchar(c);
 }
 
-static int start_logging()
+static int start_logging(void)
 {
 	idevice_error_t ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
@@ -83,7 +83,7 @@ static int start_logging()
 	return 0;
 }
 
-static void stop_logging()
+static void stop_logging(void)
 {
 	fflush(stdout);
 

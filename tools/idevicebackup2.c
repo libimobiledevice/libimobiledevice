@@ -1038,7 +1038,7 @@ static void mb2_copy_directory_by_path(const char *src, const char *dst)
 #define my_getch getch
 #else
 #define BS_CC 0x7f
-static int my_getch()
+static int my_getch(void)
 {
 	struct termios oldt, newt;
 	int ch;
