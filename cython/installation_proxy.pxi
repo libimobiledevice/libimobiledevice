@@ -15,6 +15,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
 
     instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, instproxy_client_t *client)
     instproxy_error_t instproxy_client_free(instproxy_client_t client)
+    instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path)
 
     instproxy_error_t instproxy_browse(instproxy_client_t client, plist.plist_t client_options, plist.plist_t *result)
     instproxy_error_t instproxy_install(instproxy_client_t client, char *pkg_path, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
@@ -58,6 +59,24 @@ cdef class InstallationProxyClient(PropertyListService):
         if self._c_client is not NULL:
             err = instproxy_client_free(self._c_client)
             self.handle_error(err)
+
+    cpdef get_path_for_bundle_identifier(self, bytes bundle_id):
+        cdef:
+            char* c_bundle_id = bundle_id
+            char* c_path = NULL
+            bytes result
+
+        try:
+            self.handle_error(instproxy_client_get_path_for_bundle_identifier(self._c_client, c_bundle_id, &c_path))
+            if c_path != NULL:
+                result = c_path
+                return result
+            else:
+                return None
+        except BaseError, e:
+            raise
+        finally:
+            free(c_path)
 
     cpdef plist.Node browse(self, object client_options):
         cdef:
