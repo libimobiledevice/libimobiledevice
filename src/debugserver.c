@@ -85,7 +85,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	*client = client_loc;
 
 	debug_info("debugserver_client successfully created.");
-	return 0;
+	return DEBUGSERVER_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_start_service(idevice_t device, debugserver_client_t * client, const char* label)
