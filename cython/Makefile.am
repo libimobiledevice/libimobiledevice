@@ -24,7 +24,8 @@ PXIINCLUDES =					\
 	misagent.pxi				\
 	house_arrest.pxi			\
 	restore.pxi					\
-	mobile_image_mounter.pxi
+	mobile_image_mounter.pxi    \
+	debugserver.pxi
 
 CLEANFILES =		\
 	*.pyc			\
