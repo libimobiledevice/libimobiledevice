@@ -372,8 +372,9 @@ int main(int argc, char *argv[])
 
 			/* set maximum packet size */
 			debug_info("Setting maximum packet size...");
-			const char* packet_size[2] = {"1024", NULL};
+			char* packet_size[2] = {strdup("1024"), NULL};
 			debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
+			free(packet_size[0]);
 			dres = debugserver_client_send_command(debugserver_client, command, &response);
 			debugserver_command_free(command);
 			command = NULL;
@@ -388,7 +389,7 @@ int main(int argc, char *argv[])
 
 			/* set working directory */
 			debug_info("Setting working directory...");
-			const char* working_dir[2] = {working_directory, NULL};
+			char* working_dir[2] = {working_directory, NULL};
 			debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response);
 			debugserver_command_free(command);
@@ -508,6 +509,9 @@ cleanup:
 		}
 		free(environment);
 	}
+
+	if (working_directory)
+		free(working_directory);
 
 	if (path)
 		free(path);
