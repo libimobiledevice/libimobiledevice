@@ -195,7 +195,7 @@ debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_c
  * @return DEBUGSERVER_E_SUCCESS on success,
  *  DEBUGSERVER_E_INVALID_ARG when name or command is NULL
  */
-debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command);
+debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command);
 
 /**
  * Frees memory of command object.

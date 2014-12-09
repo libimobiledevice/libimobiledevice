@@ -153,7 +153,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_
 	return debugserver_client_receive_with_timeout(client, data, size, received, 1000);
 }
 
-LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command)
 {
 	int i;
 	debugserver_command_t tmp = (debugserver_command_t) malloc(sizeof(struct debugserver_command_private));
@@ -541,12 +541,15 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_environment_hex_
 		return DEBUGSERVER_E_INVALID_ARG;
 
 	debugserver_error_t result = DEBUGSERVER_E_UNKNOWN_ERROR;
-	const char* env_arg[] = { env, NULL };
+	char* env_tmp = strdup(env);
+	char* env_arg[2] = { env_tmp, NULL };
 
 	debugserver_command_t command = NULL;
 	debugserver_command_new("QEnvironmentHexEncoded:", 1, env_arg, &command);
 	result = debugserver_client_send_command(client, command, response);
 	debugserver_command_free(command);
+
+	free(env_tmp);
 
 	return result;
 }
