@@ -1267,6 +1267,8 @@ static lockdownd_error_t lockdownd_do_start_service(lockdownd_client_t client, c
 			plist_get_string_val(error_node, &error);
 			if (!strcmp(error, "InvalidService")) {
 				ret = LOCKDOWN_E_INVALID_SERVICE;
+			} else if (!strcmp(error, "ServiceLimit")) {
+				ret = LOCKDOWN_E_SERVICE_LIMIT;
 			} else if (!strcmp(error, "NoRunningSession")) {
 				ret = LOCKDOWN_E_NO_RUNNING_SESSION;
 			}
