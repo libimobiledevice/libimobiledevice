@@ -114,6 +114,7 @@ LIBIMOBILEDEVICE_API np_error_t np_client_start_service(idevice_t device, np_cli
 LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 {
 	plist_t dict;
+	property_list_service_client_t parent;
 
 	if (!client)
 		return NP_E_INVALID_ARG;
@@ -123,12 +124,16 @@ LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 	property_list_service_send_xml_plist(client->parent, dict);
 	plist_free(dict);
 
+	parent = client->parent;
+	/* notifies the client->notifier thread that it should terminate */
+	client->parent = NULL;
+
 	if (client->notifier) {
 		debug_info("joining np callback");
 		thread_join(client->notifier);
 	} else {
 		dict = NULL;
-		property_list_service_receive_plist(client->parent, &dict);
+		property_list_service_receive_plist(parent, &dict);
 		if (dict) {
 #ifndef STRIP_DEBUG_CODE
 			char *cmd_value = NULL;
@@ -150,8 +155,7 @@ LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 		}
 	}
 
-	property_list_service_client_free(client->parent);
-	client->parent = NULL;
+	property_list_service_client_free(parent);
 
 	mutex_destroy(&client->mutex);
 	free(client);
