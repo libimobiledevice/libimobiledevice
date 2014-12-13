@@ -11,6 +11,7 @@ cdef extern from "libimobiledevice/file_relay.h":
         FILE_RELAY_E_MUX_ERROR = -3
         FILE_RELAY_E_INVALID_SOURCE = -4
         FILE_RELAY_E_STAGING_EMPTY = -5
+        FILE_RELAY_E_PERMISSION_DENIED = -6
         FILE_RELAY_E_UNKNOWN_ERROR = -256
 
     file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, file_relay_client_t *client)
@@ -27,6 +28,7 @@ cdef class FileRelayError(BaseError):
             FILE_RELAY_E_MUX_ERROR: "MUX error",
             FILE_RELAY_E_INVALID_SOURCE: "Invalid source",
             FILE_RELAY_E_STAGING_EMPTY: "Staging empty",
+            FILE_RELAY_E_PERMISSION_DENIED: "Permission denied",
             FILE_RELAY_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)
