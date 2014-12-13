@@ -38,6 +38,8 @@ cdef class iDeviceEvent:
 cdef class iDeviceConnection(Base):
     cdef idevice_connection_t _c_connection
 
+    cpdef bytes receive_timeout(self, uint32_t max_len, unsigned int timeout)
+    cpdef bytes receive(self, max_len)
     cpdef disconnect(self)
 
 cdef class iDevice(Base):
