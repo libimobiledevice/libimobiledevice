@@ -128,6 +128,36 @@ cdef class iDeviceConnection(Base):
     def __init__(self, *args, **kwargs):
         raise TypeError("iDeviceConnection cannot be instantiated.  Please use iDevice.connect()")
 
+    cpdef bytes receive_timeout(self, uint32_t max_len, unsigned int timeout):
+        cdef:
+            uint32_t bytes_received
+            char* c_data = <char *>malloc(max_len)
+            bytes result
+
+        try:
+            self.handle_error(idevice_connection_receive_timeout(self._c_connection, c_data, max_len, &bytes_received, timeout))
+            result = c_data[:bytes_received]
+            return result
+        except BaseError, e:
+            raise
+        finally:
+            free(c_data)
+
+    cpdef bytes receive(self, max_len):
+        cdef:
+            uint32_t bytes_received
+            char* c_data = <char *>malloc(max_len)
+            bytes result
+
+        try:
+            self.handle_error(idevice_connection_receive(self._c_connection, c_data, max_len, &bytes_received))
+            result = c_data[:bytes_received]
+            return result
+        except BaseError, e:
+            raise
+        finally:
+            free(c_data)
+
     cpdef disconnect(self):
         cdef idevice_error_t err
         err = idevice_disconnect(self._c_connection)
