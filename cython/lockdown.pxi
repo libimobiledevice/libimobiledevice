@@ -1,27 +1,44 @@
 cdef extern from "libimobiledevice/lockdown.h":
     ctypedef enum lockdownd_error_t:
-        LOCKDOWN_E_SUCCESS = 0
-        LOCKDOWN_E_INVALID_ARG = -1
-        LOCKDOWN_E_INVALID_CONF = -2
-        LOCKDOWN_E_PLIST_ERROR = -3
-        LOCKDOWN_E_PAIRING_FAILED = -4
-        LOCKDOWN_E_SSL_ERROR = -5
-        LOCKDOWN_E_DICT_ERROR = -6
-        LOCKDOWN_E_START_SERVICE_FAILED = -7
-        LOCKDOWN_E_NOT_ENOUGH_DATA = -8
-        LOCKDOWN_E_SET_VALUE_PROHIBITED = -9
-        LOCKDOWN_E_GET_VALUE_PROHIBITED = -10
-        LOCKDOWN_E_REMOVE_VALUE_PROHIBITED = -11
-        LOCKDOWN_E_MUX_ERROR = -12
-        LOCKDOWN_E_ACTIVATION_FAILED = -13
-        LOCKDOWN_E_PASSWORD_PROTECTED = -14
-        LOCKDOWN_E_NO_RUNNING_SESSION = -15
-        LOCKDOWN_E_INVALID_HOST_ID = -16
-        LOCKDOWN_E_INVALID_SERVICE = -17
-        LOCKDOWN_E_INVALID_ACTIVATION_RECORD = -18
-        LOCKDOWN_E_PAIRING_DIALOG_PENDING = -20
-        LOCKDOWN_E_USER_DENIED_PAIRING = -21
-        LOCKDOWN_E_UNKNOWN_ERROR = -256
+        LOCKDOWN_E_SUCCESS
+        LOCKDOWN_E_INVALID_ARG
+        LOCKDOWN_E_INVALID_CONF
+        LOCKDOWN_E_PLIST_ERROR
+        LOCKDOWN_E_PAIRING_FAILED
+        LOCKDOWN_E_SSL_ERROR
+        LOCKDOWN_E_DICT_ERROR
+        LOCKDOWN_E_NOT_ENOUGH_DATA
+        LOCKDOWN_E_SET_VALUE_PROHIBITED
+        LOCKDOWN_E_GET_VALUE_PROHIBITED
+        LOCKDOWN_E_MUX_ERROR
+        LOCKDOWN_E_NO_RUNNING_SESSION
+        LOCKDOWN_E_INVALID_RESPONSE
+        LOCKDOWN_E_MISSING_KEY
+        LOCKDOWN_E_MISSING_VALUE
+        LOCKDOWN_E_GET_PROHIBITED
+        LOCKDOWN_E_SET_PROHIBITED
+        LOCKDOWN_E_REMOVE_PROHIBITED
+        LOCKDOWN_E_IMMUTABLE_VALUE
+        LOCKDOWN_E_PASSWORD_PROTECTED
+        LOCKDOWN_E_USER_DENIED_PAIRING
+        LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING
+        LOCKDOWN_E_MISSING_HOST_ID
+        LOCKDOWN_E_INVALID_HOST_ID
+        LOCKDOWN_E_SESSION_ACTIVE
+        LOCKDOWN_E_SESSION_INACTIVE
+        LOCKDOWN_E_MISSING_SESSION_ID
+        LOCKDOWN_E_INVALID_SESSION_ID
+        LOCKDOWN_E_MISSING_SERVICE
+        LOCKDOWN_E_INVALID_SERVICE
+        LOCKDOWN_E_SERVICE_LIMIT
+        LOCKDOWN_E_MISSING_PAIR_RECORD
+        LOCKDOWN_E_SAVE_PAIR_RECORD_FAILED
+        LOCKDOWN_E_INVALID_PAIR_RECORD
+        LOCKDOWN_E_INVALID_ACTIVATION_RECORD
+        LOCKDOWN_E_MISSING_ACTIVATION_RECORD
+        LOCKDOWN_E_SERVICE_PROHIBITED
+        LOCKDOWN_E_ESCROW_LOCKED
+        LOCKDOWN_E_UNKNOWN_ERROR
 
     lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, char *label)
     lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, char *label)
@@ -56,21 +73,36 @@ cdef class LockdownError(BaseError):
             LOCKDOWN_E_PLIST_ERROR: "Property list error",
             LOCKDOWN_E_PAIRING_FAILED: "Pairing failed",
             LOCKDOWN_E_SSL_ERROR: "SSL error",
-            LOCKDOWN_E_DICT_ERROR: "Dict error",
-            LOCKDOWN_E_START_SERVICE_FAILED: "Start service failed",
+            LOCKDOWN_E_DICT_ERROR: "Dictionary error",
             LOCKDOWN_E_NOT_ENOUGH_DATA: "Not enough data",
-            LOCKDOWN_E_SET_VALUE_PROHIBITED: "Set value prohibited",
-            LOCKDOWN_E_GET_VALUE_PROHIBITED: "Get value prohibited",
-            LOCKDOWN_E_REMOVE_VALUE_PROHIBITED: "Remove value prohibited",
-            LOCKDOWN_E_MUX_ERROR: "MUX Error",
-            LOCKDOWN_E_ACTIVATION_FAILED: "Activation failed",
-            LOCKDOWN_E_PASSWORD_PROTECTED: "Password protected",
+            LOCKDOWN_E_MUX_ERROR: "Mux Protocol Error",
             LOCKDOWN_E_NO_RUNNING_SESSION: "No running session",
-            LOCKDOWN_E_INVALID_HOST_ID: "Invalid host ID",
-            LOCKDOWN_E_INVALID_SERVICE: "Invalid service",
-            LOCKDOWN_E_INVALID_ACTIVATION_RECORD: "Invalid activation record",
-            LOCKDOWN_E_PAIRING_DIALOG_PENDING: "Pairing dialog pending",
+            LOCKDOWN_E_INVALID_RESPONSE: "Invalid response",
+            LOCKDOWN_E_MISSING_KEY: "Missing key",
+            LOCKDOWN_E_MISSING_VALUE: "Missing value",
+            LOCKDOWN_E_GET_PROHIBITED: "Get value prohibited",
+            LOCKDOWN_E_SET_PROHIBITED: "Set value prohibited",
+            LOCKDOWN_E_REMOVE_PROHIBITED: "Remove value prohibited",
+            LOCKDOWN_E_IMMUTABLE_VALUE: "Immutable value",
+            LOCKDOWN_E_PASSWORD_PROTECTED: "Password protected",
             LOCKDOWN_E_USER_DENIED_PAIRING: "User denied pairing",
+            LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING: "Pairing dialog response pending",
+            LOCKDOWN_E_MISSING_HOST_ID: "Missing host ID",
+            LOCKDOWN_E_INVALID_HOST_ID: "Invalid host ID",
+            LOCKDOWN_E_SESSION_ACTIVE: "Session active",
+            LOCKDOWN_E_SESSION_INACTIVE: "Session inactive",
+            LOCKDOWN_E_MISSING_SESSION_ID: "Missing session ID",
+            LOCKDOWN_E_INVALID_SESSION_ID: "Invalid session ID",
+            LOCKDOWN_E_MISSING_SERVICE: "Missing service",
+            LOCKDOWN_E_INVALID_SERVICE: "Invalid service",
+            LOCKDOWN_E_SERVICE_LIMIT: "Service limit reached",
+            LOCKDOWN_E_MISSING_PAIR_RECORD: "Missing pair record",
+            LOCKDOWN_E_SAVE_PAIR_RECORD_FAILED: "Saving pair record failed",
+            LOCKDOWN_E_INVALID_PAIR_RECORD: "Invalid pair record",
+            LOCKDOWN_E_INVALID_ACTIVATION_RECORD: "Invalid activation record",
+            LOCKDOWN_E_MISSING_ACTIVATION_RECORD: "Missing activation record",
+            LOCKDOWN_E_SERVICE_PROHIBITED: "Service prohibited",
+            LOCKDOWN_E_ESCROW_LOCKED: "Escrow locked",
             LOCKDOWN_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)
