@@ -40,7 +40,7 @@ static void print_error_message(lockdownd_error_t err)
 		case LOCKDOWN_E_INVALID_HOST_ID:
 			printf("ERROR: Device %s is not paired with this host\n", udid);
 			break;
-		case LOCKDOWN_E_PAIRING_DIALOG_PENDING:
+		case LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING:
 			printf("ERROR: Please accept the trust dialog on the screen of device %s, then attempt to pair again.\n", udid);
 			break;
 		case LOCKDOWN_E_USER_DENIED_PAIRING:
