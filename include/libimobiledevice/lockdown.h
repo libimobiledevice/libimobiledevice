@@ -276,7 +276,7 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
 /**
  * Pairs the device using the supplied pair record.
  *
- * @param client The lockdown client to pair with.
+ * @param client The lockdown client
  * @param pair_record The pair record to use for pairing. If NULL is passed, then
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
@@ -295,7 +295,7 @@ lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_recor
  * lockdownd preference named TrustedHostAttached. Otherwise the host must be
  * paired using lockdownd_pair() first.
  *
- * @param client The lockdown client to pair with.
+ * @param client The lockdown client
  * @param pair_record The pair record to validate pairing with. If NULL is
  *    passed, then the pair record is read from the internal pairing record
  *    management.
@@ -312,7 +312,7 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_p
  * Unpairs the device with the given HostID and removes the pairing records
  * from the device and host if the internal pairing record management is used.
  *
- * @param client The lockdown client to pair with.
+ * @param client The lockdown client
  * @param pair_record The pair record to use for unpair. If NULL is passed, then
  *    the pair records from the current machine are used.
  *
