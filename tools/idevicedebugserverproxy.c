@@ -26,7 +26,7 @@
 #include <signal.h>
 
 #include <libimobiledevice/libimobiledevice.h>
-#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/debugserver.h>
 
 #include "common/socket.h"
 #include "common/thread.h"
@@ -41,16 +41,30 @@ typedef struct {
 	int server_fd;
 	int client_fd;
 	uint16_t local_port;
-	uint16_t remote_port;
-	idevice_connection_t device_connection;
+	idevice_t device;
+	debugserver_client_t debugserver_client;
 	volatile int stop_ctod;
 	volatile int stop_dtoc;
 } socket_info_t;
 
+static socket_info_t global_socket_info;
+
 static void clean_exit(int sig)
 {
-	fprintf(stderr, "Exiting...\n");
+	if (quit_flag == 0)
+		fprintf(stderr, "Setting quit status. Cancel again to quit server.\n");
+	else
+		fprintf(stderr, "Exiting...\n");
+
 	quit_flag++;
+
+	/* shutdown server socket if we have to terminate to unblock the server loop */
+	if (quit_flag > 1) {
+		if (global_socket_info.server_fd > 0) {
+			socket_shutdown(global_socket_info.server_fd, SHUT_RDWR);
+			socket_close(global_socket_info.server_fd);
+		}
+	}
 }
 
 static void print_usage(int argc, char **argv)
@@ -83,7 +97,7 @@ static void *thread_device_to_client(void *data)
 	while (!quit_flag && !socket_info->stop_dtoc && socket_info->client_fd > 0 && socket_info->server_fd > 0) {
 		debug("%s: receiving data from device...\n", __func__);
 
-		res = idevice_connection_receive_timeout(socket_info->device_connection, buffer, sizeof(buffer), (uint32_t*)&recv_len, 5000);
+		res = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buffer, sizeof(buffer), (uint32_t*)&recv_len, 5000);
 
 		if (recv_len <= 0) {
 			if (recv_len == 0 && res == IDEVICE_E_SUCCESS) {
@@ -161,7 +175,7 @@ static void *thread_client_to_device(void *data)
 		} else {
 			/* forward data to device */
 			debug("%s: sending data to device...\n", __func__);
-			res = idevice_connection_send(socket_info->device_connection, buffer, recv_len, (uint32_t*)&sent);
+			res = debugserver_client_send(socket_info->debugserver_client, buffer, recv_len, (uint32_t*)&sent);
 
 			if (sent < recv_len || res != IDEVICE_E_SUCCESS) {
 				if (sent <= 0) {
@@ -194,10 +208,17 @@ static void *thread_client_to_device(void *data)
 
 static void* connection_handler(void* data)
 {
+	debugserver_error_t derr = DEBUGSERVER_E_SUCCESS;
 	socket_info_t* socket_info = (socket_info_t*)data;
 	thread_t ctod;
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
+
+	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, "idevicedebugserverproxy");
+	if (derr != DEBUGSERVER_E_SUCCESS) {
+		fprintf(stderr, "Could not start debugserver on device!\nPlease make sure to mount a developer disk image first.\n");
+		return NULL;
+	}
 
 	/* spawn client to device thread */
 	socket_info->stop_ctod = 0;
@@ -209,29 +230,23 @@ static void* connection_handler(void* data)
 	thread_join(ctod);
 	thread_free(ctod);
 
+	debug("%s: shutting down...\n", __func__);
+
+	debugserver_client_free(socket_info->debugserver_client);
+	socket_info->debugserver_client = NULL;
+
 	/* shutdown client socket */
 	socket_shutdown(socket_info->client_fd, SHUT_RDWR);
 	socket_close(socket_info->client_fd);
-
-	/* shutdown server socket if we have to terminate to unblock the server loop */
-	if (quit_flag) {
-		socket_shutdown(socket_info->server_fd, SHUT_RDWR);
-		socket_close(socket_info->server_fd);
-	}
 
 	return NULL;
 }
 
 int main(int argc, char *argv[])
 {
-	lockdownd_client_t lockdown = NULL;
-	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
-	idevice_t device = NULL;
-	idevice_connection_t connection = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	thread_t th;
 	const char* udid = NULL;
-	lockdownd_service_descriptor_t service = NULL;
 	uint16_t local_port = 0;
 	int result = EXIT_SUCCESS;
 	int i;
@@ -282,8 +297,11 @@ int main(int argc, char *argv[])
 		goto leave_cleanup;
 	}
 
+	/* setup and create socket endpoint */
+	global_socket_info.local_port = local_port;
+
 	/* start services and connect to device */
-	ret = idevice_new(&device, udid);
+	ret = idevice_new(&global_socket_info.device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
 			fprintf(stderr, "No device found with udid %s, is it plugged in?\n", udid);
@@ -294,66 +312,29 @@ int main(int argc, char *argv[])
 		goto leave_cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lockdown, "idevicedebugserverproxy"))) {
-		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
-		result = EXIT_FAILURE;
-		goto leave_cleanup;
-	}
-
-	if ((lockdownd_start_service(lockdown, "com.apple.debugserver", &service) != LOCKDOWN_E_SUCCESS) || !service || !service->port) {
-		fprintf(stderr, "Could not start com.apple.debugserver!\nPlease make sure to mount the developer disk image first.\n");
-		result = EXIT_FAILURE;
-		goto leave_cleanup;
-	}
-
-	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
-		fprintf(stderr, "Connection to debugserver port %d failed!\n", (int)service->port);
-		result = EXIT_FAILURE;
-		goto leave_cleanup;
-	}
-
-	/* free lockdown connection if running as it is not needed anymore */
-	if (lockdown) {
-		lockdownd_client_free(lockdown);
-		lockdown = NULL;
-	}
-
-	/* setup and create socket endpoint */
-	socket_info_t socket_info;
-
-	socket_info.device_connection = connection;
-	socket_info.local_port = local_port;
-	socket_info.remote_port = service->port;
-
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
-	}
-
 	/* create local socket */
-	socket_info.server_fd = socket_create(socket_info.local_port);
-	if (socket_info.server_fd < 0) {
+	global_socket_info.server_fd = socket_create(global_socket_info.local_port);
+	if (global_socket_info.server_fd < 0) {
 		fprintf(stderr, "Could not create socket\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
 	}
 
 	while (!quit_flag) {
-		debug("%s: Waiting for connection on local port %d\n", __func__, socket_info.local_port);
+		debug("%s: Waiting for connection on local port %d\n", __func__, global_socket_info.local_port);
 
 		/* wait for client */
-		socket_info.client_fd = socket_accept(socket_info.server_fd, socket_info.local_port);
-		if (socket_info.client_fd < 0) {
-			debug("%s: Continuing...\n", __func__);
+		global_socket_info.client_fd = socket_accept(global_socket_info.server_fd, global_socket_info.local_port);
+		if (global_socket_info.client_fd < 0) {
 			continue;
 		}
 
 		debug("%s: Handling new client connection...\n", __func__);
 
-		if (thread_new(&th, connection_handler, (void*)&socket_info) != 0) {
+		if (thread_new(&th, connection_handler, (void*)&global_socket_info) != 0) {
 			fprintf(stderr, "Could not start connection handler.\n");
-			socket_shutdown(socket_info.server_fd, SHUT_RDWR);
-			socket_close(socket_info.server_fd);
+			socket_shutdown(global_socket_info.server_fd, SHUT_RDWR);
+			socket_close(global_socket_info.server_fd);
 			continue;
 		}
 
@@ -364,14 +345,8 @@ int main(int argc, char *argv[])
 	debug("%s: Shutting down debugserver proxy...\n", __func__);
 
 leave_cleanup:
-	if (connection) {
-		idevice_disconnect(connection);
-	}
-	if (lockdown) {
-		lockdownd_client_free(lockdown);
-	}
-	if (device) {
-		idevice_free(device);
+	if (global_socket_info.device) {
+		idevice_free(global_socket_info.device);
 	}
 
 	return result;
