@@ -43,7 +43,8 @@ typedef pthread_once_t thread_once_t;
 
 typedef void* (*thread_func_t)(void* data);
 
-int thread_create(thread_t* thread, thread_func_t thread_func, void* data);
+int thread_new(thread_t* thread, thread_func_t thread_func, void* data);
+void thread_free(thread_t thread);
 void thread_join(thread_t thread);
 
 void mutex_init(mutex_t* mutex);

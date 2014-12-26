@@ -21,18 +21,25 @@
 
 #include "thread.h"
 
-int thread_create(thread_t *thread, thread_func_t thread_func, void* data)
+int thread_new(thread_t *thread, thread_func_t thread_func, void* data)
 {
 #ifdef WIN32
 	HANDLE th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread_func, data, 0, NULL);
-        if (th == NULL) {
+	if (th == NULL) {
 		return -1;
-        }
+	}
 	*thread = th;
 	return 0;
 #else
 	int res = pthread_create(thread, NULL, thread_func, data);
 	return res;
+#endif
+}
+
+void thread_free(thread_t thread)
+{
+#ifdef WIN32
+	CloseHandle(thread);
 #endif
 }
 
@@ -95,5 +102,5 @@ void thread_once(thread_once_t *once_control, void (*init_routine)(void))
 	InterlockedExchange(&(once_control->lock), 0);
 #else
 	pthread_once(once_control, init_routine);
-#endif	
+#endif
 }

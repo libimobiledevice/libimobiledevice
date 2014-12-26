@@ -139,7 +139,7 @@ static void *thread_client_to_device(void *data)
 
 	/* spawn server to client thread */
 	socket_info->stop_dtoc = 0;
-	if (thread_create(&dtoc, thread_device_to_client, data) != 0) {
+	if (thread_new(&dtoc, thread_device_to_client, data) != 0) {
 		fprintf(stderr, "Failed to start device to client thread...\n");
 	}
 
@@ -187,6 +187,7 @@ static void *thread_client_to_device(void *data)
 
 	/* join other thread to allow it to stop */
 	thread_join(dtoc);
+	thread_free(dtoc);
 
 	return NULL;
 }
@@ -200,12 +201,13 @@ static void* connection_handler(void* data)
 
 	/* spawn client to device thread */
 	socket_info->stop_ctod = 0;
-	if (thread_create(&ctod, thread_client_to_device, data) != 0) {
+	if (thread_new(&ctod, thread_client_to_device, data) != 0) {
 		fprintf(stderr, "Failed to start client to device thread...\n");
 	}
 
 	/* join the fun */
 	thread_join(ctod);
+	thread_free(ctod);
 
 	/* shutdown client socket */
 	socket_shutdown(socket_info->client_fd, SHUT_RDWR);
@@ -348,11 +350,15 @@ int main(int argc, char *argv[])
 
 		debug("%s: Handling new client connection...\n", __func__);
 
-		if (thread_create(&th, connection_handler, (void*)&socket_info) != 0) {
+		if (thread_new(&th, connection_handler, (void*)&socket_info) != 0) {
 			fprintf(stderr, "Could not start connection handler.\n");
 			socket_shutdown(socket_info.server_fd, SHUT_RDWR);
 			socket_close(socket_info.server_fd);
+			continue;
 		}
+
+		/* we do not need it anymore */
+		thread_free(th);
 	}
 
 	debug("%s: Shutting down debugserver proxy...\n", __func__);

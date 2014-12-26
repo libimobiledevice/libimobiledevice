@@ -131,6 +131,8 @@ LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 	if (client->notifier) {
 		debug_info("joining np callback");
 		thread_join(client->notifier);
+		thread_free(client->notifier);
+		client->notifier = (thread_t)NULL;
 	} else {
 		dict = NULL;
 		property_list_service_receive_plist(parent, &dict);
@@ -347,6 +349,7 @@ LIBIMOBILEDEVICE_API np_error_t np_set_notify_callback( np_client_t client, np_n
 		property_list_service_client_t parent = client->parent;
 		client->parent = NULL;
 		thread_join(client->notifier);
+		thread_free(client->notifier);
 		client->notifier = (thread_t)NULL;
 		client->parent = parent;
 	}
@@ -358,7 +361,7 @@ LIBIMOBILEDEVICE_API np_error_t np_set_notify_callback( np_client_t client, np_n
 			npt->cbfunc = notify_cb;
 			npt->user_data = user_data;
 
-			if (thread_create(&client->notifier, np_notifier, npt) == 0) {
+			if (thread_new(&client->notifier, np_notifier, npt) == 0) {
 				res = NP_E_SUCCESS;
 			}
 		}

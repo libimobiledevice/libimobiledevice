@@ -132,11 +132,12 @@ int main(int argc, char *argv[])
 	for (i = 0; i < NB_THREADS; i++) {
 		data[i].afc = afc;
 		data[i].id = i + 1;
-		thread_create(&threads[i], check_afc, data + i);
+		thread_new(&threads[i], check_afc, data + i);
 	}
 
 	for (i = 0; i < NB_THREADS; i++) {
 		thread_join(threads[i]);
+		thread_free(threads[i]);
 	}
 
 	lockdownd_client_free(client);

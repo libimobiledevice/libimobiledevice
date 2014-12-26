@@ -106,6 +106,8 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_
 	if (client->worker) {
 		debug_info("Joining syslog capture callback worker thread");
 		thread_join(client->worker);
+		thread_free(client->worker);
+		client->worker = (thread_t)NULL;
 	}
 	free(client);
 
@@ -190,7 +192,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture(syslog_rela
 		srwt->cbfunc = callback;
 		srwt->user_data = user_data;
 
-		if (thread_create(&client->worker, syslog_relay_worker, srwt) == 0) {
+		if (thread_new(&client->worker, syslog_relay_worker, srwt) == 0) {
 			res = SYSLOG_RELAY_E_SUCCESS;
 		}
 	}
@@ -206,6 +208,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay
 		client->parent = NULL;
 		/* join thread to make it exit */
 		thread_join(client->worker);
+		thread_free(client->worker);
 		client->worker = (thread_t)NULL;
 		client->parent = parent;
 	}

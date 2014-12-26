@@ -120,6 +120,8 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t 
 	if (client->status_updater) {
 		debug_info("joining status_updater");
 		thread_join(client->status_updater);
+		thread_free(client->status_updater);
+		client->status_updater = (thread_t)NULL;
 	}
 	mutex_destroy(&client->mutex);
 	free(client);
@@ -320,7 +322,7 @@ static instproxy_error_t instproxy_perform_operation(instproxy_client_t client, 
  * @return Always NULL.
  */
 static void* instproxy_status_updater(void* arg)
-{	
+{
 	struct instproxy_status_data *data = (struct instproxy_status_data*)arg;
 
 	/* run until the operation is complete or an error occurs */
@@ -332,7 +334,10 @@ static void* instproxy_status_updater(void* arg)
 	if (data->operation) {
 		free(data->operation);
 	}
-	data->client->status_updater = (thread_t)NULL;
+	if (data->client->status_updater) {
+		thread_free(data->client->status_updater);
+		data->client->status_updater = (thread_t)NULL;
+	}
 	instproxy_unlock(data->client);
 	free(data);
 
@@ -367,7 +372,7 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
 			data->operation = strdup(operation);
 			data->user_data = user_data;
 
-			if (thread_create(&client->status_updater, instproxy_status_updater, data) == 0) {
+			if (thread_new(&client->status_updater, instproxy_status_updater, data) == 0) {
 				res = INSTPROXY_E_SUCCESS;
 			}
 		}
