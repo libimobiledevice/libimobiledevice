@@ -80,10 +80,8 @@ idevicedebug_CFLAGS = $(AM_CFLAGS)
 idevicedebug_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicedebug_LDADD = $(top_builddir)/src/libimobiledevice.la
 
-if !WIN32
 bin_PROGRAMS += idevicecrashreport
 idevicecrashreport_SOURCES = idevicecrashreport.c
 idevicecrashreport_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
 idevicecrashreport_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicecrashreport_LDADD = $(top_builddir)/src/libimobiledevice.la
-endif
