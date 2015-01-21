@@ -22,6 +22,8 @@ EXPORTS
 	idevice_set_usbmuxd_port
 	idevice_get_usbmuxd_port
 	idevice_connection_get_fd
+	idevice_connection_receive_all
+	idevice_connection_send_all
 
 	lockdownd_client_new
 	lockdownd_client_new_with_handshake

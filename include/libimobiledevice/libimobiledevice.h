@@ -219,7 +219,35 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
-	
+
+/**
+ * Receive an exact number of bytes from a device via the given connection. 
+ * This function will return after the given timeout even if no data has been
+ * received.
+ *
+ * @param connection The connection to receive data from.
+ * @param data Buffer that will be filled with the received data.
+ *   This buffer has to be large enough to hold len bytes.
+ * @param len Buffer size or number of bytes to receive.
+ * @param timeout Timeout in milliseconds after which this function should
+ *   return even if no data has been received.
+ *
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
+ */
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_all(idevice_connection_t connection, char * data, uint32_t len, unsigned int timeout);
+
+/**
+ * Send data to a device via the given connection.
+ * Makes sure the entire buffer is sent.
+ *
+ * @param connection The connection to send data over.
+ * @param data Buffer with data to send.
+ * @param len Size of the buffer to send.
+ *
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
+ */
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len);
+
 /**
  * Enables SSL for the given connection.
  *

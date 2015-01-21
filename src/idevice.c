@@ -419,6 +419,86 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
+idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len)
+{
+	if (!connection || !data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	size_t cur_bytes_sent = 0;
+	size_t total_bytes_sent = 0;
+	size_t bytes_left = len;
+	idevice_error_t res = IDEVICE_E_SUCCESS;
+
+	while (total_bytes_sent < len)
+	{
+		res = idevice_connection_send(connection, data + total_bytes_sent, bytes_left, &cur_bytes_sent);
+		if (IDEVICE_E_SUCCESS != res) {
+			debug_info("ERROR: Unable to send data");
+			break;
+		}
+
+		total_bytes_sent += cur_bytes_sent;
+		bytes_left -= cur_bytes_sent;
+	}
+
+	return res;
+}
+
+static uint64_t get_time_ms()
+{
+#ifdef WIN32
+	return (uint64_t)GetTickCount();
+#else
+	/* TODO: use clock_gettime (CLOCK_MONOTONIC) when possible */
+	struct timeval tv;
+	if (0 != gettimeofday(&tv, NULL)) {
+		return 0;
+	}
+
+	return ((tv.tv_sec * (uint64_t)1000) + (uint64_t)tv.tv_usec);
+#endif
+}
+
+idevice_error_t idevice_connection_receive_all(idevice_connection_t connection, char * data, uint32_t len, unsigned int timeout)
+{
+	if (!connection || !data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	size_t cur_bytes_received = 0;
+	size_t total_bytes_received = 0;
+	size_t bytes_left = len;
+	idevice_error_t res = IDEVICE_E_SUCCESS;
+
+	uint64_t start_time = get_time_ms();
+	uint64_t time_passed = 0;
+	while ((total_bytes_received < len) && (time_passed <= timeout)) {
+		res = idevice_connection_receive_timeout(connection, 
+												 data + total_bytes_received, 
+												 bytes_left, 
+												 &cur_bytes_received, 
+												 timeout - (unsigned int)time_passed);
+		if (IDEVICE_E_SUCCESS != res) {
+			debug_info("ERROR: Unable to receive data");
+			break;
+		}
+
+		total_bytes_received += cur_bytes_received;
+		bytes_left -= cur_bytes_received;
+
+		time_passed = get_time_ms() - start_time;
+	}
+	
+	/* Check if we've failed to receive the requested amount of data */
+	if ((IDEVICE_E_SUCCESS == res) && (total_bytes_received < len)) {
+		/* Timeout */
+		return IDEVICE_E_NOT_ENOUGH_DATA;
+	}
+
+	return res;
+}
+
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
