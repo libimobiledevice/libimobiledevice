@@ -38,33 +38,25 @@ static int debug_mode = 0;
 static int quit_flag = 0;
 
 typedef struct {
-	int server_fd;
 	int client_fd;
-	uint16_t local_port;
 	idevice_t device;
 	debugserver_client_t debugserver_client;
 	volatile int stop_ctod;
 	volatile int stop_dtoc;
 } socket_info_t;
 
-static socket_info_t global_socket_info;
+struct thread_info {
+	thread_t th;
+	struct thread_info *next;
+};
+
+typedef struct thread_info thread_info_t;
+
 
 static void clean_exit(int sig)
 {
-	if (quit_flag == 0)
-		fprintf(stderr, "Setting quit status. Cancel again to quit server.\n");
-	else
-		fprintf(stderr, "Exiting...\n");
-
+	fprintf(stderr, "Exiting...\n");
 	quit_flag++;
-
-	/* shutdown server socket if we have to terminate to unblock the server loop */
-	if (quit_flag > 1) {
-		if (global_socket_info.server_fd > 0) {
-			socket_shutdown(global_socket_info.server_fd, SHUT_RDWR);
-			socket_close(global_socket_info.server_fd);
-		}
-	}
 }
 
 static void print_usage(int argc, char **argv)
@@ -83,7 +75,7 @@ static void print_usage(int argc, char **argv)
 static void *thread_device_to_client(void *data)
 {
 	socket_info_t* socket_info = (socket_info_t*)data;
-	idevice_error_t res = IDEVICE_E_UNKNOWN_ERROR;
+	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
 
 	int recv_len;
 	int sent;
@@ -92,15 +84,14 @@ static void *thread_device_to_client(void *data)
 	debug("%s: started thread...\n", __func__);
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
-	debug("%s: server fd = %d\n", __func__, socket_info->server_fd);
 
-	while (!quit_flag && !socket_info->stop_dtoc && socket_info->client_fd > 0 && socket_info->server_fd > 0) {
+	while (!quit_flag && !socket_info->stop_dtoc && socket_info->client_fd > 0) {
 		debug("%s: receiving data from device...\n", __func__);
 
 		res = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buffer, sizeof(buffer), (uint32_t*)&recv_len, 5000);
 
 		if (recv_len <= 0) {
-			if (recv_len == 0 && res == IDEVICE_E_SUCCESS) {
+			if (recv_len == 0 && res == DEBUGSERVER_E_SUCCESS) {
 				// try again
 				continue;
 			} else {
@@ -139,7 +130,7 @@ static void *thread_device_to_client(void *data)
 static void *thread_client_to_device(void *data)
 {
 	socket_info_t* socket_info = (socket_info_t*)data;
-	idevice_error_t res = IDEVICE_E_UNKNOWN_ERROR;
+	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
 
 	int recv_len;
 	int sent;
@@ -149,7 +140,6 @@ static void *thread_client_to_device(void *data)
 	debug("%s: started thread...\n", __func__);
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
-	debug("%s: server_fd = %d\n", __func__, socket_info->server_fd);
 
 	/* spawn server to client thread */
 	socket_info->stop_dtoc = 0;
@@ -157,7 +147,7 @@ static void *thread_client_to_device(void *data)
 		fprintf(stderr, "Failed to start device to client thread...\n");
 	}
 
-	while (!quit_flag && !socket_info->stop_ctod && socket_info->client_fd > 0 && socket_info->server_fd > 0) {
+	while (!quit_flag && !socket_info->stop_ctod && socket_info->client_fd > 0) {
 		debug("%s: receiving data from client...\n", __func__);
 
 		/* attempt to read incoming data from client */
@@ -177,7 +167,7 @@ static void *thread_client_to_device(void *data)
 			debug("%s: sending data to device...\n", __func__);
 			res = debugserver_client_send(socket_info->debugserver_client, buffer, recv_len, (uint32_t*)&sent);
 
-			if (sent < recv_len || res != IDEVICE_E_SUCCESS) {
+			if (sent < recv_len || res != DEBUGSERVER_E_SUCCESS) {
 				if (sent <= 0) {
 					fprintf(stderr, "send failed: %s\n", strerror(errno));
 					break;
@@ -245,18 +235,34 @@ static void* connection_handler(void* data)
 int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
-	thread_t th;
+	idevice_t device = NULL;
+	thread_info_t *thread_list = NULL;
 	const char* udid = NULL;
 	uint16_t local_port = 0;
+	int server_fd;
 	int result = EXIT_SUCCESS;
 	int i;
 
+#ifndef WIN32
+	struct sigaction sa;
+	struct sigaction si;
+	memset(&sa, '\0', sizeof(struct sigaction));
+	memset(&si, '\0', sizeof(struct sigaction));
+
+	sa.sa_handler = clean_exit;
+	sigemptyset(&sa.sa_mask);
+
+	si.sa_handler = SIG_IGN;
+	sigemptyset(&si.sa_mask);
+
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGPIPE, &si, NULL);
+#else
 	/* bind signals */
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
-#ifndef WIN32
-	signal(SIGQUIT, clean_exit);
-	signal(SIGPIPE, SIG_IGN);
 #endif
 
 	/* parse cmdline arguments */
@@ -297,11 +303,8 @@ int main(int argc, char *argv[])
 		goto leave_cleanup;
 	}
 
-	/* setup and create socket endpoint */
-	global_socket_info.local_port = local_port;
-
 	/* start services and connect to device */
-	ret = idevice_new(&global_socket_info.device, udid);
+	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
 			fprintf(stderr, "No device found with udid %s, is it plugged in?\n", udid);
@@ -313,40 +316,67 @@ int main(int argc, char *argv[])
 	}
 
 	/* create local socket */
-	global_socket_info.server_fd = socket_create(global_socket_info.local_port);
-	if (global_socket_info.server_fd < 0) {
+	server_fd = socket_create(local_port);
+	if (server_fd < 0) {
 		fprintf(stderr, "Could not create socket\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
 	}
 
 	while (!quit_flag) {
-		debug("%s: Waiting for connection on local port %d\n", __func__, global_socket_info.local_port);
+		debug("%s: Waiting for connection on local port %d\n", __func__, local_port);
 
 		/* wait for client */
-		global_socket_info.client_fd = socket_accept(global_socket_info.server_fd, global_socket_info.local_port);
-		if (global_socket_info.client_fd < 0) {
+		int client_fd = socket_accept(server_fd, local_port);
+		if (client_fd < 0) {
 			continue;
 		}
 
 		debug("%s: Handling new client connection...\n", __func__);
 
-		if (thread_new(&th, connection_handler, (void*)&global_socket_info) != 0) {
-			fprintf(stderr, "Could not start connection handler.\n");
-			socket_shutdown(global_socket_info.server_fd, SHUT_RDWR);
-			socket_close(global_socket_info.server_fd);
-			continue;
+		thread_info_t *el = (thread_info_t*)malloc(sizeof(thread_info_t));
+		if (!el) {
+			fprintf(stderr, "Out of memory\n");
+			exit(EXIT_FAILURE);
+		}
+		el->next = NULL;
+
+		if (thread_list) {
+			thread_list->next = el;
+		} else {
+			thread_list = el;
 		}
 
-		/* we do not need it anymore */
-		thread_free(th);
+		socket_info_t *sinfo = (socket_info_t*)malloc(sizeof(socket_info_t));
+		if (!sinfo) {
+			fprintf(stderr, "Out of memory\n");
+			exit(EXIT_FAILURE);
+		}
+		sinfo->client_fd = client_fd;
+		sinfo->device = device;
+
+		if (thread_new(&(el->th), connection_handler, (void*)sinfo) != 0) {
+			fprintf(stderr, "Could not start connection handler.\n");
+			socket_shutdown(server_fd, SHUT_RDWR);
+			socket_close(server_fd);
+			continue;
+		}
 	}
 
 	debug("%s: Shutting down debugserver proxy...\n", __func__);
 
+	/* join and clean up threads */
+	while (thread_list) {
+		thread_info_t *el = thread_list;
+		thread_join(el->th);
+		thread_free(el->th);
+		thread_list = el->next;
+		free(el);
+	}
+
 leave_cleanup:
-	if (global_socket_info.device) {
-		idevice_free(global_socket_info.device);
+	if (device) {
+		idevice_free(device);
 	}
 
 	return result;
