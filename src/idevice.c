@@ -594,7 +594,7 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 }
 
 #ifndef STRIP_DEBUG_CODE
-static const char *errorstring(int e)
+static const char *ssl_error_to_string(int e)
 {
 	switch(e) {
 		case SSL_ERROR_NONE:
@@ -719,7 +719,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 
 	return_me = SSL_do_handshake(ssl);
 	if (return_me != 1) {
-		debug_info("ERROR in SSL_do_handshake: %s", errorstring(SSL_get_error(ssl, return_me)));
+		debug_info("ERROR in SSL_do_handshake: %s", ssl_error_to_string(SSL_get_error(ssl, return_me)));
 		SSL_free(ssl);
 		SSL_CTX_free(ssl_ctx);
 	} else {
