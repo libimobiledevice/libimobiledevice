@@ -331,7 +331,7 @@ static debugserver_error_t debugserver_client_send_noack(debugserver_client_t cl
 	return debugserver_client_send(client, "-", sizeof(char), NULL);
 }
 
-static debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled)
 {
 	if (!client)
 		return DEBUGSERVER_E_INVALID_ARG;
