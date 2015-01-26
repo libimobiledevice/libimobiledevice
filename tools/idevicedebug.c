@@ -63,13 +63,7 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_directiona
 	instproxy_client_options_add(client_opts, "ApplicationType", "Any", NULL);
 
 	// only return attributes we need
-	plist_t return_attributes = plist_new_array();
-	plist_array_append_item(return_attributes, plist_new_string("CFBundleIdentifier"));
-	plist_array_append_item(return_attributes, plist_new_string("CFBundleExecutable"));
-	plist_array_append_item(return_attributes, plist_new_string(key));
-	instproxy_client_options_add(client_opts, "ReturnAttributes", return_attributes, NULL);
-	plist_free(return_attributes);
-	return_attributes = NULL;
+	instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "CFBundleExecutable", key, NULL);
 
 	// query device for list of apps
 	instproxy_error_t ierr = instproxy_browse(client, client_opts, &apps);
