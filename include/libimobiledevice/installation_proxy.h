@@ -295,6 +295,16 @@ plist_t instproxy_client_options_new(void);
 void instproxy_client_options_add(plist_t client_options, ...);
 
 /**
+ * Adds attributes to the given client_options to filter browse results.
+ *
+ * @param client_options The client options to modify.
+ * @param ... VALUE, VALUE, [VALUE], NULL
+ *
+ * @note The values passed are expected to be strings.
+ */
+void instproxy_client_options_set_return_attributes(plist_t client_options, ...);
+
+/**
  * Frees client_options plist.
  *
  * @param client_options The client options plist to free. Does nothing if NULL

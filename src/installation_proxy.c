@@ -578,6 +578,27 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, .
 	va_end(args);
 }
 
+LIBIMOBILEDEVICE_API void instproxy_client_options_set_return_attributes(plist_t client_options, ...)
+{
+	if (!client_options)
+		return;
+
+	plist_t return_attributes = plist_new_array();
+
+	va_list args;
+	va_start(args, client_options);
+	char *arg = va_arg(args, char*);
+	while (arg) {
+		char *attribute = strdup(arg);
+		plist_array_append_item(return_attributes, plist_new_string(attribute));
+		free(attribute);
+		arg = va_arg(args, char*);
+	}
+	va_end(args);
+
+	plist_dict_set_item(client_options, "ReturnAttributes", return_attributes);
+}
+
 LIBIMOBILEDEVICE_API void instproxy_client_options_free(plist_t client_options)
 {
 	if (client_options) {
