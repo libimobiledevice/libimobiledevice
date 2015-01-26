@@ -58,10 +58,10 @@ typedef void (*instproxy_status_cb_t) (const char *operation, plist_t status, vo
  * @param device The device to connect to
  * @param service The service descriptor returned by lockdownd_start_service.
  * @param client Pointer that will be set to a newly allocated
- *     instproxy_client_t upon successful return.
+ *        instproxy_client_t upon successful return.
  *
  * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error value
- *     when an error occured.
+ *         when an error occured.
  */
 instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client);
 
@@ -70,13 +70,13 @@ instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descr
  *
  * @param device The device to connect to.
  * @param client Pointer that will point to a newly allocated
- *     instproxy_client_t upon successful return. Must be freed using
- *     instproxy_client_free() after use.
+ *        instproxy_client_t upon successful return. Must be freed using
+ *        instproxy_client_free() after use.
  * @param label The label to use for communication. Usually the program name.
- *  Pass NULL to disable sending the label in requests to lockdownd.
+ *        Pass NULL to disable sending the label in requests to lockdownd.
  *
  * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error
- *     code otherwise.
+ *         code otherwise.
  */
 instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label);
 
@@ -87,10 +87,9 @@ instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_cli
  * @param client The installation_proxy client to disconnect and free.
  *
  * @return INSTPROXY_E_SUCCESS on success
- *      or INSTPROXY_E_INVALID_ARG if client is NULL.
+ *         or INSTPROXY_E_INVALID_ARG if client is NULL.
  */
 instproxy_error_t instproxy_client_free(instproxy_client_t client);
-
 
 /**
  * List installed applications. This function runs synchronously.
@@ -98,13 +97,15 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client);
  * @param client The connected installation_proxy client
  * @param client_options The client options to use, as PLIST_DICT, or NULL.
  *        Valid client options include:
- *          "ApplicationType" -> "User"
  *          "ApplicationType" -> "System"
+ *          "ApplicationType" -> "User"
+ *          "ApplicationType" -> "Internal"
+ *          "ApplicationType" -> "Any"
  * @param result Pointer that will be set to a plist that will hold an array
  *        of PLIST_DICT holding information about the applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *         an error occured.
  */
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);
 
@@ -125,12 +126,12 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_opt
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *         an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -153,12 +154,12 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *         an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -177,12 +178,11 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  *     an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
-
 
 /**
  * List archived applications. This function runs synchronously.
@@ -196,7 +196,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
  *        holding information about the archived applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *         an error occured.
  */
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result);
 
@@ -220,9 +220,9 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t c
  *     an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -234,7 +234,8 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  * @param client The connected installation proxy client
  * @param appid ApplicationIdentifier of the app to restore.
  * @param client_options The client options to use, as PLIST_DICT, or NULL.
- *        Currently there are no known client options, so pass NULL here.
+ *        Valid options include:
+ *          "ArchiveType" -> "DocumentsOnly"
  * @param status_cb Callback function for progress and status information. If
  *        NULL is passed, this function will run synchronously.
  * @param user_data Callback data passed to status_cb.
@@ -243,9 +244,9 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  *     an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -263,12 +264,12 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *         an error occured.
  *
  * @note If a callback function is given (async mode), this function returns
- *     INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *     created successfully; any error occuring during the operation has to be
- *     handled inside the specified callback function.
+ *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
+ *       created successfully; any error occuring during the command has to be
+ *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -282,7 +283,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
 plist_t instproxy_client_options_new(void);
 
 /**
- * Add one or more new key:value pairs to the given client_options.
+ * Adds one or more new key:value pairs to the given client_options.
  *
  * @param client_options The client options to modify.
  * @param ... KEY, VALUE, [KEY, VALUE], NULL
@@ -294,7 +295,7 @@ plist_t instproxy_client_options_new(void);
 void instproxy_client_options_add(plist_t client_options, ...);
 
 /**
- * Free client_options plist.
+ * Frees client_options plist.
  *
  * @param client_options The client options plist to free. Does nothing if NULL
  *        is passed.
@@ -302,7 +303,7 @@ void instproxy_client_options_add(plist_t client_options, ...);
 void instproxy_client_options_free(plist_t client_options);
 
 /**
- * Query the device for the path of an application.
+ * Queries the device for the path of an application.
  *
  * @param client The connected installation proxy client.
  * @param appid ApplicationIdentifier of app to retrieve the path for.

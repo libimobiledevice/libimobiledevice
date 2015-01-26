@@ -59,7 +59,7 @@ static void instproxy_unlock(instproxy_client_t client)
 }
 
 /**
- * Convert a property_list_service_error_t value to an instproxy_error_t value.
+ * Converts a property_list_service_error_t value to an instproxy_error_t value.
  * Used internally to get correct error codes.
  *
  * @param err A property_list_service_error_t error code
@@ -130,7 +130,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t 
 }
 
 /**
- * Send a command with specified options to the device.
+ * Sends a command to the device.
  * Only used internally.
  *
  * @param client The connected installation_proxy client.
@@ -383,7 +383,6 @@ static instproxy_error_t instproxy_create_status_updater(instproxy_client_t clie
 	return res;
 }
 
-
 /**
  * Internal function used by instproxy_install and instproxy_upgrade.
  *
@@ -528,6 +527,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client
 		return INSTPROXY_E_OP_IN_PROGRESS;
 	}
 
+	/* send command */
 	instproxy_lock(client);
 	instproxy_error_t res = instproxy_send_command(client, "RemoveArchive", client_options, appid, NULL);
 	instproxy_unlock(client);
@@ -548,6 +548,7 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, .
 {
 	if (!client_options)
 		return;
+
 	va_list args;
 	va_start(args, client_options);
 	char *arg = va_arg(args, char*);
@@ -607,6 +608,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_iden
 	// query device for list of apps
 	instproxy_error_t ierr = instproxy_browse(client, client_opts, &apps);
 	instproxy_client_options_free(client_opts);
+
 	if (ierr != INSTPROXY_E_SUCCESS) {
 		return ierr;
 	}
