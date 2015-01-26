@@ -2,7 +2,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
     cdef struct instproxy_client_private:
         pass
     ctypedef instproxy_client_private *instproxy_client_t
-    ctypedef void (*instproxy_status_cb_t) (const_char_ptr operation, plist.plist_t status, void *user_data)
+    ctypedef void (*instproxy_status_cb_t) (plist.plist_t command, plist.plist_t status, void *user_data)
 
     ctypedef enum instproxy_error_t:
         INSTPROXY_E_SUCCESS = 0
@@ -27,8 +27,8 @@ cdef extern from "libimobiledevice/installation_proxy.h":
     instproxy_error_t instproxy_restore(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
     instproxy_error_t instproxy_remove_archive(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 
-cdef void instproxy_notify_cb(const_char_ptr operation, plist.plist_t status, void *py_callback) with gil:
-    (<object>py_callback)(operation, plist.plist_t_to_node(status, False))
+cdef void instproxy_notify_cb(plist.plist_t command, plist.plist_t status, void *py_callback) with gil:
+    (<object>py_callback)(plist.plist_t_to_node(command, False), plist.plist_t_to_node(status, False))
 
 cdef class InstallationProxyError(BaseError):
     def __init__(self, *args, **kwargs):

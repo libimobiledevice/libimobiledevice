@@ -2,7 +2,8 @@
  * installation_proxy.h
  * com.apple.mobile.installation_proxy service header file.
  *
- * Copyright (c) 2009 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2010-2015 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2010-2013 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +30,7 @@
 struct instproxy_client_private {
 	property_list_service_client_t parent;
 	mutex_t mutex;
-	thread_t status_updater;
+	thread_t receive_status_thread;
 };
 
 #endif
