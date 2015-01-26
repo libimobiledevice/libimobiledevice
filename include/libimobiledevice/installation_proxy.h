@@ -492,9 +492,6 @@ void instproxy_client_options_free(plist_t client_options);
  * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_OP_FAILED if
  *         the path could not be determined or an INSTPROXY_E_* error
  *         value if an error occured.
- *
- * @note This implementation browses all applications and matches the
- *       right entry by the application identifier.
  */
 instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
 
