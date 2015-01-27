@@ -35,6 +35,7 @@
 #include <libimobiledevice/syslog_relay.h>
 
 static int quit_flag = 0;
+static int autoflush_flag = 0;
 
 void print_usage(int argc, char **argv);
 
@@ -46,6 +47,8 @@ static syslog_relay_client_t syslog = NULL;
 static void syslog_callback(char c, void *user_data)
 {
 	putchar(c);
+	if (c == '\n' && autoflush_flag)
+		fflush(stdout);
 }
 
 static int start_logging(void)
@@ -154,6 +157,10 @@ int main(int argc, char *argv[])
 			udid = strdup(argv[i]);
 			continue;
 		}
+		else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--flush")) {
+			autoflush_flag = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
@@ -201,6 +208,7 @@ void print_usage(int argc, char **argv)
 	printf("Relay syslog of a connected device.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -f, --flush\t\tflush output for each line automatically\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 }
