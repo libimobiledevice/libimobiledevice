@@ -32,6 +32,7 @@
 #include <plist/plist.h>
 
 #ifdef WIN32
+#include <windows.h>
 #define S_IFLNK S_IFREG
 #define S_IFSOCK S_IFREG
 #endif
@@ -43,7 +44,11 @@ static int keep_crash_reports = 0;
 static int file_exists(const char* path)
 {
 	struct stat tst;
+#ifdef WIN32
+	return (stat(path, &tst) == 0);
+#else
 	return (lstat(path, &tst) == 0);
+#endif
 }
 
 static int extract_raw_crash_report(const char* filename) {
