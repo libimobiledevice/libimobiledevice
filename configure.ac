@@ -15,7 +15,7 @@ dnl libtool versioning
 #                 changes to the signature and the semantic)
 #  ? :+1 : ?   == just internal changes
 # CURRENT : REVISION : AGE
-LIBIMOBILEDEVICE_SO_VERSION=5:0:0
+LIBIMOBILEDEVICE_SO_VERSION=6:0:0
 
 dnl Minimum package versions
 LIBUSBMUXD_VERSION=1.0.9
