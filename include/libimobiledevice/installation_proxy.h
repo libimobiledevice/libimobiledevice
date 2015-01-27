@@ -373,8 +373,8 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
  * Checks a device for certain capabilities.
  *
  * @param client The connected installation_proxy client
- * @param capabilities A PLIST_ARRAY with PLIST_STRINGs of capability names.
- *        The capabilities are passed through and queried from MobileGestalt.
+ * @param capabilities An array of char* with capability names that MUST have a
+ *        terminating NULL entry.
  * @param client_options The client options to use, as PLIST_DICT, or NULL.
  *        Currently there are no known client options, so pass NULL here.
  * @param result Pointer that will be set to a plist containing a PLIST_DICT
@@ -383,7 +383,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *         an error occured.
  */
-instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, plist_t capabilities, plist_t client_options, plist_t *result);
+instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result);
 
 /* Helper */
 

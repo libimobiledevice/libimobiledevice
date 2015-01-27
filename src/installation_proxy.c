@@ -770,7 +770,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, plist_t capabilities, plist_t client_options, plist_t *result)
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result)
 {
 	if (!capabilities || (plist_get_node_type(capabilities) != PLIST_ARRAY && plist_get_node_type(capabilities) != PLIST_DICT))
 		return INSTPROXY_E_INVALID_ARG;
@@ -783,7 +783,16 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instpr
 	plist_dict_set_item(command, "Command", plist_new_string("CheckCapabilitiesMatch"));
 	if (client_options)
 		plist_dict_set_item(command, "ClientOptions", plist_copy(client_options));
-	plist_dict_set_item(command, "Capabilities", plist_copy(capabilities));
+
+	if (capabilities) {
+		int i = 0;
+		plist_t capabilities_array = plist_new_array();
+		while (capabilities[i]) {
+			plist_array_append_item(capabilities_array, plist_new_string(capabilities[i]));
+			i++;
+		}
+		plist_dict_set_item(command, "Capabilities", capabilities_array);
+	}
 
 	res = instproxy_perform_command(client, command, INSTPROXY_COMMAND_TYPE_SYNC, instproxy_copy_lookup_result_cb, (void*)&lookup_result);
 
