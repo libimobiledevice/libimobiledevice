@@ -46,6 +46,9 @@ static syslog_relay_client_t syslog = NULL;
 static void syslog_callback(char c, void *user_data)
 {
 	putchar(c);
+	if (c == '\n') {
+		fflush(stdout);
+	}
 }
 
 static int start_logging(void)
