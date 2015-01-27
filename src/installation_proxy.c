@@ -605,25 +605,39 @@ static void instproxy_copy_lookup_result_cb(plist_t command, plist_t status, voi
 	}
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup(instproxy_client_t client, plist_t appids, plist_t client_options, plist_t *result)
+LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appids, plist_t client_options, plist_t *result)
 {
+	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
+	int i = 0;
+	plist_t lookup_result = NULL;
+	plist_t command = NULL;
+	plist_t appid_array = NULL;
+	plist_t node = NULL;
+
 	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
-	if (appids && (plist_get_node_type(appids) != PLIST_ARRAY && plist_get_node_type(appids) != PLIST_STRING))
-		return INSTPROXY_E_INVALID_ARG;
-
-	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
-
-	plist_t lookup_result = NULL;
-
-	plist_t command = plist_new_dict();
+	command = plist_new_dict();
 	plist_dict_set_item(command, "Command", plist_new_string("Lookup"));
-	if (appids) {
-		plist_dict_set_item(client_options, "BundleIDs", plist_copy(appids));
+	if (client_options) {
+		node = plist_copy(client_options);
+	} else if (appids) {
+		node = plist_new_dict();
 	}
-	if (client_options)
-		plist_dict_set_item(command, "ClientOptions", plist_copy(client_options));
+
+	/* add bundle identifiers to client options */
+	if (appids) {
+		appid_array = plist_new_array();
+		while (appids[i]) {
+			plist_array_append_item(appid_array, plist_new_string(appids[i]));
+			i++;
+		}
+		plist_dict_set_item(node, "BundleIDs", appid_array);
+	}
+
+	if (node) {
+		plist_dict_set_item(command, "ClientOptions", node);
+	}
 
 	res = instproxy_perform_command(client, command, INSTPROXY_COMMAND_TYPE_SYNC, instproxy_copy_lookup_result_cb, (void*)&lookup_result);
 
@@ -973,12 +987,11 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_iden
 	instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "CFBundleExecutable", "Path", NULL);
 
 	// only query for specific appid
-	plist_t appid_node = plist_new_string(appid);
+	const char* appids[] = {appid, NULL};
 
 	// query device for list of apps
-	instproxy_error_t ierr = instproxy_lookup(client, appid_node, client_opts, &apps);
+	instproxy_error_t ierr = instproxy_lookup(client, appids, client_opts, &apps);
 
-	plist_free(appid_node);
 	instproxy_client_options_free(client_opts);
 
 	if (ierr != INSTPROXY_E_SUCCESS) {

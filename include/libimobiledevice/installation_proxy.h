@@ -193,8 +193,8 @@ instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plis
  * Lookup information about specific applications from the device.
  *
  * @param client The connected installation_proxy client
- * @param appids A PLIST_ARRAY with PLIST_STRINGs of bundle identifiers, a
- *        single PLIST_STRING for one bundle identifier or NULL to lookup all.
+ * @param appids An array of bundle identifiers that MUST have a terminating
+ *        NULL entry or NULL to lookup all.
  * @param client_options The client options to use, as PLIST_DICT, or NULL.
  *        Currently there are no known client options, so pass NULL here.
  * @param result Pointer that will be set to a plist containing a PLIST_DICT
@@ -203,7 +203,7 @@ instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plis
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
  *         an error occured.
  */
-instproxy_error_t instproxy_lookup(instproxy_client_t client, plist_t appids, plist_t client_options, plist_t *result);
+instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appids, plist_t client_options, plist_t *result);
 
 /**
  * Install an application on the device.
