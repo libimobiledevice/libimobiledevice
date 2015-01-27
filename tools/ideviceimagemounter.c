@@ -66,6 +66,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 
 static void parse_opts(int argc, char **argv)

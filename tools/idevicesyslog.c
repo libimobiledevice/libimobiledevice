@@ -206,5 +206,6 @@ void print_usage(int argc, char **argv)
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 

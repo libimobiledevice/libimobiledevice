@@ -51,6 +51,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -c, --sync\t\tset time of device to current system time\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 
 int main(int argc, char *argv[])

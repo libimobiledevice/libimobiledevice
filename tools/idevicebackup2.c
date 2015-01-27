@@ -1140,6 +1140,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -i, --interactive\trequest passwords interactively\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 
 int main(int argc, char *argv[])

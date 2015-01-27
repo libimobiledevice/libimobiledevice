@@ -98,6 +98,7 @@ static void print_usage(int argc, char **argv)
 		printf("  %s\n", domains[i++]);
 	}
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 
 int main(int argc, char *argv[])
