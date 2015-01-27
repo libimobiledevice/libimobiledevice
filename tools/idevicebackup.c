@@ -793,6 +793,27 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	node = NULL;
+	lockdownd_get_value(client, NULL, "ProductVersion", &node);
+	if (node) {
+		char* str = NULL;
+		if (plist_get_node_type(node) == PLIST_STRING) {
+			plist_get_string_val(node, &str);
+		}
+		plist_free(node);
+		node = NULL;
+		if (str) {
+			int maj = strtol(str, NULL, 10);
+			free(str);
+			if (maj > 3) {
+				printf("ERROR: This tool is only compatible with iOS 3 or below. For newer iOS versions please use the idevicebackup2 tool.\n");
+				lockdownd_client_free(client);
+				idevice_free(device);
+				return -1;
+			}
+		}
+	}
+
 	/* start notification_proxy */
 	np_client_t np = NULL;
 	ldret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
