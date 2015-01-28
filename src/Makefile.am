@@ -34,3 +34,6 @@ if WIN32
 libimobiledevice_la_LDFLAGS += -avoid-version
 libimobiledevice_la_LIBADD += -lole32 -lws2_32
 endif
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libimobiledevice-1.0.pc

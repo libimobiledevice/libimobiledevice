@@ -209,11 +209,11 @@ AC_OUTPUT([
 Makefile
 common/Makefile
 src/Makefile
+src/libimobiledevice-1.0.pc
 include/Makefile
 tools/Makefile
 cython/Makefile
 docs/Makefile
-libimobiledevice-1.0.pc
 doxygen.cfg
 ])
 

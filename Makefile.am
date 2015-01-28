@@ -2,9 +2,6 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = common src include $(CYTHON_SUB) tools docs
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libimobiledevice-1.0.pc
-
 EXTRA_DIST = docs
 
 docs/html: $(top_builddir)/doxygen.cfg $(top_srcdir)/src/*.c $(top_srcdir)/src/*.h $(top_srcdir)/include/libimobiledevice/*.h
