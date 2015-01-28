@@ -156,26 +156,6 @@ else
   AC_SUBST(ssl_requires)
 fi
 
-AC_ARG_ENABLE([dev-tools],
-            [AS_HELP_STRING([--enable-dev-tools],
-            [build development helper tools (default is no)])],
-            [build_dev_tools=true],
-            [build_dev_tools=false])
-if test "$build_dev_tools" = true; then
-            DEV_SUB=dev
-            AC_CHECK_HEADERS([readline/readline.h],
-			     [],
-			     [AC_MSG_ERROR([Please install readline development headers])]
-	    )
-	    building_dev_tools=yes
-else
-            DEV_SUB=
-	    building_dev_tools=no
-fi
-
-AM_CONDITIONAL([ENABLE_DEVTOOLS],[test "x$DEV_SUB" = "xdev"])
-AC_SUBST([DEV_SUB])
-
 AC_ARG_ENABLE([debug-code],
             [AS_HELP_STRING([--enable-debug-code],
             [enable debug message reporting in library (default is no)])],
@@ -230,7 +210,6 @@ Makefile
 common/Makefile
 src/Makefile
 include/Makefile
-dev/Makefile
 tools/Makefile
 cython/Makefile
 docs/Makefile
@@ -244,7 +223,6 @@ Configuration for $PACKAGE $VERSION:
 
   Install prefix: .........: $prefix
   Debug code ..............: $building_debug_code
-  Dev tools ...............: $building_dev_tools
   Python bindings .........: $cython_python_bindings
   SSL support backend .....: $ssl_provider
 
