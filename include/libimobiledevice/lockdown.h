@@ -331,8 +331,6 @@ lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_rec
  * The ActivationRecord plist dictionary must be obtained using the
  * activation protocol requesting from Apple's https webservice.
  *
- * @see http://iphone-docs.org/doku.php?id=docs:protocols:activation
- *
  * @param client The lockdown client
  * @param activation_record The activation record plist dictionary
  *
