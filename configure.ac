@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
-AC_INIT(libimobiledevice, 1.2.0, nospam@nowhere.com)
+AC_PREREQ(2.64)
+AC_INIT([libimobiledevice], [1.2.0], [https://github.com/libimobiledevice/libimobiledevice/issues],, [http://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
