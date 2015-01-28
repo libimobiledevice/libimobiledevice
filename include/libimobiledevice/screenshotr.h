@@ -4,6 +4,7 @@
  * @note Requires a mounted developer image.
  * \internal
  *
+ * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

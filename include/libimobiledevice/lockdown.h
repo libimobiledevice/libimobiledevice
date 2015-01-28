@@ -3,8 +3,10 @@
  * @brief Manage device preferences, start services, pairing and activation.
  * \internal
  *
+ * Copyright (c) 2009-2014 Martin S. All Rights Reserved.
+ * Copyright (c) 2014 Koby Boyango All Rights Reserved.
+ * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
- * Copyright (c) 2009 Martin S. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

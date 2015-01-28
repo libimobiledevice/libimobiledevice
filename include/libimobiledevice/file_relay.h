@@ -3,6 +3,8 @@
  * @brief Retrieve compressed CPIO archives.
  * \internal
  *
+ * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2014 Aaron Burghardt All Rights Reserved.
  * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

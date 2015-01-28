@@ -3,7 +3,7 @@
  * @brief Request iOS diagnostic information from device.
  * \internal
  *
- * Copyright (c) 2012 Martin Szulecki, All Rights Reserved.
+ * Copyright (c) 2012-2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
