@@ -1,22 +1,22 @@
- /* 
+/*
  * device_link_service.c
  * DeviceLink service implementation.
- * 
+ *
  * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <string.h>
 #include <stdlib.h>
@@ -149,7 +149,7 @@ device_link_service_error_t device_link_service_version_exchange(device_link_ser
 {
 	if (!client)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
-	
+
 	device_link_service_error_t err = DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR;
 
 	/* perform version exchange */
@@ -240,7 +240,7 @@ leave:
  *
  * @param client The device link service client to disconnect.
  * @param message Optional message to send send to the device or NULL.
- * 
+ *
  * @return DEVICE_LINK_SERVICE_E_SUCCESS on success,
  *     DEVICE_LINK_SERVICE_E_INVALID_ARG if client is NULL,
  *     or DEVICE_LINK_SERVICE_E_MUX_ERROR when there's an error when sending

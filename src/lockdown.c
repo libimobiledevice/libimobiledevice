@@ -734,7 +734,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 		}
 
 	}
-	
+
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		*client = client_loc;
 	} else {

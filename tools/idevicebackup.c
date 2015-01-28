@@ -9,15 +9,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -511,13 +511,13 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 
 	char *version = NULL;
 	node = plist_dict_get_item(metadata, "Version");
-	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
 		plist_get_string_val(node, &version);
 	}
 
 	char *destpath = NULL;
 	node = plist_dict_get_item(metadata, "Path");
-	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
 		plist_get_string_val(node, &destpath);
 	}
 
@@ -529,7 +529,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 
 	char *domain = NULL;
 	node = plist_dict_get_item(metadata, "Domain");
-	if (node && (plist_get_node_type(node) == PLIST_STRING)) { 
+	if (node && (plist_get_node_type(node) == PLIST_STRING)) {
 		plist_get_string_val(node, &domain);
 	}
 
@@ -547,7 +547,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 		snprintf (p, 3, "%02x", (unsigned char)fnhash[i] );
 	}
 	if (strcmp(fnamehash, hash)) {
-		printf("\r\n"); 
+		printf("\r\n");
 		printf("WARNING: filename hash does not match for entry '%s'\n", hash);
 	}
 
@@ -940,7 +940,7 @@ int main(int argc, char *argv[])
 			case CMD_BACKUP:
 			printf("Starting backup...\n");
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
-			/* TODO: verify battery on AC enough battery remaining */	
+			/* TODO: verify battery on AC enough battery remaining */
 
 			/* read the last Manifest.plist */
 			if (!is_full_backup) {
@@ -1026,7 +1026,7 @@ int main(int argc, char *argv[])
 					sleep(2);
 					goto files_out;
 				}
-				
+
 				node = plist_array_get_item(message, 0);
 
 				/* get out if we don't get a DLSendFile */
@@ -1287,7 +1287,7 @@ files_out:
 					}
 					free(auth_sig);
 				} else if (auth_ver) {
-					printf("Unknown AuthVersion '%s', cannot verify AuthSignature\n", auth_ver); 
+					printf("Unknown AuthVersion '%s', cannot verify AuthSignature\n", auth_ver);
 				}
 				plist_from_bin(bin, (uint32_t)binsize, &backup_data);
 				free(bin);
@@ -1434,7 +1434,7 @@ files_out:
 								file_status = DEVICE_LINK_FILE_STATUS_LAST_HUNK;
 							else
 								file_status = DEVICE_LINK_FILE_STATUS_HUNK;
-							
+
 							plist_dict_remove_item(file_info, "DLFileOffsetKey");
 							plist_dict_set_item(file_info, "DLFileOffsetKey", plist_new_uint(file_offset));
 
@@ -1469,7 +1469,7 @@ files_out:
 								printf("DONE\n");
 
 							plist_free(send_file_node);
-							
+
 							if (file_status == DEVICE_LINK_FILE_STATUS_NONE)
 								break;
 

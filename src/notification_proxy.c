@@ -8,15 +8,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <string.h>
@@ -51,7 +51,7 @@ static void np_lock(np_client_t client)
 
 /**
  * Unlocks a notification_proxy client, used for thread safety.
- * 
+ *
  * @param client notification_proxy client to unlock
  */
 static void np_unlock(np_client_t client)
@@ -260,7 +260,7 @@ static int np_get_notification(np_client_t client, char **notification)
 		debug_info("NotificationProxy: no notification received!");
 		res = 0;
 	} else if (perr != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("NotificationProxy: error %d occured!", perr);	
+		debug_info("NotificationProxy: error %d occured!", perr);
 		res = perr;
 	}
 	if (dict) {

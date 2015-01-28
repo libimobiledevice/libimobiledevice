@@ -1,22 +1,22 @@
 /*
- * webinspector.c 
+ * webinspector.c
  * com.apple.webinspector service implementation.
- * 
+ *
  * Copyright (c) 2013 Yury Melnichek All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -123,7 +123,7 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_send(webinspector_client_
 		return res;
 	}
 
-	do {	
+	do {
 		/* determine if we need to send partial messages */
 		if (packet_length < WEBINSPECTOR_PARTIAL_PACKET_CHUNK_SIZE) {
 			is_final_message = 1;

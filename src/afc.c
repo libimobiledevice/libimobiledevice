@@ -1,7 +1,7 @@
 /*
- * afc.c 
+ * afc.c
  * Contains functions for the built-in AFC client.
- * 
+ *
  * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2009-2014 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
@@ -10,15 +10,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,7 +36,7 @@
 
 /**
  * Locks an AFC client, done for thread safety stuff
- * 
+ *
  * @param client The AFC client connection to lock
  */
 static void afc_lock(afc_client_t client)
@@ -47,8 +47,8 @@ static void afc_lock(afc_client_t client)
 
 /**
  * Unlocks an AFC client, done for thread safety stuff.
- * 
- * @param client The AFC 
+ *
+ * @param client The AFC
  */
 static void afc_unlock(afc_client_t client)
 {
@@ -63,7 +63,7 @@ static void afc_unlock(afc_client_t client)
  * @param service_client A connected service client
  * @param client Pointer that will be set to a newly allocated afc_client_t
  *     upon successful return.
- * 
+ *
  * @return AFC_E_SUCCESS on success, AFC_E_INVALID_ARG if connection is
  *  invalid, or AFC_E_NO_MEM if there is a memory allocation problem.
  */
@@ -139,7 +139,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_free(afc_client_t client)
 
 /**
  * Dispatches an AFC packet over a client.
- * 
+ *
  * @param client The client to send data through.
  * @param operation The operation to perform.
  * @param data The data to send together with the header.
@@ -211,11 +211,11 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 
 /**
  * Receives data through an AFC client and sets a variable to the received data.
- * 
+ *
  * @param client The client to receive data on.
  * @param bytes The char* to point to the newly-received data.
  * @param bytes_recv How much data was received.
- * 
+ *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t *bytes_recv)

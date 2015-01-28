@@ -9,15 +9,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <stdio.h>
@@ -142,7 +142,6 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 		uint32_t bread = 0;
 		afc_file_read(afc, f, buf+done, 65536, &bread);
 		if (bread > 0) {
-			
 		} else {
 			break;
 		}
@@ -172,7 +171,7 @@ static int mkdir_with_parents(const char *dir, int mode)
 	if (__mkdir(dir, mode) == 0) {
 		return 0;
 	} else {
-		if (errno == EEXIST) return 0;	
+		if (errno == EEXIST) return 0;
 	}
 	int res;
 	char *parent = strdup(dir);
@@ -180,7 +179,7 @@ static int mkdir_with_parents(const char *dir, int mode)
 	if (parentdir) {
 		res = mkdir_with_parents(parentdir, mode);
 	} else {
-		res = -1;	
+		res = -1;
 	}
 	free(parent);
 	if (res == 0) {
@@ -590,7 +589,7 @@ leave:
 		}
 		char *errdesc = strerror(errcode);
 		mb2_multi_status_add_file_error(*errplist, path, errno_to_device_error(errcode), errdesc);
-		
+
 		length = strlen(errdesc);
 		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, 4);
@@ -616,7 +615,7 @@ leave_proto_err:
 
 static void mb2_handle_send_files(mobilebackup2_client_t mobilebackup2, plist_t message, const char *backup_dir)
 {
-	uint32_t cnt; 
+	uint32_t cnt;
 	uint32_t i = 0;
 	uint32_t sent;
 	plist_t errplist = NULL;
@@ -1077,15 +1076,15 @@ static void get_hidden_input(char *buf, int maxlen)
 static char* ask_for_password(const char* msg, int type_again)
 {
 	char pwbuf[256];
-	
+
 	fprintf(stderr, "%s: ", msg);
 	fflush(stderr);
 	get_hidden_input(pwbuf, 256);
 	fputc('\n', stderr);
-	
+
 	if (type_again) {
 		char pwrep[256];
-		
+
 		fprintf(stderr, "%s (repeat): ", msg);
 		fflush(stderr);
 		get_hidden_input(pwrep, 256);
@@ -1168,7 +1167,7 @@ int main(int argc, char *argv[])
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
-#ifndef WIN32	
+#ifndef WIN32
 	signal(SIGQUIT, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
 #endif
@@ -1274,7 +1273,7 @@ int main(int argc, char *argv[])
 			if (!argv[i]) {
 				printf("No argument given for encryption command; requires either 'on' or 'off'.\n");
 				print_usage(argc, argv);
-				return -1;	
+				return -1;
 			}
 			if (!strcmp(argv[i], "on")) {
 				cmd_flags |= CMD_FLAG_ENCRYPTION_ENABLE;
@@ -1291,7 +1290,7 @@ int main(int argc, char *argv[])
 			if (backup_password) {
 				free(backup_password);
 				backup_password = NULL;
-			}	
+			}
 			i++;
 			if (argv[i]) {
 				if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
@@ -1304,7 +1303,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "changepw")) {
 			cmd = CMD_CHANGEPW;
-			cmd_flags |= CMD_FLAG_ENCRYPTION_CHANGEPW;	
+			cmd_flags |= CMD_FLAG_ENCRYPTION_CHANGEPW;
 			// check if passwords were given on command line
 			if (newpw) {
 				free(newpw);
@@ -1313,7 +1312,7 @@ int main(int argc, char *argv[])
 			if (backup_password) {
 				free(backup_password);
 				backup_password = NULL;
-			}		
+			}
 			i++;
 			if (argv[i]) {
 				backup_password = strdup(argv[i]);
@@ -1382,7 +1381,7 @@ int main(int argc, char *argv[])
 	}
 
 	uint8_t is_encrypted = 0;
-	char *info_path = NULL; 
+	char *info_path = NULL;
 	if (cmd == CMD_CHANGEPW) {
 		if (!interactive_mode && !backup_password && !newpw) {
 			idevice_free(device);
@@ -1609,7 +1608,7 @@ checkpoint:
 			}
 
 			/* TODO: check domain com.apple.mobile.backup key RequiresEncrypt and WillEncrypt with lockdown */
-			/* TODO: verify battery on AC enough battery remaining */	
+			/* TODO: verify battery on AC enough battery remaining */
 
 			/* re-create Info.plist (Device infos, IC-Info.sidb, photos, app_ids, iTunesPrefs) */
 			if (info_plist) {
@@ -1776,7 +1775,7 @@ checkpoint:
 					if (newpw) {
 						free(newpw);
 						newpw = NULL;
-					}	
+					}
 					if (backup_password) {
 						free(backup_password);
 						backup_password = NULL;
@@ -2057,7 +2056,6 @@ checkpoint:
 						printf("%s", str);
 						free(str);
 					}
-
 					break;
 				}
 
@@ -2134,7 +2132,7 @@ files_out:
 					}
 				} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
 					if (operation_ok) {
-						PRINT_VERBOSE(1, "Backup encryption has been disabled successfully.\n"); 
+						PRINT_VERBOSE(1, "Backup encryption has been disabled successfully.\n");
 					} else {
 						PRINT_VERBOSE(1, "Could not disable backup encryption.\n");
 					}
@@ -2154,7 +2152,6 @@ files_out:
 				} else {
 					PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
 				}
-				
 				break;
 				case CMD_INFO:
 				case CMD_LIST:

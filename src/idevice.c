@@ -1,4 +1,4 @@
-/* 
+/*
  * idevice.c
  * Device discovery and communication interface.
  *
@@ -10,15 +10,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -795,7 +795,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 	if (!connection)
 		return IDEVICE_E_INVALID_ARG;
 	if (!connection->ssl_data) {
-		/* ignore if ssl is not enabled */ 
+		/* ignore if ssl is not enabled */
 		return IDEVICE_E_SUCCESS;
 	}
 

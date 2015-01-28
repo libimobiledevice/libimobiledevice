@@ -93,7 +93,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_free(restored_client_t cli
 {
 	if (!client)
 		return RESTORE_E_INVALID_ARG;
-		
+
 	restored_error_t ret = RESTORE_E_UNKNOWN_ERROR;
 
 	if (client->parent) {
@@ -110,7 +110,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_free(restored_client_t cli
 	if (client->label) {
 		free(client->label);
 	}
-	
+
 	if (client->info) {
 		plist_free(client->info);
 	}
@@ -133,7 +133,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_receive(restored_client_t client,
 {
 	if (!client || !plist || (plist && *plist))
 		return RESTORE_E_INVALID_ARG;
-		
+
 	restored_error_t ret = RESTORE_E_SUCCESS;
 	property_list_service_error_t err;
 
@@ -181,7 +181,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_query_type(restored_client_t clie
 	dict = NULL;
 
 	ret = restored_receive(client, &dict);
-	
+
 	if (RESTORE_E_SUCCESS != ret)
 		return ret;
 
@@ -268,26 +268,26 @@ LIBIMOBILEDEVICE_API restored_error_t restored_get_value(restored_client_t clien
 {
 	if (!client || !value || (value && *value))
 		return RESTORE_E_INVALID_ARG;
-		
+
 	if (!client->info)
 		return RESTORE_E_NOT_ENOUGH_DATA;
-		
+
 	restored_error_t ret = RESTORE_E_SUCCESS;
 	plist_t item = NULL;
-	
+
 	if (!key) {
 		*value = plist_copy(client->info);
 		return RESTORE_E_SUCCESS;
 	} else {
 		item = plist_dict_get_item(client->info, key);
 	}
-	
+
 	if (item) {
 		*value = plist_copy(item);
 	} else {
 		ret = RESTORE_E_PLIST_ERROR;
 	}
-	
+
 	return ret;
 }
 

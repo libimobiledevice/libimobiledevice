@@ -1,7 +1,7 @@
 /*
- * mobilesync.c 
+ * mobilesync.c
  * Contains functions for the built-in MobileSync client.
- * 
+ *
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
@@ -9,15 +9,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #define _GNU_SOURCE 1
@@ -328,7 +328,7 @@ static mobilesync_error_t mobilesync_get_records(mobilesync_client_t client, con
 	msg = plist_new_array();
 	plist_array_append_item(msg, plist_new_string(operation));
 	plist_array_append_item(msg, plist_new_string(client->data_class));
-	
+
 	err = mobilesync_send(client, msg);
 
 	if (msg) {
@@ -710,7 +710,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_cancel(mobilesync_client_t cl
 
 LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor)
 {
-	mobilesync_anchors_t anchors = (mobilesync_anchors_t) malloc(sizeof(mobilesync_anchors)); 
+	mobilesync_anchors_t anchors = (mobilesync_anchors_t) malloc(sizeof(mobilesync_anchors));
 	if (device_anchor != NULL) {
 		anchors->device_anchor = strdup(device_anchor);
 	} else {
