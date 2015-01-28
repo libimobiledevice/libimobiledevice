@@ -3,6 +3,8 @@ Version 1.2.0
 
 * Stable release "It took you so long baby!"
 * Changes:
+  - Require autoconf 2.64 or later
+  - Remove dev tools, will return either as proper tools or website examples
   - Refactor installation proxy service implementation and normalize code
   - API: Added instproxy_lookup() to efficiently lookup app information
   - API: Added instproxy_check_capabilities_match() to check device capabilities
