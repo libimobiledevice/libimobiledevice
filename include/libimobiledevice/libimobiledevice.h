@@ -243,10 +243,12 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_all(idevice_conn
  * @param connection The connection to send data over.
  * @param data Buffer with data to send.
  * @param len Size of the buffer to send.
+ * @param timeout Timeout in milliseconds after which this function should
+ *   return even if no data has been sent.
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len, unsigned int timeout);
 
 /**
  * Enables SSL for the given connection.

@@ -296,6 +296,25 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 
 }
 
+static idevice_error_t internal_connection_send_timeout(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes, unsigned int timeout)
+{
+	if (!connection || !data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	if (connection->type == CONNECTION_USBMUXD) {
+		int res = usbmuxd_send_timeout((int)(long)connection->data, data, len, sent_bytes, timeout);
+		if (res < 0) {
+			debug_info("ERROR: usbmuxd_send_timeout returned %d (%s)", res, strerror(-res));
+			return IDEVICE_E_UNKNOWN_ERROR;
+		}
+		return IDEVICE_E_SUCCESS;
+	} else {
+		debug_info("Unknown connection type %d", connection->type);
+	}
+	return IDEVICE_E_UNKNOWN_ERROR;
+}
+
 idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
 	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
@@ -419,32 +438,6 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
-idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len)
-{
-	if (!connection || !data) {
-		return IDEVICE_E_INVALID_ARG;
-	}
-
-	size_t cur_bytes_sent = 0;
-	size_t total_bytes_sent = 0;
-	size_t bytes_left = len;
-	idevice_error_t res = IDEVICE_E_SUCCESS;
-
-	while (total_bytes_sent < len)
-	{
-		res = idevice_connection_send(connection, data + total_bytes_sent, bytes_left, &cur_bytes_sent);
-		if (IDEVICE_E_SUCCESS != res) {
-			debug_info("ERROR: Unable to send data");
-			break;
-		}
-
-		total_bytes_sent += cur_bytes_sent;
-		bytes_left -= cur_bytes_sent;
-	}
-
-	return res;
-}
-
 static uint64_t get_time_ms()
 {
 #ifdef WIN32
@@ -458,6 +451,46 @@ static uint64_t get_time_ms()
 
 	return ((tv.tv_sec * (uint64_t)1000) + (uint64_t)tv.tv_usec);
 #endif
+}
+
+idevice_error_t idevice_connection_send_all(idevice_connection_t connection, const char * data, uint32_t len, unsigned int timeout)
+{
+	if (!connection || !data) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	size_t cur_bytes_sent = 0;
+	size_t total_bytes_sent = 0;
+	size_t bytes_left = len;
+	idevice_error_t res = IDEVICE_E_SUCCESS;
+
+	uint64_t start_time = get_time_ms();
+	uint64_t time_passed = 0;
+	while ((total_bytes_sent < len) && (time_passed <= timeout))
+	{
+		res = internal_connection_send_timeout(connection, 
+											   data + total_bytes_sent, 
+											   bytes_left, 
+											   &cur_bytes_sent, 
+											   timeout - (unsigned int)time_passed);
+		if (IDEVICE_E_SUCCESS != res) {
+			debug_info("ERROR: Unable to send data");
+			break;
+		}
+
+		total_bytes_sent += cur_bytes_sent;
+		bytes_left -= cur_bytes_sent;
+
+		time_passed = get_time_ms() - start_time;
+	}
+
+	/* Check if we've failed to receive the requested amount of data */
+	if ((IDEVICE_E_SUCCESS == res) && (total_bytes_sent < len)) {
+		/* Timeout */
+		return IDEVICE_E_NOT_ENOUGH_DATA;
+	}
+
+	return res;
 }
 
 idevice_error_t idevice_connection_receive_all(idevice_connection_t connection, char * data, uint32_t len, unsigned int timeout)
