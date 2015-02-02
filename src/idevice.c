@@ -466,7 +466,7 @@ idevice_error_t idevice_connection_send_all(idevice_connection_t connection, con
 
 	uint64_t start_time = get_time_ms();
 	uint64_t time_passed = 0;
-	while ((total_bytes_sent < len) && (time_passed <= timeout))
+	while ((total_bytes_sent < len) && (time_passed < timeout))
 	{
 		res = internal_connection_send_timeout(connection, 
 											   data + total_bytes_sent, 
@@ -506,7 +506,7 @@ idevice_error_t idevice_connection_receive_all(idevice_connection_t connection, 
 
 	uint64_t start_time = get_time_ms();
 	uint64_t time_passed = 0;
-	while ((total_bytes_received < len) && (time_passed <= timeout)) {
+	while ((total_bytes_received < len) && (time_passed < timeout)) {
 		res = idevice_connection_receive_timeout(connection, 
 												 data + total_bytes_received, 
 												 bytes_left, 
