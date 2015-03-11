@@ -182,7 +182,7 @@ static void print_usage(int argc, char **argv)
 	printf("Interact with the debugserver service of a device.\n\n");
 	printf(" Where COMMAND is one of:\n");
 	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
-	printf("  kill BUNDLEID\tkill app with BUNDLEID on device.\n");
+	printf("  kill BUNDLEID [ARGS...]\tkill app with BUNDLEID and optional ARGS on device.\n");
 	printf("\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
