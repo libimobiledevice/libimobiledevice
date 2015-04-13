@@ -91,7 +91,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="if exist &quot;C:\Program Files (x86)\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R&#x0D;&#x0A;if exist &quot;C:\Program Files (x86)\Calibre\DLLs&quot; xcopy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R"
+				CommandLine="if exist &quot;C:\Program Files (x86)\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="if exist &quot;C:\Program Files\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R&#x0D;&#x0A;if exist &quot;C:\Program Files\Calibre\DLLs&quot; xcopy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R"
+				CommandLine="if exist &quot;C:\Program Files\Calibre\DLLs&quot; xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\Calibre\DLLs&quot; /Y /R"
 			/>
 		</Configuration>
 		<Configuration
