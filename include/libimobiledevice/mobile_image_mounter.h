@@ -24,6 +24,11 @@
 #ifndef IMOBILE_IMAGE_MOUNTER_H
 #define IMOBILE_IMAGE_MOUNTER_H
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
