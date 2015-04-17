@@ -384,7 +384,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_goodbye(lockdownd_client_t clie
  * @param label The label to set or NULL to disable sending a label
  *
  */
-void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
+LIBIMOBILEDEVICE_API void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
 
 /**
  * Returns the unique id of the device from lockdownd.
@@ -430,7 +430,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_data_classes_free(char **classes);
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_data_classes_free(char **classes);
 
 /**
  * Frees memory of a service descriptor as returned by lockdownd_start_service()

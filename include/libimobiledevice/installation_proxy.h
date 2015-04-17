@@ -395,7 +395,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instpr
  * @param command The dictionary describing the command.
  * @param name Pointer to store the name of the command.
  */
-void instproxy_command_get_name(plist_t command, char** name);
+LIBIMOBILEDEVICE_API void instproxy_command_get_name(plist_t command, char** name);
 
 /**
  * Gets the name of a status.
@@ -403,7 +403,7 @@ void instproxy_command_get_name(plist_t command, char** name);
  * @param status The dictionary status response to use.
  * @param name Pointer to store the name of the status.
  */
-void instproxy_status_get_name(plist_t status, char **name);
+LIBIMOBILEDEVICE_API void instproxy_status_get_name(plist_t status, char **name);
 
 /**
  * Gets error name, code and description from a response if available.
@@ -434,7 +434,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_status_get_error(plist_t status
  *        If NULL is passed no list will be returned. If NULL is returned no
  *        list was found in the status.
  */
-void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t* current_index, uint64_t* current_amount, plist_t* list);
+LIBIMOBILEDEVICE_API void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t* current_index, uint64_t* current_amount, plist_t* list);
 
 
 /**
@@ -444,14 +444,14 @@ void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t
  * @param name Pointer to store the progress in percent (0-100) or -1 if not
  *        progress was found in the status.
  */
-void instproxy_status_get_percent_complete(plist_t status, int *percent);
+LIBIMOBILEDEVICE_API void instproxy_status_get_percent_complete(plist_t status, int *percent);
 
 /**
  * Creates a new client_options plist.
  *
  * @return A new plist_t of type PLIST_DICT.
  */
-plist_t instproxy_client_options_new(void);
+LIBIMOBILEDEVICE_API plist_t instproxy_client_options_new(void);
 
 /**
  * Adds one or more new key:value pairs to the given client_options.
@@ -463,7 +463,7 @@ plist_t instproxy_client_options_new(void);
  *       keys "ApplicationSINF", "iTunesMetadata", "ReturnAttributes" which are
  *       expecting a plist_t node as value and "SkipUninstall" expects int.
  */
-void instproxy_client_options_add(plist_t client_options, ...);
+LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, ...);
 
 /**
  * Adds attributes to the given client_options to filter browse results.
@@ -473,7 +473,7 @@ void instproxy_client_options_add(plist_t client_options, ...);
  *
  * @note The values passed are expected to be strings.
  */
-void instproxy_client_options_set_return_attributes(plist_t client_options, ...);
+LIBIMOBILEDEVICE_API void instproxy_client_options_set_return_attributes(plist_t client_options, ...);
 
 /**
  * Frees client_options plist.
@@ -481,7 +481,7 @@ void instproxy_client_options_set_return_attributes(plist_t client_options, ...)
  * @param client_options The client options plist to free. Does nothing if NULL
  *        is passed.
  */
-void instproxy_client_options_free(plist_t client_options);
+LIBIMOBILEDEVICE_API void instproxy_client_options_free(plist_t client_options);
 
 /**
  * Queries the device for the path of an application.

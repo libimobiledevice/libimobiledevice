@@ -136,7 +136,7 @@ LIBIMOBILEDEVICE_API misagent_error_t misagent_remove(misagent_client_t client, 
  *
  * @return -1 if client is invalid, or the status code from the last operation
  */
-int misagent_get_status_code(misagent_client_t client);
+LIBIMOBILEDEVICE_API int misagent_get_status_code(misagent_client_t client);
 
 #ifdef __cplusplus
 }
