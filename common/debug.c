@@ -54,10 +54,15 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	char *str_time = NULL;
 	char *header = NULL;
 	time_t the_time;
-
 	time(&the_time);
 	str_time = (char*)malloc(255);
-	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
+#ifdef _MSC_VER
+	time_t the_local_time;
+	localtime_s(&the_local_time, &the_time);
+	strftime(str_time, 254, "%H:%M:%S", the_local_time);
+#else
+	strftime(str_time, 254, "%H:%M:%S", localtime(&the_time));
+#endif
 
 	/* generate header text */
 	(void)asprintf(&header, "%s %s:%d %s()", str_time, file, line, func);
@@ -137,7 +142,12 @@ void debug_buffer_to_file(const char *file, const char *data, const int length)
 {
 #ifndef STRIP_DEBUG_CODE
 	if (debug_level) {
+#ifdef _MSC_VER
+		FILE *f;
+		fopen_s(&f, file, "wb");
+#else
 		FILE *f = fopen(file, "wb");
+#endif
 		fwrite(data, 1, length, f);
 		fflush(f);
 		fclose(f);
