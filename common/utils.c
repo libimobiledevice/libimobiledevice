@@ -110,8 +110,10 @@ char *string_concat(const char *str, ...)
 
 	va_start(args, str);
 	s = va_arg(args, char *);
+	len -= strlen(str);
 	while (s) {
 		dest = stpcpy(dest, len, s);
+		len -= strlen(s);
 		s = va_arg(args, char *);
 	}
 	va_end(args);
