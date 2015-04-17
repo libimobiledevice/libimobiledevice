@@ -6,7 +6,11 @@
 #endif
 
 #ifndef HAVE_VASPRINTF
+#ifdef _MSC_VER
+static __inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
+#else
 static inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
+#endif
 {
 	int res;
 	char buf[16];
@@ -20,7 +24,11 @@ static inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
 #endif
 
 #ifndef HAVE_ASPRINTF
+#ifdef _MSC_VER
+static __inline int asprintf(char **PTR, const char *TEMPLATE, ...)
+#else
 static inline int asprintf(char **PTR, const char *TEMPLATE, ...)
+#endif
 {
 	int res;
 	va_list AP;
