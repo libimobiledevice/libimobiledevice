@@ -1047,10 +1047,17 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_iden
 
 	plist_free(apps);
 
-	char* ret = (char*)malloc(strlen(path_str) + 1 + strlen(exec_str) + 1);
+	int retlen = strlen(path_str) + 1 + strlen(exec_str) + 1;
+	char* ret = (char*)malloc(retlen);
+#ifdef _MSC_VER
+	strcpy_s(ret, retlen, path_str);
+	strcat_s(ret, retlen, "/");
+	strcat_s(ret, retlen, exec_str);
+#else
 	strcpy(ret, path_str);
 	strcat(ret, "/");
 	strcat(ret, exec_str);
+#endif
 
 	*path = ret;
 

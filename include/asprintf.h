@@ -14,10 +14,18 @@ static inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
 {
 	int res;
 	char buf[16];
+#ifdef _MSC_VER
+	res = vsnprintf_s(buf, 16, 16, TEMPLATE, AP);
+#else
 	res = vsnprintf(buf, 16, TEMPLATE, AP);
+#endif
 	if (res > 0) {
 		*PTR = (char*)malloc(res+1);
+#ifdef _MSC_VER
+		res = vsnprintf_s(*PTR, res+1, res+1, TEMPLATE, AP);
+#else
 		res = vsnprintf(*PTR, res+1, TEMPLATE, AP);
+#endif
 	}
 	return res;
 }
