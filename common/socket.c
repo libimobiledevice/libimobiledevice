@@ -19,13 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef _MSC_VER
+#define __func__ __FUNCTION__
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <errno.h>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <sys/stat.h>
 #ifdef WIN32
 #include <winsock2.h>
@@ -307,8 +312,18 @@ int socket_check_fd(int fd, fd_mode fdm, unsigned int timeout)
 				break;
 			default:
 				if (verbose >= 2)
+				{
+#ifdef _MSC_VER
+					char *errmsg[256];
+					strerror_s(errmsg, 256, errno);
 					fprintf(stderr, "%s: select failed: %s\n", __func__,
-							strerror(errno));
+						errmsg);
+#else
+					fprintf(stderr, "%s: select failed: %s\n", __func__,
+					strerror(errno));
+#endif
+				}
+
 				return -1;
 			}
 		}
