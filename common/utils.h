@@ -34,7 +34,11 @@
 #include <plist/plist.h>
 
 #ifndef HAVE_STPCPY
-char *stpcpy(char *s1, const char *s2);
+#ifdef _MSC_VER
+char *stpcpy_s(char *s1, size_t size, const char *s2);
+#else
+char *stpcpy(char *s1, size_t size, const char *s2);
+#endif
 #endif
 char *string_concat(const char *str, ...);
 char *string_build_path(const char *elem, ...);

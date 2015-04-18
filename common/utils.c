@@ -49,7 +49,11 @@
  * @return a pointer to the terminating `\0' character of @s1,
  * or NULL if @s1 or @s2 is NULL.
  */
+#ifdef _MSC_VER
 char *stpcpy(char *s1, size_t size, const char *s2)
+#else
+char *stpcpy(char *s1, size_t size, const char *s2)
+#endif
 {
 	if (s1 == NULL || s2 == NULL)
 		return NULL;
@@ -106,12 +110,20 @@ char *string_concat(const char *str, ...)
 
 	dest = result;
 
-	dest = stpcpy(dest, len, str);
+#ifdef _MSC_VER
+	dest = stpcpy_s(dest, len, str);
+#else
+	dest = stpcpy(dest, str);
+#endif
 
 	va_start(args, str);
 	s = va_arg(args, char *);
 	while (s) {
-		dest = stpcpy(dest, len, s);
+#ifdef _MSC_VER
+		dest = stpcpy_s(dest, len, s);
+#else
+		dest = stpcpy(dest, s);
+#endif
 		s = va_arg(args, char *);
 	}
 	va_end(args);
