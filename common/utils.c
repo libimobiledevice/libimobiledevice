@@ -33,6 +33,10 @@
 
 #include "utils.h"
 
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
+
 #ifndef HAVE_STPCPY
 /**
  * Copy characters from one string into another

@@ -23,4 +23,6 @@
 #ifdef _MSC_VER
 #define inline __inline
 #define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define __func__ __FUNCTION__
 #endif
