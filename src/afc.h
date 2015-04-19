@@ -106,6 +106,6 @@ enum {
 	AFC_OP_FILE_WRITE_OFFSET         = 0x00000028	/* FileRefWriteWithOffset */
 };
 
-afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client);
+LIBIMOBILEDEVICE_API_MSC afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client);
 
 #endif
