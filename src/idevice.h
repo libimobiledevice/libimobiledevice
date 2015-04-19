@@ -33,6 +33,14 @@
 #include <gnutls/x509.h>
 #endif
 
+#ifdef _MSC_VER
+// Visual C++ requires the declaration of methods to be exactly the same
+// in the .h and .c files; otherwise it throws C2375. 
+// In libimobiledevice.h, we always prefix the methods with __declspec( dllexport ) 
+// through the LIBIMOBILEDEVICE_API_MSC definition.
+// We mimic that behavior here.
+#define LIBIMOBILEDEVICE_API __declspec( dllexport )
+#else
 #ifdef WIN32
 #define LIBIMOBILEDEVICE_API __declspec( dllexport )
 #else
@@ -40,6 +48,7 @@
 #define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
 #else
 #define LIBIMOBILEDEVICE_API
+#endif
 #endif
 #endif
 

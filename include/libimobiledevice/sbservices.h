@@ -69,7 +69,7 @@ typedef sbservices_client_private *sbservices_client_t; /**< The client handle. 
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client is NULL, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client);
 
 /**
  * Starts a new sbservices service on the specified device and connects to it.
@@ -84,7 +84,7 @@ sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_des
  * @return SBSERVICES_E_SUCCESS on success, or an SBSERVICES_E_* error
  *     code otherwise.
  */
-sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t* client, const char* label);
 
 /**
  * Disconnects an sbservices client from the device and frees up the
@@ -95,7 +95,7 @@ sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client is NULL, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_client_free(sbservices_client_t client);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_client_free(sbservices_client_t client);
 
 
 /**
@@ -112,7 +112,7 @@ sbservices_error_t sbservices_client_free(sbservices_client_t client);
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client or state is invalid, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version);
 
 /**
  * Sets the icon state of the connected device.
@@ -123,7 +123,7 @@ sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client or newstate is NULL, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate);
 
 /**
  * Get the icon of the specified app as PNG data.
@@ -140,7 +140,7 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
  *     client, bundleId, or pngdata are invalid, or an SBSERVICES_E_* error
  *     code otherwise.
  */
-sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize);
 
 /**
  * Gets the interface orientation of the device.
@@ -151,7 +151,7 @@ sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const
  * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
  *     client or state is invalid, or an SBSERVICES_E_* error code otherwise.
  */
-sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation);
 
 /**
  * Get the home screen wallpaper as PNG data.
@@ -167,7 +167,7 @@ sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t clie
  *     client or pngdata are invalid, or an SBSERVICES_E_* error
  *     code otherwise.
  */
-sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
+LIBIMOBILEDEVICE_API_MSC sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
 #ifdef __cplusplus
 }
