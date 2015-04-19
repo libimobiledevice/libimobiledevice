@@ -32,6 +32,10 @@
 #include "device_link_service.h"
 #include "common/debug.h"
 
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
+
 #define MSYNC_VERSION_INT1 300
 #define MSYNC_VERSION_INT2 100
 

@@ -23,6 +23,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#ifdef _MSC_VER
+#include "src/msc_config.h"
+#endif
+
 #include <stdarg.h>
 #define _GNU_SOURCE 1
 #define __USE_GNU 1

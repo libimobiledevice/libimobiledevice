@@ -26,6 +26,10 @@
 #include <config.h>
 #endif
 
+#ifdef _MSC_VER
+#include "msc_config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #define _GNU_SOURCE 1

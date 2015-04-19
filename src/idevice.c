@@ -50,6 +50,10 @@
 #include "common/thread.h"
 #include "common/debug.h"
 
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
+
 #ifdef HAVE_OPENSSL
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
