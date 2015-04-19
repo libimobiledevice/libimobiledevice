@@ -61,6 +61,10 @@
 #define sleep(x) Sleep(x*1000)
 #endif
 
+#ifdef _MSC_VER
+#include "src\msc_compat.h"
+#endif
+
 /**
  * Convert an error string identifier to a lockdownd_error_t value.
  * Used internally to get correct error codes from a response.

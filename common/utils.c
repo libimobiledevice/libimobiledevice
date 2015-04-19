@@ -23,6 +23,10 @@
 #include <config.h>
 #endif
 
+#ifdef _MSC_VER
+#include "src\msc_config.h"
+#endif
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +38,7 @@
 #include "utils.h"
 
 #ifdef _MSC_VER
-#include "msc_compat.h"
+#include "src\msc_compat.h"
 #endif
 
 #ifndef HAVE_STPCPY
