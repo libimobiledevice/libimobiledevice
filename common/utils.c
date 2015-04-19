@@ -27,7 +27,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
 #include <sys/time.h>
+#endif
+
 #include <inttypes.h>
 #include <ctype.h>
 

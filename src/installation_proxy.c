@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <unistd.h>
 #include <plist/plist.h>
 
 #include "installation_proxy.h"

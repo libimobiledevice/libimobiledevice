@@ -21,7 +21,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <plist/plist.h>
 
 #include "notification_proxy.h"
@@ -30,6 +29,8 @@
 
 #ifdef WIN32
 #define sleep(x) Sleep(x*1000)
+#else
+#include <unistd.h>
 #endif
 
 struct np_thread {
