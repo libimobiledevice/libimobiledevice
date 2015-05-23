@@ -960,8 +960,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 					if (extra_node && plist_get_node_type(extra_node) == PLIST_DATA) {
 						debug_info("Saving EscrowBag from response in pair record");
 						plist_dict_set_item(pair_record_plist, USERPREF_ESCROW_BAG_KEY, plist_copy(extra_node));
-						plist_free(extra_node);
-						extra_node = NULL;
 					}
 
 					/* save previously retrieved wifi mac address in pair record */
@@ -991,9 +989,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 				ret = lockdownd_strtoerr(value);
 				free(value);
 			}
-
-			plist_free(error_node);
-			error_node = NULL;
 		}
 	}
 
