@@ -120,7 +120,7 @@ AC_SUBST([CYTHON_SUB])
 AC_ARG_ENABLE([openssl],
             [AS_HELP_STRING([--disable-openssl],
             [Do not look for OpenSSL])],
-            [use_openssl=no],
+            [use_openssl=$enableval],
             [use_openssl=yes])
 
 pkg_req_openssl="openssl >= 0.9.8"
