@@ -3,7 +3,7 @@
  * com.apple.mobile.lockdownd service implementation.
  *
  * Copyright (c) 2009-2015 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2014 Nikias Bassen. All Rights Reserved.
+ * Copyright (c) 2014-2015 Nikias Bassen All Rights Reserved.
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -122,6 +122,14 @@ static lockdownd_error_t lockdownd_strtoerr(const char* name)
 		err = LOCKDOWN_E_SERVICE_PROHIBITED;
 	} else if (strcmp(name, "EscrowLocked") == 0) {
 		err = LOCKDOWN_E_ESCROW_LOCKED;
+	} else if (strcmp(name, "PairingProhibitedOverThisConnection") == 0) {
+		err = LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION;
+	} else if (strcmp(name, "FMiPProtected") == 0) {
+		err = LOCKDOWN_E_FMIP_PROTECTED;
+	} else if (strcmp(name, "MCProtected") == 0) {
+		err = LOCKDOWN_E_MC_PROTECTED;
+	} else if (strcmp(name, "MCChallengeRequired") == 0) {
+		err = LOCKDOWN_E_MC_CHALLENGE_REQUIRED;
 	}
 
 	return err;

@@ -73,6 +73,10 @@ typedef enum {
 	LOCKDOWN_E_MISSING_ACTIVATION_RECORD               = -33,
 	LOCKDOWN_E_SERVICE_PROHIBITED                      = -34,
 	LOCKDOWN_E_ESCROW_LOCKED                           = -35,
+	LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION = -36,
+	LOCKDOWN_E_FMIP_PROTECTED                          = -37,
+	LOCKDOWN_E_MC_PROTECTED                            = -38,
+	LOCKDOWN_E_MC_CHALLENGE_REQUIRED                   = -39,
 	LOCKDOWN_E_UNKNOWN_ERROR                           = -256
 } lockdownd_error_t;
 
