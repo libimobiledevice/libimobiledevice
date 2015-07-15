@@ -848,6 +848,8 @@ leave:
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  * @param verb This is either "Pair", "ValidatePair" or "Unpair".
+ * @param options The pairing options to pass.
+ * @param response If non-NULL a pointer to lockdownd's response dictionary is returned.
  *
  * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
@@ -855,7 +857,7 @@ leave:
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb)
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb, plist_t options, plist_t *result)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -915,9 +917,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	plist_dict_set_item(dict, "Request", plist_new_string(verb));
 	plist_dict_set_item(dict, "ProtocolVersion", plist_new_string(LOCKDOWN_PROTOCOL_VERSION));
 
-	plist_t options = plist_new_dict();
-	plist_dict_set_item(options, "ExtendedPairingErrors", plist_new_bool(1));
-	plist_dict_set_item(dict, "PairingOptions", options);
+	if (options) {
+		plist_dict_set_item(dict, "PairingOptions", plist_copy(options));
+	}
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -1010,25 +1012,42 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		wifi_node = NULL;
 	}
 
-	plist_free(dict);
-	dict = NULL;
+	if (result) {
+		*result = dict;
+	} else {
+		plist_free(dict);
+		dict = NULL;
+	}
 
 	return ret;
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Pair");
+
+	plist_t options = plist_new_dict();
+	plist_dict_set_item(options, "ExtendedPairingErrors", plist_new_bool(1));
+
+	lockdownd_error_t ret = lockdownd_do_pair(client, pair_record, "Pair", options, NULL);
+
+	plist_free(options);
+
+	return ret;
+}
+
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair_with_options(lockdownd_client_t client, lockdownd_pair_record_t pair_record, plist_t options, plist_t *response)
+{
+	return lockdownd_do_pair(client, pair_record, "Pair", options, response);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "ValidatePair");
+	return lockdownd_do_pair(client, pair_record, "ValidatePair", NULL, NULL);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Unpair");
+	return lockdownd_do_pair(client, pair_record, "Unpair", NULL, NULL);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
