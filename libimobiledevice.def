@@ -298,6 +298,7 @@ EXPORTS
 	plist_dict_set_item
 	plist_dict_insert_item
 	plist_dict_remove_item
+	plist_dict_merge
 	plist_get_parent
 	plist_get_node_type
 	plist_get_key_val
