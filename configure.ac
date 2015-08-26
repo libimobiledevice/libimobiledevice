@@ -146,7 +146,7 @@ if test "x$enable_openssl" = "xyes"; then
   ssl_requires="$pkg_req_openssl"
   AC_SUBST(ssl_requires)
 else
-  pkg_req_gnutls="gnutls >= 2.2.0"
+  pkg_req_gnutls="gnutls >= 3.0"
   pkg_req_libtasn1="libtasn1 >= 1.1"
   PKG_CHECK_MODULES(libgnutls, $pkg_req_gnutls)
   AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice with GnuTLS])])
