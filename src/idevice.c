@@ -463,6 +463,22 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connecti
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd)
+{
+	if (!connection || !fd) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
+	if (connection->type == CONNECTION_USBMUXD) {
+		*fd = (int)(long)connection->data;
+		result = IDEVICE_E_SUCCESS;
+	} else {
+		debug_info("Unknown connection type %d", connection->type);
+	}
+	return result;
+}
+
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
