@@ -914,7 +914,7 @@ LIBIMOBILEDEVICE_API void instproxy_command_get_name(plist_t command, char** nam
 	}
 }
 
-LIBIMOBILEDEVICE_API plist_t instproxy_client_options_new()
+LIBIMOBILEDEVICE_API plist_t instproxy_client_options_new(void)
 {
 	return plist_new_dict();
 }

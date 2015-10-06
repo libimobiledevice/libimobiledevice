@@ -168,7 +168,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t 
 	return IDEVICE_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe()
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
 {
 	event_cb = NULL;
 	int res = usbmuxd_unsubscribe();
