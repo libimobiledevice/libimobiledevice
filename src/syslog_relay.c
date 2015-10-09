@@ -1,22 +1,22 @@
 /*
- * syslog_relay.c 
+ * syslog_relay.c
  * com.apple.syslog_relay service implementation.
- * 
+ *
  * Copyright (c) 2013 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -106,6 +106,8 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_
 	if (client->worker) {
 		debug_info("Joining syslog capture callback worker thread");
 		thread_join(client->worker);
+		thread_free(client->worker);
+		client->worker = (thread_t)NULL;
 	}
 	free(client);
 
@@ -190,7 +192,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture(syslog_rela
 		srwt->cbfunc = callback;
 		srwt->user_data = user_data;
 
-		if (thread_create(&client->worker, syslog_relay_worker, srwt) == 0) {
+		if (thread_new(&client->worker, syslog_relay_worker, srwt) == 0) {
 			res = SYSLOG_RELAY_E_SUCCESS;
 		}
 	}
@@ -206,6 +208,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay
 		client->parent = NULL;
 		/* join thread to make it exit */
 		thread_join(client->worker);
+		thread_free(client->worker);
 		client->worker = (thread_t)NULL;
 		client->parent = parent;
 	}

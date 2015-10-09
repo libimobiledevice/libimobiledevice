@@ -2,7 +2,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
     cdef struct instproxy_client_private:
         pass
     ctypedef instproxy_client_private *instproxy_client_t
-    ctypedef void (*instproxy_status_cb_t) (const_char_ptr operation, plist.plist_t status, void *user_data)
+    ctypedef void (*instproxy_status_cb_t) (plist.plist_t command, plist.plist_t status, void *user_data)
 
     ctypedef enum instproxy_error_t:
         INSTPROXY_E_SUCCESS = 0
@@ -15,6 +15,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
 
     instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, instproxy_client_t *client)
     instproxy_error_t instproxy_client_free(instproxy_client_t client)
+    instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path)
 
     instproxy_error_t instproxy_browse(instproxy_client_t client, plist.plist_t client_options, plist.plist_t *result)
     instproxy_error_t instproxy_install(instproxy_client_t client, char *pkg_path, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
@@ -26,8 +27,8 @@ cdef extern from "libimobiledevice/installation_proxy.h":
     instproxy_error_t instproxy_restore(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
     instproxy_error_t instproxy_remove_archive(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 
-cdef void instproxy_notify_cb(const_char_ptr operation, plist.plist_t status, void *py_callback) with gil:
-    (<object>py_callback)(operation, plist.plist_t_to_node(status, False))
+cdef void instproxy_notify_cb(plist.plist_t command, plist.plist_t status, void *py_callback) with gil:
+    (<object>py_callback)(plist.plist_t_to_node(command, False), plist.plist_t_to_node(status, False))
 
 cdef class InstallationProxyError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -58,6 +59,24 @@ cdef class InstallationProxyClient(PropertyListService):
         if self._c_client is not NULL:
             err = instproxy_client_free(self._c_client)
             self.handle_error(err)
+
+    cpdef get_path_for_bundle_identifier(self, bytes bundle_id):
+        cdef:
+            char* c_bundle_id = bundle_id
+            char* c_path = NULL
+            bytes result
+
+        try:
+            self.handle_error(instproxy_client_get_path_for_bundle_identifier(self._c_client, c_bundle_id, &c_path))
+            if c_path != NULL:
+                result = c_path
+                return result
+            else:
+                return None
+        except BaseError, e:
+            raise
+        finally:
+            free(c_path)
 
     cpdef plist.Node browse(self, object client_options):
         cdef:

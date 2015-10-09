@@ -1,3 +1,47 @@
+Version 1.2.0
+~~~~~~~~~~~~~
+
+* Stable release "It took you so long baby!"
+* Changes:
+  - Require autoconf 2.64 or later
+  - Remove dev tools, will return either as proper tools or website examples
+  - Refactor installation proxy service implementation and normalize code
+  - API: Added instproxy_lookup() to efficiently lookup app information
+  - API: Added instproxy_check_capabilities_match() to check device capabilities
+  - API: Added various instproxy command and status plist getters
+  - API: Make debugserver_client_set_ack_mode() public
+  - Fix handling of clients reconnecting in idevicedebugserverproxy which
+    previously didn't work properly
+  - Flush stdout for every line in idevicesyslog
+  - Fix shutdown of idevicedebugserverproxy tool which could hang
+  - Notify user when erroneously using idevicebackup with iOS 4 or later
+  - Enable build of idevicecrashreport on WIN32
+  - Fix thread handle leaks on WIN32 adding thread_new and thread_free
+  - cython: Add receive/receive_timeout methods for iDeviceConnection to
+    receive raw data from a connection
+  - cython: Add new FILE_RELAY_E_PERMISSION_DENIED(-6) error
+  - API: Refactor lockdown service internal error checking and add a bunch of
+    new native errors
+  - Convert int16_t macro error types into enum within common module, too
+  - Add new "idevicenotificationproxy" tool to post or observe notifications
+  - Fix overlong blocking in np_client_free()
+  - Improve maintainability and Requires of pkg-config file
+  - API: Add new LOCKDOWN_E_SERVICE_LIMIT error to detect service limit states
+  - API: Remove const argv requirement for debugserver_command_new
+  - cython: Add get_path_for_bundle_identifier() method to
+    InstallationProxyClient
+  - cython: Add DebugServerClient class to communicate with debugserver
+  - Comply to strict function prototypes by using (void) instead of just ()
+  - Fix notification proxy shutdown process which was incorrectly implemented
+  - Fix linking problems on OS X
+  - Fix missing debug output which broke with the last release
+  - Unify and improve various debug messages
+  - Fix re-pairing if pairing with existing pair record failed initially
+  - Skip printing long plist (16kb+) files to prevent excessive debug output
+  - Move a few common helpers from backup tools to common utility helper code
+  - Remove incorrect flags from afc_file_open() documentation
+  - Fix various memory leaks
+
 Version 1.1.7
 ~~~~~~~~~~~~~
 

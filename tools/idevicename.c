@@ -8,16 +8,20 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +32,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
-static void print_usage()
+static void print_usage(void)
 {
 	printf("Usage: idevicename [OPTIONS] [NAME]\n");
 	printf("Display the device name or set it to NAME if specified.\n");
@@ -37,6 +41,7 @@ static void print_usage()
 	printf("  -u, --udid UDID\tuse UDID to target a specific device\n");
 	printf("  -h, --help\t\tprint usage information\n");
 	printf("\n");
+	printf("Homepage: <" PACKAGE_URL ">\n");
 }
 
 int main(int argc, char** argv)

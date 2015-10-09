@@ -160,6 +160,20 @@ debugserver_error_t debugserver_client_send_command(debugserver_client_t client,
 debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response);
 
 /**
+ * Controls status of ACK mode when sending commands or receiving responses.
+ *
+ * @see debugserver_client_send_command, debugserver_client_receive_response
+ *
+ * @param client The debugserver client
+ * @param enabled A boolean flag indicating whether the internal ACK mode
+ *   handling should be enabled or disabled.
+ *
+ * @return DEBUGSERVER_E_SUCCESS on success, or an DEBUGSERVER_E_* error
+ *     code otherwise.
+ */
+debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled);
+
+/**
  * Sets the argv which launches an app.
  *
  * @param client The debugserver client
@@ -195,7 +209,7 @@ debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_c
  * @return DEBUGSERVER_E_SUCCESS on success,
  *  DEBUGSERVER_E_INVALID_ARG when name or command is NULL
  */
-debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command);
+debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command);
 
 /**
  * Frees memory of command object.

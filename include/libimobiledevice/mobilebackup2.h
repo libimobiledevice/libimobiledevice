@@ -3,7 +3,8 @@
  * @brief Backup and restore of all device data (mobilebackup2, iOS4+ only)
  * \internal
  *
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2011-2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2010-2012 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

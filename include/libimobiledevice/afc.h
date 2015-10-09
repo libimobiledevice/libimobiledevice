@@ -3,8 +3,8 @@
  * @brief Access the filesystem on the device.
  * \internal
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2009 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2009-2010 Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

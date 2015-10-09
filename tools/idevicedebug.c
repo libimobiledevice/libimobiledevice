@@ -2,7 +2,7 @@
  * idevicedebug.c
  * Interact with the debugserver service of a device.
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2014-2015 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <signal.h>
 #include <stdio.h>
@@ -63,39 +67,21 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_directiona
 	instproxy_client_options_add(client_opts, "ApplicationType", "Any", NULL);
 
 	// only return attributes we need
-	plist_t return_attributes = plist_new_array();
-	plist_array_append_item(return_attributes, plist_new_string("CFBundleIdentifier"));
-	plist_array_append_item(return_attributes, plist_new_string("CFBundleExecutable"));
-	plist_array_append_item(return_attributes, plist_new_string(key));
-	instproxy_client_options_add(client_opts, "ReturnAttributes", return_attributes, NULL);
-	plist_free(return_attributes);
-	return_attributes = NULL;
+	instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "CFBundleExecutable", key, NULL);
+
+	// only query for specific appid
+	const char* appids[] = {appid, NULL};
 
 	// query device for list of apps
-	instproxy_error_t ierr = instproxy_browse(client, client_opts, &apps);
+	instproxy_error_t ierr = instproxy_lookup(client, appids, client_opts, &apps);
+
 	instproxy_client_options_free(client_opts);
+
 	if (ierr != INSTPROXY_E_SUCCESS) {
 		return ierr;
 	}
 
-	plist_t app_found = NULL;
-	uint32_t i;
-	for (i = 0; i < plist_array_get_size(apps); i++) {
-		char *appid_str = NULL;
-		plist_t app_info = plist_array_get_item(apps, i);
-		plist_t idp = plist_dict_get_item(app_info, "CFBundleIdentifier");
-		if (idp) {
-			plist_get_string_val(idp, &appid_str);
-		}
-		if (appid_str && strcmp(appid, appid_str) == 0) {
-			app_found = app_info;
-		}
-		free(appid_str);
-		if (app_found) {
-			break;
-		}
-	}
-
+	plist_t app_found = plist_access_path(apps, 1, appid);
 	if (!app_found) {
 		if (apps)
 			plist_free(apps);
@@ -206,6 +192,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
+	printf("Homepage: <" PACKAGE_URL ">\n");
 }
 
 int main(int argc, char *argv[])
@@ -372,8 +359,9 @@ int main(int argc, char *argv[])
 
 			/* set maximum packet size */
 			debug_info("Setting maximum packet size...");
-			const char* packet_size[2] = {"1024", NULL};
+			char* packet_size[2] = {strdup("1024"), NULL};
 			debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
+			free(packet_size[0]);
 			dres = debugserver_client_send_command(debugserver_client, command, &response);
 			debugserver_command_free(command);
 			command = NULL;
@@ -388,7 +376,7 @@ int main(int argc, char *argv[])
 
 			/* set working directory */
 			debug_info("Setting working directory...");
-			const char* working_dir[2] = {working_directory, NULL};
+			char* working_dir[2] = {working_directory, NULL};
 			debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response);
 			debugserver_command_free(command);
@@ -508,6 +496,9 @@ cleanup:
 		}
 		free(environment);
 	}
+
+	if (working_directory)
+		free(working_directory);
 
 	if (path)
 		free(path);

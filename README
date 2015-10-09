@@ -41,7 +41,7 @@ Home:
 	http://www.libimobiledevice.org/
 
 Code:
-	git clone http://git.sukimashita.com/libimobiledevice.git
+	git clone http://git.libimobiledevice.org/libimobiledevice.git
 
 Code (Mirror):
 	git clone https://github.com/libimobiledevice/libimobiledevice.git
@@ -55,6 +55,9 @@ Mailing List:
 IRC:
 	irc://irc.freenode.net#libimobiledevice
 
+Twitter:
+	https://twitter.com/libimobiledev
+
 Credits
 =======
 
@@ -63,4 +66,4 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2014-02-02
+	2015-01-28

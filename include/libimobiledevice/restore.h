@@ -4,6 +4,7 @@
  * @note This service is only available if the device is in restore mode.
  * \internal
  *
+ * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2010 Joshua Hill. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

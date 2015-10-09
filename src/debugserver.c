@@ -1,19 +1,19 @@
 /*
- * debugserver.c 
+ * debugserver.c
  * com.apple.debugserver service implementation.
- * 
+ *
  * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -85,7 +85,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	*client = client_loc;
 
 	debug_info("debugserver_client successfully created.");
-	return 0;
+	return DEBUGSERVER_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_start_service(idevice_t device, debugserver_client_t * client, const char* label)
@@ -153,7 +153,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_
 	return debugserver_client_receive_with_timeout(client, data, size, received, 1000);
 }
 
-LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, const char* argv[], debugserver_command_t* command)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command)
 {
 	int i;
 	debugserver_command_t tmp = (debugserver_command_t) malloc(sizeof(struct debugserver_command_private));
@@ -331,7 +331,7 @@ static debugserver_error_t debugserver_client_send_noack(debugserver_client_t cl
 	return debugserver_client_send(client, "-", sizeof(char), NULL);
 }
 
-static debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled)
 {
 	if (!client)
 		return DEBUGSERVER_E_INVALID_ARG;
@@ -541,12 +541,15 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_environment_hex_
 		return DEBUGSERVER_E_INVALID_ARG;
 
 	debugserver_error_t result = DEBUGSERVER_E_UNKNOWN_ERROR;
-	const char* env_arg[] = { env, NULL };
+	char* env_tmp = strdup(env);
+	char* env_arg[2] = { env_tmp, NULL };
 
 	debugserver_command_t command = NULL;
 	debugserver_command_new("QEnvironmentHexEncoded:", 1, env_arg, &command);
 	result = debugserver_client_send_command(client, command, response);
 	debugserver_command_free(command);
+
+	free(env_tmp);
 
 	return result;
 }

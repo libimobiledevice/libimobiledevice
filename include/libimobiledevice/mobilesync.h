@@ -3,6 +3,9 @@
  * @brief Synchronize data classes with a device and computer.
  * \internal
  *
+ * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2010-2011 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2014 Christophe Fergeau All Rights Reserved.
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
  *
@@ -321,7 +324,7 @@ void mobilesync_anchors_free(mobilesync_anchors_t anchors);
  *
  * @return A new plist_t of type PLIST_DICT.
  */
-plist_t mobilesync_actions_new();
+plist_t mobilesync_actions_new(void);
 
 /**
  * Add one or more new key:value pairs to the given actions plist.

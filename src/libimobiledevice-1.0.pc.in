@@ -3,10 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libimobiledevice
+Name: @PACKAGE_NAME@
 Description: A library to communicate with services running on Apple iOS devices.
-Version: @VERSION@
-Requires: libplist >= @LIBPLIST_VERSION@ libusbmuxd >= @LIBUSBMUXD_VERSION@ @ssl_requires@
+Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -limobiledevice
 Cflags: -I${includedir}
-
+Requires: libplist >= @LIBPLIST_VERSION@
+Requires.private: libusbmuxd >= @LIBUSBMUXD_VERSION@ @ssl_requires@

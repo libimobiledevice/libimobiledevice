@@ -50,18 +50,18 @@ typedef gnutls_datum_t key_data_t;
 #define USERPREF_SYSTEM_BUID_KEY "SystemBUID"
 #define USERPREF_WIFI_MAC_ADDRESS_KEY "WiFiMACAddress"
 
-#define USERPREF_E_SUCCESS             0
-#define USERPREF_E_INVALID_ARG        -1
-#define USERPREF_E_INVALID_CONF       -2
-#define USERPREF_E_SSL_ERROR          -3
-#define USERPREF_E_READ_ERROR         -4
-#define USERPREF_E_WRITE_ERROR        -5
+/** Error Codes */
+typedef enum {
+	USERPREF_E_SUCCESS       =  0,
+	USERPREF_E_INVALID_ARG   = -1,
+	USERPREF_E_INVALID_CONF  = -2,
+	USERPREF_E_SSL_ERROR     = -3,
+	USERPREF_E_READ_ERROR    = -4,
+	USERPREF_E_WRITE_ERROR   = -5,
+	USERPREF_E_UNKNOWN_ERROR = -256
+} userpref_error_t;
 
-#define USERPREF_E_UNKNOWN_ERROR    -256
-
-typedef int16_t userpref_error_t;
-
-const char *userpref_get_config_dir();
+const char *userpref_get_config_dir(void);
 int userpref_read_system_buid(char **system_buid);
 userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record);
 userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);
