@@ -393,10 +393,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 	}
 
 	if (connection->ssl_data) {
-#ifdef HAVE_OPENSSL
 		uint32_t received = 0;
 		while (received < len) {
+#ifdef HAVE_OPENSSL
 			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
+#else
+			ssize_t r = gnutls_record_recv(connection->ssl_data->session, (void*)(data+received), (size_t)len-received);
+#endif
 			if (r > 0) {
 				received += r;
 			} else {
@@ -404,9 +407,6 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 			}
 		}
 		debug_info("SSL_read %d, received %d", len, received);
-#else
-		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
-#endif
 		if (received > 0) {
 			*recv_bytes = received;
 			return IDEVICE_E_SUCCESS;
