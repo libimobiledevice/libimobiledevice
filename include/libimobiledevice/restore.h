@@ -40,6 +40,7 @@ extern "C" {
 #define RESTORE_E_NOT_ENOUGH_DATA            -5
 #define RESTORE_E_MUX_ERROR                  -6
 #define RESTORE_E_START_RESTORE_FAILED       -7
+#define RESTORE_E_RECEIVE_TIMEOUT            -8
 
 #define RESTORE_E_UNKNOWN_ERROR            -256
 /*@}*/

@@ -139,11 +139,13 @@ restored_error_t restored_receive(restored_client_t client, plist_t *plist)
 
 	err = property_list_service_receive_plist(client->parent, plist);
 	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = RESTORE_E_UNKNOWN_ERROR;
+		if (err == PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT) {
+			ret = RESTORE_E_RECEIVE_TIMEOUT;
+		}
+		else {
+			ret = RESTORE_E_PLIST_ERROR;
+		}
 	}
-
-	if (!*plist)
-		ret = RESTORE_E_PLIST_ERROR;
 
 	return ret;
 }
