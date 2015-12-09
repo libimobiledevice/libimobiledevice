@@ -31,6 +31,9 @@ prints usage information.
 .B backup
 create backup for the device.
 .TP
+.B \t\-\-full
+force full backup from device.
+.TP
 .B restore
 restore last backup to the device.
 .TP
@@ -58,11 +61,17 @@ show details about last completed backup of device.
 .B list
 list files of last completed backup in CSV format.
 .TP
+.B unback
+unpack a completed backup in DIRECTORY/_unback_/
+.TP
 .B encryption on|off [PWD]
 enable or disable backup encryption.
 .TP
 .B changepw [OLD NEW]
 change backup password on target device.
+.TP
+.B cloud on|off
+enable or disable cloud use (requires iCloud account)
 .SH AUTHORS
 Martin Szulecki
 
