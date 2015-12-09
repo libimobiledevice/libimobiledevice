@@ -33,8 +33,10 @@
 #endif
 #ifndef WIN32
 #include <pwd.h>
-#endif
 #include <unistd.h>
+#include <dirent.h>
+#include <libgen.h>
+#endif
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
@@ -49,12 +51,11 @@
 #include <libtasn1.h>
 #endif
 
-#include <dirent.h>
-#include <libgen.h>
 #include <sys/stat.h>
 #include <errno.h>
 
 #ifdef WIN32
+#include "windows_dirent.h"
 #include <shlobj.h>
 #endif
 

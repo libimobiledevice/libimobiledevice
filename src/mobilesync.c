@@ -37,6 +37,12 @@
 
 #define EMPTY_PARAMETER_STRING "___EmptyParameterString___"
 
+#ifdef _MSC_VER
+#define stringdup _strdup
+#else
+#define stringdup strdup
+#endif
+
 /**
  * Convert an #device_link_service_error_t value to an #mobilesync_error_t value.
  * Used internally to get correct error codes when using device_link_service stuff.
@@ -248,7 +254,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_start(mobilesync_client_t cli
 		msg = NULL;
 	}
 
-	client->data_class = strdup(data_class);
+	client->data_class = stringdup(data_class);
 	client->direction = MOBILESYNC_SYNC_DIR_DEVICE_TO_COMPUTER;
 	return err;
 }
@@ -712,12 +718,12 @@ LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *dev
 {
 	mobilesync_anchors_t anchors = (mobilesync_anchors_t) malloc(sizeof(mobilesync_anchors));
 	if (device_anchor != NULL) {
-		anchors->device_anchor = strdup(device_anchor);
+		anchors->device_anchor = stringdup(device_anchor);
 	} else {
 		anchors->device_anchor = NULL;
 	}
 	if (computer_anchor != NULL) {
-		anchors->computer_anchor = strdup(computer_anchor);
+		anchors->computer_anchor = stringdup(computer_anchor);
 	} else {
 		anchors->computer_anchor = NULL;
 	}
@@ -752,7 +758,7 @@ LIBIMOBILEDEVICE_API void mobilesync_actions_add(plist_t actions, ...)
 	va_start(args, actions);
 	char *arg = va_arg(args, char*);
 	while (arg) {
-		char *key = strdup(arg);
+		char *key = stringdup(arg);
 		if (!strcmp(key, "SyncDeviceLinkEntityNamesKey")) {
 			char **entity_names = va_arg(args, char**);
 			int entity_names_length = va_arg(args, int);

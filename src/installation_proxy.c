@@ -23,7 +23,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#define stringdup strdup
+#else
+#define stringdup _strdup
+#endif
 #include <plist/plist.h>
 
 #include "installation_proxy.h"
@@ -928,7 +933,7 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, .
 	va_start(args, client_options);
 	char *arg = va_arg(args, char*);
 	while (arg) {
-		char *key = strdup(arg);
+		char *key = stringdup(arg);
 		if (!strcmp(key, "SkipUninstall")) {
 			int intval = va_arg(args, int);
 			plist_dict_set_item(client_options, key, plist_new_bool(intval));
@@ -964,7 +969,7 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_set_return_attributes(plist_t
 	va_start(args, client_options);
 	char *arg = va_arg(args, char*);
 	while (arg) {
-		char *attribute = strdup(arg);
+		char *attribute = stringdup(arg);
 		plist_array_append_item(return_attributes, plist_new_string(attribute));
 		free(attribute);
 		arg = va_arg(args, char*);

@@ -31,6 +31,9 @@
 
 #ifdef WIN32
 #include <windows.h>
+#define stringdup _strdup
+#else
+#define stringdup strdup
 #endif
 
 #include <usbmuxd.h>
@@ -196,7 +199,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, in
 
 	for (i = 0; dev_list[i].handle > 0; i++) {
 		newlist = realloc(*devices, sizeof(char*) * (newcount+1));
-		newlist[newcount++] = strdup(dev_list[i].udid);
+		newlist[newcount++] = stringdup(dev_list[i].udid);
 		*devices = newlist;
 	}
 	usbmuxd_device_list_free(&dev_list);
@@ -233,7 +236,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char 
 	int res = usbmuxd_get_device_by_udid(udid, &muxdev);
 	if (res > 0) {
 		idevice_t dev = (idevice_t) malloc(sizeof(struct idevice_private));
-		dev->udid = strdup(muxdev.udid);
+		dev->udid = stringdup(muxdev.udid);
 		dev->conn_type = CONNECTION_USBMUXD;
 		dev->conn_data = (void*)(long)muxdev.handle;
 		*device = dev;
@@ -482,7 +485,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **u
 	if (!device || !udid)
 		return IDEVICE_E_INVALID_ARG;
 
-	*udid = strdup(device->udid);
+	*udid = stringdup(device->udid);
 	return IDEVICE_E_SUCCESS;
 }
 

@@ -29,6 +29,12 @@
 #include "idevice.h"
 #include "common/debug.h"
 
+#ifdef _MSC_VER
+#define stringdup _strdup
+#else
+#define stringdup strdup
+#endif
+
 #define RESULT_SUCCESS 0
 #define RESULT_FAILURE 1
 
@@ -125,7 +131,7 @@ LIBIMOBILEDEVICE_API void restored_client_set_label(restored_client_t client, co
 		if (client->label)
 			free(client->label);
 
-		client->label = (label != NULL) ? strdup(label): NULL;
+		client->label = (label != NULL) ? stringdup(label): NULL;
 	}
 }
 
@@ -316,7 +322,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	client_loc->label = NULL;
 	client_loc->info = NULL;
 	if (label != NULL)
-		client_loc->label = strdup(label);
+		client_loc->label = stringdup(label);
 
 	idev_ret = idevice_get_udid(device, &client_loc->udid);
 	if (IDEVICE_E_SUCCESS != idev_ret) {

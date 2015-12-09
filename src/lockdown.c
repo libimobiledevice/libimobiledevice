@@ -32,7 +32,12 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+#ifndef _MSC_VER
+#define stringdup strdup
 #include <unistd.h>
+#else
+#define stringdup _strdup
+#endif
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/x509.h>
@@ -341,7 +346,7 @@ LIBIMOBILEDEVICE_API void lockdownd_client_set_label(lockdownd_client_t client, 
 		if (client->label)
 			free(client->label);
 
-		client->label = (label != NULL) ? strdup(label): NULL;
+		client->label = (label != NULL) ? stringdup(label): NULL;
 	}
 }
 
@@ -661,7 +666,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lo
 	}
 	debug_info("device udid: %s", client_loc->udid);
 
-	client_loc->label = label ? strdup(label) : NULL;
+	client_loc->label = label ? stringdup(label) : NULL;
 
 	*client = client_loc;
 
@@ -1183,7 +1188,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_
 		if (client->session_id) {
 			debug_info("SessionID: %s", client->session_id);
 			if (session_id != NULL)
-				*session_id = strdup(client->session_id);
+				*session_id = stringdup(client->session_id);
 		} else {
 			debug_info("Failed to get SessionID!");
 		}
