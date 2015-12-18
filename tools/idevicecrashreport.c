@@ -404,6 +404,7 @@ int main(int argc, char* argv[]) {
 
 	/* read "ping" message which indicates the crash logs have been moved to a safe harbor */
 	char *ping = malloc(4);
+	memset(ping, '\0', 4);
 	int attempts = 0;
 	while ((strncmp(ping, "ping", 4) != 0) && (attempts < 10)) {
 		uint32_t bytes = 0;
