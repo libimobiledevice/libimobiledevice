@@ -405,7 +405,7 @@ int main(int argc, char* argv[]) {
 	/* read "ping" message which indicates the crash logs have been moved to a safe harbor */
 	char *ping = malloc(4);
 	int attempts = 0;
-	while ((strncmp(ping, "ping", 4) != 0) && (attempts > 10)) {
+	while ((strncmp(ping, "ping", 4) != 0) && (attempts < 10)) {
 		uint32_t bytes = 0;
 		device_error = idevice_connection_receive_timeout(connection, ping, 4, &bytes, 2000);
 		if ((bytes == 0) && (device_error == IDEVICE_E_SUCCESS)) {
