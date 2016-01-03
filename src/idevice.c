@@ -41,6 +41,9 @@ int APIENTRY DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved);
 #include "common/thread.h"
 #include "common/debug.h"
 
+#define LIBXML_STATIC (1)
+#include <libxml/parser.h>
+
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
 {
@@ -68,6 +71,8 @@ static void internal_idevice_init(void)
 
 	CRYPTO_set_id_callback(id_function);
 	CRYPTO_set_locking_callback(locking_function);
+
+	xmlInitParser();
 }
 
 static void internal_idevice_deinit(void)
@@ -81,6 +86,8 @@ static void internal_idevice_deinit(void)
 		mutex_destroy(&mutex_buf[i]);
 	free(mutex_buf);
 	mutex_buf = NULL;
+
+	xmlCleanupParser();
 }
 
 static thread_once_t init_once = THREAD_ONCE_INIT;
