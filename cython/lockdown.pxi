@@ -210,14 +210,23 @@ cdef class LockdownClient(PropertyListService):
             raise
 
     cpdef set_value(self, bytes domain, bytes key, object value):
-        cdef plist.plist_t c_node = plist.native_to_plist_t(value)
+        cdef: 
+            plist.plist_t c_node = NULL
+            char* c_domain = NULL
+            char* c_key = NULL
+
+        c_node = plist.native_to_plist_t(value)
+        if domain is not None:
+            c_domain = domain
+        if key is not None:
+            c_key = key
         try:
-            self.handle_error(lockdownd_set_value(self._c_client, domain, key, c_node))
+            self.handle_error(lockdownd_set_value(self._c_client, c_domain, c_key, c_node))
         except BaseError, e:
             raise
         finally:
             if c_node != NULL:
-                plist.plist_free(c_node)
+                c_node = NULL
 
     cpdef remove_value(self, bytes domain, bytes key):
         self.handle_error(lockdownd_remove_value(self._c_client, domain, key))
