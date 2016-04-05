@@ -155,21 +155,6 @@ diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t c
  */
 diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
 
-/**
- * Shutdown of the device and optionally show a user notification.
- *
- * @param client The diagnostics_relay client
- * @param flags A binary flag combination of
- *        DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT to wait until
- *        diagnostics_relay_client_free() disconnects before execution and
- *        DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL to show a "FAIL" dialog
- *        or DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS to show an "OK" dialog
- *
- * @return DIAGNOSTICS_RELAY_E_SUCCESS on success,
- *  DIAGNOSTICS_RELAY_E_INVALID_ARG when client is NULL,
- *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
- *  request
- */
 diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
 
 diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
