@@ -317,16 +317,14 @@ int main(int argc, char *argv[])
 			instproxy_client_free(instproxy_client);
 			instproxy_client = NULL;
 
-			if (container) {
-				if (plist_get_node_type(container) == PLIST_STRING) {
-					plist_get_string_val(container, &working_directory);
-					debug_info("working_directory: %s\n", working_directory);
+			if (container && (plist_get_node_type(container) == PLIST_STRING)) {
+				plist_get_string_val(container, &working_directory);
+				debug_info("working_directory: %s\n", working_directory);
+				plist_free(container);
+			} else {
 					plist_free(container);
-				} else {
-						plist_free(container);
-					fprintf(stderr, "Could not determine container path for bundle identifier %s.\n", bundle_identifier);
-					goto cleanup;
-				}
+				fprintf(stderr, "Could not determine container path for bundle identifier %s.\n", bundle_identifier);
+				goto cleanup;
 			}
 
 			/* start and connect to debugserver */
