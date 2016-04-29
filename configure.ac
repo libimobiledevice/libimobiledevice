@@ -37,7 +37,6 @@ AC_PROG_LIBTOOL
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist >= $LIBPLIST_VERSION)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= $LIBPLISTMM_VERSION)
-AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -81,6 +80,10 @@ case ${host_os} in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+
+if test "x$win32" != xtrue; then
+  AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
+fi
 
 # Cython Python Bindings
 AC_ARG_WITH([cython],
