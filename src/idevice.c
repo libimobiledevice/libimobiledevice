@@ -642,7 +642,7 @@ static const char *ssl_error_to_string(int e)
 /**
  * Internally used gnutls callback function that gets called during handshake.
  */
-static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr_st * st)
+static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr2_st * st)
 {
 	int res = -1;
 	gnutls_certificate_type_t type = gnutls_certificate_type_get(session);
@@ -650,7 +650,8 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 		ssl_data_t ssl_data = (ssl_data_t)gnutls_session_get_ptr(session);
 		if (ssl_data && ssl_data->host_privkey && ssl_data->host_cert) {
 			debug_info("Passing certificate");
-			st->type = type;
+			st->cert_type = type;
+			st->key_type = GNUTLS_PRIVKEY_X509;
 			st->ncerts = 1;
 			st->cert.x509 = &ssl_data->host_cert;
 			st->key.x509 = ssl_data->host_privkey;
@@ -759,7 +760,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	debug_info("enabling SSL mode");
 	errno = 0;
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
-	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
+	gnutls_certificate_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
 	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
 	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
