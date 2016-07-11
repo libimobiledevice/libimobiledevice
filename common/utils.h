@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <plist/plist.h>
 
+#define MAC_EPOCH 978307200
+
 #ifndef HAVE_STPCPY
 char *stpcpy(char *s1, const char *s2);
 #endif
