@@ -34,6 +34,7 @@
 #include <libgen.h>
 #include <ctype.h>
 #include <time.h>
+#include <ftw.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -93,6 +94,22 @@ enum cmd_flags {
 };
 
 static int backup_domain_changed = 0;
+
+/*
+http://stackoverflow.com/questions/5467725/how-to-delete-a-directory-and-its-contents-in-posix-c
+*/
+static int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+static int rmrf(char *path) {
+    return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+}
 
 static void notify_cb(const char *notification, void *userdata)
 {
@@ -1894,14 +1911,14 @@ checkpoint:
 									char *newpath = string_build_path(backup_directory, str, NULL);
 									free(str);
 									char *oldpath = string_build_path(backup_directory, key, NULL);
-
+									
 #ifdef WIN32
 									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
 										RemoveDirectory(newpath);
 									else
 										DeleteFile(newpath);
 #else
-									remove(newpath);
+									rmrf(newpath);
 #endif
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
@@ -1951,6 +1968,7 @@ checkpoint:
 								}
 								char *newpath = string_build_path(backup_directory, str, NULL);
 								free(str);
+
 #ifdef WIN32
 								int res = 0;
 								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
@@ -1965,7 +1983,7 @@ checkpoint:
 									errdesc = strerror(e);
 								}
 #else
-								if (remove(newpath) < 0) {
+								if (rmrf(newpath) < 0) {
 									if (!suppress_warning)
 										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
 									errcode = errno_to_device_error(errno);
@@ -2223,4 +2241,3 @@ files_out:
 
 	return result_code;
 }
-
