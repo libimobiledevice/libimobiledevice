@@ -98,7 +98,8 @@ LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_client_
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when one or more parameters are
  *      invalid, PROPERTY_LIST_SERVICE_E_PLIST_ERROR when dict is not a valid
- *      plist, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified
+ *      plist, PROPERTY_LIST_SERVICE_E_MUX_ERROR when a communication error
+ *      occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
 static property_list_service_error_t internal_plist_send(property_list_service_client_t client, plist_t plist, int binary)
@@ -140,6 +141,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	}
 	if (bytes <= 0) {
 		debug_info("ERROR: sending to device failed.");
+		res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	}
 
 	free(content);

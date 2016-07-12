@@ -376,8 +376,8 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
 		if (res < 0) {
-			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(-res));
-			return IDEVICE_E_UNKNOWN_ERROR;
+			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(errno));
+			return (res == -EAGAIN ? IDEVICE_E_NOT_ENOUGH_DATA : IDEVICE_E_UNKNOWN_ERROR);
 		}
 		return IDEVICE_E_SUCCESS;
 	} else {

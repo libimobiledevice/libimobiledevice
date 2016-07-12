@@ -136,6 +136,36 @@ static lockdownd_error_t lockdownd_strtoerr(const char* name)
 }
 
 /**
+ * Convert a property_list_service_error_t value to a lockdownd_error_t
+ * value. Used internally to get correct error codes.
+ *
+ * @param err A property_list_service_error_t error code
+ *
+ * @return A matching lockdownd_error_t error code,
+ *     LOCKDOWND_E_UNKNOWN_ERROR otherwise.
+ */
+static lockdownd_error_t lockdownd_error(property_list_service_error_t err)
+{
+	switch (err) {
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
+			return LOCKDOWN_E_SUCCESS;
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+			return LOCKDOWN_E_INVALID_ARG;
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+			return LOCKDOWN_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return LOCKDOWN_E_MUX_ERROR;
+		case PROPERTY_LIST_SERVICE_E_SSL_ERROR:
+			return LOCKDOWN_E_SSL_ERROR;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return LOCKDOWN_E_RECEIVE_TIMEOUT;
+		default:
+			break;
+	}
+	return LOCKDOWN_E_UNKNOWN_ERROR;
+}
+
+/**
  * Internally used function for checking the result from lockdown's answer
  * plist to a previously sent request.
  *
@@ -349,18 +379,8 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_receive(lockdownd_client_t clie
 {
 	if (!client || !plist || (plist && *plist))
 		return LOCKDOWN_E_INVALID_ARG;
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t err;
 
-	err = property_list_service_receive_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	}
-
-	if (!*plist)
-		ret = LOCKDOWN_E_PLIST_ERROR;
-
-	return ret;
+	return lockdownd_error(property_list_service_receive_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
@@ -368,14 +388,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client,
 	if (!client || !plist)
 		return LOCKDOWN_E_INVALID_ARG;
 
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t err;
-
-	err = property_list_service_send_xml_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	}
-	return ret;
+	return lockdownd_error(property_list_service_send_xml_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
@@ -686,13 +699,11 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	}
 
 	/* perform handshake */
-	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
+	ret = lockdownd_query_type(client_loc, &type);
+	if (LOCKDOWN_E_SUCCESS != ret) {
 		debug_info("QueryType failed in the lockdownd client.");
-		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
-	} else {
-		if (strcmp("com.apple.mobile.lockdown", type)) {
-			debug_info("Warning QueryType request returned \"%s\".", type);
-		}
+	} else if (strcmp("com.apple.mobile.lockdown", type)) {
+		debug_info("Warning QueryType request returned \"%s\".", type);
 	}
 	free(type);
 
@@ -1113,7 +1124,6 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_goodbye(lockdownd_client_t clie
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t plret;
 	plist_t dict = NULL;
 
 	if (!client || !host_id)
@@ -1184,20 +1194,14 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_
 			debug_info("Failed to get SessionID!");
 		}
 
-		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
+		debug_info("Enable SSL Session: %s", (use_ssl ? "true" : "false"));
 
 		if (use_ssl) {
-			plret = property_list_service_enable_ssl(client->parent);
-			if (plret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-				ret = LOCKDOWN_E_SUCCESS;
-				client->ssl_enabled = 1;
-			} else {
-				ret = LOCKDOWN_E_SSL_ERROR;
-				client->ssl_enabled = 0;
-			}
+			ret = lockdownd_error(property_list_service_enable_ssl(client->parent));
+			client->ssl_enabled = (ret == LOCKDOWN_E_SUCCESS ? 1 : 0);
 		} else {
-			client->ssl_enabled = 0;
 			ret = LOCKDOWN_E_SUCCESS;
+			client->ssl_enabled = 0;
 		}
 	}
 
