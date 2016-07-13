@@ -34,7 +34,9 @@
 #include <libgen.h>
 #include <ctype.h>
 #include <time.h>
-#include <ftw.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fts.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -96,19 +98,34 @@ enum cmd_flags {
 static int backup_domain_changed = 0;
 
 /*
-http://stackoverflow.com/questions/5467725/how-to-delete-a-directory-and-its-contents-in-posix-c
-*/
-static int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
-    int rv = remove(fpath);
+	See
+	http://stackoverflow.com/questions/12609747/traversing-a-filesystem-with-fts3
+ */
+static int rmrf(char *filename) {
+	int rc = 0;
+	char * paths[] = { filename, NULL };
+	FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+	if (!tree) {
+			perror("fts_open");
+			return 1;
+	}
 
-    if (rv)
-        perror(fpath);
+	FTSENT *node;
+	while ((node = fts_read(tree))) {
+			if (node->fts_info & FTS_DP) {
+					rc = remove(node->fts_accpath);
+					if (rc < 0) {
+						break;
+					}
+			}
+	}
 
-    return rv;
-}
+	if (fts_close(tree)) {
+			perror("fts_close");
+			return 1;
+	}
 
-static int rmrf(char *path) {
-    return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+	return rc < 0 ? rc : remove(filename);
 }
 
 static void notify_cb(const char *notification, void *userdata)
@@ -1911,7 +1928,7 @@ checkpoint:
 									char *newpath = string_build_path(backup_directory, str, NULL);
 									free(str);
 									char *oldpath = string_build_path(backup_directory, key, NULL);
-									
+
 #ifdef WIN32
 									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
 										RemoveDirectory(newpath);
