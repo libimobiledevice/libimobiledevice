@@ -162,6 +162,18 @@ property_list_service_error_t property_list_service_enable_ssl(property_list_ser
  */
 property_list_service_error_t property_list_service_disable_ssl(property_list_service_client_t client);
 
+/**
+ * Get underlying idevice_connection of the given property list service client
+ *
+ * @param client The connected property list service client to get idevice_connection
+ * @param connection Pointer to an idevice_connection_t that will be filled
+ *   with the necessary data of the connection.
+ *
+ * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
+ *     PROPERTY_LIST_SERVICE_E_INVALID_ARG if client or connection is NULL.
+ */
+property_list_service_error_t property_list_service_get_connection(property_list_service_client_t client, idevice_connection_t * connection);
+
 #ifdef __cplusplus
 }
 #endif
