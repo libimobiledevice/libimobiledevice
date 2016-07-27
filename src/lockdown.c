@@ -893,13 +893,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_node);
 		} else {
 			/* use existing pair record */
-			if (userpref_has_pair_record(client->udid)) {
-				userpref_read_pair_record(client->udid, &pair_record_plist);
-				if (!pair_record_plist) {
-					return LOCKDOWN_E_INVALID_CONF;
-				}
-			} else {
-				return LOCKDOWN_E_INVALID_HOST_ID;
+			userpref_read_pair_record(client->udid, &pair_record_plist);
+			if (!pair_record_plist) {
+				return LOCKDOWN_E_INVALID_CONF;
 			}
 		}
 	}
