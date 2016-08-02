@@ -774,7 +774,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
 #endif
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
-	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
+	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-TLS1.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
 	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
 	gnutls_session_set_ptr(ssl_data_loc->session, ssl_data_loc);
 
