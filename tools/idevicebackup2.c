@@ -34,6 +34,9 @@
 #include <libgen.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fts.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -93,6 +96,37 @@ enum cmd_flags {
 };
 
 static int backup_domain_changed = 0;
+
+/*
+	See
+	http://stackoverflow.com/questions/12609747/traversing-a-filesystem-with-fts3
+ */
+static int rmrf(char *filename) {
+	int rc = 0;
+	char * paths[] = { filename, NULL };
+	FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+	if (!tree) {
+			perror("fts_open");
+			return 1;
+	}
+
+	FTSENT *node;
+	while ((node = fts_read(tree))) {
+			if (node->fts_info & FTS_DP) {
+					rc = remove(node->fts_accpath);
+					if (rc < 0) {
+						break;
+					}
+			}
+	}
+
+	if (fts_close(tree)) {
+			perror("fts_close");
+			return 1;
+	}
+
+	return rc < 0 ? rc : remove(filename);
+}
 
 static void notify_cb(const char *notification, void *userdata)
 {
@@ -1901,7 +1935,7 @@ checkpoint:
 									else
 										DeleteFile(newpath);
 #else
-									remove(newpath);
+									rmrf(newpath);
 #endif
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
@@ -1951,6 +1985,7 @@ checkpoint:
 								}
 								char *newpath = string_build_path(backup_directory, str, NULL);
 								free(str);
+
 #ifdef WIN32
 								int res = 0;
 								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
@@ -1965,7 +2000,7 @@ checkpoint:
 									errdesc = strerror(e);
 								}
 #else
-								if (remove(newpath) < 0) {
+								if (rmrf(newpath) < 0) {
 									if (!suppress_warning)
 										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
 									errcode = errno_to_device_error(errno);
@@ -2223,4 +2258,3 @@ files_out:
 
 	return result_code;
 }
-
