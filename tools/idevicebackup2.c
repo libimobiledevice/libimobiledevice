@@ -1112,6 +1112,26 @@ static void clean_exit(int sig)
 	quit_flag++;
 }
 
+static void clean_snapshot(char *snapshot_dir) {
+	char subdir[8];
+	uint32_t i = 0;
+	struct stat st;
+
+	for (i = 0; i < 256; i++) {
+		sprintf(subdir, "%02x", i);
+		char *currentpath = string_build_path(snapshot_dir, subdir, NULL);
+
+		if ((stat(currentpath, &st) == 0) && S_ISDIR(st.st_mode)) {
+#ifdef WIN32
+			RemoveDirectory(currentpath);
+#else
+			remove(currentpath);
+#endif
+		}
+		free(currentpath);
+	}
+}
+
 static void print_usage(int argc, char **argv)
 {
 	char *name = NULL;
@@ -1951,6 +1971,10 @@ checkpoint:
 								}
 								char *newpath = string_build_path(backup_directory, str, NULL);
 								free(str);
+
+								if (strcmp(newpath, "Snapshot")) {
+									clean_snapshot(newpath);
+								}
 #ifdef WIN32
 								int res = 0;
 								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
