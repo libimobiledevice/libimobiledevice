@@ -192,6 +192,74 @@ static int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
+static int remove_file(const char* path)
+{
+	int e = 0;
+#ifdef WIN32
+	if (!DeleteFile(path)) {
+		e = win32err_to_errno(GetLastError());
+	}
+#else
+	if (remove(path) < 0) {
+		e = errno;
+	}
+#endif
+	return e;
+}
+
+static int remove_directory(const char* path)
+{
+	int e = 0;
+#ifdef WIN32
+	if (!RemoveDirectory(path)) {
+		e = win32err_to_errno(GetLastError());
+	}
+#else
+	if (remove(path) < 0) {
+		e = errno;
+	}
+#endif
+	return e;
+}
+
+static int rmdir_recursive(const char* path)
+{
+	DIR* cur_dir = opendir(path);
+	if (cur_dir) {
+		struct dirent* ep;
+		while ((ep = readdir(cur_dir))) {
+			if ((strcmp(ep->d_name, ".") == 0) || (strcmp(ep->d_name, "..") == 0)) {
+				continue;
+			}
+			char *fpath = string_build_path(path, ep->d_name, NULL);
+			if (fpath) {
+				struct stat st;
+				if (stat(fpath, &st) == 0) {
+					int res = 0;
+					if (S_ISDIR(st.st_mode)) {
+						res = rmdir_recursive(fpath);
+					} else {
+						res = remove_file(fpath);
+					}
+					if (res != 0) {
+						free(fpath);
+						closedir(cur_dir);
+						return res;
+					}
+				} else {
+					free(fpath);
+					closedir(cur_dir);
+					return errno;
+				}
+			}
+			free(fpath);
+		}
+		closedir(cur_dir);
+	}
+
+	return remove_directory(path);
+}
+
 static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_client_t lockdown, afc_client_t afc)
 {
 	/* gather data from lockdown */
@@ -1895,14 +1963,10 @@ checkpoint:
 									free(str);
 									char *oldpath = string_build_path(backup_directory, key, NULL);
 
-#ifdef WIN32
 									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
-										RemoveDirectory(newpath);
+										rmdir_recursive(newpath);
 									else
-										DeleteFile(newpath);
-#else
-									remove(newpath);
-#endif
+										remove_file(newpath);
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
 										errcode = errno_to_device_error(errno);
@@ -1951,27 +2015,18 @@ checkpoint:
 								}
 								char *newpath = string_build_path(backup_directory, str, NULL);
 								free(str);
-#ifdef WIN32
 								int res = 0;
-								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
-									res = RemoveDirectory(newpath);
-								else
-									res = DeleteFile(newpath);
-								if (!res) {
-									int e = win32err_to_errno(GetLastError());
-									if (!suppress_warning)
-										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(e), e);
-									errcode = errno_to_device_error(e);
-									errdesc = strerror(e);
+								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode)) {
+									res = rmdir_recursive(newpath);
+								} else {
+									res = remove_file(newpath);
 								}
-#else
-								if (remove(newpath) < 0) {
+								if (res != 0) {
 									if (!suppress_warning)
-										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
-									errcode = errno_to_device_error(errno);
-									errdesc = strerror(errno);
+										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(res), res);
+									errcode = errno_to_device_error(res);
+									errdesc = strerror(res);
 								}
-#endif
 								free(newpath);
 							}
 						}
