@@ -32,7 +32,7 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 
 if WIN32
 libimobiledevice_la_LDFLAGS += -avoid-version
-libimobiledevice_la_LIBADD += -lole32 -lws2_32
+libimobiledevice_la_LIBADD += -lole32 -lws2_32 -lgdi32
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig
