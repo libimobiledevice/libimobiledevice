@@ -192,6 +192,20 @@ static int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
+#ifdef WIN32
+static int win32err_to_errno(int err_value)
+{
+	switch (err_value) {
+		case ERROR_FILE_NOT_FOUND:
+			return ENOENT;
+		case ERROR_ALREADY_EXISTS:
+			return EEXIST;
+		default:
+			return EFAULT;
+	}
+}
+#endif
+
 static int remove_file(const char* path)
 {
 	int e = 0;
@@ -517,20 +531,6 @@ static int errno_to_device_error(int errno_value)
 			return -errno_value;
 	}
 }
-
-#ifdef WIN32
-static int win32err_to_errno(int err_value)
-{
-	switch (err_value) {
-		case ERROR_FILE_NOT_FOUND:
-			return ENOENT;
-		case ERROR_ALREADY_EXISTS:
-			return EEXIST;
-		default:
-			return EFAULT;
-	}
-}
-#endif
 
 static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char *backup_dir, const char *path, plist_t *errplist)
 {
