@@ -40,6 +40,8 @@
 #include <libimobiledevice/mobilebackup2.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
+#include <libimobiledevice/installation_proxy.h>
+#include <libimobiledevice/sbservices.h>
 #include "common/utils.h"
 
 #include <endianness.h>
@@ -274,7 +276,24 @@ static int rmdir_recursive(const char* path)
 	return remove_directory(path);
 }
 
-static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_client_t lockdown, afc_client_t afc)
+static char* get_uuid()
+{
+	const char *chars = "ABCDEF0123456789";
+	int i = 0;
+	char *uuid = (char*)malloc(sizeof(char) * 32);
+
+	srand(time(NULL));
+
+	for (i = 0; i < 32; i++) {
+		uuid[i] = chars[rand() % 16];
+	}
+
+	uuid[32] = '\0';
+
+	return uuid;
+}
+
+static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t device, lockdownd_client_t lockdown, afc_client_t afc)
 {
 	/* gather data from lockdown */
 	plist_t value_node = NULL;
@@ -286,6 +305,74 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	/* get basic device information in one go */
 	lockdownd_get_value(lockdown, NULL, NULL, &root_node);
 
+	/* get a list of installed user applications */
+	plist_t app_dict = plist_new_dict();
+	plist_t installed_apps = plist_new_array();
+	instproxy_client_t ip = NULL;
+	if (instproxy_client_start_service(device, &ip, "idevicebackup2") == INSTPROXY_E_SUCCESS) {
+		plist_t client_opts = instproxy_client_options_new();
+		instproxy_client_options_add(client_opts, "ApplicationType", "User", NULL);
+		instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "ApplicationSINF", "iTunesMetadata", NULL);
+
+		plist_t apps = NULL;
+		instproxy_browse(ip, client_opts, &apps);
+
+		sbservices_client_t sbs = NULL;
+		if (sbservices_client_start_service(device, &sbs, "idevicebackup2") != SBSERVICES_E_SUCCESS) {
+			printf("Couldn't establish sbservices connection. Continuing anyway.\n");
+		}
+
+		if (apps && (plist_get_node_type(apps) == PLIST_ARRAY)) {
+			uint32_t app_count = plist_array_get_size(apps);
+			uint32_t i;
+			time_t starttime = time(NULL);
+			for (i = 0; i < app_count; i++) {
+				plist_t app_entry = plist_array_get_item(apps, i);
+				plist_t bundle_id = plist_dict_get_item(app_entry, "CFBundleIdentifier");
+				if (bundle_id) {
+					char *bundle_id_str = NULL;
+					plist_array_append_item(installed_apps, plist_copy(bundle_id));
+
+					plist_get_string_val(bundle_id, &bundle_id_str);
+					plist_t sinf = plist_dict_get_item(app_entry, "ApplicationSINF");
+					plist_t meta = plist_dict_get_item(app_entry, "iTunesMetadata");
+					if (sinf && meta) {
+						plist_t adict = plist_new_dict();
+						plist_dict_set_item(adict, "ApplicationSINF", plist_copy(sinf));
+						if (sbs) {
+							char *pngdata = NULL;
+							uint64_t pngsize = 0;
+							sbservices_get_icon_pngdata(sbs, bundle_id_str, &pngdata, &pngsize);
+							if (pngdata) {
+								plist_dict_set_item(adict, "PlaceholderIcon", plist_new_data(pngdata, pngsize));
+								free(pngdata);
+							}
+						}
+						plist_dict_set_item(adict, "iTunesMetadata", plist_copy(meta));
+						plist_dict_set_item(app_dict, bundle_id_str, adict);
+					}
+				}
+				if ((time(NULL) - starttime) > 5) {
+					// make sure our lockdown connection doesn't time out in case this takes longer
+					lockdownd_query_type(lockdown, NULL);
+					starttime = time(NULL);
+				}
+			}
+		}
+		plist_free(apps);
+
+		if (sbs) {
+			sbservices_client_free(sbs);
+		}
+
+		instproxy_client_options_free(client_opts);
+
+		instproxy_client_free(ip);
+	}
+
+	/* Applications */
+	plist_dict_set_item(ret, "Applications", app_dict);
+
 	/* set fields we understand */
 	value_node = plist_dict_get_item(root_node, "BuildVersion");
 	plist_dict_set_item(ret, "Build Version", plist_copy(value_node));
@@ -294,8 +381,9 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	plist_dict_set_item(ret, "Device Name", plist_copy(value_node));
 	plist_dict_set_item(ret, "Display Name", plist_copy(value_node));
 
-	/* FIXME: How is the GUID generated? */
-	plist_dict_set_item(ret, "GUID", plist_new_string("---"));
+	char *uuid = get_uuid();
+	plist_dict_set_item(ret, "GUID", plist_new_string(uuid));
+	free(uuid);
 
 	value_node = plist_dict_get_item(root_node, "IntegratedCircuitCardIdentity");
 	if (value_node)
@@ -305,12 +393,20 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	if (value_node)
 		plist_dict_set_item(ret, "IMEI", plist_copy(value_node));
 
+	/* Installed Applications */
+	plist_dict_set_item(ret, "Installed Applications", installed_apps);
+
 	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL) - MAC_EPOCH, 0));
+
+	value_node = plist_dict_get_item(root_node, "MobileEquipmentIdentifier");
+	plist_dict_set_item(ret, "MEID", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "PhoneNumber");
 	if (value_node && (plist_get_node_type(value_node) == PLIST_STRING)) {
 		plist_dict_set_item(ret, "Phone Number", plist_copy(value_node));
 	}
+
+	/* FIXME Product Name */
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
 	plist_dict_set_item(ret, "Product Type", plist_copy(value_node));
@@ -349,6 +445,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 		"PhotosFolderAlbums",
 		"PhotosFolderName",
 		"PhotosFolderPrefs",
+		"VoiceMemos.plist",
 		"iPhotoAlbumPrefs",
 		"iTunesApplicationIDs",
 		"iTunesPrefs",
@@ -375,7 +472,15 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
 	plist_dict_set_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
 
-	plist_dict_set_item(ret, "iTunes Version", plist_new_string("10.0.1"));
+	/* since we usually don't have iTunes, let's get the minimum required iTunes version from the device */
+	value_node = NULL;
+	lockdownd_get_value(lockdown, "com.apple.mobile.iTunes", "MinITunesVersion", &value_node);
+	if (value_node) {
+		plist_dict_set_item(ret, "iTunes Version", plist_copy(value_node));
+		plist_free(value_node);
+	} else {
+		plist_dict_set_item(ret, "iTunes Version", plist_new_string("10.0.1"));
+	}
 
 	plist_free(root_node);
 
@@ -1688,7 +1793,7 @@ checkpoint:
 				plist_free(info_plist);
 				info_plist = NULL;
 			}
-			info_plist = mobilebackup_factory_info_plist_new(udid, lockdown, afc);
+			info_plist = mobilebackup_factory_info_plist_new(udid, device, lockdown, afc);
 			remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			free(info_path);
