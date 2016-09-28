@@ -59,6 +59,7 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_free(file_relay_client
 	if (property_list_service_client_free(client->parent) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return FILE_RELAY_E_UNKNOWN_ERROR;
 	}
+	free(client);
 	return FILE_RELAY_E_SUCCESS;
 }
 

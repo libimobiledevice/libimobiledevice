@@ -35,13 +35,6 @@ stamp-h1
 src/.libs
 docs/html
 libimobiledevice-1.0.pc
-dev/.libs/*
-dev/afccheck
-dev/ideviceclient
-dev/idevicesyslog
-dev/lckd-client
-dev/msyncclient
-dev/ideviceenterrecovery
 tools/.libs/*
 tools/idevice_id
 tools/ideviceinfo
@@ -58,6 +51,8 @@ tools/idevicename
 tools/idevicepair
 tools/ideviceprovision
 tools/idevicecrashreport
+tools/idevicedebug
+tools/idevicenotificationproxy
 cython/.libs/*
 cython/*.c
 doxygen.cfg

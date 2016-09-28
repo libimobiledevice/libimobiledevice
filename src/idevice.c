@@ -463,6 +463,22 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connecti
 	return internal_connection_receive(connection, data, len, recv_bytes);
 }
 
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd)
+{
+	if (!connection || !fd) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+
+	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
+	if (connection->type == CONNECTION_USBMUXD) {
+		*fd = (int)(long)connection->data;
+		result = IDEVICE_E_SUCCESS;
+	} else {
+		debug_info("Unknown connection type %d", connection->type);
+	}
+	return result;
+}
+
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
 	if (!device)
@@ -626,7 +642,11 @@ static const char *ssl_error_to_string(int e)
 /**
  * Internally used gnutls callback function that gets called during handshake.
  */
+#if GNUTLS_VERSION_NUMBER >= 0x020b07
+static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr2_st * st)
+#else
 static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t * req_ca_rdn, int nreqs, const gnutls_pk_algorithm_t * sign_algos, int sign_algos_length, gnutls_retr_st * st)
+#endif
 {
 	int res = -1;
 	gnutls_certificate_type_t type = gnutls_certificate_type_get(session);
@@ -634,7 +654,12 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 		ssl_data_t ssl_data = (ssl_data_t)gnutls_session_get_ptr(session);
 		if (ssl_data && ssl_data->host_privkey && ssl_data->host_cert) {
 			debug_info("Passing certificate");
+#if GNUTLS_VERSION_NUMBER >= 0x020b07
+			st->cert_type = type;
+			st->key_type = GNUTLS_PRIVKEY_X509;
+#else
 			st->type = type;
+#endif
 			st->ncerts = 1;
 			st->cert.x509 = &ssl_data->host_cert;
 			st->key.x509 = ssl_data->host_privkey;
@@ -678,7 +703,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	}
 	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
 
-	SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv3_method());
+	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
 	if (ssl_ctx == NULL) {
 		debug_info("ERROR: Could not create SSL context.");
 		BIO_free(ssl_bio);
@@ -743,9 +768,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	debug_info("enabling SSL mode");
 	errno = 0;
 	gnutls_certificate_allocate_credentials(&ssl_data_loc->certificate);
+#if GNUTLS_VERSION_NUMBER >= 0x020b07
+	gnutls_certificate_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
+#else
 	gnutls_certificate_client_set_retrieve_function(ssl_data_loc->certificate, internal_cert_callback);
+#endif
 	gnutls_init(&ssl_data_loc->session, GNUTLS_CLIENT);
-	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-SSL3.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
+	gnutls_priority_set_direct(ssl_data_loc->session, "NONE:+VERS-TLS1.0:+ANON-DH:+RSA:+AES-128-CBC:+AES-256-CBC:+SHA1:+MD5:+COMP-NULL", NULL);
 	gnutls_credentials_set(ssl_data_loc->session, GNUTLS_CRD_CERTIFICATE, ssl_data_loc->certificate);
 	gnutls_session_set_ptr(ssl_data_loc->session, ssl_data_loc);
 

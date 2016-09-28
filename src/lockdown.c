@@ -637,7 +637,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_device_name(lockdownd_clien
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label)
 {
-	if (!client)
+	if (!device || !client)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	static struct lockdownd_service_descriptor service = {
@@ -893,12 +893,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_node);
 		} else {
 			/* use existing pair record */
-			if (userpref_has_pair_record(client->udid)) {
-				userpref_read_pair_record(client->udid, &pair_record_plist);
-				if (!pair_record_plist) {
-					return LOCKDOWN_E_INVALID_CONF;
-				}
-			} else {
+			userpref_read_pair_record(client->udid, &pair_record_plist);
+			if (!pair_record_plist) {
 				return LOCKDOWN_E_INVALID_HOST_ID;
 			}
 		}

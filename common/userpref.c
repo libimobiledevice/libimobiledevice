@@ -192,35 +192,6 @@ int userpref_read_system_buid(char **system_buid)
 }
 
 /**
- * Determines whether this device has been connected to this system before.
- *
- * @param udid The device UDID as given by the device.
- *
- * @return 1 if the device has been connected previously to this configuration
- *         or 0 otherwise.
- */
-int userpref_has_pair_record(const char *udid)
-{
-	int ret = 0;
-	const char *config_path = NULL;
-	char *config_file = NULL;
-	struct stat st;
-
-	if (!udid) return 0;
-
-	/* first get config file */
-	config_path = userpref_get_config_dir();
-	config_file = string_concat(config_path, DIR_SEP_S, udid, USERPREF_CONFIG_EXTENSION, NULL);
-
-	if ((stat(config_file, &st) == 0) && S_ISREG(st.st_mode))
-		ret = 1;
-
-	free(config_file);
-
-	return ret;
-}
-
-/**
  * Fills a list with UDIDs of devices that have been connected to this
  * system before, i.e. for which a public key file exists.
  *

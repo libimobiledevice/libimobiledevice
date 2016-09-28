@@ -40,6 +40,8 @@
 #include <libimobiledevice/mobilebackup2.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
+#include <libimobiledevice/installation_proxy.h>
+#include <libimobiledevice/sbservices.h>
 #include "common/utils.h"
 
 #include <endianness.h>
@@ -146,10 +148,10 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 		uint32_t bread = 0;
 		afc_file_read(afc, f, buf+done, 65536, &bread);
 		if (bread > 0) {
+			done += bread;
 		} else {
 			break;
 		}
-		done += bread;
 	}
 	if (done == fsize) {
 		*size = fsize;
@@ -192,7 +194,106 @@ static int mkdir_with_parents(const char *dir, int mode)
 	return res;
 }
 
-static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_client_t lockdown, afc_client_t afc)
+#ifdef WIN32
+static int win32err_to_errno(int err_value)
+{
+	switch (err_value) {
+		case ERROR_FILE_NOT_FOUND:
+			return ENOENT;
+		case ERROR_ALREADY_EXISTS:
+			return EEXIST;
+		default:
+			return EFAULT;
+	}
+}
+#endif
+
+static int remove_file(const char* path)
+{
+	int e = 0;
+#ifdef WIN32
+	if (!DeleteFile(path)) {
+		e = win32err_to_errno(GetLastError());
+	}
+#else
+	if (remove(path) < 0) {
+		e = errno;
+	}
+#endif
+	return e;
+}
+
+static int remove_directory(const char* path)
+{
+	int e = 0;
+#ifdef WIN32
+	if (!RemoveDirectory(path)) {
+		e = win32err_to_errno(GetLastError());
+	}
+#else
+	if (remove(path) < 0) {
+		e = errno;
+	}
+#endif
+	return e;
+}
+
+static int rmdir_recursive(const char* path)
+{
+	DIR* cur_dir = opendir(path);
+	if (cur_dir) {
+		struct dirent* ep;
+		while ((ep = readdir(cur_dir))) {
+			if ((strcmp(ep->d_name, ".") == 0) || (strcmp(ep->d_name, "..") == 0)) {
+				continue;
+			}
+			char *fpath = string_build_path(path, ep->d_name, NULL);
+			if (fpath) {
+				struct stat st;
+				if (stat(fpath, &st) == 0) {
+					int res = 0;
+					if (S_ISDIR(st.st_mode)) {
+						res = rmdir_recursive(fpath);
+					} else {
+						res = remove_file(fpath);
+					}
+					if (res != 0) {
+						free(fpath);
+						closedir(cur_dir);
+						return res;
+					}
+				} else {
+					free(fpath);
+					closedir(cur_dir);
+					return errno;
+				}
+			}
+			free(fpath);
+		}
+		closedir(cur_dir);
+	}
+
+	return remove_directory(path);
+}
+
+static char* get_uuid()
+{
+	const char *chars = "ABCDEF0123456789";
+	int i = 0;
+	char *uuid = (char*)malloc(sizeof(char) * 32);
+
+	srand(time(NULL));
+
+	for (i = 0; i < 32; i++) {
+		uuid[i] = chars[rand() % 16];
+	}
+
+	uuid[32] = '\0';
+
+	return uuid;
+}
+
+static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t device, lockdownd_client_t lockdown, afc_client_t afc)
 {
 	/* gather data from lockdown */
 	plist_t value_node = NULL;
@@ -204,6 +305,74 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	/* get basic device information in one go */
 	lockdownd_get_value(lockdown, NULL, NULL, &root_node);
 
+	/* get a list of installed user applications */
+	plist_t app_dict = plist_new_dict();
+	plist_t installed_apps = plist_new_array();
+	instproxy_client_t ip = NULL;
+	if (instproxy_client_start_service(device, &ip, "idevicebackup2") == INSTPROXY_E_SUCCESS) {
+		plist_t client_opts = instproxy_client_options_new();
+		instproxy_client_options_add(client_opts, "ApplicationType", "User", NULL);
+		instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "ApplicationSINF", "iTunesMetadata", NULL);
+
+		plist_t apps = NULL;
+		instproxy_browse(ip, client_opts, &apps);
+
+		sbservices_client_t sbs = NULL;
+		if (sbservices_client_start_service(device, &sbs, "idevicebackup2") != SBSERVICES_E_SUCCESS) {
+			printf("Couldn't establish sbservices connection. Continuing anyway.\n");
+		}
+
+		if (apps && (plist_get_node_type(apps) == PLIST_ARRAY)) {
+			uint32_t app_count = plist_array_get_size(apps);
+			uint32_t i;
+			time_t starttime = time(NULL);
+			for (i = 0; i < app_count; i++) {
+				plist_t app_entry = plist_array_get_item(apps, i);
+				plist_t bundle_id = plist_dict_get_item(app_entry, "CFBundleIdentifier");
+				if (bundle_id) {
+					char *bundle_id_str = NULL;
+					plist_array_append_item(installed_apps, plist_copy(bundle_id));
+
+					plist_get_string_val(bundle_id, &bundle_id_str);
+					plist_t sinf = plist_dict_get_item(app_entry, "ApplicationSINF");
+					plist_t meta = plist_dict_get_item(app_entry, "iTunesMetadata");
+					if (sinf && meta) {
+						plist_t adict = plist_new_dict();
+						plist_dict_set_item(adict, "ApplicationSINF", plist_copy(sinf));
+						if (sbs) {
+							char *pngdata = NULL;
+							uint64_t pngsize = 0;
+							sbservices_get_icon_pngdata(sbs, bundle_id_str, &pngdata, &pngsize);
+							if (pngdata) {
+								plist_dict_set_item(adict, "PlaceholderIcon", plist_new_data(pngdata, pngsize));
+								free(pngdata);
+							}
+						}
+						plist_dict_set_item(adict, "iTunesMetadata", plist_copy(meta));
+						plist_dict_set_item(app_dict, bundle_id_str, adict);
+					}
+				}
+				if ((time(NULL) - starttime) > 5) {
+					// make sure our lockdown connection doesn't time out in case this takes longer
+					lockdownd_query_type(lockdown, NULL);
+					starttime = time(NULL);
+				}
+			}
+		}
+		plist_free(apps);
+
+		if (sbs) {
+			sbservices_client_free(sbs);
+		}
+
+		instproxy_client_options_free(client_opts);
+
+		instproxy_client_free(ip);
+	}
+
+	/* Applications */
+	plist_dict_set_item(ret, "Applications", app_dict);
+
 	/* set fields we understand */
 	value_node = plist_dict_get_item(root_node, "BuildVersion");
 	plist_dict_set_item(ret, "Build Version", plist_copy(value_node));
@@ -212,8 +381,9 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	plist_dict_set_item(ret, "Device Name", plist_copy(value_node));
 	plist_dict_set_item(ret, "Display Name", plist_copy(value_node));
 
-	/* FIXME: How is the GUID generated? */
-	plist_dict_set_item(ret, "GUID", plist_new_string("---"));
+	char *uuid = get_uuid();
+	plist_dict_set_item(ret, "GUID", plist_new_string(uuid));
+	free(uuid);
 
 	value_node = plist_dict_get_item(root_node, "IntegratedCircuitCardIdentity");
 	if (value_node)
@@ -223,12 +393,20 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	if (value_node)
 		plist_dict_set_item(ret, "IMEI", plist_copy(value_node));
 
-	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
+	/* Installed Applications */
+	plist_dict_set_item(ret, "Installed Applications", installed_apps);
+
+	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL) - MAC_EPOCH, 0));
+
+	value_node = plist_dict_get_item(root_node, "MobileEquipmentIdentifier");
+	plist_dict_set_item(ret, "MEID", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "PhoneNumber");
 	if (value_node && (plist_get_node_type(value_node) == PLIST_STRING)) {
 		plist_dict_set_item(ret, "Phone Number", plist_copy(value_node));
 	}
+
+	/* FIXME Product Name */
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
 	plist_dict_set_item(ret, "Product Type", plist_copy(value_node));
@@ -267,6 +445,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 		"PhotosFolderAlbums",
 		"PhotosFolderName",
 		"PhotosFolderPrefs",
+		"VoiceMemos.plist",
 		"iPhotoAlbumPrefs",
 		"iTunesApplicationIDs",
 		"iTunesPrefs",
@@ -293,7 +472,15 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, lockdownd_c
 	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
 	plist_dict_set_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
 
-	plist_dict_set_item(ret, "iTunes Version", plist_new_string("10.0.1"));
+	/* since we usually don't have iTunes, let's get the minimum required iTunes version from the device */
+	value_node = NULL;
+	lockdownd_get_value(lockdown, "com.apple.mobile.iTunes", "MinITunesVersion", &value_node);
+	if (value_node) {
+		plist_dict_set_item(ret, "iTunes Version", plist_copy(value_node));
+		plist_free(value_node);
+	} else {
+		plist_dict_set_item(ret, "iTunes Version", plist_new_string("10.0.1"));
+	}
 
 	plist_free(root_node);
 
@@ -449,20 +636,6 @@ static int errno_to_device_error(int errno_value)
 			return -errno_value;
 	}
 }
-
-#ifdef WIN32
-static int win32err_to_errno(int err_value)
-{
-	switch (err_value) {
-		case ERROR_FILE_NOT_FOUND:
-			return ENOENT;
-		case ERROR_ALREADY_EXISTS:
-			return EEXIST;
-		default:
-			return EFAULT;
-	}
-}
-#endif
 
 static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char *backup_dir, const char *path, plist_t *errplist)
 {
@@ -914,7 +1087,8 @@ static void mb2_handle_list_directory(mobilebackup2_client_t mobilebackup2, plis
 				}
 				plist_dict_set_item(fdict, "DLFileType", plist_new_string(ftype));
 				plist_dict_set_item(fdict, "DLFileSize", plist_new_uint(st.st_size));
-				plist_dict_set_item(fdict, "DLFileModificationDate", plist_new_date(st.st_mtime, 0));
+				plist_dict_set_item(fdict, "DLFileModificationDate",
+						    plist_new_date(st.st_mtime - MAC_EPOCH, 0));
 
 				plist_dict_set_item(dirlist, ep->d_name, fdict);
 				free(fpath);
@@ -1619,7 +1793,7 @@ checkpoint:
 				plist_free(info_plist);
 				info_plist = NULL;
 			}
-			info_plist = mobilebackup_factory_info_plist_new(udid, lockdown, afc);
+			info_plist = mobilebackup_factory_info_plist_new(udid, device, lockdown, afc);
 			remove(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			free(info_path);
@@ -1894,14 +2068,10 @@ checkpoint:
 									free(str);
 									char *oldpath = string_build_path(backup_directory, key, NULL);
 
-#ifdef WIN32
 									if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
-										RemoveDirectory(newpath);
+										rmdir_recursive(newpath);
 									else
-										DeleteFile(newpath);
-#else
-									remove(newpath);
-#endif
+										remove_file(newpath);
 									if (rename(oldpath, newpath) < 0) {
 										printf("Renameing '%s' to '%s' failed: %s (%d)\n", oldpath, newpath, strerror(errno), errno);
 										errcode = errno_to_device_error(errno);
@@ -1950,27 +2120,18 @@ checkpoint:
 								}
 								char *newpath = string_build_path(backup_directory, str, NULL);
 								free(str);
-#ifdef WIN32
 								int res = 0;
-								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode))
-									res = RemoveDirectory(newpath);
-								else
-									res = DeleteFile(newpath);
-								if (!res) {
-									int e = win32err_to_errno(GetLastError());
-									if (!suppress_warning)
-										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(e), e);
-									errcode = errno_to_device_error(e);
-									errdesc = strerror(e);
+								if ((stat(newpath, &st) == 0) && S_ISDIR(st.st_mode)) {
+									res = rmdir_recursive(newpath);
+								} else {
+									res = remove_file(newpath);
 								}
-#else
-								if (remove(newpath) < 0) {
+								if (res != 0) {
 									if (!suppress_warning)
-										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(errno), errno);
-									errcode = errno_to_device_error(errno);
-									errdesc = strerror(errno);
+										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(res), res);
+									errcode = errno_to_device_error(res);
+									errdesc = strerror(res);
 								}
-#endif
 								free(newpath);
 							}
 						}
