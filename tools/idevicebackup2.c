@@ -399,7 +399,8 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL) - MAC_EPOCH, 0));
 
 	value_node = plist_dict_get_item(root_node, "MobileEquipmentIdentifier");
-	plist_dict_set_item(ret, "MEID", plist_copy(value_node));
+	if (value_node)
+		plist_dict_set_item(ret, "MEID", plist_copy(value_node));
 
 	value_node = plist_dict_get_item(root_node, "PhoneNumber");
 	if (value_node && (plist_get_node_type(value_node) == PLIST_STRING)) {
