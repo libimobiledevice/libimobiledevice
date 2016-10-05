@@ -1999,6 +1999,7 @@ checkpoint:
 			int file_count = 0;
 			int errcode = 0;
 			const char *errdesc = NULL;
+			int progress_finished = 0;
 
 			/* process series of DLMessage* operations */
 			do {
@@ -2226,7 +2227,10 @@ checkpoint:
 				}
 
 				/* print status */
-				if (overall_progress > 0) {
+				if ((overall_progress > 0) && !progress_finished) {
+					if (overall_progress >= 100.0f) {
+						progress_finished = 1;
+					}
 					print_progress_real(overall_progress, 0);
 					PRINT_VERBOSE(1, " Finished\n");
 				}
