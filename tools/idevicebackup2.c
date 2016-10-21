@@ -2128,7 +2128,7 @@ checkpoint:
 								} else {
 									res = remove_file(newpath);
 								}
-								if (res != 0) {
+								if (res != 0 && res != ENOENT) {
 									if (!suppress_warning)
 										printf("Could not remove '%s': %s (%d)\n", newpath, strerror(res), res);
 									errcode = errno_to_device_error(res);
