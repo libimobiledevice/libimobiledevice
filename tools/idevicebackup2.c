@@ -960,7 +960,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 			PRINT_VERBOSE(1, "Found new flag %02x\n", code);
 		}
 
-		remove(bname);
+		remove_file(bname);
 		f = fopen(bname, "wb");
 		while (f && (code == CODE_FILE_DATA)) {
 			blocksize = nlen-1;
@@ -1030,7 +1030,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 		fname = (char*)malloc(nlen-1);
 		mobilebackup2_receive_raw(mobilebackup2, fname, nlen-1, &r);
 		free(fname);
-		remove(bname);
+		remove_file(bname);
 	}
 
 	/* clean up */
@@ -1795,7 +1795,7 @@ checkpoint:
 				info_plist = NULL;
 			}
 			info_plist = mobilebackup_factory_info_plist_new(udid, device, lockdown, afc);
-			remove(info_path);
+			remove_file(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			free(info_path);
 
