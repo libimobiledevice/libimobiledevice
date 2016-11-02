@@ -280,7 +280,7 @@ static char* get_uuid()
 {
 	const char *chars = "ABCDEF0123456789";
 	int i = 0;
-	char *uuid = (char*)malloc(sizeof(char) * 32);
+	char *uuid = (char*)malloc(sizeof(char) * 33);
 
 	srand(time(NULL));
 
