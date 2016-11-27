@@ -351,6 +351,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 						plist_dict_set_item(adict, "iTunesMetadata", plist_copy(meta));
 						plist_dict_set_item(app_dict, bundle_id_str, adict);
 					}
+					free(bundle_id_str);
 				}
 				if ((time(NULL) - starttime) > 5) {
 					// make sure our lockdown connection doesn't time out in case this takes longer
@@ -2003,10 +2004,8 @@ checkpoint:
 
 			/* process series of DLMessage* operations */
 			do {
-				if (dlmsg) {
-					free(dlmsg);
-					dlmsg = NULL;
-				}
+				free(dlmsg);
+				dlmsg = NULL;
 				mobilebackup2_receive_message(mobilebackup2, &message, &dlmsg);
 				if (!message || !dlmsg) {
 					PRINT_VERBOSE(1, "Device is not ready yet. Going to try again in 2 seconds...\n");
@@ -2236,11 +2235,9 @@ checkpoint:
 				}
 
 files_out:
-				if (message)
-					plist_free(message);
+				plist_free(message);
 				message = NULL;
-				if (dlmsg)
-					free(dlmsg);
+				free(dlmsg);
 				dlmsg = NULL;
 
 				if (quit_flag > 0) {
@@ -2255,6 +2252,9 @@ files_out:
 					break;
 				}
 			} while (1);
+
+			plist_free(message);
+			free(dlmsg);
 
 			/* report operation status to user */
 			switch (cmd) {
