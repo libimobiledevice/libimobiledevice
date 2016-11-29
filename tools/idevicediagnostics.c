@@ -40,7 +40,8 @@ enum cmd_mode {
 	CMD_SHUTDOWN,
 	CMD_DIAGNOSTICS,
 	CMD_MOBILEGESTALT,
-	CMD_IOREGISTRY
+	CMD_IOREGISTRY,
+    CMD_IOREGISTRY_ENTRY
 };
 
 static void print_xml(plist_t node)
@@ -156,7 +157,15 @@ int main(int argc, char **argv)
 			}
 			continue;
 		}
-		else {
+        else if (!strcmp(argv[i], "ioregentry")) {
+			cmd = CMD_IOREGISTRY_ENTRY;
+			/*  read plane */
+			i++;
+			if (argv[i]) {
+				cmd_arg = strdup(argv[i]);
+			}
+			continue;
+		}else {
 			print_usage(argc, argv);
 			return 0;
 		}
@@ -232,6 +241,16 @@ int main(int argc, char **argv)
 						printf("Unable to query mobilegestalt keys.\n");
 					}
 				break;
+                case CMD_IOREGISTRY_ENTRY:
+                    if (diagnostics_relay_query_ioregistry_entry(diagnostics_client, cmd_arg == NULL ? "": cmd_arg, "", &node) == DIAGNOSTICS_RELAY_E_SUCCESS) {
+                        if (node) {
+                            print_xml(node);
+                            result = EXIT_SUCCESS;
+                        }
+                    } else {
+                        printf("Unable to retrieve IORegistry from device.\n");
+                    }
+					break;
 				case CMD_IOREGISTRY:
 					if (diagnostics_relay_query_ioregistry_plane(diagnostics_client, cmd_arg == NULL ? "": cmd_arg, &node) == DIAGNOSTICS_RELAY_E_SUCCESS) {
 						if (node) {
@@ -292,7 +311,8 @@ void print_usage(int argc, char **argv)
 	printf("  diagnostics [TYPE]\t\tprint diagnostics information from device by TYPE (All, WiFi, GasGauge, NAND)\n");
 	printf("  mobilegestalt KEY [...]\tprint mobilegestalt keys passed as arguments seperated by a space.\n");
 	printf("  ioreg [PLANE]\t\t\tprint IORegistry of device, optionally by PLANE (IODeviceTree, IOPower, IOService) (iOS 5+ only)\n");
-	printf("  shutdown\t\t\tshutdown device\n");
+	printf("  ioregentry [KEY]\t\tprint IORegistry of device, optionally by entry (AppleARMPMUCharger, ASPStorage) (iOS 5+ only)\n");
+    printf("  shutdown\t\t\tshutdown device\n");
 	printf("  restart\t\t\trestart device\n");
 	printf("  sleep\t\t\t\tput device into sleep mode (disconnects from host)\n\n");
 	printf(" The following OPTIONS are accepted:\n");
