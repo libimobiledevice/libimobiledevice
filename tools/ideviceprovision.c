@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -254,6 +255,7 @@ int main(int argc, char *argv[])
 	lockdownd_service_descriptor_t service = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
+	int res = 0;
 	int i;
 	int op = -1;
 	int output_xml = 0;
@@ -338,7 +340,6 @@ int main(int argc, char *argv[])
 	}
 
 	if (op == OP_DUMP) {
-		int res = 0;
 		unsigned char* profile_data = NULL;
 		unsigned int profile_size = 0;
 		if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
@@ -372,6 +373,12 @@ int main(int argc, char *argv[])
 		plist_free(pl);
 
 		return res;
+	} else if (op == OP_COPY) {
+		struct stat st;
+		if ((stat(param, &st) < 0) || !S_ISDIR(st.st_mode)) {
+			fprintf(stderr, "ERROR: %s does not exist or is not a directory!\n", param);
+			return -1;
+		}
 	}
 
 	ret = idevice_new(&device, udid);
@@ -502,19 +509,16 @@ int main(int argc, char *argv[])
 							fclose(f);
 							printf(" => %s\n", pfname);
 						} else {
-							fprintf(stderr, "Could not open '%s' for writing\n", pfname);
+							fprintf(stderr, "Could not open '%s' for writing: %s\n", pfname, strerror(errno));
 						}
 					}
-					if (p_uuid) {
-						free(p_uuid);
-					}
-					if (p_name) {
-						free(p_name);
-					}
+					free(p_uuid);
+					free(p_name);
 				}
 			} else {
 				int sc = misagent_get_status_code(mis);
 				fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
+				res = -1;
 			}
 		}
 			break;
@@ -534,6 +538,6 @@ int main(int argc, char *argv[])
 
 	idevice_free(device);
 
-	return 0;
+	return res;
 }
 
