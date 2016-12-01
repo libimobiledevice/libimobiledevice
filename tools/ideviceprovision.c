@@ -3,7 +3,7 @@
  * Simple utility to install, get, or remove provisioning profiles
  *   to/from idevices
  *
- * Copyright (c) 2012 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2012-2016 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -390,6 +390,28 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	plist_t pver = NULL;
+	char *pver_s = NULL;
+	lockdownd_get_value(client, NULL, "ProductVersion", &pver);
+	if (pver && plist_get_node_type(pver) == PLIST_STRING) {
+		plist_get_string_val(pver, &pver_s);
+	}
+	plist_free(pver);
+	int product_version_major = 0;
+	int product_version_minor = 0;
+	int product_version_patch = 0;
+	if (pver_s) {
+		sscanf(pver_s, "%d.%d.%d", &product_version_major, &product_version_minor, &product_version_patch);
+		free(pver_s);
+	}
+	if (product_version_major == 0) {
+		fprintf(stderr, "ERROR: Could not determine the device's ProductVersion\n");
+		lockdownd_client_free(client);
+		idevice_free(device);
+		return -1;
+	}
+	int product_version = ((product_version_major & 0xFF) << 16) | ((product_version_minor & 0xFF) << 8) | (product_version_patch & 0xFF);
+
 	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
 		fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
 		lockdownd_client_free(client);
@@ -437,7 +459,13 @@ int main(int argc, char *argv[])
 		case OP_COPY:
 		{
 			plist_t profiles = NULL;
-			if (misagent_copy(mis, &profiles) == MISAGENT_E_SUCCESS) {
+			misagent_error_t merr;
+			if (product_version < 0x090300) {
+				merr = misagent_copy(mis, &profiles);
+			} else {
+				merr = misagent_copy_all(mis, &profiles);
+			}
+			if (merr == MISAGENT_E_SUCCESS) {
 				uint32_t num_profiles = plist_array_get_size(profiles);
 				printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
 				uint32_t j;
