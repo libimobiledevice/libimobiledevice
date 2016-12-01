@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 #ifdef WIN32
@@ -54,6 +55,9 @@ static void print_usage(int argc, char **argv)
 	printf("  copy PATH\tRetrieves all provisioning profiles from the device and\n");
 	printf("           \tstores them into the existing directory specified by PATH.\n");
 	printf("           \tThe files will be stored as UUID.mobileprovision\n");
+	printf("  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n");
+	printf("           \tfrom the device and stores it into the exisiting directory\n");
+	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
 	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
 	printf("           \tspecified by FILE.\n\n");
@@ -261,6 +265,7 @@ int main(int argc, char *argv[])
 	int output_xml = 0;
 	const char* udid = NULL;
 	const char* param = NULL;
+	const char* param2 = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -298,6 +303,10 @@ int main(int argc, char *argv[])
 			}
 			param = argv[i];
 			op = OP_COPY;
+			i++;
+			if (argv[i] && (strlen(argv[i]) > 0)) {
+				param2 = argv[i];
+			}
 			continue;
 		}
 		else if (!strcmp(argv[i], "remove")) {
@@ -375,8 +384,9 @@ int main(int argc, char *argv[])
 		return res;
 	} else if (op == OP_COPY) {
 		struct stat st;
-		if ((stat(param, &st) < 0) || !S_ISDIR(st.st_mode)) {
-			fprintf(stderr, "ERROR: %s does not exist or is not a directory!\n", param);
+		const char *checkdir = (param2) ? param2 : param;
+		if ((stat(checkdir, &st) < 0) || !S_ISDIR(st.st_mode)) {
+			fprintf(stderr, "ERROR: %s does not exist or is not a directory!\n", checkdir);
 			return -1;
 		}
 	}
@@ -473,10 +483,13 @@ int main(int argc, char *argv[])
 				merr = misagent_copy_all(mis, &profiles);
 			}
 			if (merr == MISAGENT_E_SUCCESS) {
+				int found_match = 0;
 				uint32_t num_profiles = plist_array_get_size(profiles);
-				printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+				if (op == OP_LIST || !param2) {
+					printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+				}
 				uint32_t j;
-				for (j = 0; j < num_profiles; j++) {
+				for (j = 0; !found_match && j < num_profiles; j++) {
 					char* p_name = NULL;
 					char* p_uuid = NULL;
 					plist_t profile = plist_array_get_item(profiles, j);
@@ -492,13 +505,22 @@ int main(int argc, char *argv[])
 							plist_get_string_val(node, &p_uuid);
 						}
 					}
+					if (param2) {
+						if (p_uuid && !strcmp(p_uuid, param)) {
+							found_match = 1;
+						} else {
+							free(p_uuid);
+							free(p_name);
+							continue;
+						}
+					}
 					printf("%s - %s\n", (p_uuid) ? p_uuid : "(unknown id)", (p_name) ? p_name : "(no name)");
 					if (op == OP_COPY) {
 						char pfname[512];
 						if (p_uuid) {
-							sprintf(pfname, "%s/%s.mobileprovision", param, p_uuid);
+							sprintf(pfname, "%s/%s.mobileprovision", (param2) ? param2 : param, p_uuid);
 						} else {
-							sprintf(pfname, "%s/profile%d.mobileprovision", param, j);
+							sprintf(pfname, "%s/profile%d.mobileprovision", (param2) ? param2 : param, j);
 						}
 						FILE* f = fopen(pfname, "wb");
 						if (f) {
@@ -514,6 +536,10 @@ int main(int argc, char *argv[])
 					}
 					free(p_uuid);
 					free(p_name);
+				}
+				if (param2 && !found_match) {
+					fprintf(stderr, "Profile '%s' was not found on the device.\n", param);
+					res = -1;
 				}
 			} else {
 				int sc = misagent_get_status_code(mis);
