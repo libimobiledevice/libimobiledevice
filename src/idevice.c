@@ -671,7 +671,7 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 }
 #endif
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection, BOOL ssl3)
 {
 	if (!connection || connection->ssl_data)
 		return IDEVICE_E_INVALID_ARG;
@@ -703,12 +703,32 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	}
 	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
 
-	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	if (ssl3)
+		SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv3_method()); // negotiate SSLv3 only - ios 5 fails autonegotiation
+	else
+		SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv23_method()); // autonegotiate from SSLv2 up to TLS 1.2
+#else
+	SSL_CTX *ssl_ctx = SSL_CTX_new(TLS_method()); // SSLv23 is now called TLS_method, and might be remove in future versions of OpenSSL
+#endif
+
 	if (ssl_ctx == NULL) {
 		debug_info("ERROR: Could not create SSL context.");
 		BIO_free(ssl_bio);
 		return ret;
 	}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	if (ssl3)
+	{
+		if (SSL_CTX_set_min_proto_version(ssl_ctx, SSL3_VERSION) == 0 || SSL_CTX_set_max_proto_version(ssl_ctx, SSL3_VERSION) == 0)
+		{
+			debug_info("ERROR: Could not enable SSLv3 on SSL context.");
+			BIO_free(ssl_bio);
+			return ret;
+		}
+	}
+#endif
 
 	BIO* membp;
 	X509* rootCert = NULL;

@@ -178,7 +178,24 @@ LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client)
 {
 	if (!client || !client->connection)
 		return SERVICE_E_INVALID_ARG;
-	return idevice_to_service_error(idevice_connection_enable_ssl(client->connection));
+
+	char * device_version = NULL;
+	BOOL sslv3 = FALSE;
+	if ((lockdownd_get_device_version(client->connection, device_version) == LOCKDOWN_E_SUCCESS) && device_version))
+	{
+		char * majorsplit = strchr(device_version, '.');
+		int len = majorsplit - deviceversion - 1;
+		char * versionmaj = (char *)malloc(len + 1);
+		strncpy(versionmaj, device_version, len);
+		versionmaj[len] = '\0';
+		int versionmajint = atoi(versionmaj);
+		if (versionmajint < 9)
+			sslv3 = TRUE;
+		free(device_version);
+		free(versionmaj);
+	}
+
+	return idevice_to_service_error(idevice_connection_enable_ssl(client->connection, sslv3));
 }
 
 LIBIMOBILEDEVICE_API service_error_t service_disable_ssl(service_client_t client)
