@@ -464,6 +464,17 @@ lockdownd_error_t lockdownd_data_classes_free(char **classes);
  */
 lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
 
+/**
+ * Returns the iOS version of the device from lockdownd.
+ *
+ * @param client An initialized lockdownd client.
+ * @param udid Holds the iOS version string of the device. The caller is responsible
+ *  for freeing the memory.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success
+ */
+lockdownd_error_t lockdownd_get_device_version(lockdownd_client_t client, char **version);
+
 #ifdef __cplusplus
 }
 #endif

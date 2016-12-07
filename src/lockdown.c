@@ -1522,3 +1522,19 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_service_descriptor_free(lockdow
 
 	return LOCKDOWN_E_SUCCESS;
 }
+
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_device_version(lockdownd_client_t client, char **version)
+{
+	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
+	plist_t value = NULL;
+
+	ret = lockdownd_get_value(client, NULL, "ProductVersion", &value);
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		return ret;
+	}
+	plist_get_string_val(value, udid);
+
+	plist_free(value);
+	value = NULL;
+	return ret;
+}
