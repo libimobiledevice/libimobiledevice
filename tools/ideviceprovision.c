@@ -59,6 +59,7 @@ static void print_usage(int argc, char **argv)
 	printf("           \tfrom the device and stores it into the exisiting directory\n");
 	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
+	printf("  remove-all\tRemoves all installed provisioning profiles.\n");
 	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
 	printf("           \tspecified by FILE.\n\n");
 	printf(" The following OPTIONS are accepted:\n");
@@ -319,6 +320,11 @@ int main(int argc, char *argv[])
 			op = OP_REMOVE;
 			continue;
 		}
+		else if (!strcmp(argv[i], "remove-all")) {
+			i++;
+			op = OP_REMOVE;
+			continue;
+		}
 		else if (!strcmp(argv[i], "dump")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
@@ -546,14 +552,65 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
 				res = -1;
 			}
+			plist_free(profiles);
 		}
 			break;
 		case OP_REMOVE:
-			if (misagent_remove(mis, param) == MISAGENT_E_SUCCESS) {
-				printf("Profile '%s' removed.\n", param);
+			if (param) {
+				/* remove specified provisioning profile */
+				if (misagent_remove(mis, param) == MISAGENT_E_SUCCESS) {
+					printf("Profile '%s' removed.\n", param);
+				} else {
+					int sc = misagent_get_status_code(mis);
+					fprintf(stderr, "Could not remove profile '%s', status code 0x%x\n", param, sc);
+				}
 			} else {
-				int sc = misagent_get_status_code(mis);
-				fprintf(stderr, "Could not remove profile '%s', status code 0x%x\n", param, sc);
+				/* remove all provisioning profiles */
+				plist_t profiles = NULL;
+				misagent_error_t merr;
+				if (product_version < 0x090300) {
+					merr = misagent_copy(mis, &profiles);
+				} else {
+					merr = misagent_copy_all(mis, &profiles);
+				}
+				if (merr == MISAGENT_E_SUCCESS) {
+					uint32_t j;
+					uint32_t num_removed = 0;
+					for (j = 0; j < plist_array_get_size(profiles); j++) {
+						char* p_name = NULL;
+						char* p_uuid = NULL;
+						plist_t profile = plist_array_get_item(profiles, j);
+						plist_t pl = profile_get_embedded_plist(profile);
+						if (pl && (plist_get_node_type(pl) == PLIST_DICT)) {
+							plist_t node;
+							node = plist_dict_get_item(pl, "Name");
+							if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+								plist_get_string_val(node, &p_name);
+							}
+							node = plist_dict_get_item(pl, "UUID");
+							if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+								plist_get_string_val(node, &p_uuid);
+							}
+						}
+						if (p_uuid) {
+							if (misagent_remove(mis, p_uuid) == MISAGENT_E_SUCCESS) {
+								printf("OK profile removed: %s - %s\n", p_uuid, (p_name) ? p_name : "(no name)");
+								num_removed++;
+							} else {
+								int sc = misagent_get_status_code(mis);
+								printf("FAIL profile not removed: %s - %s (status code 0x%x)\n", p_uuid, (p_name) ? p_name : "(no name)", sc);
+							}
+						}
+						free(p_name);
+						free(p_uuid);
+					}
+					printf("%d profiles removed.\n", num_removed);
+				} else {
+					int sc = misagent_get_status_code(mis);
+					fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
+					res = -1;
+				}
+				plist_free(profiles);
 			}
 			break;
 		default:
