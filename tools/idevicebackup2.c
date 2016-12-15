@@ -491,7 +491,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 
 static int mb2_status_check_snapshot_state(const char *path, const char *udid, const char *matches)
 {
-	int ret = -1;
+	int ret = 0;
 	plist_t status_plist = NULL;
 	char *file_path = string_build_path(path, udid, "Status.plist", NULL);
 
