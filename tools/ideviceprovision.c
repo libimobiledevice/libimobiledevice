@@ -87,30 +87,47 @@ enum {
 
 static void asn1_next_item(unsigned char** p)
 {
-	if (*(*p+1) & 0x80) {
-		*p += 4;
+	char bsize = *(*p+1);
+	if (bsize & 0x80) {
+		*p += 2 + (bsize & 0xF);
 	} else {
 		*p += 3;
 	}
 }
 
-static int asn1_item_get_size(unsigned char* p)
+static size_t asn1_item_get_size(unsigned char* p)
 {
-	int res = 0;
-	if (*(p+1) & 0x80) {
+	size_t res = 0;
+	char bsize = *(p+1);
+	if (bsize & 0x80) {
 		uint16_t ws = 0;
-		memcpy(&ws, p+2, 2);
-		ws = ntohs(ws);
-		res = ws;
+		uint32_t ds = 0;
+		switch (bsize & 0xF) {
+		case 2:
+			ws = *(uint16_t*)(p+2);
+			res = ntohs(ws);
+			break;
+		case 3:
+			ds = *(uint32_t*)(p+2);
+			res = ntohl(ds) >> 8;
+			break;
+		case 4:
+			ds = *(uint32_t*)(p+2);
+			res = ntohl(ds);
+			break;
+		default:
+			fprintf(stderr, "ERROR: Invalid or unimplemented byte size %d\n", bsize & 0xF);
+			break;
+		}
 	} else {
-		res = (int) *(p+1);
+		res = (int)bsize;
 	}
 	return res;
 }
 
 static void asn1_skip_item(unsigned char** p)
 {
-	int sz = asn1_item_get_size(*p);
+	size_t sz = asn1_item_get_size(*p);
 	*p += 2;
 	*p += sz;
 }
@@ -136,8 +153,14 @@ static plist_t profile_get_embedded_plist(plist_t profile)
 		fprintf(stderr, "%s: unexpected profile data (0)\n", __func__);
 		return NULL;
 	}
-	uint16_t slen = asn1_item_get_size(pp);
-	if (slen+4 != (uint16_t)blen) {
+	size_t slen = asn1_item_get_size(pp);
+	char bsize = *(pp+1);
+	if (bsize & 0x80) {
+		slen += 2 + bsize & 0xF;
+	} else {
+		slen += 3;
+	}
+	if (slen != blen) {
 		free(bbuf);
 		fprintf(stderr, "%s: unexpected profile data (1)\n", __func__);
 		return NULL;
