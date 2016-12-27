@@ -104,6 +104,7 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_client_free(dia
 	if (property_list_service_client_free(client->parent) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
 		return DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 	}
+	free(client);
 	return DIAGNOSTICS_RELAY_E_SUCCESS;
 }
 

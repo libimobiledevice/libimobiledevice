@@ -239,6 +239,16 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
  */
 idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
+/**
+ * Get the underlying file descriptor for a connection
+ *
+ * @param connection The connection to get fd of
+ * @param fd Pointer to an int where the fd is stored
+ *
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
+ */
+idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd);
+
 /* misc */
 
 /**
