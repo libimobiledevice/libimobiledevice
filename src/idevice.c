@@ -697,7 +697,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return IDEVICE_E_INVALID_ARG;
 
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
+#ifdef HAVE_OPENSSL
 	uint32_t return_me = 0;
+#else
+	int return_me = 0;
+#endif
 	plist_t pair_record = NULL;
 
 	userpref_read_pair_record(connection->udid, &pair_record);
@@ -817,14 +821,17 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	if (errno) {
 		debug_info("WARNING: errno says %s before handshake!", strerror(errno));
 	}
-	return_me = gnutls_handshake(ssl_data_loc->session);
+
+	do {
+		return_me = gnutls_handshake(ssl_data_loc->session);
+	} while(return_me == GNUTLS_E_AGAIN || return_me == GNUTLS_E_INTERRUPTED);
+
 	debug_info("GnuTLS handshake done...");
 
 	if (return_me != GNUTLS_E_SUCCESS) {
 		internal_ssl_cleanup(ssl_data_loc);
 		free(ssl_data_loc);
-		debug_info("GnuTLS reported something wrong.");
-		gnutls_perror(return_me);
+		debug_info("GnuTLS reported something wrong: %s", gnutls_strerror(return_me));
 		debug_info("oh.. errno says %s", strerror(errno));
 	} else {
 		connection->ssl_data = ssl_data_loc;
