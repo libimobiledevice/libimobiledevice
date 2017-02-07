@@ -772,7 +772,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client
 
 LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result)
 {
-	if (!capabilities || (plist_get_node_type(capabilities) != PLIST_ARRAY && plist_get_node_type(capabilities) != PLIST_DICT))
+	if (!client || !capabilities || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
 	plist_t lookup_result = NULL;
