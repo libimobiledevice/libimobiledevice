@@ -47,6 +47,7 @@ tools/idevicedate
 tools/idevicedebugserverproxy
 tools/idevicediagnostics
 tools/ideviceenterrecovery
+tools/idevicelocation
 tools/idevicename
 tools/idevicepair
 tools/ideviceprovision
