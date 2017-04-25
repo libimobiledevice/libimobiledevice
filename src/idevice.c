@@ -69,6 +69,7 @@ static void openssl_remove_thread_state(void)
 #endif
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
 {
@@ -83,10 +84,12 @@ static unsigned long id_function(void)
 	return ((unsigned long)THREAD_ID);
 }
 #endif
+#endif
 
 static void internal_idevice_init(void)
 {
 #ifdef HAVE_OPENSSL
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	int i;
 	SSL_library_init();
 
@@ -98,6 +101,7 @@ static void internal_idevice_init(void)
 
 	CRYPTO_set_id_callback(id_function);
 	CRYPTO_set_locking_callback(locking_function);
+#endif
 #else
 	gnutls_global_init();
 #endif
@@ -106,6 +110,7 @@ static void internal_idevice_init(void)
 static void internal_idevice_deinit(void)
 {
 #ifdef HAVE_OPENSSL
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	int i;
 	if (mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
@@ -120,6 +125,7 @@ static void internal_idevice_deinit(void)
 	CRYPTO_cleanup_all_ex_data();
 	SSL_COMP_free_compression_methods();
 	openssl_remove_thread_state();
+#endif
 #else
 	gnutls_global_deinit();
 #endif
