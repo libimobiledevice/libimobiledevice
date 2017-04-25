@@ -51,6 +51,14 @@
 #include "common/debug.h"
 
 #ifdef HAVE_OPENSSL
+
+#if OPENSSL_VERSION_NUMBER < 0x10002000L
+static void SSL_COMP_free_compression_methods(void)
+{
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+}
+#endif
+
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
 {
@@ -100,7 +108,7 @@ static void internal_idevice_deinit(void)
 
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
-	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+	SSL_COMP_free_compression_methods();
 #ifdef HAVE_ERR_REMOVE_THREAD_STATE
 	ERR_remove_thread_state(NULL);
 #else
