@@ -7,7 +7,7 @@ cdef extern from "libimobiledevice/lockdown.h":
         LOCKDOWN_E_PAIRING_FAILED
         LOCKDOWN_E_SSL_ERROR
         LOCKDOWN_E_DICT_ERROR
-        LOCKDOWN_E_NOT_ENOUGH_DATA
+        LOCKDOWN_E_RECEIVE_TIMEOUT
         LOCKDOWN_E_SET_VALUE_PROHIBITED
         LOCKDOWN_E_GET_VALUE_PROHIBITED
         LOCKDOWN_E_MUX_ERROR
@@ -78,7 +78,7 @@ cdef class LockdownError(BaseError):
             LOCKDOWN_E_PAIRING_FAILED: "Pairing failed",
             LOCKDOWN_E_SSL_ERROR: "SSL error",
             LOCKDOWN_E_DICT_ERROR: "Dictionary error",
-            LOCKDOWN_E_NOT_ENOUGH_DATA: "Not enough data",
+            LOCKDOWN_E_RECEIVE_TIMEOUT: "Receive timeout",
             LOCKDOWN_E_MUX_ERROR: "Mux Protocol Error",
             LOCKDOWN_E_NO_RUNNING_SESSION: "No running session",
             LOCKDOWN_E_INVALID_RESPONSE: "Invalid response",
