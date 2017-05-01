@@ -497,6 +497,14 @@ void instproxy_client_options_free(plist_t client_options);
  */
 instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
 
+/**
+ * Gets CFBundleIdentifier of a status.
+ *
+ * @param status The dictionary CFBundleIdentifier response to use.
+ * @param name Pointer to store the name of bundle identifier.
+ */
+void instproxy_get_cfbundle_identifier(plist_t status, char **name);
+
 #ifdef __cplusplus
 }
 #endif

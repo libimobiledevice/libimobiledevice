@@ -320,6 +320,7 @@ static instproxy_error_t instproxy_receive_status_loop(instproxy_client_t client
 	plist_t node = NULL;
 	char* command_name = NULL;
 	char* status_name = NULL;
+	char* bundle_identifier = NULL;
 	char* error_name = NULL;
 	char* error_description = NULL;
 	uint64_t error_code = 0;
@@ -363,11 +364,20 @@ static instproxy_error_t instproxy_receive_status_loop(instproxy_client_t client
 			/* check status from response */
 			instproxy_status_get_name(node, &status_name);
 			if (!status_name) {
-				debug_info("failed to retrieve name from status response with error %d.", res);
-				complete = 1;
-			}
-
-			if (status_name) {
+				instproxy_get_cfbundle_identifier(node, &bundle_identifier);
+				free(status_name);
+				status_name = NULL;
+				if (!bundle_identifier) {
+					debug_info("failed to retrieve name from status response with error %d.", res);
+					plist_free(node);
+					node = NULL;
+					break;
+				} else {
+					free(bundle_identifier);
+					bundle_identifier = NULL;
+					continue;
+				}
+			} else {
 				if (!strcmp(status_name, "Complete")) {
 					complete = 1;
 				} else {
@@ -1059,4 +1069,16 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_iden
 	}
 
 	return INSTPROXY_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API void instproxy_get_cfbundle_identifier(plist_t status, char **name)
+{
+	if (name) {
+		plist_t node = plist_dict_get_item(status, "CFBundleIdentifier");
+		if (node) {
+			plist_get_string_val(node, name);
+		} else {
+			*name = NULL;
+		}
+	}
 }
