@@ -83,6 +83,10 @@ case ${host_os} in
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 
+if test "x$win32" != xtrue; then
+  AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
+fi
+
 # Cython Python Bindings
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
