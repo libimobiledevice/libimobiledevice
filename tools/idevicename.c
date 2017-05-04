@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <signal.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
