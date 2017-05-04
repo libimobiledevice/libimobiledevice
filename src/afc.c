@@ -26,7 +26,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+// #include <unistd.h>
 #include <string.h>
 
 #include "afc.h"
@@ -394,7 +394,11 @@ static char **make_strings_list(char *tokens, uint32_t length)
 	nulls = count_nullspaces(tokens, length);
 	list = (char **) malloc(sizeof(char *) * (nulls + 1));
 	for (i = 0; i < nulls; i++) {
+#ifdef _MSC_VER
+		list[i] = _strdup(tokens + j);
+#else
 		list[i] = strdup(tokens + j);
+#endif
 		j += strlen(list[i]) + 1;
 	}
 	list[i] = NULL;
@@ -490,7 +494,11 @@ LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info_key(afc_client_t client, co
 
 	for (ptr = kvps; *ptr; ptr++) {
 		if (!strcmp(*ptr, key)) {
+#ifdef _MSC_VER
+			*value = _strdup(*(ptr+1));
+#else
 			*value = strdup(*(ptr+1));
+#endif
 			break;
 		}
 	}

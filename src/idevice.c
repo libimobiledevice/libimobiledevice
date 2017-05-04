@@ -216,7 +216,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, in
 
 	for (i = 0; dev_list[i].handle > 0; i++) {
 		newlist = realloc(*devices, sizeof(char*) * (newcount+1));
+#ifdef _MSC_VER
+		newlist[newcount++] = _strdup(dev_list[i].udid);
+#else
 		newlist[newcount++] = strdup(dev_list[i].udid);
+#endif
 		*devices = newlist;
 	}
 	usbmuxd_device_list_free(&dev_list);
@@ -253,7 +257,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char 
 	int res = usbmuxd_get_device_by_udid(udid, &muxdev);
 	if (res > 0) {
 		idevice_t dev = (idevice_t) malloc(sizeof(struct idevice_private));
+#ifdef _MSC_VER
+		dev->udid = _strdup(muxdev.udid);
+#else
 		dev->udid = strdup(muxdev.udid);
+#endif
 		dev->conn_type = CONNECTION_USBMUXD;
 		dev->conn_data = (void*)(long)muxdev.handle;
 		*device = dev;
@@ -518,7 +526,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **u
 	if (!device || !udid)
 		return IDEVICE_E_INVALID_ARG;
 
+#ifdef _MSC_VER
+	*udid = _strdup(device->udid);
+#else
 	*udid = strdup(device->udid);
+#endif
 	return IDEVICE_E_SUCCESS;
 }
 

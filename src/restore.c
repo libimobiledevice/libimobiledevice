@@ -125,7 +125,11 @@ LIBIMOBILEDEVICE_API void restored_client_set_label(restored_client_t client, co
 		if (client->label)
 			free(client->label);
 
-		client->label = (label != NULL) ? strdup(label): NULL;
+#ifdef _MSC_VER
+		client->label = (label != NULL) ? _strdup(label): NULL;
+#else
+		client->label = (label != NULL) ? strdup(label) : NULL;
+#endif
 	}
 }
 
@@ -316,7 +320,11 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	client_loc->label = NULL;
 	client_loc->info = NULL;
 	if (label != NULL)
+#ifdef _MSC_VER
+		client_loc->label = _strdup(label);
+#else
 		client_loc->label = strdup(label);
+#endif
 
 	idev_ret = idevice_get_udid(device, &client_loc->udid);
 	if (IDEVICE_E_SUCCESS != idev_ret) {

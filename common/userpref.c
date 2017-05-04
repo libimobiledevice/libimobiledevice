@@ -34,7 +34,7 @@
 #ifndef WIN32
 #include <pwd.h>
 #endif
-#include <unistd.h>
+//#include <unistd.h>
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/pem.h>
@@ -237,7 +237,11 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == (40 + strlen(ext)))) {
 				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
 				ne->name = (char*)malloc(41);
+#ifdef _MSC_VER
+				strncpy_s(ne->name, 41, entry->d_name, 40);
+#else
 				strncpy(ne->name, entry->d_name, 40);
+#endif
 				ne->name[40] = 0;
 				ne->next = NULL;
 				if (!listp) {

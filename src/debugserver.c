@@ -159,7 +159,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* nam
 	debugserver_command_t tmp = (debugserver_command_t) malloc(sizeof(struct debugserver_command_private));
 
 	/* copy name */
+#ifdef _MSC_VER
+	tmp->name = _strdup(name);
+#else
 	tmp->name = strdup(name);
+#endif
 
 	/* copy arguments */
 	tmp->argc = argc;
@@ -167,7 +171,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* nam
 	if (argc > 0) {
 		tmp->argv = malloc(sizeof(char*) * (argc + 2));
 		for (i = 0; i < argc; i++) {
+#ifdef _MSC_VER
+			tmp->argv[i] = _strdup(argv[i]);
+#else
 			tmp->argv[i] = strdup(argv[i]);
+#endif
 		}
 		tmp->argv[i+1] = NULL;
 	}
@@ -373,7 +381,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 
 	int should_receive = 1;
 	int skip_prefix = 0;
+#ifdef _MSC_VER
+	char* command_prefix = _strdup("$");
+#else
 	char* command_prefix = strdup("$");
+#endif
 
 	char* buffer = NULL;
 	uint32_t buffer_size = 0;
@@ -389,7 +401,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		if (strncmp(ack, command_prefix, sizeof(char)) == 0) {
 			should_receive = 1;
 			skip_prefix = 1;
+#ifdef _MSC_VER
+			buffer = _strdup(command_prefix);
+#else
 			buffer = strdup(command_prefix);
+#endif
 			buffer_size += sizeof(char);
 			debug_info("received ACK");
 		}
@@ -405,7 +421,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 			if (buffer) {
 				memcpy(buffer, command_prefix, sizeof(char));
 			} else {
+#ifdef _MSC_VER
+				buffer = _strdup(command_prefix);
+#else
 				buffer = strdup(command_prefix);
+#endif
 				buffer_size += sizeof(char);
 			}
 		}
@@ -486,7 +506,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugse
 	for (i = 0; i < command->argc; i++) {
 		debug_info("argv[%d]: %s", i, command->argv[i]);
 		if (!tmp) {
+#ifdef _MSC_VER
+			tmp = _strdup(command->argv[i]);
+#else
 			tmp = strdup(command->argv[i]);
+#endif
 		} else {
 			newtmp = string_concat(tmp, command->argv[i], NULL);
 			free(tmp);
@@ -541,7 +565,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_environment_hex_
 		return DEBUGSERVER_E_INVALID_ARG;
 
 	debugserver_error_t result = DEBUGSERVER_E_UNKNOWN_ERROR;
+#ifdef _MSC_VER
+	char* env_tmp = _strdup(env);
+#else
 	char* env_tmp = strdup(env);
+#endif
 	char* env_arg[2] = { env_tmp, NULL };
 
 	debugserver_command_t command = NULL;

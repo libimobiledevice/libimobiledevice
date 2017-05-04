@@ -27,7 +27,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
 #include <sys/time.h>
+#endif
 #include <inttypes.h>
 #include <ctype.h>
 
@@ -45,12 +49,20 @@
  * @return a pointer to the terminating `\0' character of @s1,
  * or NULL if @s1 or @s2 is NULL.
  */
-char *stpcpy(char *s1, const char *s2)
+#ifdef _MSC_VER
+char *stpcpy(char *s1, size_t size, const char *s2)
+#else
+char *stpcpy(char *s1, size_t size, const char *s2)
+#endif
 {
 	if (s1 == NULL || s2 == NULL)
 		return NULL;
 
+#ifdef _MSC_VER
+	strcpy_s(s1, size, s2);
+#else
 	strcpy(s1, s2);
+#endif
 
 	return s1 + strlen(s2);
 }
@@ -98,12 +110,22 @@ char *string_concat(const char *str, ...)
 
 	dest = result;
 
+#ifdef _MSC_VER
+	dest = stpcpy_s(dest, len, str);
+#else
 	dest = stpcpy(dest, str);
+#endif
 
 	va_start(args, str);
 	s = va_arg(args, char *);
+	len -= strlen(str);
 	while (s) {
+#ifdef _MSC_VER
+		dest = stpcpy_s(dest, len, s);
+#else
 		dest = stpcpy(dest, s);
+#endif
+		len -= strlen(s);
 		s = va_arg(args, char *);
 	}
 	va_end(args);
@@ -126,13 +148,23 @@ char *string_build_path(const char *elem, ...)
 	va_end(args);
 
 	char* out = (char*)malloc(len);
+
+#ifdef _MSC_VER
+	strcpy_s(out, len, elem);
+#else
 	strcpy(out, elem);
+#endif
 
 	va_start(args, elem);
 	arg = va_arg(args, char*);
 	while (arg) {
+#ifdef _MSC_VER
+		strcat_s(out, len, "/");
+		strcat_s(out, len, arg);
+#else
 		strcat(out, "/");
 		strcat(out, arg);
+#endif
 		arg = va_arg(args, char*);
 	}
 	va_end(args);
@@ -145,25 +177,53 @@ char *string_format_size(uint64_t size)
 	double sz;
 	if (size >= 1000000000000LL) {
 		sz = ((double)size / 1000000000000.0f);
+#ifdef _MSC_VER
+		sprintf_s(buf, 80, "%0.1f TB", sz);
+#else
 		sprintf(buf, "%0.1f TB", sz);
+#endif
 	} else if (size >= 1000000000LL) {
 		sz = ((double)size / 1000000000.0f);
+#ifdef _MSC_VER
+		sprintf_s(buf, 80, "%0.1f GB", sz);
+#else
 		sprintf(buf, "%0.1f GB", sz);
+#endif
 	} else if (size >= 1000000LL) {
 		sz = ((double)size / 1000000.0f);
+#ifdef _MSC_VER
+		sprintf_s(buf, 80, "%0.1f MB", sz);
+#else
 		sprintf(buf, "%0.1f MB", sz);
+#endif
 	} else if (size >= 1000LL) {
 		sz = ((double)size / 1000.0f);
+#ifdef _MSC_VER
+		sprintf_s(buf, 80, "%0.1f KB", sz);
+#else
 		sprintf(buf, "%0.1f KB", sz);
+#endif
 	} else {
+#ifdef _MSC_VER
+		sprintf_s(buf, 80, "%d Bytes", (int)size);
+#else
 		sprintf(buf, "%d Bytes", (int)size);
+#endif
 	}
+#ifdef _MSC_VER
+	return _strdup(buf);
+#else
 	return strdup(buf);
+#endif
 }
 
 char *string_toupper(char* str)
 {
+#ifdef _MSC_VER
+	char *res = _strdup(str);
+#else
 	char *res = strdup(str);
+#endif
 	unsigned int i;
 	for (i = 0; i < strlen(res); i++) {
 		res[i] = toupper(res[i]);
@@ -207,7 +267,12 @@ void buffer_read_from_filename(const char *filename, char **buffer, uint64_t *le
 
 	*length = 0;
 
+#ifdef _MSC_VER
+	fopen_s(&f, filename, "rb");
+#else
 	f = fopen(filename, "rb");
+#endif
+
 	if (!f) {
 		return;
 	}
@@ -235,7 +300,11 @@ void buffer_write_to_filename(const char *filename, const char *buffer, uint64_t
 {
 	FILE *f;
 
+#ifdef _MSC_VER
+	fopen_s(&f, filename, "wb");
+#else
 	f = fopen(filename, "wb");
+#endif
 	if (f) {
 		fwrite(buffer, sizeof(char), length, f);
 		fclose(f);
@@ -426,7 +495,12 @@ static void plist_node_print_to_stream(plist_t node, int* indent_level, FILE* st
 		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
 		{
 			time_t ti = (time_t)tv.tv_sec;
-			struct tm *btime = localtime(&ti);
+			struct tm *btime;
+#ifdef _MSC_VER
+			localtime_s(&btime, &ti);
+#else
+			btime = localtime(&ti);
+#endif
 			if (btime) {
 				s = (char*)malloc(24);
  				memset(s, 0, 24);

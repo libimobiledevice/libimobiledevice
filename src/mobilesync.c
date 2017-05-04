@@ -248,7 +248,11 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_start(mobilesync_client_t cli
 		msg = NULL;
 	}
 
+#ifdef _MSC_VER
+	client->data_class = _strdup(data_class);
+#else
 	client->data_class = strdup(data_class);
+#endif
 	client->direction = MOBILESYNC_SYNC_DIR_DEVICE_TO_COMPUTER;
 	return err;
 }
@@ -712,12 +716,20 @@ LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *dev
 {
 	mobilesync_anchors_t anchors = (mobilesync_anchors_t) malloc(sizeof(mobilesync_anchors));
 	if (device_anchor != NULL) {
+#ifdef _MSC_VER
+		anchors->device_anchor = _strdup(device_anchor);
+#else
 		anchors->device_anchor = strdup(device_anchor);
+#endif
 	} else {
 		anchors->device_anchor = NULL;
 	}
 	if (computer_anchor != NULL) {
+#ifdef _MSC_VER
+		anchors->computer_anchor = _strdup(computer_anchor);
+#else
 		anchors->computer_anchor = strdup(computer_anchor);
+#endif
 	} else {
 		anchors->computer_anchor = NULL;
 	}
@@ -752,7 +764,11 @@ LIBIMOBILEDEVICE_API void mobilesync_actions_add(plist_t actions, ...)
 	va_start(args, actions);
 	char *arg = va_arg(args, char*);
 	while (arg) {
+#ifdef _MSC_VER
+		char *key = _strdup(arg);
+#else
 		char *key = strdup(arg);
+#endif
 		if (!strcmp(key, "SyncDeviceLinkEntityNamesKey")) {
 			char **entity_names = va_arg(args, char**);
 			int entity_names_length = va_arg(args, int);
