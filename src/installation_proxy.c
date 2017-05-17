@@ -362,10 +362,6 @@ static instproxy_error_t instproxy_receive_status_loop(instproxy_client_t client
 
 			/* check status from response */
 			instproxy_status_get_name(node, &status_name);
-			if (!status_name) {
-				debug_info("failed to retrieve name from status response with error %d.", res);
-				complete = 1;
-			}
 
 			if (status_name) {
 				if (!strcmp(status_name, "Complete")) {
