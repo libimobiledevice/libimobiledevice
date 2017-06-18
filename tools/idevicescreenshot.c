@@ -33,6 +33,7 @@
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/screenshotr.h>
 
+void get_default_filename(lockdownd_client_t lckd, idevice_t device, char **filename);
 void print_usage(int argc, char **argv);
 
 int main(int argc, char **argv)
@@ -91,6 +92,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	get_default_filename(lckd, device, &filename);
+	if (!filename) {
+		printf("ERROR: Could not construct a default filename");
+		return -1;
+	}
+
 	lockdownd_start_service(lckd, "com.apple.mobile.screenshotr", &service);
 	lockdownd_client_free(lckd);
 	if (service && service->port > 0) {
@@ -145,6 +152,51 @@ int main(int argc, char **argv)
 	return result;
 }
 
+void get_default_filename(lockdownd_client_t lckd, idevice_t device, char **filename)
+{
+	// If a filename was already provided with an extension, use it as is.
+	if (*filename) {
+		char *last_dot = strrchr(*filename, '.');
+		if (last_dot && !strchr(last_dot, '/')) {
+			return;
+		}
+	}
+
+	char *product_version = NULL;
+	plist_t node = NULL;
+	lockdownd_get_value(lckd, NULL, "ProductVersion", &node);
+	if (node) {
+		if (plist_get_node_type(node) == PLIST_STRING) {
+			plist_get_string_val(node, &product_version);
+		}
+		plist_free(node);
+		node = NULL;
+	}
+
+	// As of iOS version 9, the screenshots are in PNG format.
+	if (product_version) {
+		int major_version = strtol(product_version, NULL, 10);
+		char *ext = major_version < 9 ? ".tiff" : ".png";
+
+		// If a filename without an extension is provided, append the extension.
+		// Otherwise, generate a unique filename based on the current time.
+		if (*filename) {
+			char *filename_with_ext = (char*)malloc(strlen(*filename) + strlen(ext) + 1);
+			strcpy(filename_with_ext, *filename);
+			free(*filename);
+			*filename = filename_with_ext;
+		} else {
+			time_t now = time(NULL);
+			*filename = (char*)malloc(32 + strlen(ext));
+			strftime(*filename, 31, "screenshot-%Y-%m-%d-%H-%M-%S", gmtime(&now));
+		}
+		strcat(*filename, ext);
+
+		free(product_version);
+		product_version = NULL;
+	}
+}
+
 void print_usage(int argc, char **argv)
 {
 	char *name = NULL;
@@ -152,8 +204,9 @@ void print_usage(int argc, char **argv)
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] [FILE]\n", (name ? name + 1: argv[0]));
 	printf("Gets a screenshot from a device.\n");
-	printf("The screenshot is saved as a TIFF image with the given FILE name,\n");
-	printf("where the default name is \"screenshot-DATE.tiff\", e.g.:\n");
+	printf("The image is in PNG format for iOS 9+ and otherwise in TIFF format.\n");
+	printf("The screenshot is saved as an image with the given FILE name,\n");
+	printf("where the default name is \"screenshot-DATE.EXT\", e.g.:\n");
 	printf("   ./screenshot-2013-12-31-23-59-59.tiff\n\n");
 	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
 	printf("the screenshotr service is not available.\n\n");
