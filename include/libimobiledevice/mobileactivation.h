@@ -3,7 +3,7 @@
  * @brief Handle device activation and deactivation.
  * \internal
  *
- * Copyright (c) 2016 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2016-2017 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,6 +104,20 @@ mobileactivation_error_t mobileactivation_client_free(mobileactivation_client_t 
 mobileactivation_error_t mobileactivation_get_activation_state(mobileactivation_client_t client, plist_t *state);
 
 /**
+ * Retrieves a session blob required for 'drmHandshake' via albert.apple.com.
+ *
+ * @param client The mobileactivation client
+ * @param blob Pointer to a plist_t variable that will be set to the
+ *     session blob created by the mobielactivation service. The
+ *     consumer is responsible for freeing the returned object using
+ *     plist_free().
+ *
+ * @return MOBILEACTIVATION_E_SUCCESS on success, or an MOBILEACTIVATION_E_*
+ *     error code otherwise.
+ */
+mobileactivation_error_t mobileactivation_create_activation_session_info(mobileactivation_client_t client, plist_t *blob);
+
+/**
  * Retrieves the activation info required for device activation.
  *
  * @param client The mobileactivation client
@@ -118,6 +132,24 @@ mobileactivation_error_t mobileactivation_get_activation_state(mobileactivation_
 mobileactivation_error_t mobileactivation_create_activation_info(mobileactivation_client_t client, plist_t *info);
 
 /**
+ * Retrieves the activation info required for device activation in 'session'
+ * mode. This function expects a handshake result retrieved from
+ * https://albert.apple.com/deviceservies/drmHandshake  with a blob
+ * provided by mobileactivation_create_activation_session_info().
+ *
+ * @param client The mobileactivation client
+ * @aram handshake_result The handshake result returned from drmHandshake
+ * @param info Pointer to a plist_t variable that will be set to the
+ *     activation info created by the mobileactivation service. The
+ *     consumer is responsible for freeing the returned object using
+ *     plist_free().
+ *
+ * @return MOBILEACTIVATION_E_SUCCESS on success, or an MOBILEACTIVATION_E_*
+ *     error code otherwise.
+ */
+mobileactivation_error_t mobileactivation_create_activation_info_with_session(mobileactivation_client_t client, plist_t handshake_result, plist_t *info);
+
+/**
  * Activates the device with the given activation record.
  * The activation record plist dictionary must be obtained using the
  * activation protocol requesting from Apple's https webservice.
@@ -129,6 +161,19 @@ mobileactivation_error_t mobileactivation_create_activation_info(mobileactivatio
  *     error code otherwise.
  */
 mobileactivation_error_t mobileactivation_activate(mobileactivation_client_t client, plist_t activation_record);
+
+/**
+ * Activates the device with the given activation record in 'session' mode.
+ * The activation record plist dictionary must be obtained using the
+ * activation protocol requesting from Apple's https webservice.
+ *
+ * @param client The mobileactivation client
+ * @param activation_record The activation record plist dictionary
+ *
+ * @return MOBILEACTIVATION_E_SUCCESS on success, or an MOBILEACTIVATION_E_*
+ *     error code otherwise.
+ */
+mobileactivation_error_t mobileactivation_activate_with_session(mobileactivation_client_t client, plist_t activation_record);
 
 /**
  * Deactivates the device.

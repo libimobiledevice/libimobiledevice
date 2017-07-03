@@ -2,7 +2,7 @@
  * mobileactivation.c
  * com.apple.mobileactivationd service implementation.
  *
- * Copyright (c) 2016 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2016-2017 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,6 +89,17 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_client_free(mobil
 	return MOBILEACTIVATION_E_SUCCESS;
 }
 
+static plist_t plist_data_from_plist(plist_t plist)
+{
+	plist_t result = NULL;
+	char *xml = NULL;
+	uint32_t xml_len = 0;
+	plist_to_xml(plist, &xml, &xml_len);
+	result = plist_new_data(xml, xml_len);
+	free(xml);
+	return result;
+}
+
 static mobileactivation_error_t mobileactivation_check_result(plist_t dict, const char *command)
 {
 	mobileactivation_error_t ret = MOBILEACTIVATION_E_UNKNOWN_ERROR;
@@ -104,8 +115,8 @@ static mobileactivation_error_t mobileactivation_check_result(plist_t dict, cons
 		char *errmsg = NULL;
 		plist_get_string_val(err_node, &errmsg);
 		debug_info("ERROR: %s: %s", command, errmsg);
-		free(errmsg);
 		ret = MOBILEACTIVATION_E_REQUEST_FAILED;
+		free(errmsg);
 	}
 	return ret;
 }
@@ -160,6 +171,26 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_get_activation_st
 	return ret;
 }
 
+LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_create_activation_session_info(mobileactivation_client_t client, plist_t *blob)
+{
+	if (!client || !blob)
+		return MOBILEACTIVATION_E_INVALID_ARG;
+
+	plist_t result = NULL;
+	mobileactivation_error_t ret = mobileactivation_send_command(client, "CreateTunnel1SessionInfoRequest", NULL, &result);
+	if (ret == MOBILEACTIVATION_E_SUCCESS) {
+		plist_t node = plist_dict_get_item(result, "Value");
+		if (!node) {
+			debug_info("ERROR: CreateTunnel1SessionInfoRequest command returned success but has no value in reply");
+			ret = MOBILEACTIVATION_E_UNKNOWN_ERROR;
+		} else {
+			*blob = plist_copy(node);
+		}
+	}
+
+	return ret;
+}
+
 LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_create_activation_info(mobileactivation_client_t client, plist_t *info)
 {
 	if (!client || !info)
@@ -171,6 +202,30 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_create_activation
 		plist_t node = plist_dict_get_item(result, "Value");
 		if (!node) {
 			debug_info("ERROR: CreateActivationInfoRequest command returned success but has no value in reply");
+			ret = MOBILEACTIVATION_E_UNKNOWN_ERROR;
+		} else {
+			*info = plist_copy(node);
+		}
+	}
+	plist_free(result);
+	result = NULL;
+
+	return ret;
+}
+
+LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_create_activation_info_with_session(mobileactivation_client_t client, plist_t handshake_response, plist_t *info)
+{
+	if (!client || !info)
+		return MOBILEACTIVATION_E_INVALID_ARG;
+
+	plist_t result = NULL;
+	plist_t data = plist_data_from_plist(handshake_response);
+	mobileactivation_error_t ret = mobileactivation_send_command(client, "CreateTunnel1ActivationInfoRequest", data, &result);
+	plist_free(data);
+	if (ret == MOBILEACTIVATION_E_SUCCESS) {
+		plist_t node = plist_dict_get_item(result, "Value");
+		if (!node) {
+			debug_info("ERROR: CreateTunnel1ActivationInfoRequest command returned success but has no value in reply");
 			ret = MOBILEACTIVATION_E_UNKNOWN_ERROR;
 		} else {
 			*info = plist_copy(node);
@@ -194,6 +249,22 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_activate(mobileac
 
 	return ret;
 }
+
+LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_activate_with_session(mobileactivation_client_t client, plist_t activation_record)
+{
+	if (!client || !activation_record)
+		return MOBILEACTIVATION_E_INVALID_ARG;
+
+	plist_t result = NULL;
+	plist_t data = plist_data_from_plist(activation_record);
+	mobileactivation_error_t ret = mobileactivation_send_command(client, "HandleActivationInfoWithSessionRequest", data, &result);
+	plist_free(data);
+	plist_free(result);
+	result = NULL;
+
+	return ret;
+}
+
 
 LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_deactivate(mobileactivation_client_t client)
 {
