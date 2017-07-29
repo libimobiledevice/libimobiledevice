@@ -561,14 +561,16 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 
 	debugserver_error_t result = DEBUGSERVER_E_UNKNOWN_ERROR;
 	char *pkt = NULL;
-	int pkt_len = 0;
+	size_t pkt_len = 0;
 	int i = 0;
 
 	/* calculate total length */
 	while (i < argc && argv && argv[i]) {
 		char *prefix = NULL;
-		asprintf(&prefix, ",%d,%d,", (int)strlen(argv[i]) * 2, i);
-		pkt_len += (int)strlen(prefix) + (int)strlen(argv[i]) * 2;
+		int ret;
+		ret = asprintf(&prefix, ",%u,%d,", (unsigned int)strlen(argv[i]) * 2, i);
+		if (ret < 0 || prefix == NULL) return DEBUGSERVER_E_UNKNOWN_ERROR;
+		pkt_len += strlen(prefix) + strlen(argv[i]) * 2;
 		free(prefix);
 		i++;
 	}
@@ -583,12 +585,14 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 	while (i < argc && argv && argv[i]) {
 		debug_info("argv[%d] = \"%s\"", i, argv[i]);
 
+		int ret;
 		char *prefix = NULL;
 		char *m = NULL;
-		int arg_len = strlen(argv[i]);
-		int arg_hexlen = arg_len * 2;
+		size_t arg_len = strlen(argv[i]);
+		size_t arg_hexlen = arg_len * 2;
 
-		asprintf(&prefix, ",%d,%d,", arg_hexlen, i);
+		ret = asprintf(&prefix, ",%u,%d,", (unsigned int)arg_hexlen, i);
+		if (ret < 0 || prefix == NULL) return DEBUGSERVER_E_UNKNOWN_ERROR;
 
 		m = (char *) malloc(arg_hexlen);
 		char *p = m;
