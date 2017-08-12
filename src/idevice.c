@@ -256,6 +256,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char 
 		dev->udid = strdup(muxdev.udid);
 		dev->conn_type = CONNECTION_USBMUXD;
 		dev->conn_data = (void*)(long)muxdev.handle;
+		dev->version = 0;
 		*device = dev;
 		return IDEVICE_E_SUCCESS;
 	}
