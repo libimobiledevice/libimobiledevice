@@ -162,7 +162,7 @@ void debug_plist_real(const char *func, const char *file, int line, plist_t plis
 	if (length <= MAX_PRINT_LEN)
 		debug_info_real(func, file, line, "printing %i bytes plist:\n%s", length, buffer);
 	else
-		debug_info_real(func, file, line, "supress printing %i bytes plist...\n", length);
+		debug_info_real(func, file, line, "suppress printing %i bytes plist...\n", length);
 
 	free(buffer);
 #endif
