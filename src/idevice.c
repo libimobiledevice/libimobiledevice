@@ -37,10 +37,7 @@
 #ifdef HAVE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-#if OPENSSL_VERSION_NUMBER >= 0x10000001L
-/* since OpenSSL 1.0.0-beta1 */
-#define HAVE_ERR_REMOVE_THREAD_STATE 1
-#endif
+
 #else
 #include <gnutls/gnutls.h>
 #endif
@@ -51,6 +48,28 @@
 #include "common/debug.h"
 
 #ifdef HAVE_OPENSSL
+
+#if OPENSSL_VERSION_NUMBER < 0x10002000L
+static void SSL_COMP_free_compression_methods(void)
+{
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+}
+#endif
+
+static void openssl_remove_thread_state(void)
+{
+/*  ERR_remove_thread_state() is available since OpenSSL 1.0.0-beta1, but
+ *  deprecated in OpenSSL 1.1.0 */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10000001L
+	ERR_remove_thread_state(NULL);
+#else
+	ERR_remove_state(0);
+#endif
+#endif
+}
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
 {
@@ -65,10 +84,12 @@ static unsigned long id_function(void)
 	return ((unsigned long)THREAD_ID);
 }
 #endif
+#endif
 
 static void internal_idevice_init(void)
 {
 #ifdef HAVE_OPENSSL
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	int i;
 	SSL_library_init();
 
@@ -80,6 +101,7 @@ static void internal_idevice_init(void)
 
 	CRYPTO_set_id_callback(id_function);
 	CRYPTO_set_locking_callback(locking_function);
+#endif
 #else
 	gnutls_global_init();
 #endif
@@ -88,6 +110,7 @@ static void internal_idevice_init(void)
 static void internal_idevice_deinit(void)
 {
 #ifdef HAVE_OPENSSL
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	int i;
 	if (mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
@@ -100,11 +123,8 @@ static void internal_idevice_deinit(void)
 
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
-	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
-#ifdef HAVE_ERR_REMOVE_THREAD_STATE
-	ERR_remove_thread_state(NULL);
-#else
-	ERR_remove_state(0);
+	SSL_COMP_free_compression_methods();
+	openssl_remove_thread_state();
 #endif
 #else
 	gnutls_global_deinit();
@@ -376,8 +396,8 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
 		if (res < 0) {
-			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(-res));
-			return IDEVICE_E_UNKNOWN_ERROR;
+			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(errno));
+			return (res == -EAGAIN ? IDEVICE_E_NOT_ENOUGH_DATA : IDEVICE_E_UNKNOWN_ERROR);
 		}
 		return IDEVICE_E_SUCCESS;
 	} else {
@@ -677,7 +697,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return IDEVICE_E_INVALID_ARG;
 
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
+#ifdef HAVE_OPENSSL
 	uint32_t return_me = 0;
+#else
+	int return_me = 0;
+#endif
 	plist_t pair_record = NULL;
 
 	userpref_read_pair_record(connection->udid, &pair_record);
@@ -756,11 +780,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
 	}
 	/* required for proper multi-thread clean up to prevent leaks */
-#ifdef HAVE_ERR_REMOVE_THREAD_STATE
-	ERR_remove_thread_state(NULL);
-#else
-	ERR_remove_state(0);
-#endif
+	openssl_remove_thread_state();
 #else
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
@@ -801,14 +821,17 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	if (errno) {
 		debug_info("WARNING: errno says %s before handshake!", strerror(errno));
 	}
-	return_me = gnutls_handshake(ssl_data_loc->session);
+
+	do {
+		return_me = gnutls_handshake(ssl_data_loc->session);
+	} while(return_me == GNUTLS_E_AGAIN || return_me == GNUTLS_E_INTERRUPTED);
+
 	debug_info("GnuTLS handshake done...");
 
 	if (return_me != GNUTLS_E_SUCCESS) {
 		internal_ssl_cleanup(ssl_data_loc);
 		free(ssl_data_loc);
-		debug_info("GnuTLS reported something wrong.");
-		gnutls_perror(return_me);
+		debug_info("GnuTLS reported something wrong: %s", gnutls_strerror(return_me));
 		debug_info("oh.. errno says %s", strerror(errno));
 	} else {
 		connection->ssl_data = ssl_data_loc;

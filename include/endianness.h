@@ -27,6 +27,10 @@
 #endif
 #endif
 
+#ifndef htobe16
+#define htobe16 be16toh
+#endif
+
 #ifndef __bswap_32
 #define __bswap_32(x) ((((x) & 0xFF000000) >> 24) \
                     | (((x) & 0x00FF0000) >> 8) \

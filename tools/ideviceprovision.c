@@ -156,7 +156,7 @@ static plist_t profile_get_embedded_plist(plist_t profile)
 	size_t slen = asn1_item_get_size(pp);
 	char bsize = *(pp+1);
 	if (bsize & 0x80) {
-		slen += 2 + bsize & 0xF;
+		slen += 2 + (bsize & 0xF);
 	} else {
 		slen += 3;
 	}

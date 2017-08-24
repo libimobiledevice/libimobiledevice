@@ -55,7 +55,8 @@ typedef idevice_connection_private *idevice_connection_t; /**< The connection ha
 /** The event type for device add or removal */
 enum idevice_event_type {
 	IDEVICE_DEVICE_ADD = 1,
-	IDEVICE_DEVICE_REMOVE
+	IDEVICE_DEVICE_REMOVE,
+	IDEVICE_DEVICE_PAIRED
 };
 
 /* event data structure */

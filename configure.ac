@@ -66,24 +66,22 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
 fi
 
 # Check for operating system
-AC_MSG_CHECKING([whether to enable WIN32 build settings])
+AC_MSG_CHECKING([whether we need platform-specific build settings])
 case ${host_os} in
   *mingw32*|*cygwin*)
-    win32=true
     AC_MSG_RESULT([yes])
-    AC_CHECK_TOOL([WINDRES], [windres], AC_MSG_ERROR([windres not found]))
-    AC_SUBST(WINDRES)
+    win32=true
+    ;;
+  darwin*)
+    AC_MSG_RESULT([no])
     ;;
   *)
-    win32=false
-    AC_MSG_RESULT([no])
+    AC_MSG_RESULT([yes])
+    AX_PTHREAD([], [AC_MSG_ERROR([pthread is required to build $PACKAGE_NAME])])
+    AC_CHECK_LIB(pthread, [pthread_once], [], [AC_MSG_ERROR([pthread with pthread_once required to build $PACKAGE_NAME])])
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
-
-if test "x$win32" != xtrue; then
-  AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
-fi
 
 # Cython Python Bindings
 AC_ARG_WITH([cython],
