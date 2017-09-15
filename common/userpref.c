@@ -598,7 +598,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	/* generate certificates */
 	gnutls_x509_crt_set_key(root_cert, root_privkey);
-	gnutls_x509_crt_set_serial(root_cert, "\x00", 1);
+	gnutls_x509_crt_set_serial(root_cert, "\x01", 1);
 	gnutls_x509_crt_set_version(root_cert, 3);
 	gnutls_x509_crt_set_ca_status(root_cert, 1);
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
@@ -606,7 +606,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_crt_sign2(root_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
-	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
+	gnutls_x509_crt_set_serial(host_cert, "\x01", 1);
 	gnutls_x509_crt_set_version(host_cert, 3);
 	gnutls_x509_crt_set_ca_status(host_cert, 0);
 	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
@@ -703,7 +703,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		if (GNUTLS_E_SUCCESS == gnutls_error) {
 			/* now generate device certificate */
 			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
-			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+			gnutls_x509_crt_set_serial(dev_cert, "\x01", 1);
 			gnutls_x509_crt_set_version(dev_cert, 3);
 			gnutls_x509_crt_set_ca_status(dev_cert, 0);
 			gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
