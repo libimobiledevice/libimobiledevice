@@ -603,7 +603,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_crt_set_ca_status(root_cert, 1);
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
+	gnutls_x509_crt_sign2(root_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
 	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
@@ -612,7 +612,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
 	gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);
+	gnutls_x509_crt_sign2(host_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 
 	/* export to PEM format */
 	size_t root_key_export_size = 0;
@@ -720,7 +720,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 			}
 
 			gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
-			gnutls_error = gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
+			gnutls_error = gnutls_x509_crt_sign2(dev_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 			if (GNUTLS_E_SUCCESS == gnutls_error) {
 				/* if everything went well, export in PEM format */
 				size_t export_size = 0;
