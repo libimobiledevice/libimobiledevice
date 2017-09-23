@@ -560,7 +560,7 @@ static void print_progress_real(double progress, int flush)
 
 	if (flush > 0) {
 		fflush(stdout);
-		if (progress == 100)
+		if (progress >= 100)
 			PRINT_VERBOSE(1, "\n");
 	}
 }
@@ -585,7 +585,7 @@ static void print_progress(uint64_t current, uint64_t total)
 	free(format_size);
 
 	fflush(stdout);
-	if (progress == 100)
+	if (progress >= 100)
 		PRINT_VERBOSE(1, "\n");
 }
 

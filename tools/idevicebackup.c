@@ -647,7 +647,7 @@ static void print_progress(double progress)
 	}
 	printf("] %3.0f%%", progress);
 	fflush(stdout);
-	if (progress == 100)
+	if (progress >= 100)
 		printf("\n");
 }
 
