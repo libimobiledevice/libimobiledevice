@@ -280,7 +280,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	dump_here = (char*)malloc(entire_len);
 	if (this_len > 0) {
 		service_receive(client->parent, dump_here, this_len, bytes_recv);
-		if (*bytes_recv <= 0) {
+		if (*bytes_recv == 0) {
 			free(dump_here);
 			debug_info("Did not get packet contents!");
 			return AFC_E_NOT_ENOUGH_DATA;
@@ -296,7 +296,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
 			service_receive(client->parent, dump_here+current_count, entire_len - current_count, bytes_recv);
-			if (*bytes_recv <= 0) {
+			if (*bytes_recv == 0) {
 				debug_info("Error receiving data (recv returned %d)", *bytes_recv);
 				break;
 			}

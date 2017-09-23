@@ -994,10 +994,10 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_iden
 
 	// create client options for any application types
 	plist_t client_opts = instproxy_client_options_new();
-	instproxy_client_options_add(client_opts, "ApplicationType", "Any", NULL);
+	instproxy_client_options_add(client_opts, "ApplicationType", "Any");
 
 	// only return attributes we need
-	instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "CFBundleExecutable", "Path", NULL);
+	instproxy_client_options_set_return_attributes(client_opts, "CFBundleIdentifier", "CFBundleExecutable", "Path");
 
 	// only query for specific appid
 	const char* appids[] = {appid, NULL};

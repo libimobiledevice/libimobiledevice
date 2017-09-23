@@ -165,10 +165,6 @@ int main(int argc, char *argv[])
 			simple = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
-			return 0;
-		}
 		else {
 			print_usage(argc, argv);
 			return 0;

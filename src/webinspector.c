@@ -142,7 +142,7 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_send(webinspector_client_
 			/* send final chunk */
 			plist_dict_set_item(outplist, "WIRFinalMessageKey", plist_new_data(packet + offset, packet_length));
 			offset += packet_length;
-			packet_length -= packet_length;
+			packet_length = 0;
 		}
 
 		res = webinspector_error(property_list_service_send_binary_plist(client->parent, outplist));

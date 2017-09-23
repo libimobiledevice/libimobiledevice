@@ -735,7 +735,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 
 		/* send file contents */
 		size_t r = fread(buf, 1, sizeof(buf), f);
-		if (r <= 0) {
+		if (r == 0) {
 			printf("%s: read error\n", __func__);
 			errcode = errno;
 			goto leave;
@@ -1150,6 +1150,7 @@ static void mb2_copy_file_by_path(const char *src, const char *dst)
 	/* open destination file */
 	if ((to = fopen(dst, "wb")) == NULL) {
 		printf("Cannot open destination file '%s'.\n", dst);
+		fclose(from);
 		return;
 	}
 

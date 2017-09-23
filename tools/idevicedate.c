@@ -115,10 +115,6 @@ int main(int argc, char *argv[])
 			setdate = mktime(tmp);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
-			return 0;
-		}
 		else {
 			print_usage(argc, argv);
 			return 0;
@@ -126,11 +122,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* determine a date format */
-	if (!format) {
-		format = DATE_FMT_LANGINFO ();
-		if (!*format) {
-			format = "%a %b %e %H:%M:%S %Z %Y";
-		}
+	format = DATE_FMT_LANGINFO ();
+	if (!*format) {
+		format = "%a %b %e %H:%M:%S %Z %Y";
 	}
 
 	ret = idevice_new(&device, udid);

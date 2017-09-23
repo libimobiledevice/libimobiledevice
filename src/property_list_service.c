@@ -110,7 +110,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	uint32_t nlen = 0;
 	int bytes = 0;
 
-	if (!client || (client && !client->parent) || !plist) {
+	if (!client || !client->parent || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
@@ -181,7 +181,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 	uint32_t pktlen = 0;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->parent) || !plist) {
+	if (!client || !client->parent || !plist) {
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
@@ -208,7 +208,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 
 		while (curlen < pktlen) {
 			service_receive(client->parent, content+curlen, pktlen-curlen, &bytes);
-			if (bytes <= 0) {
+			if (bytes == 0) {
 				res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 				break;
 			}

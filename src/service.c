@@ -133,7 +133,7 @@ LIBIMOBILEDEVICE_API service_error_t service_send(service_client_t client, const
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	int bytes = 0;
 
-	if (!client || (client && !client->connection) || !data || (size == 0)) {
+	if (!client || !client->connection || !data || (size == 0)) {
 		return SERVICE_E_INVALID_ARG;
 	}
 
@@ -154,7 +154,7 @@ LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	int bytes = 0;
 
-	if (!client || (client && !client->connection) || !data || (size == 0)) {
+	if (!client || !client->connection || !data || (size == 0)) {
 		return SERVICE_E_INVALID_ARG;
 	}
 

@@ -154,7 +154,7 @@ const char *userpref_get_config_dir()
 	base_config_dir = strdup("/var/lib");
 #endif
 #endif
-	__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR, NULL);
+	__config_dir = string_concat(base_config_dir, DIR_SEP_S, USERPREF_CONFIG_DIR);
 
 	if (__config_dir) {
 		int i = strlen(__config_dir)-1;
@@ -181,11 +181,10 @@ const char *userpref_get_config_dir()
 int userpref_read_system_buid(char **system_buid)
 {
 	int res = usbmuxd_read_buid(system_buid);
-	if (res == 0) {
+	if (res == 0)
 		debug_info("using %s as %s", *system_buid, USERPREF_SYSTEM_BUID_KEY);
-	} else {
+	else
 		debug_info("could not read system buid, error %d", res);
-	}
 	return res;
 }
 
@@ -216,7 +215,7 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 	unsigned int i;
 	unsigned int found = 0;
 
-	if (!list || (list && *list)) {
+	if (!list || *list) {
 		debug_info("ERROR: The list parameter needs to point to NULL!");
 		return USERPREF_E_INVALID_ARG;
 	}

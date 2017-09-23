@@ -430,7 +430,7 @@ static void plist_node_print_to_stream(plist_t node, int* indent_level, FILE* st
 			if (btime) {
 				s = (char*)malloc(24);
  				memset(s, 0, 24);
-				if (strftime(s, 24, "%Y-%m-%dT%H:%M:%SZ", btime) <= 0) {
+				if (strftime(s, 24, "%Y-%m-%dT%H:%M:%SZ", btime) == 0) {
 					free (s);
 					s = NULL;
 				}
