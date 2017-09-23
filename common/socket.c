@@ -289,8 +289,6 @@ int socket_check_fd(int fd, fd_mode fdm, unsigned int timeout)
 		case FDM_EXCEPT:
 			sret = select(fd + 1, NULL, NULL, &fds, pto);
 			break;
-		default:
-			return -1;
 		}
 
 		if (sret < 0) {

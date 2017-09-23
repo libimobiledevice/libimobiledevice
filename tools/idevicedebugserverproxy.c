@@ -35,7 +35,6 @@
 #include "common/socket.h"
 #include "common/thread.h"
 
-#define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)
 
 static int debug_mode = 0;

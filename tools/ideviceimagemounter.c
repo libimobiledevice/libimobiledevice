@@ -312,7 +312,6 @@ int main(int argc, char **argv)
 				err = mobile_image_mounter_upload_image(mim, imagetype, image_size, sig, sig_length, mim_upload_cb, f);
 				break;
 			case DISK_IMAGE_UPLOAD_TYPE_AFC:
-			default:
 				printf("Uploading %s --> afc:///%s\n", image_path, targetname);
 				char **strs = NULL;
 				if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {

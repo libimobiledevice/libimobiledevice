@@ -30,8 +30,6 @@
 #define MBACKUP2_VERSION_INT1 300
 #define MBACKUP2_VERSION_INT2 0
 
-#define IS_FLAG_SET(x, y) ((x & y) == y)
-
 /**
  * Convert an device_link_service_error_t value to an mobilebackup2_error_t value.
  * Used internally to get correct error codes from the underlying

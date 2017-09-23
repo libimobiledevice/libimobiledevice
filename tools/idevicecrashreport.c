@@ -41,7 +41,7 @@
 #define S_IFSOCK S_IFREG
 #endif
 
-const char* target_directory = NULL;
+static const char* target_directory = NULL;
 static int extract_raw_crash_reports = 0;
 static int keep_crash_reports = 0;
 

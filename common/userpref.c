@@ -89,8 +89,6 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 #define USERPREF_CONFIG_DIR "lockdown"
 #endif
 
-#define USERPREF_CONFIG_FILE "SystemConfiguration"USERPREF_CONFIG_EXTENSION
-
 static char *__config_dir = NULL;
 
 #ifdef WIN32

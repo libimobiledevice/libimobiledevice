@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#if HAVE_LANGINFO_CODESET
+#ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
 
