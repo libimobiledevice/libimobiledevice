@@ -745,7 +745,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 			goto leave_proto_err;
 		}
 		if (bytes != (uint32_t)r) {
-			printf("Error: sent only %d of %d bytes\n", bytes, (int)r);
+			printf("Error: sent only %u of %u bytes\n", bytes, (uint32_t)r);
 			goto leave_proto_err;
 		}
 		sent += r;
@@ -781,7 +781,7 @@ leave:
 			printf("could not send message\n");
 		}
 		if (bytes != slen) {
-			printf("could only send %d from %d\n", bytes, slen);
+			printf("could only send %u from %u\n", bytes, slen);
 		}
 	}
 
@@ -856,7 +856,7 @@ static int mb2_receive_filename(mobilebackup2_client_t mobilebackup2, char** fil
 			continue;
 		} else if (nlen > 4096) {
 			// filename length is too large
-			printf("ERROR: %s: too large filename length (%d)!\n", __func__, nlen);
+			printf("ERROR: %s: too large filename length (%u)!\n", __func__, nlen);
 			return 0;
 		}
 
@@ -2051,7 +2051,7 @@ checkpoint:
 					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t moves = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_dict_get_size(moves);
-					PRINT_VERBOSE(1, "Moving %d file%s\n", cnt, (cnt == 1) ? "" : "s");
+					PRINT_VERBOSE(1, "Moving %u file%s\n", cnt, (cnt == 1) ? "" : "s");
 					plist_dict_iter iter = NULL;
 					plist_dict_new_iter(moves, &iter);
 					errcode = 0;
@@ -2102,7 +2102,7 @@ checkpoint:
 					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t removes = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_array_get_size(removes);
-					PRINT_VERBOSE(1, "Removing %d file%s\n", cnt, (cnt == 1) ? "" : "s");
+					PRINT_VERBOSE(1, "Removing %u file%s\n", cnt, (cnt == 1) ? "" : "s");
 					uint32_t ii = 0;
 					errcode = 0;
 					errdesc = NULL;

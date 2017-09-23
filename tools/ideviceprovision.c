@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
 				int found_match = 0;
 				uint32_t num_profiles = plist_array_get_size(profiles);
 				if (op == OP_LIST || !param2) {
-					printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+					printf("Device has %u provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
 				}
 				uint32_t j;
 				for (j = 0; !found_match && j < num_profiles; j++) {
@@ -549,7 +549,7 @@ int main(int argc, char *argv[])
 						if (p_uuid) {
 							sprintf(pfname, "%s/%s.mobileprovision", (param2) ? param2 : param, p_uuid);
 						} else {
-							sprintf(pfname, "%s/profile%d.mobileprovision", (param2) ? param2 : param, j);
+							sprintf(pfname, "%s/profile%u.mobileprovision", (param2) ? param2 : param, j);
 						}
 						FILE* f = fopen(pfname, "wb");
 						if (f) {
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
 						free(p_name);
 						free(p_uuid);
 					}
-					printf("%d profiles removed.\n", num_removed);
+					printf("%u profiles removed.\n", num_removed);
 				} else {
 					int sc = misagent_get_status_code(mis);
 					fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);

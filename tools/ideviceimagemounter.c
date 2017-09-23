@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 							total += written;
 						}
 						if (total != amount) {
-							fprintf(stderr, "Error: wrote only %d of %d\n", total,
+							fprintf(stderr, "Error: wrote only %u of %u\n", total,
 									(unsigned int)amount);
 							afc_file_close(afc, af);
 							fclose(f);
