@@ -23,9 +23,11 @@
 #include <config.h>
 #endif
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdlib.h>
-#define _GNU_SOURCE 1
-#define __USE_GNU 1
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
