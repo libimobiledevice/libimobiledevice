@@ -44,6 +44,7 @@
 const char* target_directory = NULL;
 static int extract_raw_crash_reports = 0;
 static int keep_crash_reports = 0;
+static int skip_wifimanager_logs = 0;
 
 static int file_exists(const char* path)
 {
@@ -219,6 +220,12 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 
 		/* recurse into child directories */
 		if (S_ISDIR(stbuf.st_mode)) {
+			if(skip_wifimanager_logs) {
+				char *wifip = strstr(list[k], "WiFiManager");
+				if (wifip) {
+					continue;
+				}
+			}
 #ifdef WIN32
 			mkdir(target_filename);
 #else
@@ -302,6 +309,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -w, --nowifi\t\tskip WifiManager logs");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
@@ -344,6 +352,10 @@ int main(int argc, char* argv[]) {
 		}
 		else if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--keep")) {
 			keep_crash_reports = 1;
+			continue;
+		}
+		else if (!strcmp(argv[i], "-w") || !strcmp(argv[i], "--nowifi")) {
+			skip_wifimanager_logs = 1;
 			continue;
 		}
 		else if (target_directory == NULL) {
