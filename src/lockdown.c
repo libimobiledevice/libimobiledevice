@@ -718,6 +718,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 			}
 			free(s_version);
 		}
+		plist_free(p_version);
 	}
 
 	userpref_read_pair_record(client_loc->udid, &pair_record);
