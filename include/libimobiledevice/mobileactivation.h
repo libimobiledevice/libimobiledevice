@@ -164,16 +164,18 @@ mobileactivation_error_t mobileactivation_activate(mobileactivation_client_t cli
 
 /**
  * Activates the device with the given activation record in 'session' mode.
- * The activation record plist dictionary must be obtained using the
+ * The activation record plist must be obtained using the
  * activation protocol requesting from Apple's https webservice.
  *
  * @param client The mobileactivation client
- * @param activation_record The activation record plist dictionary
+ * @param activation_record The activation record in plist format
+ * @param headers A plist dictionary with the activation response headers
+ *     as returned from Apple's https webservice with the activation record
  *
  * @return MOBILEACTIVATION_E_SUCCESS on success, or an MOBILEACTIVATION_E_*
  *     error code otherwise.
  */
-mobileactivation_error_t mobileactivation_activate_with_session(mobileactivation_client_t client, plist_t activation_record);
+mobileactivation_error_t mobileactivation_activate_with_session(mobileactivation_client_t client, plist_t activation_record, plist_t headers);
 
 /**
  * Deactivates the device.
