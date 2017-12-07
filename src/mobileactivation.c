@@ -91,6 +91,9 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_client_free(mobil
 
 static plist_t plist_data_from_plist(plist_t plist)
 {
+	if (plist && plist_get_node_type(plist) == PLIST_DATA) {
+		return plist_copy(plist);
+	}
 	plist_t result = NULL;
 	char *xml = NULL;
 	uint32_t xml_len = 0;
