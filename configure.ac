@@ -37,7 +37,6 @@ AC_PROG_LIBTOOL
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist >= $LIBPLIST_VERSION)
 PKG_CHECK_MODULES(libplistmm, libplist++ >= $LIBPLISTMM_VERSION)
-AC_CHECK_LIB(pthread, [pthread_create, pthread_mutex_lock], [AC_SUBST(libpthread_LIBS,[-lpthread])], [AC_MSG_ERROR([libpthread is required to build libimobiledevice])])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -67,17 +66,19 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
 fi
 
 # Check for operating system
-AC_MSG_CHECKING([whether to enable WIN32 build settings])
+AC_MSG_CHECKING([whether we need platform-specific build settings])
 case ${host_os} in
   *mingw32*|*cygwin*)
-    win32=true
     AC_MSG_RESULT([yes])
-    AC_CHECK_TOOL([WINDRES], [windres], AC_MSG_ERROR([windres not found]))
-    AC_SUBST(WINDRES)
+    win32=true
+    ;;
+  darwin*)
+    AC_MSG_RESULT([no])
     ;;
   *)
-    win32=false
-    AC_MSG_RESULT([no])
+    AC_MSG_RESULT([yes])
+    AX_PTHREAD([], [AC_MSG_ERROR([pthread is required to build $PACKAGE_NAME])])
+    AC_CHECK_LIB(pthread, [pthread_once], [], [AC_MSG_ERROR([pthread with pthread_once required to build $PACKAGE_NAME])])
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
@@ -120,7 +121,7 @@ AC_SUBST([CYTHON_SUB])
 AC_ARG_ENABLE([openssl],
             [AS_HELP_STRING([--disable-openssl],
             [Do not look for OpenSSL])],
-            [use_openssl=no],
+            [use_openssl=$enableval],
             [use_openssl=yes])
 
 pkg_req_openssl="openssl >= 0.9.8"

@@ -8,7 +8,7 @@ Requirements
 ============
 
 Development Packages of:
-	libgnutls or openssl
+	OpenSSL or GnuTLS
 	libplist
 	libusbmuxd
 
@@ -20,7 +20,7 @@ Software:
 	autoconf
 	libtool
 	pkg-config
-	gcc
+	gcc or clang
 
 Optional:
 	cython (Python bindings)
@@ -33,6 +33,16 @@ To compile run:
 	./autogen.sh
 	make
 	sudo make install
+
+If you require a custom prefix or other option being passed to ./configure
+you can pass them directly to ./autogen.sh like this:
+        ./autogen.sh --prefix=/opt/local --enable-debug-code
+        make
+        sudo make install
+
+By default, OpenSSL will be used. If you prefer GnuTLS, configure with
+ --disable-openssl like this:
+	./autogen.sh --disable-openssl
 
 Who/What/Where?
 ===============
@@ -47,7 +57,7 @@ Code (Mirror):
 	git clone https://github.com/libimobiledevice/libimobiledevice.git
 
 Tickets:
-	http://github.com/libimobiledevice/libimobiledevice/issues
+	https://github.com/libimobiledevice/libimobiledevice/issues
 
 Mailing List:
 	http://lists.libimobiledevice.org/mailman/listinfo/libimobiledevice-devel
@@ -66,4 +76,4 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2015-01-28
+	2017-04-28

@@ -3,7 +3,7 @@
  * Simple utility to install, get, or remove provisioning profiles
  *   to/from idevices
  *
- * Copyright (c) 2012 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2012-2016 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -53,7 +55,11 @@ static void print_usage(int argc, char **argv)
 	printf("  copy PATH\tRetrieves all provisioning profiles from the device and\n");
 	printf("           \tstores them into the existing directory specified by PATH.\n");
 	printf("           \tThe files will be stored as UUID.mobileprovision\n");
+	printf("  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n");
+	printf("           \tfrom the device and stores it into the exisiting directory\n");
+	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
+	printf("  remove-all\tRemoves all installed provisioning profiles.\n");
 	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
 	printf("           \tspecified by FILE.\n\n");
 	printf(" The following OPTIONS are accepted:\n");
@@ -81,30 +87,47 @@ enum {
 
 static void asn1_next_item(unsigned char** p)
 {
-	if (*(*p+1) & 0x80) {
-		*p += 4;
+	char bsize = *(*p+1);
+	if (bsize & 0x80) {
+		*p += 2 + (bsize & 0xF);
 	} else {
 		*p += 3;
 	}
 }
 
-static int asn1_item_get_size(unsigned char* p)
+static size_t asn1_item_get_size(unsigned char* p)
 {
-	int res = 0;
-	if (*(p+1) & 0x80) {
+	size_t res = 0;
+	char bsize = *(p+1);
+	if (bsize & 0x80) {
 		uint16_t ws = 0;
-		memcpy(&ws, p+2, 2);
-		ws = ntohs(ws);
-		res = ws;
+		uint32_t ds = 0;
+		switch (bsize & 0xF) {
+		case 2:
+			ws = *(uint16_t*)(p+2);
+			res = ntohs(ws);
+			break;
+		case 3:
+			ds = *(uint32_t*)(p+2);
+			res = ntohl(ds) >> 8;
+			break;
+		case 4:
+			ds = *(uint32_t*)(p+2);
+			res = ntohl(ds);
+			break;
+		default:
+			fprintf(stderr, "ERROR: Invalid or unimplemented byte size %d\n", bsize & 0xF);
+			break;
+		}
 	} else {
-		res = (int) *(p+1);
+		res = (int)bsize;
 	}
 	return res;
 }
 
 static void asn1_skip_item(unsigned char** p)
 {
-	int sz = asn1_item_get_size(*p);
+	size_t sz = asn1_item_get_size(*p);
 	*p += 2;
 	*p += sz;
 }
@@ -130,8 +153,14 @@ static plist_t profile_get_embedded_plist(plist_t profile)
 		fprintf(stderr, "%s: unexpected profile data (0)\n", __func__);
 		return NULL;
 	}
-	uint16_t slen = asn1_item_get_size(pp);
-	if (slen+4 != (uint16_t)blen) {
+	size_t slen = asn1_item_get_size(pp);
+	char bsize = *(pp+1);
+	if (bsize & 0x80) {
+		slen += 2 + (bsize & 0xF);
+	} else {
+		slen += 3;
+	}
+	if (slen != blen) {
 		free(bbuf);
 		fprintf(stderr, "%s: unexpected profile data (1)\n", __func__);
 		return NULL;
@@ -254,11 +283,13 @@ int main(int argc, char *argv[])
 	lockdownd_service_descriptor_t service = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
+	int res = 0;
 	int i;
 	int op = -1;
 	int output_xml = 0;
 	const char* udid = NULL;
 	const char* param = NULL;
+	const char* param2 = NULL;
 
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
@@ -296,6 +327,10 @@ int main(int argc, char *argv[])
 			}
 			param = argv[i];
 			op = OP_COPY;
+			i++;
+			if (argv[i] && (strlen(argv[i]) > 0)) {
+				param2 = argv[i];
+			}
 			continue;
 		}
 		else if (!strcmp(argv[i], "remove")) {
@@ -305,6 +340,11 @@ int main(int argc, char *argv[])
 				return 0;
 			}
 			param = argv[i];
+			op = OP_REMOVE;
+			continue;
+		}
+		else if (!strcmp(argv[i], "remove-all")) {
+			i++;
 			op = OP_REMOVE;
 			continue;
 		}
@@ -338,7 +378,6 @@ int main(int argc, char *argv[])
 	}
 
 	if (op == OP_DUMP) {
-		int res = 0;
 		unsigned char* profile_data = NULL;
 		unsigned int profile_size = 0;
 		if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
@@ -372,6 +411,13 @@ int main(int argc, char *argv[])
 		plist_free(pl);
 
 		return res;
+	} else if (op == OP_COPY) {
+		struct stat st;
+		const char *checkdir = (param2) ? param2 : param;
+		if ((stat(checkdir, &st) < 0) || !S_ISDIR(st.st_mode)) {
+			fprintf(stderr, "ERROR: %s does not exist or is not a directory!\n", checkdir);
+			return -1;
+		}
 	}
 
 	ret = idevice_new(&device, udid);
@@ -389,6 +435,28 @@ int main(int argc, char *argv[])
 		idevice_free(device);
 		return -1;
 	}
+
+	plist_t pver = NULL;
+	char *pver_s = NULL;
+	lockdownd_get_value(client, NULL, "ProductVersion", &pver);
+	if (pver && plist_get_node_type(pver) == PLIST_STRING) {
+		plist_get_string_val(pver, &pver_s);
+	}
+	plist_free(pver);
+	int product_version_major = 0;
+	int product_version_minor = 0;
+	int product_version_patch = 0;
+	if (pver_s) {
+		sscanf(pver_s, "%d.%d.%d", &product_version_major, &product_version_minor, &product_version_patch);
+		free(pver_s);
+	}
+	if (product_version_major == 0) {
+		fprintf(stderr, "ERROR: Could not determine the device's ProductVersion\n");
+		lockdownd_client_free(client);
+		idevice_free(device);
+		return -1;
+	}
+	int product_version = ((product_version_major & 0xFF) << 16) | ((product_version_minor & 0xFF) << 8) | (product_version_patch & 0xFF);
 
 	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
 		fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
@@ -437,11 +505,20 @@ int main(int argc, char *argv[])
 		case OP_COPY:
 		{
 			plist_t profiles = NULL;
-			if (misagent_copy(mis, &profiles) == MISAGENT_E_SUCCESS) {
+			misagent_error_t merr;
+			if (product_version < 0x090300) {
+				merr = misagent_copy(mis, &profiles);
+			} else {
+				merr = misagent_copy_all(mis, &profiles);
+			}
+			if (merr == MISAGENT_E_SUCCESS) {
+				int found_match = 0;
 				uint32_t num_profiles = plist_array_get_size(profiles);
-				printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+				if (op == OP_LIST || !param2) {
+					printf("Device has %d provisioning %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+				}
 				uint32_t j;
-				for (j = 0; j < num_profiles; j++) {
+				for (j = 0; !found_match && j < num_profiles; j++) {
 					char* p_name = NULL;
 					char* p_uuid = NULL;
 					plist_t profile = plist_array_get_item(profiles, j);
@@ -457,13 +534,22 @@ int main(int argc, char *argv[])
 							plist_get_string_val(node, &p_uuid);
 						}
 					}
+					if (param2) {
+						if (p_uuid && !strcmp(p_uuid, param)) {
+							found_match = 1;
+						} else {
+							free(p_uuid);
+							free(p_name);
+							continue;
+						}
+					}
 					printf("%s - %s\n", (p_uuid) ? p_uuid : "(unknown id)", (p_name) ? p_name : "(no name)");
 					if (op == OP_COPY) {
 						char pfname[512];
 						if (p_uuid) {
-							sprintf(pfname, "%s/%s.mobileprovision", param, p_uuid);
+							sprintf(pfname, "%s/%s.mobileprovision", (param2) ? param2 : param, p_uuid);
 						} else {
-							sprintf(pfname, "%s/profile%d.mobileprovision", param, j);
+							sprintf(pfname, "%s/profile%d.mobileprovision", (param2) ? param2 : param, j);
 						}
 						FILE* f = fopen(pfname, "wb");
 						if (f) {
@@ -474,28 +560,80 @@ int main(int argc, char *argv[])
 							fclose(f);
 							printf(" => %s\n", pfname);
 						} else {
-							fprintf(stderr, "Could not open '%s' for writing\n", pfname);
+							fprintf(stderr, "Could not open '%s' for writing: %s\n", pfname, strerror(errno));
 						}
 					}
-					if (p_uuid) {
-						free(p_uuid);
-					}
-					if (p_name) {
-						free(p_name);
-					}
+					free(p_uuid);
+					free(p_name);
+				}
+				if (param2 && !found_match) {
+					fprintf(stderr, "Profile '%s' was not found on the device.\n", param);
+					res = -1;
 				}
 			} else {
 				int sc = misagent_get_status_code(mis);
 				fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
+				res = -1;
 			}
+			plist_free(profiles);
 		}
 			break;
 		case OP_REMOVE:
-			if (misagent_remove(mis, param) == MISAGENT_E_SUCCESS) {
-				printf("Profile '%s' removed.\n", param);
+			if (param) {
+				/* remove specified provisioning profile */
+				if (misagent_remove(mis, param) == MISAGENT_E_SUCCESS) {
+					printf("Profile '%s' removed.\n", param);
+				} else {
+					int sc = misagent_get_status_code(mis);
+					fprintf(stderr, "Could not remove profile '%s', status code 0x%x\n", param, sc);
+				}
 			} else {
-				int sc = misagent_get_status_code(mis);
-				fprintf(stderr, "Could not remove profile '%s', status code 0x%x\n", param, sc);
+				/* remove all provisioning profiles */
+				plist_t profiles = NULL;
+				misagent_error_t merr;
+				if (product_version < 0x090300) {
+					merr = misagent_copy(mis, &profiles);
+				} else {
+					merr = misagent_copy_all(mis, &profiles);
+				}
+				if (merr == MISAGENT_E_SUCCESS) {
+					uint32_t j;
+					uint32_t num_removed = 0;
+					for (j = 0; j < plist_array_get_size(profiles); j++) {
+						char* p_name = NULL;
+						char* p_uuid = NULL;
+						plist_t profile = plist_array_get_item(profiles, j);
+						plist_t pl = profile_get_embedded_plist(profile);
+						if (pl && (plist_get_node_type(pl) == PLIST_DICT)) {
+							plist_t node;
+							node = plist_dict_get_item(pl, "Name");
+							if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+								plist_get_string_val(node, &p_name);
+							}
+							node = plist_dict_get_item(pl, "UUID");
+							if (node && (plist_get_node_type(node) == PLIST_STRING)) {
+								plist_get_string_val(node, &p_uuid);
+							}
+						}
+						if (p_uuid) {
+							if (misagent_remove(mis, p_uuid) == MISAGENT_E_SUCCESS) {
+								printf("OK profile removed: %s - %s\n", p_uuid, (p_name) ? p_name : "(no name)");
+								num_removed++;
+							} else {
+								int sc = misagent_get_status_code(mis);
+								printf("FAIL profile not removed: %s - %s (status code 0x%x)\n", p_uuid, (p_name) ? p_name : "(no name)", sc);
+							}
+						}
+						free(p_name);
+						free(p_uuid);
+					}
+					printf("%d profiles removed.\n", num_removed);
+				} else {
+					int sc = misagent_get_status_code(mis);
+					fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
+					res = -1;
+				}
+				plist_free(profiles);
 			}
 			break;
 		default:
@@ -506,6 +644,6 @@ int main(int argc, char *argv[])
 
 	idevice_free(device);
 
-	return 0;
+	return res;
 }
 

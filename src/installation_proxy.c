@@ -772,7 +772,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client
 
 LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result)
 {
-	if (!capabilities || (plist_get_node_type(capabilities) != PLIST_ARRAY && plist_get_node_type(capabilities) != PLIST_DICT))
+	if (!client || !capabilities || !result)
 		return INSTPROXY_E_INVALID_ARG;
 
 	plist_t lookup_result = NULL;
@@ -847,11 +847,12 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_status_get_error(plist_t status
 
 LIBIMOBILEDEVICE_API void instproxy_status_get_name(plist_t status, char **name)
 {
-	*name = NULL;
 	if (name) {
 		plist_t node = plist_dict_get_item(status, "Status");
 		if (node) {
 			plist_get_string_val(node, name);
+		} else {
+			*name = NULL;
 		}
 	}
 }
@@ -907,10 +908,13 @@ LIBIMOBILEDEVICE_API void instproxy_status_get_current_list(plist_t status, uint
 
 LIBIMOBILEDEVICE_API void instproxy_command_get_name(plist_t command, char** name)
 {
-	*name = NULL;
-	plist_t node = plist_dict_get_item(command, "Command");
-	if (node) {
-		plist_get_string_val(node, name);
+	if (name) {
+		plist_t node = plist_dict_get_item(command, "Command");
+		if (node) {
+			plist_get_string_val(node, name);
+		} else {
+			*name = NULL;
+		}
 	}
 }
 

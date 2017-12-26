@@ -43,7 +43,7 @@ typedef enum {
 	LOCKDOWN_E_PAIRING_FAILED                          =  -4,
 	LOCKDOWN_E_SSL_ERROR                               =  -5,
 	LOCKDOWN_E_DICT_ERROR                              =  -6,
-	LOCKDOWN_E_NOT_ENOUGH_DATA                         =  -7,
+	LOCKDOWN_E_RECEIVE_TIMEOUT                         =  -7,
 	LOCKDOWN_E_MUX_ERROR                               =  -8,
 	LOCKDOWN_E_NO_RUNNING_SESSION                      =  -9,
 	/* native */
