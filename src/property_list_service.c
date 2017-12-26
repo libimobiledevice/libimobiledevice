@@ -98,7 +98,8 @@ LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_client_
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when one or more parameters are
  *      invalid, PROPERTY_LIST_SERVICE_E_PLIST_ERROR when dict is not a valid
- *      plist, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified
+ *      plist, PROPERTY_LIST_SERVICE_E_MUX_ERROR when a communication error
+ *      occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
 static property_list_service_error_t internal_plist_send(property_list_service_client_t client, plist_t plist, int binary)
@@ -140,6 +141,7 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	}
 	if (bytes <= 0) {
 		debug_info("ERROR: sending to device failed.");
+		res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	}
 
 	free(content);
@@ -193,59 +195,56 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("initial read failed!");
 		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	} else {
-		pktlen = be32toh(pktlen);
-		if (pktlen < (1 << 24)) { /* prevent huge buffers */
-			uint32_t curlen = 0;
-			char *content = NULL;
-			debug_info("%d bytes following", pktlen);
-			content = (char*)malloc(pktlen);
-			if (!content) {
-				debug_info("out of memory when allocating %d bytes", pktlen);
-				return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
-			}
+		uint32_t curlen = 0;
+		char *content = NULL;
 
-			while (curlen < pktlen) {
-				service_receive(client->parent, content+curlen, pktlen-curlen, &bytes);
-				if (bytes <= 0) {
-					res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
-					break;
-				}
-				debug_info("received %d bytes", bytes);
-				curlen += bytes;
+		pktlen = be32toh(pktlen);
+		debug_info("%d bytes following", pktlen);
+		content = (char*)malloc(pktlen);
+		if (!content) {
+			debug_info("out of memory when allocating %d bytes", pktlen);
+			return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
+		}
+
+		while (curlen < pktlen) {
+			service_receive(client->parent, content+curlen, pktlen-curlen, &bytes);
+			if (bytes <= 0) {
+				res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
+				break;
 			}
-			if (curlen < pktlen) {
-				debug_info("received incomplete packet (%d of %d bytes)", curlen, pktlen);
-				if (curlen > 0) {
-					debug_info("incomplete packet following:");
-					debug_buffer(content, curlen);
-				}
-				free(content);
-				return res;
-			}
-			if ((pktlen > 8) && !memcmp(content, "bplist00", 8)) {
-				plist_from_bin(content, pktlen, plist);
-			} else if ((pktlen > 5) && !memcmp(content, "<?xml", 5)) {
-				/* iOS 4.3+ hack: plist data might contain invalid characters, thus we convert those to spaces */
-				for (bytes = 0; bytes < pktlen-1; bytes++) {
-					if ((content[bytes] >= 0) && (content[bytes] < 0x20) && (content[bytes] != 0x09) && (content[bytes] != 0x0a) && (content[bytes] != 0x0d))
-						content[bytes] = 0x20;
-				}
-				plist_from_xml(content, pktlen, plist);
-			} else {
-				debug_info("WARNING: received unexpected non-plist content");
-				debug_buffer(content, pktlen);
-			}
-			if (*plist) {
-				debug_plist(*plist);
-				res = PROPERTY_LIST_SERVICE_E_SUCCESS;
-			} else {
-				res = PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
+			debug_info("received %d bytes", bytes);
+			curlen += bytes;
+		}
+		if (curlen < pktlen) {
+			debug_info("received incomplete packet (%d of %d bytes)", curlen, pktlen);
+			if (curlen > 0) {
+				debug_info("incomplete packet following:");
+				debug_buffer(content, curlen);
 			}
 			free(content);
-			content = NULL;
-		} else {
-			res = PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
+			return res;
 		}
+		if ((pktlen > 8) && !memcmp(content, "bplist00", 8)) {
+			plist_from_bin(content, pktlen, plist);
+		} else if ((pktlen > 5) && !memcmp(content, "<?xml", 5)) {
+			/* iOS 4.3+ hack: plist data might contain invalid characters, thus we convert those to spaces */
+			for (bytes = 0; bytes < pktlen-1; bytes++) {
+				if ((content[bytes] >= 0) && (content[bytes] < 0x20) && (content[bytes] != 0x09) && (content[bytes] != 0x0a) && (content[bytes] != 0x0d))
+					content[bytes] = 0x20;
+			}
+			plist_from_xml(content, pktlen, plist);
+		} else {
+			debug_info("WARNING: received unexpected non-plist content");
+			debug_buffer(content, pktlen);
+		}
+		if (*plist) {
+			debug_plist(*plist);
+			res = PROPERTY_LIST_SERVICE_E_SUCCESS;
+		} else {
+			res = PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
+		}
+		free(content);
+		content = NULL;
 	}
 	return res;
 }

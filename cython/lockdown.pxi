@@ -7,7 +7,7 @@ cdef extern from "libimobiledevice/lockdown.h":
         LOCKDOWN_E_PAIRING_FAILED
         LOCKDOWN_E_SSL_ERROR
         LOCKDOWN_E_DICT_ERROR
-        LOCKDOWN_E_NOT_ENOUGH_DATA
+        LOCKDOWN_E_RECEIVE_TIMEOUT
         LOCKDOWN_E_SET_VALUE_PROHIBITED
         LOCKDOWN_E_GET_VALUE_PROHIBITED
         LOCKDOWN_E_MUX_ERROR
@@ -38,6 +38,10 @@ cdef extern from "libimobiledevice/lockdown.h":
         LOCKDOWN_E_MISSING_ACTIVATION_RECORD
         LOCKDOWN_E_SERVICE_PROHIBITED
         LOCKDOWN_E_ESCROW_LOCKED
+        LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION
+        LOCKDOWN_E_FMIP_PROTECTED
+        LOCKDOWN_E_MC_PROTECTED
+        LOCKDOWN_E_MC_CHALLENGE_REQUIRED
         LOCKDOWN_E_UNKNOWN_ERROR
 
     lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, char *label)
@@ -74,7 +78,7 @@ cdef class LockdownError(BaseError):
             LOCKDOWN_E_PAIRING_FAILED: "Pairing failed",
             LOCKDOWN_E_SSL_ERROR: "SSL error",
             LOCKDOWN_E_DICT_ERROR: "Dictionary error",
-            LOCKDOWN_E_NOT_ENOUGH_DATA: "Not enough data",
+            LOCKDOWN_E_RECEIVE_TIMEOUT: "Receive timeout",
             LOCKDOWN_E_MUX_ERROR: "Mux Protocol Error",
             LOCKDOWN_E_NO_RUNNING_SESSION: "No running session",
             LOCKDOWN_E_INVALID_RESPONSE: "Invalid response",
@@ -103,6 +107,10 @@ cdef class LockdownError(BaseError):
             LOCKDOWN_E_MISSING_ACTIVATION_RECORD: "Missing activation record",
             LOCKDOWN_E_SERVICE_PROHIBITED: "Service prohibited",
             LOCKDOWN_E_ESCROW_LOCKED: "Escrow locked",
+            LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION: "Pairing prohibited over this connection",
+            LOCKDOWN_E_FMIP_PROTECTED: "Find My iPhone/iPod/iPad protected",
+            LOCKDOWN_E_MC_PROTECTED: "MC protected",
+            LOCKDOWN_E_MC_CHALLENGE_REQUIRED: "MC challenge required",
             LOCKDOWN_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

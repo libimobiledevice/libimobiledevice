@@ -101,7 +101,7 @@ misagent_error_t misagent_client_free(misagent_client_t client);
 misagent_error_t misagent_install(misagent_client_t client, plist_t profile);
 
 /**
- * Retrieves an array of all installed provisioning profiles.
+ * Retrieves all installed provisioning profiles (iOS 9.2.1 or below).
  *
  * @param client The connected misagent to use.
  * @param profiles Pointer to a plist_t that will be set to a PLIST_ARRAY
@@ -110,11 +110,33 @@ misagent_error_t misagent_install(misagent_client_t client, plist_t profile);
  * @return MISAGENT_E_SUCCESS on success, MISAGENT_E_INVALID_ARG when
  *     client is invalid, or an MISAGENT_E_* error code otherwise.
  *
+ * @note This API call only works with iOS 9.2.1 or below.
+ *     For newer iOS versions use misagent_copy_all() instead.
+ *
  * @note If no provisioning profiles are installed on the device, this function
  *     still returns MISAGENT_E_SUCCESS and profiles will just point to an
  *     empty array.
  */
 misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles);
+
+/**
+ * Retrieves all installed provisioning profiles (iOS 9.3 or higher).
+ *
+ * @param client The connected misagent to use.
+ * @param profiles Pointer to a plist_t that will be set to a PLIST_ARRAY
+ *    if the function is successful.
+ *
+ * @return MISAGENT_E_SUCCESS on success, MISAGENT_E_INVALID_ARG when
+ *     client is invalid, or an MISAGENT_E_* error code otherwise.
+ *
+ * @note This API call only works with iOS 9.3 or higher.
+ *     For older iOS versions use misagent_copy() instead.
+ *
+ * @note If no provisioning profiles are installed on the device, this function
+ *     still returns MISAGENT_E_SUCCESS and profiles will just point to an
+ *     empty array.
+ */
+misagent_error_t misagent_copy_all(misagent_client_t client, plist_t* profiles);
 
 /**
  * Removes a given provisioning profile.

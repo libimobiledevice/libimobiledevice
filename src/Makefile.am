@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS) $(openssl_CFLAGS)
-AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS) $(libpthread_LIBS) $(openssl_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libusbmuxd_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS) $(openssl_CFLAGS) $(PTHREAD_CFLAGS)
+AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libplist_LIBS) $(libusbmuxd_LIBS) $(libgcrypt_LIBS) $(openssl_LIBS) $(PTHREAD_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice.la
 libimobiledevice_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
@@ -28,11 +28,12 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       heartbeat.c heartbeat.h\
 		       debugserver.c debugserver.h\
 		       webinspector.c webinspector.h\
+		       mobileactivation.c mobileactivation.h\
 		       syslog_relay.c syslog_relay.h
 
 if WIN32
 libimobiledevice_la_LDFLAGS += -avoid-version
-libimobiledevice_la_LIBADD += -lole32 -lws2_32
+libimobiledevice_la_LIBADD += -lole32 -lws2_32 -lgdi32
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

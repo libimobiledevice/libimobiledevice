@@ -43,7 +43,7 @@ typedef enum {
 	LOCKDOWN_E_PAIRING_FAILED                          =  -4,
 	LOCKDOWN_E_SSL_ERROR                               =  -5,
 	LOCKDOWN_E_DICT_ERROR                              =  -6,
-	LOCKDOWN_E_NOT_ENOUGH_DATA                         =  -7,
+	LOCKDOWN_E_RECEIVE_TIMEOUT                         =  -7,
 	LOCKDOWN_E_MUX_ERROR                               =  -8,
 	LOCKDOWN_E_NO_RUNNING_SESSION                      =  -9,
 	/* native */
@@ -73,6 +73,10 @@ typedef enum {
 	LOCKDOWN_E_MISSING_ACTIVATION_RECORD               = -33,
 	LOCKDOWN_E_SERVICE_PROHIBITED                      = -34,
 	LOCKDOWN_E_ESCROW_LOCKED                           = -35,
+	LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION = -36,
+	LOCKDOWN_E_FMIP_PROTECTED                          = -37,
+	LOCKDOWN_E_MC_PROTECTED                            = -38,
+	LOCKDOWN_E_MC_CHALLENGE_REQUIRED                   = -39,
 	LOCKDOWN_E_UNKNOWN_ERROR                           = -256
 } lockdownd_error_t;
 
@@ -290,6 +294,25 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
 lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+
+ /**
+ * Pairs the device using the supplied pair record and passing the given options.
+ *
+ * @param client The lockdown client
+ * @param pair_record The pair record to use for pairing. If NULL is passed, then
+ *    the pair records from the current machine are used. New records will be
+ *    generated automatically when pairing is done for the first time.
+ * @param options The pairing options to pass. Can be NULL for no options.
+ * @param response If non-NULL a pointer to lockdownd's response dictionary is returned.
+ *    The caller is responsible to free the response dictionary with plist_free().
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
+ *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
+ *  LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
+ *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
+ */
+lockdownd_error_t lockdownd_pair_with_options(lockdownd_client_t client, lockdownd_pair_record_t pair_record, plist_t options, plist_t *response);
 
 /**
  * Validates if the device is paired with the given HostID. If successful the

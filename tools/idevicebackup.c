@@ -251,7 +251,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid)
 	if (value_node)
 		plist_dict_set_item(ret, "IMEI", plist_copy(value_node));
 
-	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL), 0));
+	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL) - MAC_EPOCH, 0));
 
 	value_node = plist_dict_get_item(root_node, "ProductType");
 	plist_dict_set_item(ret, "Product Type", plist_copy(value_node));
@@ -288,7 +288,7 @@ static void mobilebackup_info_update_last_backup_date(plist_t info_plist)
 		return;
 
 	node = plist_dict_get_item(info_plist, "Last Backup Date");
-	plist_set_date_val(node, time(NULL), 0);
+	plist_set_date_val(node, time(NULL) - MAC_EPOCH, 0);
 
 	node = NULL;
 }
@@ -674,7 +674,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <http://libimobiledevice.org>\n");
+	printf("Homepage: <" PACKAGE_URL ">\n");
 }
 
 int main(int argc, char *argv[])

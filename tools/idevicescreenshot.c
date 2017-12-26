@@ -19,6 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -95,12 +99,22 @@ int main(int argc, char **argv)
 		} else {
 			char *imgdata = NULL;
 			uint64_t imgsize = 0;
-			if (!filename) {
-				time_t now = time(NULL);
-				filename = (char*)malloc(36);
-				strftime(filename, 36, "screenshot-%Y-%m-%d-%H-%M-%S.tiff", gmtime(&now));
-			}
 			if (screenshotr_take_screenshot(shotr, &imgdata, &imgsize) == SCREENSHOTR_E_SUCCESS) {
+				if (!filename) {
+					const char *fileext = NULL;
+					if (memcmp(imgdata, "\x89PNG", 4) == 0) {
+						fileext = ".png";
+					} else if (memcmp(imgdata, "MM\x00*", 4) == 0) {
+						fileext = ".tiff";
+					} else {
+						printf("WARNING: screenshot data has unexpected image format.\n");
+						fileext = ".dat";
+					}
+					time_t now = time(NULL);
+					filename = (char*)malloc(36);
+					size_t pos = strftime(filename, 36, "screenshot-%Y-%m-%d-%H-%M-%S", gmtime(&now));
+					sprintf(filename+pos, "%s", fileext);
+				}
 				FILE *f = fopen(filename, "wb");
 				if (f) {
 					if (fwrite(imgdata, 1, (size_t)imgsize, f) == (size_t)imgsize) {
@@ -147,5 +161,5 @@ void print_usage(int argc, char **argv)
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <http://libimobiledevice.org>\n");
+	printf("Homepage: <" PACKAGE_URL ">\n");
 }

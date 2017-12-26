@@ -202,6 +202,46 @@ LIBIMOBILEDEVICE_API misagent_error_t misagent_copy(misagent_client_t client, pl
 
 }
 
+LIBIMOBILEDEVICE_API misagent_error_t misagent_copy_all(misagent_client_t client, plist_t* profiles)
+{
+	if (!client || !client->parent || !profiles)
+		return MISAGENT_E_INVALID_ARG;
+
+	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "MessageType", plist_new_string("CopyAll"));
+	plist_dict_set_item(dict, "ProfileType", plist_new_string("Provisioning"));
+
+	misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+	dict = NULL;
+
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+		return res;
+	}
+
+	res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not receive response, error %d", res);
+		return res;
+	}
+	if (!dict) {
+		debug_info("could not get response plist");
+		return MISAGENT_E_UNKNOWN_ERROR;
+	}
+
+	res = misagent_check_result(dict, &client->last_error);
+	if (res == MISAGENT_E_SUCCESS) {
+		*profiles = plist_copy(plist_dict_get_item(dict, "Payload"));
+	}
+	plist_free(dict);
+
+	return res;
+
+}
+
 LIBIMOBILEDEVICE_API misagent_error_t misagent_remove(misagent_client_t client, const char* profileID)
 {
 	if (!client || !client->parent || !profileID)

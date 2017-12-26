@@ -3,7 +3,7 @@
  * com.apple.mobile.lockdownd service implementation.
  *
  * Copyright (c) 2009-2015 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2014 Nikias Bassen. All Rights Reserved.
+ * Copyright (c) 2014-2015 Nikias Bassen All Rights Reserved.
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -122,9 +122,47 @@ static lockdownd_error_t lockdownd_strtoerr(const char* name)
 		err = LOCKDOWN_E_SERVICE_PROHIBITED;
 	} else if (strcmp(name, "EscrowLocked") == 0) {
 		err = LOCKDOWN_E_ESCROW_LOCKED;
+	} else if (strcmp(name, "PairingProhibitedOverThisConnection") == 0) {
+		err = LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION;
+	} else if (strcmp(name, "FMiPProtected") == 0) {
+		err = LOCKDOWN_E_FMIP_PROTECTED;
+	} else if (strcmp(name, "MCProtected") == 0) {
+		err = LOCKDOWN_E_MC_PROTECTED;
+	} else if (strcmp(name, "MCChallengeRequired") == 0) {
+		err = LOCKDOWN_E_MC_CHALLENGE_REQUIRED;
 	}
 
 	return err;
+}
+
+/**
+ * Convert a property_list_service_error_t value to a lockdownd_error_t
+ * value. Used internally to get correct error codes.
+ *
+ * @param err A property_list_service_error_t error code
+ *
+ * @return A matching lockdownd_error_t error code,
+ *     LOCKDOWND_E_UNKNOWN_ERROR otherwise.
+ */
+static lockdownd_error_t lockdownd_error(property_list_service_error_t err)
+{
+	switch (err) {
+		case PROPERTY_LIST_SERVICE_E_SUCCESS:
+			return LOCKDOWN_E_SUCCESS;
+		case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+			return LOCKDOWN_E_INVALID_ARG;
+		case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+			return LOCKDOWN_E_PLIST_ERROR;
+		case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+			return LOCKDOWN_E_MUX_ERROR;
+		case PROPERTY_LIST_SERVICE_E_SSL_ERROR:
+			return LOCKDOWN_E_SSL_ERROR;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return LOCKDOWN_E_RECEIVE_TIMEOUT;
+		default:
+			break;
+	}
+	return LOCKDOWN_E_UNKNOWN_ERROR;
 }
 
 /**
@@ -341,18 +379,8 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_receive(lockdownd_client_t clie
 {
 	if (!client || !plist || (plist && *plist))
 		return LOCKDOWN_E_INVALID_ARG;
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t err;
 
-	err = property_list_service_receive_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	}
-
-	if (!*plist)
-		ret = LOCKDOWN_E_PLIST_ERROR;
-
-	return ret;
+	return lockdownd_error(property_list_service_receive_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist)
@@ -360,14 +388,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_send(lockdownd_client_t client,
 	if (!client || !plist)
 		return LOCKDOWN_E_INVALID_ARG;
 
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t err;
-
-	err = property_list_service_send_xml_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = LOCKDOWN_E_UNKNOWN_ERROR;
-	}
-	return ret;
+	return lockdownd_error(property_list_service_send_xml_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type)
@@ -629,7 +650,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_get_device_name(lockdownd_clien
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label)
 {
-	if (!client)
+	if (!device || !client)
 		return LOCKDOWN_E_INVALID_ARG;
 
 	static struct lockdownd_service_descriptor service = {
@@ -678,15 +699,27 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	}
 
 	/* perform handshake */
-	if (LOCKDOWN_E_SUCCESS != lockdownd_query_type(client_loc, &type)) {
+	ret = lockdownd_query_type(client_loc, &type);
+	if (LOCKDOWN_E_SUCCESS != ret) {
 		debug_info("QueryType failed in the lockdownd client.");
-		ret = LOCKDOWN_E_NOT_ENOUGH_DATA;
-	} else {
-		if (strcmp("com.apple.mobile.lockdown", type)) {
-			debug_info("Warning QueryType request returned \"%s\".", type);
-		}
+	} else if (strcmp("com.apple.mobile.lockdown", type)) {
+		debug_info("Warning QueryType request returned \"%s\".", type);
 	}
 	free(type);
+
+	if (device->version == 0) {
+		plist_t p_version = NULL;
+		if (lockdownd_get_value(client_loc, NULL, "ProductVersion", &p_version) == LOCKDOWN_E_SUCCESS) {
+			int vers[3] = {0, 0, 0};
+			char *s_version = NULL;
+			plist_get_string_val(p_version, &s_version);
+			if (s_version && sscanf(s_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
+				device->version = ((vers[0] & 0xFF) << 16) | ((vers[1] & 0xFF) << 8) | (vers[2] & 0xFF);
+			}
+			free(s_version);
+		}
+		plist_free(p_version);
+	}
 
 	userpref_read_pair_record(client_loc->udid, &pair_record);
 	if (pair_record) {
@@ -704,18 +737,18 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	plist_free(pair_record);
 	pair_record = NULL;
 
-	/* in any case, we need to validate pairing to receive trusted host status */
-	ret = lockdownd_validate_pair(client_loc, NULL);
+	if (device->version < 0x070000) {
+		/* for older devices, we need to validate pairing to receive trusted host status */
+		ret = lockdownd_validate_pair(client_loc, NULL);
 
-	/* if not paired yet, let's do it now */
-	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
-		free(host_id);
-		host_id = NULL;
-		ret = lockdownd_pair(client_loc, NULL);
-		if (LOCKDOWN_E_SUCCESS == ret) {
-			ret = lockdownd_validate_pair(client_loc, NULL);
-		} else if (LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING == ret) {
-			debug_info("Device shows the pairing dialog.");
+		/* if not paired yet, let's do it now */
+		if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
+			free(host_id);
+			host_id = NULL;
+			ret = lockdownd_pair(client_loc, NULL);
+			if (LOCKDOWN_E_SUCCESS == ret) {
+				ret = lockdownd_validate_pair(client_loc, NULL);
+			}
 		}
 	}
 
@@ -840,6 +873,8 @@ leave:
  *    the pair records from the current machine are used. New records will be
  *    generated automatically when pairing is done for the first time.
  * @param verb This is either "Pair", "ValidatePair" or "Unpair".
+ * @param options The pairing options to pass.
+ * @param response If non-NULL a pointer to lockdownd's response dictionary is returned.
  *
  * @return LOCKDOWN_E_SUCCESS on success, NP_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_PLIST_ERROR if the pair_record certificates are wrong,
@@ -847,7 +882,7 @@ leave:
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb)
+static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record, const char *verb, plist_t options, plist_t *result)
 {
 	if (!client)
 		return LOCKDOWN_E_INVALID_ARG;
@@ -883,12 +918,8 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_node);
 		} else {
 			/* use existing pair record */
-			if (userpref_has_pair_record(client->udid)) {
-				userpref_read_pair_record(client->udid, &pair_record_plist);
-				if (!pair_record_plist) {
-					return LOCKDOWN_E_INVALID_CONF;
-				}
-			} else {
+			userpref_read_pair_record(client->udid, &pair_record_plist);
+			if (!pair_record_plist) {
 				return LOCKDOWN_E_INVALID_HOST_ID;
 			}
 		}
@@ -907,9 +938,9 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 	plist_dict_set_item(dict, "Request", plist_new_string(verb));
 	plist_dict_set_item(dict, "ProtocolVersion", plist_new_string(LOCKDOWN_PROTOCOL_VERSION));
 
-	plist_t options = plist_new_dict();
-	plist_dict_set_item(options, "ExtendedPairingErrors", plist_new_bool(1));
-	plist_dict_set_item(dict, "PairingOptions", options);
+	if (options) {
+		plist_dict_set_item(dict, "PairingOptions", plist_copy(options));
+	}
 
 	/* send to device */
 	ret = lockdownd_send(client, dict);
@@ -960,8 +991,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 					if (extra_node && plist_get_node_type(extra_node) == PLIST_DATA) {
 						debug_info("Saving EscrowBag from response in pair record");
 						plist_dict_set_item(pair_record_plist, USERPREF_ESCROW_BAG_KEY, plist_copy(extra_node));
-						plist_free(extra_node);
-						extra_node = NULL;
 					}
 
 					/* save previously retrieved wifi mac address in pair record */
@@ -991,9 +1020,6 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 				ret = lockdownd_strtoerr(value);
 				free(value);
 			}
-
-			plist_free(error_node);
-			error_node = NULL;
 		}
 	}
 
@@ -1007,25 +1033,42 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 		wifi_node = NULL;
 	}
 
-	plist_free(dict);
-	dict = NULL;
+	if (result) {
+		*result = dict;
+	} else {
+		plist_free(dict);
+		dict = NULL;
+	}
 
 	return ret;
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Pair");
+
+	plist_t options = plist_new_dict();
+	plist_dict_set_item(options, "ExtendedPairingErrors", plist_new_bool(1));
+
+	lockdownd_error_t ret = lockdownd_do_pair(client, pair_record, "Pair", options, NULL);
+
+	plist_free(options);
+
+	return ret;
+}
+
+LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_pair_with_options(lockdownd_client_t client, lockdownd_pair_record_t pair_record, plist_t options, plist_t *response)
+{
+	return lockdownd_do_pair(client, pair_record, "Pair", options, response);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "ValidatePair");
+	return lockdownd_do_pair(client, pair_record, "ValidatePair", NULL, NULL);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record)
 {
-	return lockdownd_do_pair(client, pair_record, "Unpair");
+	return lockdownd_do_pair(client, pair_record, "Unpair", NULL, NULL);
 }
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client)
@@ -1095,7 +1138,6 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_goodbye(lockdownd_client_t clie
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	property_list_service_error_t plret;
 	plist_t dict = NULL;
 
 	if (!client || !host_id)
@@ -1166,20 +1208,14 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_start_session(lockdownd_client_
 			debug_info("Failed to get SessionID!");
 		}
 
-		debug_info("Enable SSL Session: %s", (use_ssl?"true":"false"));
+		debug_info("Enable SSL Session: %s", (use_ssl ? "true" : "false"));
 
 		if (use_ssl) {
-			plret = property_list_service_enable_ssl(client->parent);
-			if (plret == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-				ret = LOCKDOWN_E_SUCCESS;
-				client->ssl_enabled = 1;
-			} else {
-				ret = LOCKDOWN_E_SSL_ERROR;
-				client->ssl_enabled = 0;
-			}
+			ret = lockdownd_error(property_list_service_enable_ssl(client->parent));
+			client->ssl_enabled = (ret == LOCKDOWN_E_SUCCESS ? 1 : 0);
 		} else {
-			client->ssl_enabled = 0;
 			ret = LOCKDOWN_E_SUCCESS;
+			client->ssl_enabled = 0;
 		}
 	}
 

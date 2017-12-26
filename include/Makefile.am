@@ -20,5 +20,6 @@ nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
 			 libimobiledevice/diagnostics_relay.h\
 			 libimobiledevice/debugserver.h\
 			 libimobiledevice/syslog_relay.h\
+			 libimobiledevice/mobileactivation.h\
 			 libimobiledevice/property_list_service.h\
 			 libimobiledevice/service.h

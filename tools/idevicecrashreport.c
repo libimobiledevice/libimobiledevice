@@ -20,6 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -140,7 +144,9 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		char* p = strrchr(list[k], '.');
 		if (p != NULL && !strncmp(p, ".synced", 7)) {
 			/* make sure to strip ".synced" extension as seen on iOS 5 */
-			strncpy(((char*)target_filename) + host_directory_length, list[k], strlen(list[k]) - 7);
+			int newlen = strlen(list[k]) - 7;
+			strncpy(((char*)target_filename) + host_directory_length, list[k], newlen);
+			target_filename[host_directory_length + newlen] = '\0';
 		} else {
 			strcpy(((char*)target_filename) + host_directory_length, list[k]);
 		}
@@ -298,7 +304,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <http://libimobiledevice.org>\n");
+	printf("Homepage: <" PACKAGE_URL ">\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -400,8 +406,9 @@ int main(int argc, char* argv[]) {
 
 	/* read "ping" message which indicates the crash logs have been moved to a safe harbor */
 	char *ping = malloc(4);
+	memset(ping, '\0', 4);
 	int attempts = 0;
-	while ((strncmp(ping, "ping", 4) != 0) && (attempts > 10)) {
+	while ((strncmp(ping, "ping", 4) != 0) && (attempts < 10)) {
 		uint32_t bytes = 0;
 		device_error = idevice_connection_receive_timeout(connection, ping, 4, &bytes, 2000);
 		if ((bytes == 0) && (device_error == IDEVICE_E_SUCCESS)) {

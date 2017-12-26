@@ -739,7 +739,7 @@ LIBIMOBILEDEVICE_API void mobilesync_anchors_free(mobilesync_anchors_t anchors)
 	anchors = NULL;
 }
 
-LIBIMOBILEDEVICE_API plist_t mobilesync_actions_new()
+LIBIMOBILEDEVICE_API plist_t mobilesync_actions_new(void)
 {
 	return plist_new_dict();
 }
