@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 			cmd = CMD_DIAGNOSTICS;
 			/*  read type */
 			i++;
-			if (!argv[i] || ((strcmp(argv[i], "All") != 0) && (strcmp(argv[i], "WiFi") != 0) && (strcmp(argv[i], "GasGauge") != 0) && (strcmp(argv[i], "NAND") != 0))) {
+			if (!argv[i] || ((strcmp(argv[i], "All") != 0) && (strcmp(argv[i], "WiFi") != 0) && (strcmp(argv[i], "GasGauge") != 0) && (strcmp(argv[i], "NAND") != 0) && (strcmp(argv[i], "HDMI") != 0))) {
 				if (argv[i] == NULL) {
 					cmd_arg = strdup("All");
 					continue;
