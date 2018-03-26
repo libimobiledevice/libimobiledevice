@@ -216,6 +216,7 @@ static int debugserver_hex2int(char c)
 
 static char debugserver_int2hex(int x)
 {
+	x &= 0xf;
 	const char *hexchars = "0123456789ABCDEF";
 	return hexchars[x];
 }
