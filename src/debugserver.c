@@ -27,6 +27,7 @@
 #define _GNU_SOURCE 1
 #define __USE_GNU 1
 #include <stdio.h>
+#include <assert.h>
 
 #include "debugserver.h"
 #include "lockdown.h"
@@ -216,6 +217,7 @@ static int debugserver_hex2int(char c)
 
 static char debugserver_int2hex(int x)
 {
+	assert(x >= 0 && x < 16);
 	const char *hexchars = "0123456789ABCDEF";
 	return hexchars[x];
 }
@@ -594,8 +596,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 		char *p = m;
 		char *q = (char*)argv[i];
 		while (*q) {
-			*p++ = debugserver_int2hex(*q >> 4);
-			*p++ = debugserver_int2hex(*q & 0xf);
+			*p++ = DEBUGSERVER_HEX_ENCODE_FIRST_BYTE(*q);
+			*p++ = DEBUGSERVER_HEX_ENCODE_SECOND_BYTE(*q);
 			q++;
 		}
 
