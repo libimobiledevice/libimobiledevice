@@ -599,8 +599,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 		char *p = m;
 		char *q = (char*)argv[i];
 		while (*q) {
-			*p++ = debugserver_int2hex(*q >> 4);
-			*p++ = debugserver_int2hex(*q & 0xf);
+			*p++ = DEBUGSERVER_HEX_ENCODE_FIRST_BYTE(*q);
+			*p++ = DEBUGSERVER_HEX_ENCODE_SECOND_BYTE(*q);
 			q++;
 		}
 
