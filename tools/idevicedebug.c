@@ -316,6 +316,11 @@ int main(int argc, char *argv[])
 			instproxy_client_get_path_for_bundle_identifier(instproxy_client, bundle_identifier, &path);
 			instproxy_client_free(instproxy_client);
 			instproxy_client = NULL;
+			
+			if (!path) {
+				fprintf(stderr, "Invalid bundle identifier: %s\n", bundle_identifier);
+				goto cleanup;
+			}
 
 			if (container && (plist_get_node_type(container) == PLIST_STRING)) {
 				plist_get_string_val(container, &working_directory);
@@ -461,7 +466,9 @@ int main(int argc, char *argv[])
 
 				if (response) {
 					debug_info("response: %s", response);
-					dres = debugserver_client_handle_response(debugserver_client, &response, 1);
+					if (strncmp(response, "OK", 2)) {
+						dres = debugserver_client_handle_response(debugserver_client, &response, 1);
+					}
 				}
 
 				sleep(1);
