@@ -230,6 +230,7 @@ int main(int argc, char *argv[])
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			debug_level++;
 			idevice_set_debug_level(debug_level);
+			internal_set_debug_level(debug_level);
 			continue;
 		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
