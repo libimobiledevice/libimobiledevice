@@ -390,3 +390,24 @@ int socket_send(int fd, void *data, size_t length)
 {
 	return send(fd, data, length, 0);
 }
+
+int socket_get_socket_port(int fd, uint16_t *port)
+{
+#ifdef WIN32
+	int addr_len;
+#else
+	socklen_t addr_len;
+#endif
+	struct sockaddr_in addr;
+
+	memset(&addr, 0, sizeof(addr));
+
+	addr_len = sizeof(addr);
+	if (0 > getsockname(fd, (struct sockaddr*)&addr, &addr_len)) {
+		perror("getsockname()");
+		return -1;
+	}
+
+	*port = ntohs(addr.sin_port);
+	return 0;
+}

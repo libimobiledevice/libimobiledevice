@@ -62,4 +62,6 @@ int socket_send(int fd, void *data, size_t size);
 
 void socket_set_verbose(int level);
 
+int socket_get_socket_port(int fd, uint16_t *port);
+
 #endif	/* __SOCKET_SOCKET_H */

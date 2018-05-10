@@ -68,7 +68,7 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
+	printf("Usage: %s [OPTIONS] [PORT]\n", (name ? name + 1: argv[0]));
 	printf("Proxy debugserver connection from device to a local socket at PORT.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
@@ -301,13 +301,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* a PORT is mandatory */
-	if (!local_port) {
-		fprintf(stderr, "Please specify a PORT.\n");
-		print_usage(argc, argv);
-		goto leave_cleanup;
-	}
-
 	/* start services and connect to device */
 	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
@@ -326,6 +319,17 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Could not create socket\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
+	}
+
+	if (local_port == 0) {
+		/* The user asked for any available port. Report the actual port. */
+		uint16_t port;
+		if (0 > socket_get_socket_port(server_fd, &port)) {
+			fprintf(stderr, "Could not determine socket port\n");
+			result = EXIT_FAILURE;
+			goto leave_cleanup;
+		}
+		fprintf(stderr, "Listening on port %d\n", port);
 	}
 
 	while (!quit_flag) {
