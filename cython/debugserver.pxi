@@ -43,14 +43,13 @@ cdef class DebugServerError(BaseError):
         BaseError.__init__(self, *args, **kwargs)
 
 
-# from http://stackoverflow.com/a/17511714
-from cpython.string cimport PyString_AsString
+from cpython.bytes cimport PyBytes_AS_STRING
 cdef char ** to_cstring_array(list_str):
     if not list_str:
         return NULL
     cdef char **ret = <char **>malloc(len(list_str) * sizeof(char *))
     for i in xrange(len(list_str)):
-        ret[i] = PyString_AsString(list_str[i])
+        ret[i] = PyBytes_AS_STRING(list_str[i])
     return ret
 
 
@@ -92,7 +91,7 @@ cdef class DebugServerClient(BaseService):
     def __cinit__(self, iDevice device = None, LockdownServiceDescriptor descriptor = None, *args, **kwargs):
         if (device is not None and descriptor is not None):
             self.handle_error(debugserver_client_new(device._c_dev, descriptor._c_service_descriptor, &(self._c_client)))
-    
+
     def __dealloc__(self):
         cdef debugserver_error_t err
         if self._c_client is not NULL:
