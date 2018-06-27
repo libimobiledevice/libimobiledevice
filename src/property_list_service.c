@@ -265,7 +265,7 @@ LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_receive
 
 LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
-	return internal_plist_receive_timeout(client, plist, 10000);
+	return internal_plist_receive_timeout(client, plist, 30000);
 }
 
 LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
