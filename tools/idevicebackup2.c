@@ -1204,10 +1204,12 @@ static void mb2_copy_directory_by_path(const char *src, const char *dst)
 			if (srcpath && dstpath) {
 				/* copy file */
 				mb2_copy_file_by_path(srcpath, dstpath);
-
-				free(srcpath);
-				free(dstpath);
 			}
+
+			if (srcpath)
+				free(srcpath);
+			if (dstpath)
+				free(dstpath);
 		}
 		closedir(cur_dir);
 	}
