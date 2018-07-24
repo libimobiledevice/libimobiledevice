@@ -104,6 +104,8 @@ static void parse_opts(int argc, char **argv)
 				print_usage(argc, argv);
 				exit(2);
 			}
+			if (udid)
+				free(udid);
 			udid = strdup(optarg);
 			break;
 		case 'd':
