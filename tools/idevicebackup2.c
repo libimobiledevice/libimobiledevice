@@ -1150,6 +1150,7 @@ static void mb2_copy_file_by_path(const char *src, const char *dst)
 	/* open destination file */
 	if ((to = fopen(dst, "wb")) == NULL) {
 		printf("Cannot open destination file '%s'.\n", dst);
+		fclose(from);
 		return;
 	}
 
