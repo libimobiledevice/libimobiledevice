@@ -104,12 +104,16 @@ static void parse_opts(int argc, char **argv)
 				print_usage(argc, argv);
 				exit(2);
 			}
+			if (udid)
+				free(udid);
 			udid = strdup(optarg);
 			break;
 		case 'l':
 			list_mode = 1;
 			break;
 		case 't':
+			if (imagetype)
+				free(imagetype);
 			imagetype = strdup(optarg);
 			break;
 		case 'x':
