@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Could not start connection handler.\n");
 			socket_shutdown(server_fd, SHUT_RDWR);
 			socket_close(server_fd);
-			continue;
+			break;
 		}
 	}
 
