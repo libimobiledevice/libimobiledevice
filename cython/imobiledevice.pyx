@@ -176,7 +176,7 @@ from libc.stdlib cimport *
 cdef class iDevice(Base):
     def __cinit__(self, object udid=None, *args, **kwargs):
         cdef char* c_udid = NULL
-        if isinstance(udid, basestring):
+        if isinstance(udid, (str, bytes)):
             c_udid = <bytes>udid
         elif udid is not None:
             raise TypeError("iDevice's constructor takes a string or None as the udid argument")
