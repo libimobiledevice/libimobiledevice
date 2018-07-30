@@ -44,7 +44,12 @@ cdef class DebugServerError(BaseError):
 
 
 # from http://stackoverflow.com/a/17511714
-from cpython.string cimport PyString_AsString
+# https://github.com/libimobiledevice/libimobiledevice/pull/198
+from cpython cimport PY_MAJOR_VERSION
+if PY_MAJOR_VERSION <= 2:
+    from cpython.string cimport PyString_AsString
+else:
+    from cpython.bytes cimport PyBytes_AsString as PyString_AsString
 cdef char ** to_cstring_array(list_str):
     if not list_str:
         return NULL
