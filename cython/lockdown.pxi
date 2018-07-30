@@ -230,9 +230,9 @@ cdef class LockdownClient(PropertyListService):
 
         if issubclass(service, BaseService) and \
             service.__service_name__ is not None \
-            and isinstance(service.__service_name__, basestring):
+            and isinstance(service.__service_name__, (str, bytes)):
             c_service_name = <bytes>service.__service_name__
-        elif isinstance(service, basestring):
+        elif isinstance(service, (str, bytes)):
             c_service_name = <bytes>service
         else:
             raise TypeError("LockdownClient.start_service() takes a BaseService or string as its first argument")
@@ -253,7 +253,7 @@ cdef class LockdownClient(PropertyListService):
 
         if not hasattr(service_class, '__service_name__') and \
             not service_class.__service_name__ is not None \
-            and not isinstance(service_class.__service_name__, basestring):
+            and not isinstance(service_class.__service_name__, (str, bytes)):
             raise TypeError("LockdownClient.get_service_client() takes a BaseService as its first argument")
 
         descriptor = self.start_service(service_class)
