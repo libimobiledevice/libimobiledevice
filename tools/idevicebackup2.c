@@ -293,17 +293,32 @@ static char* get_uuid()
 	return uuid;
 }
 
-static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t device, lockdownd_client_t lockdown, afc_client_t afc)
+static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t device, afc_client_t afc)
 {
 	/* gather data from lockdown */
 	plist_t value_node = NULL;
 	plist_t root_node = NULL;
+	plist_t itunes_settings = NULL;
+	plist_t min_itunes_version = NULL;
 	char *udid_uppercase = NULL;
+
+	lockdownd_client_t lockdown = NULL;
+	if (lockdownd_client_new_with_handshake(device, &lockdown, "idevicebackup2") != LOCKDOWN_E_SUCCESS) {
+		return NULL;
+	}
 
 	plist_t ret = plist_new_dict();
 
 	/* get basic device information in one go */
 	lockdownd_get_value(lockdown, NULL, NULL, &root_node);
+
+	/* get iTunes settings */
+	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
+
+	/* get minimum iTunes version */
+	lockdownd_get_value(lockdown, "com.apple.mobile.iTunes", "MinITunesVersion", &min_itunes_version);
+
+	lockdownd_client_free(lockdown);
 
 	/* get a list of installed user applications */
 	plist_t app_dict = plist_new_dict();
@@ -325,7 +340,6 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 		if (apps && (plist_get_node_type(apps) == PLIST_ARRAY)) {
 			uint32_t app_count = plist_array_get_size(apps);
 			uint32_t i;
-			time_t starttime = time(NULL);
 			for (i = 0; i < app_count; i++) {
 				plist_t app_entry = plist_array_get_item(apps, i);
 				plist_t bundle_id = plist_dict_get_item(app_entry, "CFBundleIdentifier");
@@ -352,11 +366,6 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 						plist_dict_set_item(app_dict, bundle_id_str, adict);
 					}
 					free(bundle_id_str);
-				}
-				if ((time(NULL) - starttime) > 5) {
-					// make sure our lockdown connection doesn't time out in case this takes longer
-					lockdownd_query_type(lockdown, NULL);
-					starttime = time(NULL);
 				}
 			}
 		}
@@ -470,20 +479,17 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 	}
 	plist_dict_set_item(ret, "iTunes Files", files);
 
-	plist_t itunes_settings = NULL;
-	lockdownd_get_value(lockdown, "com.apple.iTunes", NULL, &itunes_settings);
 	plist_dict_set_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
 
 	/* since we usually don't have iTunes, let's get the minimum required iTunes version from the device */
-	value_node = NULL;
-	lockdownd_get_value(lockdown, "com.apple.mobile.iTunes", "MinITunesVersion", &value_node);
-	if (value_node) {
-		plist_dict_set_item(ret, "iTunes Version", plist_copy(value_node));
-		plist_free(value_node);
+	if (min_itunes_version) {
+		plist_dict_set_item(ret, "iTunes Version", plist_copy(min_itunes_version));
 	} else {
 		plist_dict_set_item(ret, "iTunes Version", plist_new_string("10.0.1"));
 	}
 
+	plist_free(itunes_settings);
+	plist_free(min_itunes_version);
 	plist_free(root_node);
 
 	return ret;
@@ -1632,6 +1638,17 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	uint8_t willEncrypt = 0;
+	node_tmp = NULL;
+	lockdownd_get_value(lockdown, "com.apple.mobile.backup", "WillEncrypt", &node_tmp);
+	if (node_tmp) {
+		if (plist_get_node_type(node_tmp) == PLIST_BOOLEAN) {
+			plist_get_bool_val(node_tmp, &willEncrypt);
+		}
+		plist_free(node_tmp);
+		node_tmp = NULL;
+	}
+
 	/* start notification_proxy */
 	np_client_t np = NULL;
 	ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
@@ -1669,6 +1686,8 @@ int main(int argc, char *argv[])
 	/* start mobilebackup service and retrieve port */
 	mobilebackup2_client_t mobilebackup2 = NULL;
 	ldret = lockdownd_start_service_with_escrow_bag(lockdown, MOBILEBACKUP2_SERVICE_NAME, &service);
+	lockdownd_client_free(lockdown);
+	lockdown = NULL;
 	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		PRINT_VERBOSE(1, "Started \"%s\" service on port %d.\n", MOBILEBACKUP2_SERVICE_NAME, service->port);
 		mobilebackup2_client_new(device, service, &mobilebackup2);
@@ -1745,16 +1764,6 @@ int main(int argc, char *argv[])
 				cmd = CMD_LEAVE;
 			}
 		}
-		uint8_t willEncrypt = 0;
-		node_tmp = NULL;
-		lockdownd_get_value(lockdown, "com.apple.mobile.backup", "WillEncrypt", &node_tmp);
-		if (node_tmp) {
-			if (plist_get_node_type(node_tmp) == PLIST_BOOLEAN) {
-				plist_get_bool_val(node_tmp, &willEncrypt);
-			}
-			plist_free(node_tmp);
-			node_tmp = NULL;
-		}
 
 checkpoint:
 
@@ -1798,7 +1807,11 @@ checkpoint:
 				plist_free(info_plist);
 				info_plist = NULL;
 			}
-			info_plist = mobilebackup_factory_info_plist_new(udid, device, lockdown, afc);
+			info_plist = mobilebackup_factory_info_plist_new(udid, device, afc);
+			if (!info_plist) {
+				fprintf(stderr, "Failed to generate Info.plist - aborting\n");
+				cmd = CMD_LEAVE;
+			}
 			remove_file(info_path);
 			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
 			free(info_path);
@@ -1986,12 +1999,6 @@ checkpoint:
 			break;
 			default:
 			break;
-		}
-
-		/* close down the lockdown connection as it is no longer needed */
-		if (lockdown) {
-			lockdownd_client_free(lockdown);
-			lockdown = NULL;
 		}
 
 		if (cmd != CMD_LEAVE) {
