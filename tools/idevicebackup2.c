@@ -479,7 +479,7 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 	}
 	plist_dict_set_item(ret, "iTunes Files", files);
 
-	plist_dict_set_item(ret, "iTunes Settings", itunes_settings ? itunes_settings : plist_new_dict());
+	plist_dict_set_item(ret, "iTunes Settings", itunes_settings ? plist_copy(itunes_settings) : plist_new_dict());
 
 	/* since we usually don't have iTunes, let's get the minimum required iTunes version from the device */
 	if (min_itunes_version) {
