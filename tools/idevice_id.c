@@ -40,7 +40,7 @@ static void print_usage(int argc, char **argv)
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
 	printf("Prints device name or a list of attached devices.\n\n");
-	printf("  The UDID is a 40-digit hexadecimal number of the device\n");
+	printf("  The UDID is a 40 digit or 25 digit (2018 iPhones)  hexadecimal number of the device\n");
 	printf("  for which the name should be retrieved.\n\n");
 	printf("  -l, --list\t\tlist UDID of all attached devices\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	/* check if udid was passed */
 	if (mode == MODE_SHOW_ID) {
 		i--;
-		if (!argv[i] || (strlen(argv[i]) != 40)) {
+		if (!argv[i] || ((strlen(argv[i]) != 40) && (strlen(argv[i]) != 25))) {
 			print_usage(argc, argv);
 			return 0;
 		}

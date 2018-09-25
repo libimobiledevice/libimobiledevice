@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || ((strlen(argv[i]) != 40) && (strlen(argv[i]) != 25))) {
 				print_usage(argc, argv);
 				result = 0;
 				goto cleanup;
@@ -318,7 +318,7 @@ void print_usage(int argc, char **argv)
 	printf("  sleep\t\t\t\tput device into sleep mode (disconnects from host)\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 40 digit or 25 digit (2018 iPhones)  device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");

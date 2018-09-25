@@ -72,7 +72,7 @@ static void print_usage(int argc, char **argv)
 	printf("  list         list devices paired with this host\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID  target specific device by its 40 digit or 25 digit (2018 iPhones)  device UDID\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
@@ -99,8 +99,8 @@ static void parse_opts(int argc, char **argv)
 			print_usage(argc, argv);
 			exit(EXIT_SUCCESS);
 		case 'u':
-			if (strlen(optarg) != 40) {
-				printf("%s: invalid UDID specified (length != 40)\n", argv[0]);
+			if (strlen(optarg) != 40 && strlen(optarg) != 25) {
+				printf("%s: invalid UDID specified (length is not 40 or 25)\n", argv[0]);
 				print_usage(argc, argv);
 				exit(2);
 			}

@@ -248,6 +248,21 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 					listp = listp->next;
 				}
 				found++;
+			} else if (ext && ((ext - entry->d_name) == 25) && (strlen(entry->d_name) == (25 + strlen(ext)))) {
+				// 2018 iPhones have 25 digit device ids
+				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
+				ne->name = (char*)malloc(26);
+				strncpy(ne->name, entry->d_name, 25);
+				ne->name[25] = 0;
+				ne->next = NULL;
+				if (!listp) {
+					listp = ne;
+					udids = listp;
+				} else {
+					listp->next = ne;
+					listp = listp->next;
+				}
+				found++;
 			}
 		}
 		closedir(config_dir);
