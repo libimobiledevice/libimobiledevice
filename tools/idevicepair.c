@@ -72,7 +72,7 @@ static void print_usage(int argc, char **argv)
 	printf("  list         list devices paired with this host\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID  target specific device by its 25 or 40 digit device UDID\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
