@@ -32,6 +32,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/screenshotr.h>
+#include "common/utils.h"
 
 void print_usage(int argc, char **argv);
 
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return 0;
 			}
@@ -158,7 +159,7 @@ void print_usage(int argc, char **argv)
 	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
 	printf("the screenshotr service is not available.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");

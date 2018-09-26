@@ -34,6 +34,7 @@
 
 #include "common/socket.h"
 #include "common/thread.h"
+#include "common/utils.h"
 
 #define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)
@@ -71,7 +72,7 @@ static void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
 	printf("Proxy debugserver connection from device to a local socket at PORT.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
@@ -280,7 +281,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return 0;
 			}

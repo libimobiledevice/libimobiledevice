@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "common/utils.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return 0;
 			}
@@ -238,7 +239,7 @@ void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	printf("Relay syslog of a connected device.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");

@@ -33,6 +33,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
+#include "common/utils.h"
 
 #ifdef _DATE_FMT
 #define DATE_FMT_LANGINFO() nl_langinfo (_DATE_FMT)
@@ -50,7 +51,7 @@ static void print_usage(int argc, char **argv)
 	printf("NOTE: Setting the time on iOS 6 and later is only supported\n");
 	printf("      in the setup wizard screens before device activation.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -s, --set TIMESTAMP\tset UTC time described by TIMESTAMP\n");
 	printf("  -c, --sync\t\tset time of device to current system time\n");
 	printf("  -h, --help\t\tprints usage information\n");
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return 0;
 			}
