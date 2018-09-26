@@ -12,14 +12,14 @@ Manage provisioning profiles on a device.
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
-.TP 
+target specific device by its 25 or 40 digit device UDID.
+.TP
 .B \-x, \-\-xml
 print XML output when using the 'dump' command.
-.TP 
+.TP
 .B \-d, \-\-debug
 enable communication debugging.
-.TP 
+.TP
 .B \-h, \-\-help
 prints usage information.
 
@@ -34,7 +34,7 @@ Get a list of all provisioning profiles on the device.
 .TP
 .B copy PATH
 Retrieves all provisioning profiles from the device and stores them into the
-existing directory specified by PATH. The files will be stored 
+existing directory specified by PATH. The files will be stored
 as "UUID.mobileprovision".
 .TP
 .B remove UUID

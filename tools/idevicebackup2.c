@@ -1323,7 +1323,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("options:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
 	printf("  -i, --interactive\trequest passwords interactively\n");
 	printf("  -h, --help\t\tprints usage information\n");
@@ -1369,7 +1369,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return -1;
 			}
@@ -1378,7 +1378,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--source")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				return -1;
 			}
