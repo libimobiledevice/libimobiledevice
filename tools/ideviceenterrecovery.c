@@ -30,6 +30,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
+#include "common/utils.h"
 
 static void print_usage(int argc, char **argv)
 {
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 	}
 
 	i--;
-	if (!argv[i] || (strlen(argv[i]) != 40)) {
+	if (!is_udid_valid(argv[i])) {
 		print_usage(argc, argv);
 		return 0;
 	}

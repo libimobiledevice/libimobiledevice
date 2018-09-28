@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include "common/userpref.h"
+#include "common/utils.h"
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -72,7 +73,7 @@ static void print_usage(int argc, char **argv)
 	printf("  list         list devices paired with this host\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID  target specific device by its 25 or 40 digit device UDID\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
@@ -99,7 +100,7 @@ static void parse_opts(int argc, char **argv)
 			print_usage(argc, argv);
 			exit(EXIT_SUCCESS);
 		case 'u':
-			if (strlen(optarg) != 40) {
+			if (!is_udid_valid(optarg)) {
 				printf("%s: invalid UDID specified (length != 40)\n", argv[0]);
 				print_usage(argc, argv);
 				exit(2);

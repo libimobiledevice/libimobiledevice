@@ -41,6 +41,7 @@
 #include <libimobiledevice/debugserver.h>
 #include <plist/plist.h>
 #include "common/debug.h"
+#include "common/utils.h"
 
 enum cmd_mode {
 	CMD_NONE = 0,
@@ -188,7 +189,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by its 25 or 40 digit device UDID\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
 			continue;
 		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!is_udid_valid(argv[i])) {
 				print_usage(argc, argv);
 				res = 0;
 				goto cleanup;

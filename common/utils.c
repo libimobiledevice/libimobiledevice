@@ -30,7 +30,7 @@
 #include <sys/time.h>
 #include <inttypes.h>
 #include <ctype.h>
-
+#include <regex.h>
 #include "utils.h"
 
 #ifndef HAVE_STPCPY
@@ -479,5 +479,24 @@ void plist_print_to_stream(plist_t plist, FILE* stream)
 		break;
 	default:
 		plist_node_print_to_stream(plist, &indent, stream);
+	}
+}
+
+int is_udid_valid(char *udid)
+{
+	if (!udid) {
+		return 0;
+	}
+
+	regex_t regex;
+	regcomp(&regex, "^[[:xdigit:]-]{24,40}$", REG_EXTENDED);
+	int result = regexec(&regex, udid, 0, NULL, 0);
+	regfree(&regex);
+
+	if (result == 0) {
+		return 1;
+	}
+	else {
+		return 0;
 	}
 }
