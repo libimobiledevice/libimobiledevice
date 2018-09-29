@@ -253,7 +253,7 @@ idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *
 /* misc */
 
 /**
- * Gets the handle of the device. Depends on the connection type.
+ * Gets the handle or (usbmux device id) of the device.
  */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
 
