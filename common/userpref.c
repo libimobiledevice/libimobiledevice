@@ -273,19 +273,20 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
  * Save a pair record for a device.
  *
  * @param udid The device UDID as given by the device
+ * @param device_id The usbmux device id (handle) of the connected device, or 0
  * @param pair_record The pair record to save
  *
  * @return 1 on success and 0 if no device record is given or if it has already
  *         been saved previously.
  */
-userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record)
+userpref_error_t userpref_save_pair_record(const char *udid, uint32_t device_id, plist_t pair_record)
 {
 	char* record_data = NULL;
 	uint32_t record_size = 0;
 
 	plist_to_bin(pair_record, &record_data, &record_size);
 
-	int res = usbmuxd_save_pair_record(udid, record_data, record_size);
+	int res = usbmuxd_save_pair_record_with_device_id(udid, device_id, record_data, record_size);
 
 	free(record_data);
 

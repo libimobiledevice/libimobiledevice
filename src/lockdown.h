@@ -34,6 +34,7 @@ struct lockdownd_client_private {
 	char *session_id;
 	char *udid;
 	char *label;
+	uint32_t mux_id;
 };
 
 #endif
