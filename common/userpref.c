@@ -208,14 +208,8 @@ int userpref_read_system_buid(char **system_buid)
  */
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 {
-	struct slist_t {
-		char *name;
-		void *next;
-	};
 	DIR *config_dir;
 	const char *config_path = NULL;
-	struct slist_t *udids = NULL;
-	unsigned int i;
 	unsigned int found = 0;
 
 	if (!list || (list && *list)) {
@@ -226,41 +220,42 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 	if (count) {
 		*count = 0;
 	}
+	*list = (char**)malloc(sizeof(char*));
 
 	config_path = userpref_get_config_dir();
 	config_dir = opendir(config_path);
 	if (config_dir) {
 		struct dirent *entry;
-		struct slist_t *listp = udids;
 		while ((entry = readdir(config_dir))) {
-			char *ext = strstr(entry->d_name, USERPREF_CONFIG_EXTENSION);
-			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == (40 + strlen(ext)))) {
-				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
-				ne->name = (char*)malloc(41);
-				strncpy(ne->name, entry->d_name, 40);
-				ne->name[40] = 0;
-				ne->next = NULL;
-				if (!listp) {
-					listp = ne;
-					udids = listp;
-				} else {
-					listp->next = ne;
-					listp = listp->next;
+			if (strcmp(entry->d_name, USERPREF_CONFIG_FILE) == 0) {
+				/* ignore SystemConfiguration.plist */
+				continue;
+			}
+			char *ext = strrchr(entry->d_name, '.');
+			if (ext && (strcmp(ext, USERPREF_CONFIG_EXTENSION) == 0)) {
+				size_t len = strlen(entry->d_name) - strlen(USERPREF_CONFIG_EXTENSION);
+				char **newlist = (char**)realloc(*list, sizeof(char*) * (found+2));
+				if (!newlist) {
+					fprintf(stderr, "ERROR: Out of memory\n");
+					break;
+				}
+				*list = newlist;
+				char *tmp = (char*)malloc(len+1);
+				if (tmp) {
+					strncpy(tmp, entry->d_name, len);
+					tmp[len] = '\0';
+				}
+				(*list)[found] = tmp;
+				if (!tmp) {
+					fprintf(stderr, "ERROR: Out of memory\n");
+					break;
 				}
 				found++;
 			}
 		}
 		closedir(config_dir);
 	}
-	*list = (char**)malloc(sizeof(char*) * (found+1));
-	i = 0;
-	while (udids) {
-		(*list)[i++] = udids->name;
-		struct slist_t *old = udids;
-		udids = udids->next;
-		free(old);
-	}
-	(*list)[i] = NULL;
+	(*list)[found] = NULL;
 
 	if (count) {
 		*count = found;
