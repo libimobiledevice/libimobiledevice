@@ -146,7 +146,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
  * Receive binary from the device.
  *
  * @note This function returns MOBILEBACKUP2_E_SUCCESS even if no data
- *     has been received (unless a communication error occured).
+ *     has been received (unless a communication error occurred).
  *     The fourth parameter is required and must be checked to know how
  *     many bytes were actually received.
  *

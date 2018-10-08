@@ -995,7 +995,7 @@ int main(int argc, char *argv[])
 				} else if (err == MOBILEBACKUP_E_REPLY_NOT_OK) {
 					printf("ERROR: Could not start backup process: device refused to start the backup process.\n");
 				} else {
-					printf("ERROR: Could not start backup process: unspecified error occured\n");
+					printf("ERROR: Could not start backup process: unspecified error occurred\n");
 				}
 				break;
 			}
@@ -1342,7 +1342,7 @@ files_out:
 				} else if (err == MOBILEBACKUP_E_REPLY_NOT_OK) {
 					printf("ERROR: Could not start restore process: device refused to start the restore process.\n");
 				} else {
-					printf("ERROR: Could not start restore process: unspecified error occured (%d)\n", err);
+					printf("ERROR: Could not start restore process: unspecified error occurred (%d)\n", err);
 				}
 				plist_free(backup_data);
 				break;

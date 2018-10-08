@@ -109,7 +109,7 @@ house_arrest_error_t house_arrest_client_free(house_arrest_client_t client);
  *     HOUSE_ARREST_E_INVALID_ARG if client or dict is invalid,
  *     HOUSE_ARREST_E_PLIST_ERROR if dict is not a plist of type PLIST_DICT,
  *     HOUSE_ARREST_E_INVALID_MODE if the client is not in the correct mode,
- *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occured.
+ *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occurred.
  */
 house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, plist_t dict);
 
@@ -130,7 +130,7 @@ house_arrest_error_t house_arrest_send_request(house_arrest_client_t client, pli
  * @return HOUSE_ARREST_E_SUCCESS if the command was successfully sent,
  *     HOUSE_ARREST_E_INVALID_ARG if client, command, or appid is invalid,
  *     HOUSE_ARREST_E_INVALID_MODE if the client is not in the correct mode,
- *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occured.
+ *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occurred.
  */
 house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, const char *command, const char *appid);
 
@@ -146,7 +146,7 @@ house_arrest_error_t house_arrest_send_command(house_arrest_client_t client, con
  * @return HOUSE_ARREST_E_SUCCESS if a result plist was retrieved,
  *     HOUSE_ARREST_E_INVALID_ARG if client is invalid,
  *     HOUSE_ARREST_E_INVALID_MODE if the client is not in the correct mode,
- *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occured.
+ *     or HOUSE_ARREST_E_CONN_FAILED if a connection error occurred.
  */
 house_arrest_error_t house_arrest_get_result(house_arrest_client_t client, plist_t *dict);
 
