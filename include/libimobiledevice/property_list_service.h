@@ -68,7 +68,7 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *     PROPERTY_LIST_SERVICE_E_INVALID_ARG when client is invalid, or a
- *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when another error occured.
+ *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when another error occurred.
  */
 property_list_service_error_t property_list_service_client_free(property_list_service_client_t client);
 

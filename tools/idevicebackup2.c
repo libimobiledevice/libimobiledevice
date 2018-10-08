@@ -1954,7 +1954,7 @@ checkpoint:
 				} else if (err == MOBILEBACKUP2_E_REPLY_NOT_OK) {
 					printf("ERROR: Could not start backup process: device refused to start the backup process.\n");
 				} else {
-					printf("ERROR: Could not start backup process: unspecified error occured\n");
+					printf("ERROR: Could not start backup process: unspecified error occurred\n");
 				}
 				cmd = CMD_LEAVE;
 			}
@@ -2012,7 +2012,7 @@ checkpoint:
 				} else if (err == MOBILEBACKUP2_E_REPLY_NOT_OK) {
 					printf("ERROR: Could not start restore process: device refused to start the restore process.\n");
 				} else {
-					printf("ERROR: Could not start restore process: unspecified error occured\n");
+					printf("ERROR: Could not start restore process: unspecified error occurred\n");
 				}
 				cmd = CMD_LEAVE;
 			}

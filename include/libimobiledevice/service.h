@@ -87,7 +87,7 @@ service_error_t service_client_factory_start_service(idevice_t device, const cha
  *
  * @return SERVICE_E_SUCCESS on success,
  *     SERVICE_E_INVALID_ARG when client is invalid, or a
- *     SERVICE_E_UNKNOWN_ERROR when another error occured.
+ *     SERVICE_E_UNKNOWN_ERROR when another error occurred.
  */
 service_error_t service_client_free(service_client_t client);
 

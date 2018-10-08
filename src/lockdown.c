@@ -219,7 +219,7 @@ static lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_m
 					ret = lockdownd_strtoerr(err_value);
 					free(err_value);
 				} else {
-					debug_info("ERROR: unknown error occured");
+					debug_info("ERROR: unknown error occurred");
 				}
 			}
 			return ret;

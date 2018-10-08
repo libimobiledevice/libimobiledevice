@@ -286,7 +286,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t 
  * @param package_path The installation package path or NULL if not required.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *     an error occurred.
  */
 static instproxy_error_t instproxy_send_command(instproxy_client_t client, plist_t command)
 {
@@ -460,7 +460,7 @@ static void* instproxy_receive_status_loop_thread(void* arg)
  *
  * @return INSTPROXY_E_SUCCESS when the thread was created (async mode), or
  *         when the command completed successfully (sync).
- *         An INSTPROXY_E_* error value is returned if an error occured.
+ *         An INSTPROXY_E_* error value is returned if an error occurred.
  */
 static instproxy_error_t instproxy_receive_status_loop_with_callback(instproxy_client_t client, plist_t command, instproxy_command_type_t async, instproxy_status_cb_t status_cb, void *user_data)
 {
@@ -505,7 +505,7 @@ static instproxy_error_t instproxy_receive_status_loop_with_callback(instproxy_c
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *     an error occurred.
  */
 static instproxy_error_t instproxy_perform_command(instproxy_client_t client, plist_t command, instproxy_command_type_t async, instproxy_status_cb_t status_cb, void *user_data)
 {

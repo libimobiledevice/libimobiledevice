@@ -104,7 +104,7 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);
  *
  * @return SCREENSHOTR_E_SUCCESS on success, SCREENSHOTR_E_INVALID_ARG if
  *     one or more parameters are invalid, or another error code if an
- *     error occured.
+ *     error occurred.
  */
 screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize);
 

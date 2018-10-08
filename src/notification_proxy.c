@@ -247,7 +247,7 @@ LIBIMOBILEDEVICE_API np_error_t np_observe_notifications(np_client_t client, con
  *  with the notification that has been received.
  *
  * @return 0 if a notification has been received or nothing has been received,
- *         or a negative value if an error occured.
+ *         or a negative value if an error occurred.
  *
  * @note You probably want to check out np_set_notify_callback
  * @see np_set_notify_callback
@@ -267,7 +267,7 @@ static int np_get_notification(np_client_t client, char **notification)
 		debug_info("NotificationProxy: no notification received!");
 		res = 0;
 	} else if (perr != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		debug_info("NotificationProxy: error %d occured!", perr);
+		debug_info("NotificationProxy: error %d occurred!", perr);
 		res = perr;
 	}
 	if (dict) {
