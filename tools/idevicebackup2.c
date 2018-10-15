@@ -1787,6 +1787,7 @@ checkpoint:
 			case CMD_ERASE:
 			PRINT_VERBOSE(1, "Starting Erase device...\n");
 			err = mobilebackup2_send_message(mobilebackup2, "EraseDevice", NULL);
+			result_code = err;
 			cmd = CMD_LEAVE;
 			break;
 			case CMD_BACKUP:
