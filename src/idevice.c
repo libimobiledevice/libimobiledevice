@@ -250,7 +250,7 @@ LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
 LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char *udid)
 {
 	usbmuxd_device_info_t muxdev;
-	int res = usbmuxd_get_device_by_udid(udid, &muxdev);
+	int res = usbmuxd_get_device(udid, &muxdev, DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK);
 	if (res > 0) {
 		idevice_t dev = (idevice_t) malloc(sizeof(struct idevice_private));
 		dev->udid = strdup(muxdev.udid);
