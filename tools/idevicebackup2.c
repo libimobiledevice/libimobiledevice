@@ -2,8 +2,8 @@
  * idevicebackup2.c
  * Command line interface to use the device's backup and restore service
  *
+ * Copyright (c) 2010-2018 Nikias Bassen All Rights Reserved.
  * Copyright (c) 2009-2010 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010      Nikias Bassen All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -238,7 +238,12 @@ static int remove_directory(const char* path)
 	return e;
 }
 
-static int rmdir_recursive(const char* path)
+struct entry {
+	char *name;
+	struct entry *next;
+};
+
+static void scan_directory(const char *path, struct entry **files, struct entry **directories)
 {
 	DIR* cur_dir = opendir(path);
 	if (cur_dir) {
@@ -249,31 +254,61 @@ static int rmdir_recursive(const char* path)
 			}
 			char *fpath = string_build_path(path, ep->d_name, NULL);
 			if (fpath) {
-				struct stat st;
-				if (stat(fpath, &st) == 0) {
-					int res = 0;
-					if (S_ISDIR(st.st_mode)) {
-						res = rmdir_recursive(fpath);
-					} else {
-						res = remove_file(fpath);
-					}
-					if (res != 0) {
-						free(fpath);
-						closedir(cur_dir);
-						return res;
-					}
+				if (ep->d_type & DT_DIR) {
+					struct entry *ent = malloc(sizeof(struct entry));
+					if (!ent) return;
+					ent->name = fpath;
+					ent->next = *directories;
+					*directories = ent;
+					scan_directory(fpath, files, directories);
+					fpath = NULL;
 				} else {
-					free(fpath);
-					closedir(cur_dir);
-					return errno;
+					struct entry *ent = malloc(sizeof(struct entry));
+					if (!ent) return;
+					ent->name = fpath;
+					ent->next = *files;
+					*files = ent;
+					fpath = NULL;
 				}
 			}
-			free(fpath);
 		}
 		closedir(cur_dir);
 	}
+}
 
-	return remove_directory(path);
+static int rmdir_recursive(const char* path)
+{
+	int res = 0;
+	struct entry *files = NULL;
+	struct entry *directories = NULL;
+	struct entry *ent;
+
+	ent = malloc(sizeof(struct entry));
+	if (!ent) return ENOMEM;
+	ent->name = strdup(path);
+	ent->next = NULL;
+	directories = ent;
+
+	scan_directory(path, &files, &directories);
+
+	ent = files;
+	while (ent) {
+		struct entry *del = ent;
+		res = remove_file(ent->name);
+		free(ent->name);
+		ent = ent->next;
+		free(del);
+	}
+	ent = directories;
+	while (ent) {
+		struct entry *del = ent;
+		res = remove_directory(ent->name);
+		free(ent->name);
+		ent = ent->next;
+		free(del);
+	}
+
+	return res;
 }
 
 static char* get_uuid()
