@@ -254,7 +254,13 @@ static void scan_directory(const char *path, struct entry **files, struct entry 
 			}
 			char *fpath = string_build_path(path, ep->d_name, NULL);
 			if (fpath) {
+#ifdef HAVE_DIRENT_D_TYPE
 				if (ep->d_type & DT_DIR) {
+#else
+				struct stat st;
+				if (stat(fpath, &st) != 0) return;
+				if (S_ISDIR(st.st_mode)) {
+#endif
 					struct entry *ent = malloc(sizeof(struct entry));
 					if (!ent) return;
 					ent->name = fpath;

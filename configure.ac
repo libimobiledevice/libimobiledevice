@@ -83,6 +83,8 @@ case ${host_os} in
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 
+AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
+
 # Cython Python Bindings
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
