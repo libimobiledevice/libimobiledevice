@@ -47,6 +47,10 @@
 #include "common/thread.h"
 #include "common/debug.h"
 
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
+
 #ifdef HAVE_OPENSSL
 
 #if OPENSSL_VERSION_NUMBER < 0x10002000L

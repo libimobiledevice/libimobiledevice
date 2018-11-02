@@ -20,6 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef _MSC_VER
+#include "msc_config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -29,6 +33,10 @@
 #include "installation_proxy.h"
 #include "property_list_service.h"
 #include "common/debug.h"
+
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
 
 typedef enum {
 	INSTPROXY_COMMAND_TYPE_ASYNC,

@@ -22,6 +22,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#ifdef _MSC_VER
+#include "msc_config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #define _GNU_SOURCE 1
@@ -33,6 +38,10 @@
 #include "common/debug.h"
 #include "common/utils.h"
 #include "asprintf.h"
+
+#ifdef _MSC_VER
+#include "msc_compat.h"
+#endif
 
 /**
  * Convert a service_error_t value to a debugserver_error_t value.
