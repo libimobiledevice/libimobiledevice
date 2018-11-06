@@ -79,9 +79,9 @@ static void locking_function(int mode, int n, const char* file, int line)
 		mutex_unlock(&mutex_buf[n]);
 }
 
-static unsigned long id_function(void)
+static void id_function(CRYPTO_THREADID *id)
 {
-	return ((unsigned long)THREAD_ID);
+	CRYPTO_THREADID_set_numeric(id, (unsigned long)THREAD_ID);
 }
 #endif
 #endif
@@ -99,7 +99,7 @@ static void internal_idevice_init(void)
 	for (i = 0; i < CRYPTO_num_locks(); i++)
 		mutex_init(&mutex_buf[i]);
 
-	CRYPTO_set_id_callback(id_function);
+	CRYPTO_THREADID_set_callback(id_function);
 	CRYPTO_set_locking_callback(locking_function);
 #endif
 #else
@@ -113,7 +113,7 @@ static void internal_idevice_deinit(void)
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	int i;
 	if (mutex_buf) {
-		CRYPTO_set_id_callback(NULL);
+		CRYPTO_THREADID_set_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		for (i = 0; i < CRYPTO_num_locks(); i++)
 			mutex_destroy(&mutex_buf[i]);
