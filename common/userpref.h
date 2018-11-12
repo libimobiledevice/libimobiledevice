@@ -64,7 +64,7 @@ typedef enum {
 const char *userpref_get_config_dir(void);
 int userpref_read_system_buid(char **system_buid);
 userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record);
-userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record);
+userpref_error_t userpref_save_pair_record(const char *udid, uint32_t device_id, plist_t pair_record);
 userpref_error_t userpref_delete_pair_record(const char *udid);
 
 userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_data_t public_key);

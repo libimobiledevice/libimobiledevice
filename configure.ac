@@ -18,7 +18,7 @@ dnl libtool versioning
 LIBIMOBILEDEVICE_SO_VERSION=6:0:0
 
 dnl Minimum package versions
-LIBUSBMUXD_VERSION=1.0.9
+LIBUSBMUXD_VERSION=1.1.0
 LIBPLIST_VERSION=1.11
 LIBPLISTMM_VERSION=1.11
 
@@ -82,6 +82,8 @@ case ${host_os} in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+
+AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
 # Cython Python Bindings
 AC_ARG_WITH([cython],
