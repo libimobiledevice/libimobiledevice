@@ -254,8 +254,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t * device, const char 
 	if (res > 0) {
 		idevice_t dev = (idevice_t) malloc(sizeof(struct idevice_private));
 		dev->udid = strdup(muxdev.udid);
+		dev->mux_id = muxdev.handle;
 		dev->conn_type = CONNECTION_USBMUXD;
-		dev->conn_data = (void*)(long)muxdev.handle;
+		dev->conn_data = NULL;
 		dev->version = 0;
 		*device = dev;
 		return IDEVICE_E_SUCCESS;
@@ -275,9 +276,6 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_free(idevice_t device)
 
 	free(device->udid);
 
-	if (device->conn_type == CONNECTION_USBMUXD) {
-		device->conn_data = 0;
-	}
 	if (device->conn_data) {
 		free(device->conn_data);
 	}
@@ -292,7 +290,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 	}
 
 	if (device->conn_type == CONNECTION_USBMUXD) {
-		int sfd = usbmuxd_connect((uint32_t)(long)device->conn_data, port);
+		int sfd = usbmuxd_connect(device->mux_id, port);
 		if (sfd < 0) {
 			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -502,16 +500,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connectio
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
 {
-	if (!device)
+	if (!device || !handle)
 		return IDEVICE_E_INVALID_ARG;
 
-	if (device->conn_type == CONNECTION_USBMUXD) {
-		*handle = (uint32_t)(long)device->conn_data;
-		return IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", device->conn_type);
-	}
-	return IDEVICE_E_UNKNOWN_ERROR;
+	*handle = device->mux_id;
+	return IDEVICE_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid)

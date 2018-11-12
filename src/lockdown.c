@@ -668,6 +668,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lo
 	client_loc->parent = plistclient;
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
+	client_loc->mux_id = device->mux_id;
 
 	if (idevice_get_udid(device, &client_loc->udid) != IDEVICE_E_SUCCESS) {
 		debug_info("failed to get device udid.");
@@ -1001,7 +1002,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 						wifi_node = NULL;
 					}
 
-					userpref_save_pair_record(client->udid, pair_record_plist);
+					userpref_save_pair_record(client->udid, client->mux_id, pair_record_plist);
 				}
 			}
 		} else {
