@@ -74,6 +74,7 @@ struct idevice_connection_private {
 
 struct idevice_private {
 	char *udid;
+	uint32_t mux_id;
 	enum connection_type conn_type;
 	void *conn_data;
 	int version;
