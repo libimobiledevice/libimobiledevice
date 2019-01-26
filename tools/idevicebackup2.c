@@ -91,7 +91,8 @@ enum cmd_flags {
 	CMD_FLAG_ENCRYPTION_CHANGEPW        = (1 << 8),
 	CMD_FLAG_FORCE_FULL_BACKUP          = (1 << 9),
 	CMD_FLAG_CLOUD_ENABLE               = (1 << 10),
-	CMD_FLAG_CLOUD_DISABLE              = (1 << 11)
+	CMD_FLAG_CLOUD_DISABLE              = (1 << 11),
+	CMD_FLAG_RESTORE_SKIP_APPS          = (1 << 12)
 };
 
 static int backup_domain_changed = 0;
@@ -534,6 +535,61 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 	plist_free(root_node);
 
 	return ret;
+}
+
+static int write_restore_applications(plist_t info_plist, afc_client_t afc)
+{
+	int res = -1;
+	uint64_t restore_applications_file = 0;
+	char * applications_plist_xml = NULL;
+	uint32_t applications_plist_xml_length = 0;
+
+	plist_t applications_plist = plist_dict_get_item(info_plist, "Applications");
+	if (applications_plist) {
+		plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
+	}
+	if (!applications_plist_xml) {
+		printf("Error preparing RestoreApplications.plist\n");
+		goto leave;
+	}
+
+	afc_error_t afc_err = 0;
+	afc_err = afc_make_directory(afc, "/iTunesRestore");
+	if (afc_err != AFC_E_SUCCESS) {
+		printf("Error creating directory /iTunesRestore, error code %d\n", afc_err);
+		goto leave;
+	}
+
+	afc_err = afc_file_open(afc, "/iTunesRestore/RestoreApplications.plist", AFC_FOPEN_WR, &restore_applications_file);
+	if (afc_err != AFC_E_SUCCESS  || !restore_applications_file) {
+		printf("Error creating /iTunesRestore/RestoreApplications.plist, error code %d\n", afc_err);
+		goto leave;
+	}
+
+	uint32_t bytes_written = 0;
+	afc_err = afc_file_write(afc, restore_applications_file, applications_plist_xml, applications_plist_xml_length, &bytes_written);
+	if (afc_err != AFC_E_SUCCESS  || bytes_written != applications_plist_xml_length) {
+		printf("Error writing /iTunesRestore/RestoreApplications.plist, error code %d, wrote %u of %u bytes\n", afc_err, bytes_written, applications_plist_xml_length);
+		goto leave;
+	}
+
+	afc_err = afc_file_close(afc, restore_applications_file);
+	restore_applications_file = 0;
+	if (afc_err != AFC_E_SUCCESS) {
+		goto leave;
+	}
+	/* success */
+	res = 0;
+
+leave:
+	free(applications_plist_xml);
+
+	if (restore_applications_file) {
+		afc_file_close(afc, restore_applications_file);
+		restore_applications_file = 0;
+	}
+
+	return res;
 }
 
 static int mb2_status_check_snapshot_state(const char *path, const char *udid, const char *matches)
@@ -1352,6 +1408,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --copy\t\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\t\trestore device settings from the backup.\n");
 	printf("    --remove\t\tremove items which are not being restored\n");
+	printf("    --skip-apps\t\tdo not trigger re-installation of apps after restore\n");
 	printf("    --password PWD\tsupply the password of the source backup\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
@@ -1393,10 +1450,6 @@ int main(int argc, char *argv[])
 	plist_t info_plist = NULL;
 	plist_t opts = NULL;
 	mobilebackup2_error_t err;
-	uint64_t restore_applications_file = 0;
-	plist_t applications_plist = NULL;
-	char * applications_plist_xml = NULL;
-	uint32_t applications_plist_xml_length = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -1458,6 +1511,9 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "--remove")) {
 			cmd_flags |= CMD_FLAG_RESTORE_REMOVE_ITEMS;
+		}
+		else if (!strcmp(argv[i], "--skip-apps")) {
+			cmd_flags |= CMD_FLAG_RESTORE_SKIP_APPS;
 		}
 		else if (!strcmp(argv[i], "--password")) {
 			i++;
@@ -1927,49 +1983,18 @@ checkpoint:
 			}
 			PRINT_VERBOSE(1, "Backup password: %s\n", (backup_password == NULL ? "No":"Yes"));
 
-			/* Write /iTunesRestore/RestoreApplications.plist so that the device will start
-			* restoring applications once the rest of the restore process is finished */
-			applications_plist = plist_dict_get_item(info_plist, "Applications");
-			if (applications_plist) {
-				plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
-				plist_free(applications_plist);
+			if (cmd_flags & CMD_FLAG_RESTORE_SKIP_APPS) {
+				PRINT_VERBOSE(1, "Not writing RestoreApplications.plist - apps will not be re-installed after restore\n");
+			} else {
+				/* Write /iTunesRestore/RestoreApplications.plist so that the device will start
+				 * restoring applications once the rest of the restore process is finished */
+				if (write_restore_applications(info_plist, afc) < 0) {
+					cmd = CMD_LEAVE;
+					break;
+				} else {
+					PRINT_VERBOSE(1, "Wrote RestoreApplications.plist\n");
+				}
 			}
-			if (!applications_plist_xml) {
-				printf("Error preparing RestoreApplications.plist\n");
-				cmd = CMD_LEAVE;
-				break;
-			}
-
-			afc_error_t afc_err = 0;
-			afc_err = afc_make_directory(afc, "/iTunesRestore");
-			if (afc_err != AFC_E_SUCCESS) {
-				printf("Error creating directory /iTunesRestore, error code %d\n", afc_err);
-				cmd = CMD_LEAVE;
-				break;
-			}
-
-			afc_err = afc_file_open(afc, "/iTunesRestore/RestoreApplications.plist", AFC_FOPEN_WR, &restore_applications_file);
-			if (afc_err != AFC_E_SUCCESS  || !restore_applications_file) {
-				printf("Error creating /iTunesRestore/RestoreApplications.plist, error code %d\n", afc_err);
-				cmd = CMD_LEAVE;
-				break;
-			}
-
-			uint32_t bytes_written = 0;
-			afc_err = afc_file_write(afc, restore_applications_file, applications_plist_xml, applications_plist_xml_length, &bytes_written);
-			if (afc_err != AFC_E_SUCCESS  || bytes_written != applications_plist_xml_length) {
-				printf("Error writing /iTunesRestore/RestoreApplications.plist, error code %d, wrote %u of %u bytes\n", afc_err, bytes_written, applications_plist_xml_length);
-				cmd = CMD_LEAVE;
-				break;
-			}
-
-			afc_err = afc_file_close(afc, restore_applications_file);
-			restore_applications_file = 0;
-			if (afc_err != AFC_E_SUCCESS) {
-				cmd = CMD_LEAVE;
-				break;
-			}
-			printf("Wrote RestoreApplications.plist\n");
 
 			/* Start restore */
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, source_udid, opts);
@@ -2460,11 +2485,6 @@ files_out:
 		mobilebackup2 = NULL;
 	}
 
-	if (restore_applications_file) {
-		afc_file_close(afc, restore_applications_file);
-		restore_applications_file = 0;
-	}
-
 	if (afc) {
 		afc_client_free(afc);
 		afc = NULL;
@@ -2473,11 +2493,6 @@ files_out:
 	if (np) {
 		np_client_free(np);
 		np = NULL;
-	}
-
-	if (applications_plist_xml) {
-		free(applications_plist_xml);
-		applications_plist_xml = NULL;
 	}
 
 	idevice_free(device);
