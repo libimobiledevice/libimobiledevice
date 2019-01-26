@@ -1393,6 +1393,10 @@ int main(int argc, char *argv[])
 	plist_t info_plist = NULL;
 	plist_t opts = NULL;
 	mobilebackup2_error_t err;
+	uint64_t restore_applications_file = 0;
+	plist_t applications_plist = NULL;
+	char * applications_plist_xml = NULL;
+	uint32_t applications_plist_xml_length = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -1709,7 +1713,7 @@ int main(int argc, char *argv[])
 	}
 
 	afc_client_t afc = NULL;
-	if (cmd == CMD_BACKUP) {
+	if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 		/* start AFC, we need this for the lock file */
 		service->port = 0;
 		service->ssl_enabled = 0;
@@ -1776,7 +1780,7 @@ int main(int argc, char *argv[])
 		}
 
 		uint64_t lockfile = 0;
-		if (cmd == CMD_BACKUP) {
+		if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 			do_post_notification(device, NP_SYNC_WILL_START);
 			afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
 		}
@@ -1923,6 +1927,51 @@ checkpoint:
 			}
 			PRINT_VERBOSE(1, "Backup password: %s\n", (backup_password == NULL ? "No":"Yes"));
 
+			/* Write /iTunesRestore/RestoreApplications.plist so that the device will start
+			* restoring applications once the rest of the restore process is finished */
+			applications_plist = plist_dict_get_item(info_plist, "Applications");
+			if (applications_plist) {
+				plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
+				plist_free(applications_plist);
+			}
+			if (!applications_plist_xml) {
+				printf("Error preparing RestoreApplications.plist\n");
+				cmd = CMD_LEAVE;
+				break;
+			}
+
+			afc_error_t afc_err = 0;
+			afc_err = afc_make_directory(afc, "/iTunesRestore");
+			if (afc_err != AFC_E_SUCCESS) {
+				printf("Error creating directory /iTunesRestore, error code %d\n", afc_err);
+				cmd = CMD_LEAVE;
+				break;
+			}
+
+			afc_err = afc_file_open(afc, "/iTunesRestore/RestoreApplications.plist", AFC_FOPEN_WR, &restore_applications_file);
+			if (afc_err != AFC_E_SUCCESS  || !restore_applications_file) {
+				printf("Error creating /iTunesRestore/RestoreApplications.plist, error code %d\n", afc_err);
+				cmd = CMD_LEAVE;
+				break;
+			}
+
+			uint32_t bytes_written = 0;
+			afc_err = afc_file_write(afc, restore_applications_file, applications_plist_xml, applications_plist_xml_length, &bytes_written);
+			if (afc_err != AFC_E_SUCCESS  || bytes_written != applications_plist_xml_length) {
+				printf("Error writing /iTunesRestore/RestoreApplications.plist, error code %d, wrote %u of %u bytes\n", afc_err, bytes_written, applications_plist_xml_length);
+				cmd = CMD_LEAVE;
+				break;
+			}
+
+			afc_err = afc_file_close(afc, restore_applications_file);
+			restore_applications_file = 0;
+			if (afc_err != AFC_E_SUCCESS) {
+				cmd = CMD_LEAVE;
+				break;
+			}
+			printf("Wrote RestoreApplications.plist\n");
+
+			/* Start restore */
 			err = mobilebackup2_send_request(mobilebackup2, "Restore", udid, source_udid, opts);
 			plist_free(opts);
 			if (err != MOBILEBACKUP2_E_SUCCESS) {
@@ -2392,7 +2441,7 @@ files_out:
 			afc_file_lock(afc, lockfile, AFC_LOCK_UN);
 			afc_file_close(afc, lockfile);
 			lockfile = 0;
-			if (cmd == CMD_BACKUP)
+			if (cmd == CMD_BACKUP || cmd == CMD_RESTORE)
 				do_post_notification(device, NP_SYNC_DID_FINISH);
 		}
 	} else {
@@ -2411,6 +2460,11 @@ files_out:
 		mobilebackup2 = NULL;
 	}
 
+	if (restore_applications_file) {
+		afc_file_close(afc, restore_applications_file);
+		restore_applications_file = 0;
+	}
+
 	if (afc) {
 		afc_client_free(afc);
 		afc = NULL;
@@ -2419,6 +2473,11 @@ files_out:
 	if (np) {
 		np_client_free(np);
 		np = NULL;
+	}
+
+	if (applications_plist_xml) {
+		free(applications_plist_xml);
+		applications_plist_xml = NULL;
 	}
 
 	idevice_free(device);
