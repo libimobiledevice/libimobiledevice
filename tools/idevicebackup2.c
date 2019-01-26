@@ -82,7 +82,7 @@ enum cmd_mode {
 
 enum cmd_flags {
 	CMD_FLAG_RESTORE_SYSTEM_FILES       = (1 << 1),
-	CMD_FLAG_RESTORE_REBOOT             = (1 << 2),
+	CMD_FLAG_RESTORE_NO_REBOOT          = (1 << 2),
 	CMD_FLAG_RESTORE_COPY_BACKUP        = (1 << 3),
 	CMD_FLAG_RESTORE_SETTINGS           = (1 << 4),
 	CMD_FLAG_RESTORE_REMOVE_ITEMS       = (1 << 5),
@@ -1404,7 +1404,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --full\t\tforce full backup from device.\n");
 	printf("  restore\trestore last backup to the device\n");
 	printf("    --system\t\trestore system files, too.\n");
-	printf("    --reboot\t\treboot the system when done.\n");
+	printf("    --no-reboot\t\tdo NOT reboot the system when done (default: yes).\n");
 	printf("    --copy\t\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\t\trestore device settings from the backup.\n");
 	printf("    --remove\t\tremove items which are not being restored\n");
@@ -1501,7 +1501,10 @@ int main(int argc, char *argv[])
 			cmd_flags |= CMD_FLAG_RESTORE_SYSTEM_FILES;
 		}
 		else if (!strcmp(argv[i], "--reboot")) {
-			cmd_flags |= CMD_FLAG_RESTORE_REBOOT;
+			cmd_flags &= ~CMD_FLAG_RESTORE_NO_REBOOT;
+		}
+		else if (!strcmp(argv[i], "--no-reboot")) {
+			cmd_flags |= CMD_FLAG_RESTORE_NO_REBOOT;
 		}
 		else if (!strcmp(argv[i], "--copy")) {
 			cmd_flags |= CMD_FLAG_RESTORE_COPY_BACKUP;
@@ -1967,9 +1970,9 @@ checkpoint:
 			opts = plist_new_dict();
 			plist_dict_set_item(opts, "RestoreSystemFiles", plist_new_bool(cmd_flags & CMD_FLAG_RESTORE_SYSTEM_FILES));
 			PRINT_VERBOSE(1, "Restoring system files: %s\n", (cmd_flags & CMD_FLAG_RESTORE_SYSTEM_FILES ? "Yes":"No"));
-			if ((cmd_flags & CMD_FLAG_RESTORE_REBOOT) == 0)
+			if (cmd_flags & CMD_FLAG_RESTORE_NO_REBOOT)
 				plist_dict_set_item(opts, "RestoreShouldReboot", plist_new_bool(0));
-			PRINT_VERBOSE(1, "Rebooting after restore: %s\n", (cmd_flags & CMD_FLAG_RESTORE_REBOOT ? "Yes":"No"));
+			PRINT_VERBOSE(1, "Rebooting after restore: %s\n", (cmd_flags & CMD_FLAG_RESTORE_NO_REBOOT ? "No":"Yes"));
 			if ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0)
 				plist_dict_set_item(opts, "RestoreDontCopyBackup", plist_new_bool(1));
 			PRINT_VERBOSE(1, "Don't copy backup: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0 ? "Yes":"No"));
@@ -2440,7 +2443,7 @@ files_out:
 				}
 				break;
 				case CMD_RESTORE:
-				if (cmd_flags & CMD_FLAG_RESTORE_REBOOT)
+				if ((cmd_flags & CMD_FLAG_RESTORE_NO_REBOOT) == 0)
 					PRINT_VERBOSE(1, "The device should reboot now.\n");
 				if (operation_ok) {
 					PRINT_VERBOSE(1, "Restore Successful.\n");
