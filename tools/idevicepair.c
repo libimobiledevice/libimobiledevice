@@ -2,8 +2,8 @@
  * idevicepair.c
  * Manage pairings with devices and this host
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -266,7 +266,9 @@ int main(int argc, char **argv)
 		break;
 
 		case OP_VALIDATE:
-		lerr = lockdownd_validate_pair(client, NULL);
+		lockdownd_client_free(client);
+		client = NULL;
+		lerr = lockdownd_client_new_with_handshake(device, &client, "idevicepair");
 		if (lerr == LOCKDOWN_E_SUCCESS) {
 			printf("SUCCESS: Validated pairing with device %s\n", udid);
 		} else {
