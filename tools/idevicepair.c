@@ -41,6 +41,7 @@ static void print_error_message(lockdownd_error_t err)
 		case LOCKDOWN_E_PASSWORD_PROTECTED:
 			printf("ERROR: Could not validate with device %s because a passcode is set. Please enter the passcode on the device and retry.\n", udid);
 			break;
+		case LOCKDOWN_E_INVALID_CONF:
 		case LOCKDOWN_E_INVALID_HOST_ID:
 			printf("ERROR: Device %s is not paired with this host\n", udid);
 			break;
