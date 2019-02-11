@@ -71,7 +71,7 @@ static void print_usage(int argc, char **argv)
 	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
 	printf("Proxy debugserver connection from device to a local socket at PORT.\n\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
 	printf("Homepage: <" PACKAGE_URL ">\n");
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				return 0;
 			}
@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Could not start connection handler.\n");
 			socket_shutdown(server_fd, SHUT_RDWR);
 			socket_close(server_fd);
-			continue;
+			break;
 		}
 	}
 
