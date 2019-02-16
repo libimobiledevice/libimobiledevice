@@ -192,12 +192,13 @@ int main(int argc, char **argv)
 
 	if (udid) {
 		ret = idevice_new(&device, udid);
-		free(udid);
-		udid = NULL;
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
+			free(udid);
 			return EXIT_FAILURE;
 		}
+		free(udid);
+		udid = NULL;
 	} else {
 		ret = idevice_new(&device, NULL);
 		if (ret != IDEVICE_E_SUCCESS) {
