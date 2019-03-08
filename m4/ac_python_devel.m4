@@ -175,8 +175,8 @@ $ac_distutils_result])
 	if test -z "$PYTHON_LDFLAGS"; then
 		# (makes two attempts to ensure we've got a version number
 		# from the interpreter)
-		py_version=`$PYTHON -c "from distutils.sysconfig import *; \
-			print(' '.join(get_config_vars('VERSION')))"`
+		py_version=`$PYTHON -c 'from distutils.sysconfig import *; \
+			print(get_config_var("VERSION") + ( get_config_var("ABIFLAGS") or "" ))'`
 		if test "$py_version" = "[None]"; then
 			if test -n "$PYTHON_VERSION"; then
 				py_version=$PYTHON_VERSION
