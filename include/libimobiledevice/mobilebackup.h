@@ -65,7 +65,7 @@ typedef enum {
  *     or more parameters are invalid, or DEVICE_LINK_SERVICE_E_BAD_VERSION if
  *     the mobilebackup version on the device is newer.
  */
-mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client);
 
 /**
  * Starts a new mobilebackup service on the specified device and connects to it.
@@ -80,7 +80,7 @@ mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service
  * @return MOBILEBACKUP_E_SUCCESS on success, or an MOBILEBACKUP_E_* error
  *     code otherwise.
  */
-mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t* client, const char* label);
 
 /**
  * Disconnects a mobilebackup client from the device and frees up the
@@ -91,7 +91,7 @@ mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobileb
  * @return MOBILEBACKUP_E_SUCCESS on success, or MOBILEBACKUP_E_INVALID_ARG
  *     if client is NULL.
  */
-mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
 
 
 /**
@@ -102,7 +102,7 @@ mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client);
  *
  * @return an error code
  */
-mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t *plist);
 
 /**
  * Sends mobilebackup data to the device
@@ -115,7 +115,7 @@ mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t 
  *
  * @return an error code
  */
-mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist);
 
 /**
  * Request a backup from the connected device.
@@ -134,7 +134,7 @@ mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t pli
  *    backup_manifest is not of type PLIST_DICT, MOBILEBACKUP_E_MUX_ERROR
  *    if a communication error occurs, MOBILEBACKUP_E_REPLY_NOT_OK
  */
-mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version);
 
 /**
  * Sends a confirmation to the device that a backup file has been received.
@@ -145,7 +145,7 @@ mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, p
  *    client is invalid, or MOBILEBACKUP_E_MUX_ERROR if a communication error
  *    occurs.
  */
-mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client);
 
 /**
  * Request that a backup should be restored to the connected device.
@@ -168,7 +168,7 @@ mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_
  *    if a communication error occurs, or MOBILEBACKUP_E_REPLY_NOT_OK
  *    if the device did not accept the request.
  */
-mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version);
 
 /**
  * Receive a confirmation from the device that it successfully received
@@ -188,7 +188,7 @@ mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, 
  *    message plist, or MOBILEBACKUP_E_MUX_ERROR if a communication error
  *    occurs.
  */
-mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result);
 
 /**
  * Receive a confirmation from the device that it successfully received
@@ -208,7 +208,7 @@ mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_cli
  *    message plist, or MOBILEBACKUP_E_MUX_ERROR if a communication error
  *    occurs.
  */
-mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result);
 
 /**
  * Tells the device that the restore process is complete and waits for the
@@ -221,7 +221,7 @@ mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebac
  *    message plist is invalid, or MOBILEBACKUP_E_MUX_ERROR if a communication
  *    error occurs.
  */
-mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client);
 
 /**
  * Sends a backup error message to the device.
@@ -233,7 +233,7 @@ mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t cl
  *    one of the parameters is invalid, or MOBILEBACKUP_E_MUX_ERROR if a
  *    communication error occurs.
  */
-mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
+LIBIMOBILEDEVICE_API_MSC mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason);
 
 #ifdef __cplusplus
 }

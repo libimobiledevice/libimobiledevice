@@ -116,7 +116,7 @@ typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *client, const char *label);
 
 /**
  * Creates a new lockdownd client for the device and starts initial handshake.
@@ -135,7 +135,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL,
  *  LOCKDOWN_E_INVALID_CONF if configuration data is wrong
  */
-lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label);
 
 /**
  * Closes the lockdownd client session if one is running and frees up the
@@ -145,7 +145,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
 
 
 /**
@@ -157,7 +157,7 @@ lockdownd_error_t lockdownd_client_free(lockdownd_client_t client);
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
 
 /**
  * Retrieves a preferences plist using an optional domain and/or key name.
@@ -169,7 +169,7 @@ lockdownd_error_t lockdownd_query_type(lockdownd_client_t client, char **type);
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *domain, const char *key, plist_t *value);
 
 /**
  * Sets a preferences value using a plist and optional by domain and/or key name.
@@ -182,7 +182,7 @@ lockdownd_error_t lockdownd_get_value(lockdownd_client_t client, const char *dom
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  value is NULL
  */
-lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *domain, const char *key, plist_t value);
 
 /**
  * Removes a preference node by domain and/or key name.
@@ -195,7 +195,7 @@ lockdownd_error_t lockdownd_set_value(lockdownd_client_t client, const char *dom
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *domain, const char *key);
 
 /**
  * Requests to start a service and retrieve it's port on success.
@@ -209,7 +209,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
  *  by the device, LOCKDOWN_E_START_SERVICE_FAILED if the service could not be
  *  started by the device
  */
-lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
 
 /**
  * Requests to start a service and retrieve it's port on success.
@@ -225,7 +225,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
  *  started by the device, LOCKDOWN_E_INVALID_CONF if the host id or escrow bag are
  *  missing from the device record.
  */
-lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t client, const char *identifier, lockdownd_service_descriptor_t *service);
 
 /**
  * Opens a session with lockdownd and switches to SSL mode if device wants it.
@@ -240,7 +240,7 @@ lockdownd_error_t lockdownd_start_service_with_escrow_bag(lockdownd_client_t cli
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the supplied HostID,
  *  LOCKDOWN_E_SSL_ERROR if enabling SSL communication failed
  */
-lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char *host_id, char **session_id, int *ssl_enabled);
 
 /**
  * Closes the lockdownd session by sending the StopSession request.
@@ -252,7 +252,7 @@ lockdownd_error_t lockdownd_start_session(lockdownd_client_t client, const char 
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *session_id);
 
 /**
  * Sends a plist to lockdownd.
@@ -266,7 +266,7 @@ lockdownd_error_t lockdownd_stop_session(lockdownd_client_t client, const char *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  plist is NULL
  */
-lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
 
 /**
  * Receives a plist from lockdownd.
@@ -277,7 +277,7 @@ lockdownd_error_t lockdownd_send(lockdownd_client_t client, plist_t plist);
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client or
  *  plist is NULL
  */
-lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
 
 /**
  * Pairs the device using the supplied pair record.
@@ -293,7 +293,7 @@ lockdownd_error_t lockdownd_receive(lockdownd_client_t client, plist_t *plist);
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 
  /**
  * Pairs the device using the supplied pair record and passing the given options.
@@ -331,7 +331,7 @@ lockdownd_error_t lockdownd_pair_with_options(lockdownd_client_t client, lockdow
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 
 /**
  * Unpairs the device with the given HostID and removes the pairing records
@@ -347,7 +347,7 @@ lockdownd_error_t lockdownd_validate_pair(lockdownd_client_t client, lockdownd_p
  *  LOCKDOWN_E_PASSWORD_PROTECTED if the device is password protected,
  *  LOCKDOWN_E_INVALID_HOST_ID if the device does not know the caller's host id
  */
-lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_record_t pair_record);
 
 /**
  * Activates the device. Only works within an open session.
@@ -364,7 +364,7 @@ lockdownd_error_t lockdownd_unpair(lockdownd_client_t client, lockdownd_pair_rec
  *  LOCKDOWN_E_INVALID_ACTIVATION_RECORD if the device reports that the
  *  activation_record is invalid
  */
-lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activation_record);
 
 /**
  * Deactivates the device, returning it to the locked “Activate with iTunes”
@@ -376,7 +376,7 @@ lockdownd_error_t lockdownd_activate(lockdownd_client_t client, plist_t activati
  *  LOCKDOWN_E_NO_RUNNING_SESSION if no session is open,
  *  LOCKDOWN_E_PLIST_ERROR if the received plist is broken
  */
-lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
 
 /**
  * Tells the device to immediately enter recovery mode.
@@ -385,7 +385,7 @@ lockdownd_error_t lockdownd_deactivate(lockdownd_client_t client);
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client is NULL
  */
-lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
 
 /**
  * Sends the Goodbye request to lockdownd signaling the end of communication.
@@ -396,7 +396,7 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
  *  is NULL, LOCKDOWN_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
 
 /* Helper */
 
@@ -407,7 +407,7 @@ lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
  * @param label The label to set or NULL to disable sending a label
  *
  */
-void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
+LIBIMOBILEDEVICE_API_MSC void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
 
 /**
  * Returns the unique id of the device from lockdownd.
@@ -418,7 +418,7 @@ void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **udid);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **udid);
 
 /**
  * Retrieves the name of the device from lockdownd set by the user.
@@ -429,7 +429,7 @@ lockdownd_error_t lockdownd_get_device_udid(lockdownd_client_t control, char **u
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **device_name);
 
 /**
  * Calculates and returns the data classes the device supports from lockdownd.
@@ -444,7 +444,7 @@ lockdownd_error_t lockdownd_get_device_name(lockdownd_client_t client, char **de
  *  LOCKDOWN_E_NO_RUNNING_SESSION if no session is open,
  *  LOCKDOWN_E_PLIST_ERROR if the received plist is broken
  */
-lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, char ***classes, int *count);
 
 /**
  * Frees memory of an allocated array of data classes as returned by lockdownd_get_sync_data_classes()
@@ -453,7 +453,7 @@ lockdownd_error_t lockdownd_get_sync_data_classes(lockdownd_client_t client, cha
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_data_classes_free(char **classes);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_data_classes_free(char **classes);
 
 /**
  * Frees memory of a service descriptor as returned by lockdownd_start_service()
@@ -462,7 +462,7 @@ lockdownd_error_t lockdownd_data_classes_free(char **classes);
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
-lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
+LIBIMOBILEDEVICE_API_MSC lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
 
 #ifdef __cplusplus
 }

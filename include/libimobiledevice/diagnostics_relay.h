@@ -66,7 +66,7 @@ typedef diagnostics_relay_client_private *diagnostics_relay_client_t; /**< The c
  *     DIAGNOSTICS_RELAY_E_INVALID_ARG when one of the parameters is invalid,
  *     or DIAGNOSTICS_RELAY_E_MUX_ERROR when the connection failed.
  */
-diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, diagnostics_relay_client_t *client);
 
 /**
  * Starts a new diagnostics_relay service on the specified device and connects to it.
@@ -81,7 +81,7 @@ diagnostics_relay_error_t diagnostics_relay_client_new(idevice_t device, lockdow
  * @return DIAGNOSTICS_RELAY_E_SUCCESS on success, or an DIAGNOSTICS_RELAY_E_* error
  *     code otherwise.
  */
-diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t device, diagnostics_relay_client_t* client, const char* label);
 
 /**
  * Disconnects a diagnostics_relay client from the device and frees up the
@@ -94,7 +94,7 @@ diagnostics_relay_error_t diagnostics_relay_client_start_service(idevice_t devic
  *     is invalid, or DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR when the was an
  *     error freeing the parent property_list_service client.
  */
-diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client_t client);
 
 
 /**
@@ -107,7 +107,7 @@ diagnostics_relay_error_t diagnostics_relay_client_free(diagnostics_relay_client
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client);
 
 /**
  * Puts the device into deep sleep mode and disconnects from host.
@@ -119,7 +119,7 @@ diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t c
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client);
 
 /**
  * Restart the device and optionally show a user notification.
@@ -136,7 +136,7 @@ diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t cli
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
 
 /**
  * Shutdown of the device and optionally show a user notification.
@@ -153,7 +153,7 @@ diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t c
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
 
 /**
  * Shutdown of the device and optionally show a user notification.
@@ -170,13 +170,13 @@ diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t 
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, const char* type, plist_t* diagnostics);
 
-diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result);
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result);
+LIBIMOBILEDEVICE_API_MSC diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result);
 
 #ifdef __cplusplus
 }

@@ -19,14 +19,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef _MSC_VER
+#include "src\msc_config.h"
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
-#include <sys/time.h>
 #include <sys/stat.h>
+
+#ifdef _MSC_VER
+#include <winsock2.h> 
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#endif
+
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
