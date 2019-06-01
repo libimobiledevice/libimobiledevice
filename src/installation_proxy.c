@@ -240,7 +240,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_new(idevice_t device, lo
 	instproxy_client_t client_loc = (instproxy_client_t) malloc(sizeof(struct instproxy_client_private));
 	client_loc->parent = plistclient;
 	mutex_init(&client_loc->mutex);
-	client_loc->receive_status_thread = (thread_t)NULL;
+	client_loc->receive_status_thread = (THREAD_T)NULL;
 
 	*client = client_loc;
 	return INSTPROXY_E_SUCCESS;
@@ -264,7 +264,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t 
 		debug_info("joining receive_status_thread");
 		thread_join(client->receive_status_thread);
 		thread_free(client->receive_status_thread);
-		client->receive_status_thread = (thread_t)NULL;
+		client->receive_status_thread = (THREAD_T)NULL;
 	}
 	mutex_destroy(&client->mutex);
 	free(client);
@@ -431,7 +431,7 @@ static void* instproxy_receive_status_loop_thread(void* arg)
 
 	if (data->client->receive_status_thread) {
 		thread_free(data->client->receive_status_thread);
-		data->client->receive_status_thread = (thread_t)NULL;
+		data->client->receive_status_thread = (THREAD_T)NULL;
 	}
 
 	instproxy_unlock(data->client);

@@ -14,12 +14,9 @@ m4/*
 swig/*
 *.swp
 *.patch
+*.DS_Store
 aclocal.m4
-config.h
-config.log
-config.sub
-config.guess
-config.status
+config.*
 configure
 depcomp
 install-sh

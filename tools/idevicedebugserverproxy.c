@@ -50,7 +50,7 @@ typedef struct {
 } socket_info_t;
 
 struct thread_info {
-	thread_t th;
+	THREAD_T th;
 	struct thread_info *next;
 };
 
@@ -140,7 +140,7 @@ static void *thread_client_to_device(void *data)
 	int recv_len;
 	int sent;
 	char buffer[131072];
-	thread_t dtoc;
+	THREAD_T dtoc;
 
 	debug("%s: started thread...\n", __func__);
 
@@ -205,7 +205,7 @@ static void* connection_handler(void* data)
 {
 	debugserver_error_t derr = DEBUGSERVER_E_SUCCESS;
 	socket_info_t* socket_info = (socket_info_t*)data;
-	thread_t ctod;
+	THREAD_T ctod;
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
 
