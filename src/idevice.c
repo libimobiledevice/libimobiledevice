@@ -2,8 +2,8 @@
  * idevice.c
  * Device discovery and communication interface.
  *
+ * Copyright (c) 2009-2019 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2009-2014 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -37,7 +37,6 @@
 #ifdef HAVE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-
 #else
 #include <gnutls/gnutls.h>
 #endif
@@ -49,7 +48,7 @@
 
 #ifdef HAVE_OPENSSL
 
-#if OPENSSL_VERSION_NUMBER < 0x10002000L
+#if OPENSSL_VERSION_NUMBER < 0x10002000L || defined(LIBRESSL_VERSION_NUMBER)
 static void SSL_COMP_free_compression_methods(void)
 {
 	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
@@ -60,7 +59,7 @@ static void openssl_remove_thread_state(void)
 {
 /*  ERR_remove_thread_state() is available since OpenSSL 1.0.0-beta1, but
  *  deprecated in OpenSSL 1.1.0 */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 #if OPENSSL_VERSION_NUMBER >= 0x10000001L
 	ERR_remove_thread_state(NULL);
 #else
@@ -69,7 +68,7 @@ static void openssl_remove_thread_state(void)
 #endif
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 static mutex_t *mutex_buf = NULL;
 static void locking_function(int mode, int n, const char* file, int line)
 {
@@ -89,7 +88,7 @@ static unsigned long id_function(void)
 static void internal_idevice_init(void)
 {
 #ifdef HAVE_OPENSSL
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 	int i;
 	SSL_library_init();
 
@@ -110,7 +109,7 @@ static void internal_idevice_init(void)
 static void internal_idevice_deinit(void)
 {
 #ifdef HAVE_OPENSSL
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 	int i;
 	if (mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
