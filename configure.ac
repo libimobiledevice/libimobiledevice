@@ -66,17 +66,17 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
 fi
 
 # Check for operating system
-AC_MSG_CHECKING([whether we need platform-specific build settings])
+AC_MSG_CHECKING([for platform-specific build settings])
 case ${host_os} in
   *mingw32*|*cygwin*)
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([${host_os}])
     win32=true
     ;;
   darwin*)
-    AC_MSG_RESULT([no])
+    AC_MSG_RESULT([${host_os}])
     ;;
   *)
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([${host_os}])
     AX_PTHREAD([], [AC_MSG_ERROR([pthread is required to build $PACKAGE_NAME])])
     AC_CHECK_LIB(pthread, [pthread_once], [], [AC_MSG_ERROR([pthread with pthread_once required to build $PACKAGE_NAME])])
     ;;
@@ -89,9 +89,9 @@ AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define i
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
             [build Python bindings using Cython (default is yes)])],
-            [build_cython=false],
-            [build_cython=true])
-if test "$build_cython" = "true"; then
+            [build_cython=$withval],
+            [build_cython=yes])
+if test "$build_cython" = "yes"; then
             AM_PATH_PYTHON(2.3)
             AC_PROG_CYTHON(0.17.0)
             CYTHON_PYTHON
