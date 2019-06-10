@@ -98,7 +98,7 @@ LIBIMOBILEDEVICE_API np_error_t np_client_new(idevice_t device, lockdownd_servic
 	client_loc->parent = plistclient;
 
 	mutex_init(&client_loc->mutex);
-	client_loc->notifier = (thread_t)NULL;
+	client_loc->notifier = THREAD_T_NULL;
 
 	*client = client_loc;
 	return NP_E_SUCCESS;
@@ -132,7 +132,7 @@ LIBIMOBILEDEVICE_API np_error_t np_client_free(np_client_t client)
 		debug_info("joining np callback");
 		thread_join(client->notifier);
 		thread_free(client->notifier);
-		client->notifier = (thread_t)NULL;
+		client->notifier = THREAD_T_NULL;
 	} else {
 		dict = NULL;
 		property_list_service_receive_plist(parent, &dict);
@@ -350,7 +350,7 @@ LIBIMOBILEDEVICE_API np_error_t np_set_notify_callback( np_client_t client, np_n
 		client->parent = NULL;
 		thread_join(client->notifier);
 		thread_free(client->notifier);
-		client->notifier = (thread_t)NULL;
+		client->notifier = THREAD_T_NULL;
 		client->parent = parent;
 	}
 

@@ -81,7 +81,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_new(idevice_t devi
 
 	syslog_relay_client_t client_loc = (syslog_relay_client_t) malloc(sizeof(struct syslog_relay_client_private));
 	client_loc->parent = parent;
-	client_loc->worker = (thread_t)NULL;
+	client_loc->worker = THREAD_T_NULL;
 
 	*client = client_loc;
 
@@ -107,7 +107,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_
 		debug_info("Joining syslog capture callback worker thread");
 		thread_join(client->worker);
 		thread_free(client->worker);
-		client->worker = (thread_t)NULL;
+		client->worker = THREAD_T_NULL;
 	}
 	free(client);
 
@@ -209,7 +209,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay
 		/* join thread to make it exit */
 		thread_join(client->worker);
 		thread_free(client->worker);
-		client->worker = (thread_t)NULL;
+		client->worker = THREAD_T_NULL;
 		client->parent = parent;
 	}
 
