@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
-AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(openssl_LIBS) $(libplist_LIBS)
+AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS) $(PTHREAD_CFLAGS)
+AM_LIBS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(openssl_LIBS) $(libplist_LIBS) $(PTHREAD_LIBS)
 
 if HAVE_CYTHON
 
@@ -38,7 +38,7 @@ imobiledevicedir = $(pyexecdir)
 imobiledevice_LTLIBRARIES = imobiledevice.la
 imobiledevice_la_SOURCES = imobiledevice.pyx
 imobiledevice_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) $(AM_CFLAGS) -Wno-shadow -Wno-redundant-decls -Wno-switch-default -Wno-strict-aliasing -Wno-implicit-function-declaration -fvisibility=default
-imobiledevice_la_LDFLAGS = -module -avoid-version -L$(libdir) $(PYTHON_LDFLAGS) $(AM_LDFLAGS) -no-undefined
+imobiledevice_la_LDFLAGS = -module -avoid-version -L$(libdir) $(PYTHON_LIBS) $(AM_LIBS) -no-undefined
 imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la
 
 imobiledevice.c: imobiledevice.pyx $(PXDINCLUDES) $(PXIINCLUDES)
