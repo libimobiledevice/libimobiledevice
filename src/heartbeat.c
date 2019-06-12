@@ -52,6 +52,10 @@ static heartbeat_error_t heartbeat_error(property_list_service_error_t err)
 			return HEARTBEAT_E_MUX_ERROR;
 		case PROPERTY_LIST_SERVICE_E_SSL_ERROR:
 			return HEARTBEAT_E_SSL_ERROR;
+		case PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA:
+			return HEARTBEAT_E_NOT_ENOUGH_DATA;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return HEARTBEAT_E_TIMEOUT;
 		default:
 			break;
 	}

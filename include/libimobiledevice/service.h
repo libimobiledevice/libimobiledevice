@@ -37,6 +37,8 @@ typedef enum {
 	SERVICE_E_MUX_ERROR           = -3,
 	SERVICE_E_SSL_ERROR           = -4,
 	SERVICE_E_START_SERVICE_ERROR = -5,
+	SERIVCE_E_NOT_ENOUGH_DATA     = -6,
+	SERVICE_E_TIMEOUT             = -7,
 	SERVICE_E_UNKNOWN_ERROR       = -256
 } service_error_t;
 
@@ -132,7 +134,9 @@ service_error_t service_receive_with_timeout(service_client_t client, char *data
  *
  * @return SERVICE_E_SUCCESS on success,
  *      SERVICE_E_INVALID_ARG when one or more parameters are
- *      invalid, SERVICE_E_MUX_ERROR when a communication error
+ *      invalid, SERIVCE_E_NOT_ENOUGH_DATA when not enough data
+ *      received, SERVICE_E_TIMEOUT when the connection times out,
+ *      SERVICE_E_MUX_ERROR when a communication error
  *      occurs, or SERVICE_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
@@ -146,7 +150,9 @@ service_error_t service_receive(service_client_t client, char *data, uint32_t si
  *
  * @return SERVICE_E_SUCCESS on success,
  *     SERVICE_E_INVALID_ARG if client or client->connection is
- *     NULL, SERVICE_E_SSL_ERROR when SSL could not be enabled,
+ *     NULL, SERIVCE_E_NOT_ENOUGH_DATA when not enough data
+ *     received, SERVICE_E_TIMEOUT when the connection times out,
+ *     SERVICE_E_SSL_ERROR when SSL could not be enabled,
  *     or SERVICE_E_UNKNOWN_ERROR otherwise.
  */
 service_error_t service_enable_ssl(service_client_t client);

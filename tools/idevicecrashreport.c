@@ -411,7 +411,7 @@ int main(int argc, char* argv[]) {
 	while ((strncmp(ping, "ping", 4) != 0) && (attempts < 10)) {
 		uint32_t bytes = 0;
 		device_error = idevice_connection_receive_timeout(connection, ping, 4, &bytes, 2000);
-		if ((bytes == 0) && (device_error == IDEVICE_E_SUCCESS)) {
+		if (device_error != IDEVICE_E_SUCCESS) {
 			attempts++;
 			continue;
 		} else if (device_error < 0) {
