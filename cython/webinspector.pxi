@@ -26,6 +26,8 @@ cdef class WebinspectorError(BaseError):
             WEBINSPECTOR_E_PLIST_ERROR: "Property list error",
             WEBINSPECTOR_E_MUX_ERROR: "MUX error",
             WEBINSPECTOR_E_SSL_ERROR: "SSL Error",
+            WEBINSPECTOR_E_NOT_ENOUGH_DATA: 'Not enough data',
+            WEBINSPECTOR_E_TIMEOUT: 'Connection timeout',
             WEBINSPECTOR_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

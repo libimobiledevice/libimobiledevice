@@ -46,6 +46,10 @@ static service_error_t idevice_to_service_error(idevice_error_t err)
 			return SERVICE_E_INVALID_ARG;
 		case IDEVICE_E_SSL_ERROR:
 			return SERVICE_E_SSL_ERROR;
+		case IDEVICE_E_NOT_ENOUGH_DATA:
+			return SERIVCE_E_NOT_ENOUGH_DATA;
+		case IDEVICE_E_TIMEOUT:
+			return SERVICE_E_TIMEOUT;
 		default:
 			break;
 	}
@@ -159,8 +163,9 @@ LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client
 	}
 
 	res = idevice_to_service_error(idevice_connection_receive_timeout(client->connection, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	if (res != SERVICE_E_SUCCESS) {
 		debug_info("could not read data");
+		return res;
 	}
 	if (received) {
 		*received = (uint32_t)bytes;

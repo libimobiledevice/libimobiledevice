@@ -43,6 +43,7 @@
 
 #include "idevice.h"
 #include "common/userpref.h"
+#include "common/socket.h"
 #include "common/thread.h"
 #include "common/debug.h"
 
@@ -381,6 +382,24 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 	return internal_connection_send(connection, data, len, sent_bytes);
 }
 
+static idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len, uint32_t received)
+{
+	if (conn_error < 0) {
+		switch (conn_error) {
+			case -EAGAIN:
+				debug_info("ERROR: received partial data %d/%d (%s)", received, len, strerror(-conn_error));
+				return IDEVICE_E_NOT_ENOUGH_DATA;
+			case -ETIMEDOUT:
+				debug_info("ERROR: received timeout (%s)", strerror(-conn_error));
+				return IDEVICE_E_TIMEOUT;
+			default:
+				return IDEVICE_E_UNKNOWN_ERROR;
+		}
+	}
+
+	return IDEVICE_E_SUCCESS;
+}
+
 /**
  * Internally used function for receiving raw data over the given connection
  * using a timeout.
@@ -392,12 +411,14 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
-		if (res < 0) {
-			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", res, strerror(errno));
-			return (res == -EAGAIN ? IDEVICE_E_NOT_ENOUGH_DATA : IDEVICE_E_UNKNOWN_ERROR);
+		int conn_error = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
+		idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, *recv_bytes);
+
+		if (error == IDEVICE_E_UNKNOWN_ERROR) {
+			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", conn_error, strerror(-conn_error));
 		}
-		return IDEVICE_E_SUCCESS;
+
+		return error;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
@@ -406,13 +427,27 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
-	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
+	if (!connection || (connection->ssl_data && !connection->ssl_data->session) || len == 0) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
 	if (connection->ssl_data) {
 		uint32_t received = 0;
+
 		while (received < len) {
+
+			int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
+			idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
+
+			switch (error) {
+				case IDEVICE_E_SUCCESS:
+					break;
+				case IDEVICE_E_UNKNOWN_ERROR:
+					debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
+				default:
+					return error;
+			}
+
 #ifdef HAVE_OPENSSL
 			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
 #else
@@ -424,13 +459,15 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 				break;
 			}
 		}
+
 		debug_info("SSL_read %d, received %d", len, received);
-		if (received > 0) {
-			*recv_bytes = received;
-			return IDEVICE_E_SUCCESS;
+		if (received < len) {
+			*recv_bytes = 0;
+			return IDEVICE_E_SSL_ERROR;
 		}
-		*recv_bytes = 0;
-		return IDEVICE_E_SSL_ERROR;
+		
+		*recv_bytes = received;
+		return IDEVICE_E_SUCCESS;
 	}
 	return internal_connection_receive_timeout(connection, data, len, recv_bytes, timeout);
 }
