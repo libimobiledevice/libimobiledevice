@@ -412,6 +412,10 @@ int socket_check_fd(int fd, fd_mode fdm, unsigned int timeout)
 							strerror(errno));
 				return -1;
 			}
+		} else if (sret == 0) {
+			if (verbose >= 2)
+				fprintf(stderr, "%s: timeout\n", __func__);
+			return -ETIMEDOUT;
 		}
 	} while (eagain);
 
