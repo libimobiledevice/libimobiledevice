@@ -55,6 +55,10 @@ static syslog_relay_error_t syslog_relay_error(service_error_t err)
 			return SYSLOG_RELAY_E_MUX_ERROR;
 		case SERVICE_E_SSL_ERROR:
 			return SYSLOG_RELAY_E_SSL_ERROR;
+		case SERVICE_E_NOT_ENOUGH_DATA:
+			return SYSLOG_RELAY_E_NOT_ENOUGH_DATA;
+		case SERVICE_E_TIMEOUT:
+			return SYSLOG_RELAY_E_TIMEOUT;
 		default:
 			break;
 	}
@@ -129,7 +133,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive_with_timeout(sysl
 	}
 
 	res = syslog_relay_error(service_receive_with_timeout(client->parent, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	if (res != SYSLOG_RELAY_E_SUCCESS && res != SYSLOG_RELAY_E_TIMEOUT && res != SYSLOG_RELAY_E_NOT_ENOUGH_DATA) {
 		debug_info("Could not read data, error %d", res);
 	}
 	if (received) {
@@ -153,7 +157,7 @@ void *syslog_relay_worker(void *arg)
 		char c;
 		uint32_t bytes = 0;
 		ret = syslog_relay_receive_with_timeout(srwt->client, &c, 1, &bytes, 100);
-		if ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS)) {
+		if (ret == SYSLOG_RELAY_E_TIMEOUT || ret == SYSLOG_RELAY_E_NOT_ENOUGH_DATA || ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS))) {
 			continue;
 		} else if (ret < 0) {
 			debug_info("Connection to syslog relay interrupted");
