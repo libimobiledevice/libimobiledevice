@@ -48,7 +48,7 @@ static property_list_service_error_t service_to_property_list_service_error(serv
 			return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 		case SERVICE_E_SSL_ERROR:
 			return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
-		case SERIVCE_E_NOT_ENOUGH_DATA:
+		case SERVICE_E_NOT_ENOUGH_DATA:
 			return PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA;
 		case SERVICE_E_TIMEOUT:
 			return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;

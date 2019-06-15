@@ -47,7 +47,7 @@ static service_error_t idevice_to_service_error(idevice_error_t err)
 		case IDEVICE_E_SSL_ERROR:
 			return SERVICE_E_SSL_ERROR;
 		case IDEVICE_E_NOT_ENOUGH_DATA:
-			return SERIVCE_E_NOT_ENOUGH_DATA;
+			return SERVICE_E_NOT_ENOUGH_DATA;
 		case IDEVICE_E_TIMEOUT:
 			return SERVICE_E_TIMEOUT;
 		default:
