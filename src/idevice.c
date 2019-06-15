@@ -390,7 +390,6 @@ static idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len
 				debug_info("ERROR: received partial data %d/%d (%s)", received, len, strerror(-conn_error));
 				return IDEVICE_E_NOT_ENOUGH_DATA;
 			case -ETIMEDOUT:
-				debug_info("ERROR: received timeout (%s)", strerror(-conn_error));
 				return IDEVICE_E_TIMEOUT;
 			default:
 				return IDEVICE_E_UNKNOWN_ERROR;
