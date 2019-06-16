@@ -186,13 +186,8 @@ LIBIMOBILEDEVICE_API np_error_t np_post_notification(np_client_t client, const c
 	return res;
 }
 
-LIBIMOBILEDEVICE_API np_error_t np_observe_notification( np_client_t client, const char *notification )
+static np_error_t internal_np_observe_notification(np_client_t client, const char *notification)
 {
-	if (!client || !notification) {
-		return NP_E_INVALID_ARG;
-	}
-	np_lock(client);
-
 	plist_t dict = plist_new_dict();
 	plist_dict_set_item(dict,"Command", plist_new_string("ObserveNotification"));
 	plist_dict_set_item(dict,"Name", plist_new_string(notification));
@@ -203,6 +198,16 @@ LIBIMOBILEDEVICE_API np_error_t np_observe_notification( np_client_t client, con
 	}
 	plist_free(dict);
 
+	return res;
+}
+
+LIBIMOBILEDEVICE_API np_error_t np_observe_notification( np_client_t client, const char *notification )
+{
+	if (!client || !notification) {
+		return NP_E_INVALID_ARG;
+	}
+	np_lock(client);
+	np_error_t res = internal_np_observe_notification(client, notification);
 	np_unlock(client);
 	return res;
 }
@@ -221,13 +226,15 @@ LIBIMOBILEDEVICE_API np_error_t np_observe_notifications(np_client_t client, con
 		return NP_E_INVALID_ARG;
 	}
 
+	np_lock(client);
 	while (notifications[i]) {
-		res = np_observe_notification(client, notifications[i]);
+		res = internal_np_observe_notification(client, notifications[i]);
 		if (res != NP_E_SUCCESS) {
 			break;
 		}
 		i++;
 	}
+	np_unlock(client);
 
 	return res;
 }
