@@ -36,6 +36,7 @@
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/err.h>
+#include <openssl/rsa.h>
 #include <openssl/ssl.h>
 #else
 #include <gnutls/gnutls.h>
@@ -48,6 +49,11 @@
 #include "common/debug.h"
 
 #ifdef HAVE_OPENSSL
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
+	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x20020000L))
+#define TLS_method TLSv1_method
+#endif
 
 #if OPENSSL_VERSION_NUMBER < 0x10002000L || defined(LIBRESSL_VERSION_NUMBER)
 static void SSL_COMP_free_compression_methods(void)
@@ -771,7 +777,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	}
 	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
 
-	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
+	SSL_CTX *ssl_ctx = SSL_CTX_new(TLS_method());
 	if (ssl_ctx == NULL) {
 		debug_info("ERROR: Could not create SSL context.");
 		BIO_free(ssl_bio);
