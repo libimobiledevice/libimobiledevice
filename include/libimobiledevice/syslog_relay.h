@@ -34,11 +34,13 @@ extern "C" {
 
 /** Error Codes */
 typedef enum {
-	SYSLOG_RELAY_E_SUCCESS       =  0,
-	SYSLOG_RELAY_E_INVALID_ARG   = -1,
-	SYSLOG_RELAY_E_MUX_ERROR     = -2,
-	SYSLOG_RELAY_E_SSL_ERROR     = -3,
-	SYSLOG_RELAY_E_UNKNOWN_ERROR = -256
+	SYSLOG_RELAY_E_SUCCESS         =  0,
+	SYSLOG_RELAY_E_INVALID_ARG     = -1,
+	SYSLOG_RELAY_E_MUX_ERROR       = -2,
+	SYSLOG_RELAY_E_SSL_ERROR       = -3,
+	SYSLOG_RELAY_E_NOT_ENOUGH_DATA = -4,
+	SYSLOG_RELAY_E_TIMEOUT         = -5,
+	SYSLOG_RELAY_E_UNKNOWN_ERROR   = -256
 } syslog_relay_error_t;
 
 typedef struct syslog_relay_client_private syslog_relay_client_private;

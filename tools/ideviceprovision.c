@@ -56,7 +56,7 @@ static void print_usage(int argc, char **argv)
 	printf("           \tstores them into the existing directory specified by PATH.\n");
 	printf("           \tThe files will be stored as UUID.mobileprovision\n");
 	printf("  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n");
-	printf("           \tfrom the device and stores it into the exisiting directory\n");
+	printf("           \tfrom the device and stores it into the existing directory\n");
 	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
 	printf("  remove-all\tRemoves all installed provisioning profiles.\n");

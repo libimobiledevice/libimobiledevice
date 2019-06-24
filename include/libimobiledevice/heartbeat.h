@@ -34,12 +34,14 @@ extern "C" {
 
 /** Error Codes */
 typedef enum {
-	HEARTBEAT_E_SUCCESS       =  0,
-	HEARTBEAT_E_INVALID_ARG   = -1,
-	HEARTBEAT_E_PLIST_ERROR   = -2,
-	HEARTBEAT_E_MUX_ERROR     = -3,
-	HEARTBEAT_E_SSL_ERROR     = -4,
-	HEARTBEAT_E_UNKNOWN_ERROR = -256
+	HEARTBEAT_E_SUCCESS         =  0,
+	HEARTBEAT_E_INVALID_ARG     = -1,
+	HEARTBEAT_E_PLIST_ERROR     = -2,
+	HEARTBEAT_E_MUX_ERROR       = -3,
+	HEARTBEAT_E_SSL_ERROR       = -4,
+	HEARTBEAT_E_NOT_ENOUGH_DATA = -5,
+	HEARTBEAT_E_TIMEOUT         = -6,
+	HEARTBEAT_E_UNKNOWN_ERROR   = -256
 } heartbeat_error_t;
 
 typedef struct heartbeat_client_private heartbeat_client_private;
@@ -118,6 +120,8 @@ heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist);
  *
  * @return HEARTBEAT_E_SUCCESS on success,
  *      HEARTBEAT_E_INVALID_ARG when client or *plist is NULL,
+ *      HEARTBEAT_E_NOT_ENOUGH_DATA when not enough data
+ *      received, HEARTBEAT_E_TIMEOUT when the connection times out,
  *      HEARTBEAT_E_PLIST_ERROR when the received data cannot be
  *      converted to a plist, HEARTBEAT_E_MUX_ERROR when a
  *      communication error occurs, or HEARTBEAT_E_UNKNOWN_ERROR

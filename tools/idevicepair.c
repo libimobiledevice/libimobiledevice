@@ -2,8 +2,8 @@
  * idevicepair.c
  * Manage pairings with devices and this host
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,7 @@ static void print_error_message(lockdownd_error_t err)
 		case LOCKDOWN_E_PASSWORD_PROTECTED:
 			printf("ERROR: Could not validate with device %s because a passcode is set. Please enter the passcode on the device and retry.\n", udid);
 			break;
+		case LOCKDOWN_E_INVALID_CONF:
 		case LOCKDOWN_E_INVALID_HOST_ID:
 			printf("ERROR: Device %s is not paired with this host\n", udid);
 			break;
@@ -191,12 +192,13 @@ int main(int argc, char **argv)
 
 	if (udid) {
 		ret = idevice_new(&device, udid);
-		free(udid);
-		udid = NULL;
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
+			free(udid);
 			return EXIT_FAILURE;
 		}
+		free(udid);
+		udid = NULL;
 	} else {
 		ret = idevice_new(&device, NULL);
 		if (ret != IDEVICE_E_SUCCESS) {
@@ -266,7 +268,9 @@ int main(int argc, char **argv)
 		break;
 
 		case OP_VALIDATE:
-		lerr = lockdownd_validate_pair(client, NULL);
+		lockdownd_client_free(client);
+		client = NULL;
+		lerr = lockdownd_client_new_with_handshake(device, &client, "idevicepair");
 		if (lerr == LOCKDOWN_E_SUCCESS) {
 			printf("SUCCESS: Validated pairing with device %s\n", udid);
 		} else {

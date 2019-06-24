@@ -41,8 +41,8 @@ typedef enum {
 	IDEVICE_E_UNKNOWN_ERROR   = -2,
 	IDEVICE_E_NO_DEVICE       = -3,
 	IDEVICE_E_NOT_ENOUGH_DATA = -4,
-	IDEVICE_E_BAD_HEADER      = -5,
-	IDEVICE_E_SSL_ERROR       = -6
+	IDEVICE_E_SSL_ERROR       = -6,
+	IDEVICE_E_TIMEOUT         = -7
 } idevice_error_t;
 
 typedef struct idevice_private idevice_private;
@@ -60,7 +60,7 @@ enum idevice_event_type {
 };
 
 /* event data structure */
-/** Provides information about the occured event. */
+/** Provides information about the occurred event. */
 typedef struct {
 	enum idevice_event_type event; /**< The event type. */
 	const char *udid; /**< The device unique id. */
@@ -88,7 +88,7 @@ void idevice_set_debug_level(int level);
  * @param user_data Application-specific data passed as parameter
  *   to the registered callback function.
  *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
 idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
 
@@ -96,7 +96,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
  * Release the event callback function that has been registered with
  *  idevice_event_subscribe().
  *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
 idevice_error_t idevice_event_unsubscribe(void);
 
@@ -109,7 +109,7 @@ idevice_error_t idevice_event_unsubscribe(void);
  *   This list is terminated by a NULL pointer.
  * @param count Number of devices found.
  *
- * @return IDEVICE_E_SUCCESS on success or an error value when an error occured.
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
 idevice_error_t idevice_get_device_list(char ***devices, int *count);
 

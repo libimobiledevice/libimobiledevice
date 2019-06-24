@@ -9,6 +9,8 @@ cdef extern from "libimobiledevice/webinspector.h":
         WEBINSPECTOR_E_PLIST_ERROR = -2
         WEBINSPECTOR_E_MUX_ERROR = -3
         WEBINSPECTOR_E_SSL_ERROR = -4
+        WEBINSPECTOR_E_RECEIVE_TIMEOUT = -5,
+        WEBINSPECTOR_E_NOT_ENOUGH_DATA = -6,
         WEBINSPECTOR_E_UNKNOWN_ERROR = -256
 
     webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, webinspector_client_t * client)
@@ -26,6 +28,8 @@ cdef class WebinspectorError(BaseError):
             WEBINSPECTOR_E_PLIST_ERROR: "Property list error",
             WEBINSPECTOR_E_MUX_ERROR: "MUX error",
             WEBINSPECTOR_E_SSL_ERROR: "SSL Error",
+            WEBINSPECTOR_E_NOT_ENOUGH_DATA: 'Not enough data',
+            WEBINSPECTOR_E_RECEIVE_TIMEOUT: 'Connection timeout',
             WEBINSPECTOR_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

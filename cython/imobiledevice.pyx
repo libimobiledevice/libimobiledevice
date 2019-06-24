@@ -38,8 +38,8 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
         IDEVICE_E_UNKNOWN_ERROR = -2
         IDEVICE_E_NO_DEVICE = -3
         IDEVICE_E_NOT_ENOUGH_DATA = -4
-        IDEVICE_E_BAD_HEADER = -5
         IDEVICE_E_SSL_ERROR = -6
+        IDEVICE_E_TIMEOUT = -7
     ctypedef void (*idevice_event_cb_t) (const_idevice_event_t event, void *user_data)
     cdef extern idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
     cdef extern idevice_error_t idevice_event_unsubscribe()
@@ -64,8 +64,8 @@ cdef class iDeviceError(BaseError):
             IDEVICE_E_UNKNOWN_ERROR: 'Unknown error',
             IDEVICE_E_NO_DEVICE: 'No device',
             IDEVICE_E_NOT_ENOUGH_DATA: 'Not enough data',
-            IDEVICE_E_BAD_HEADER: 'Bad header',
-            IDEVICE_E_SSL_ERROR: 'SSL Error'
+            IDEVICE_E_SSL_ERROR: 'SSL Error',
+            IDEVICE_E_TIMEOUT: 'Connection timeout'
         }
         BaseError.__init__(self, *args, **kwargs)
 

@@ -57,7 +57,7 @@ static misagent_error_t misagent_error(property_list_service_error_t err)
 
 /**
  * Checks the response from misagent to determine if the operation
- * was successful or an error occured. Internally used only.
+ * was successful or an error occurred. Internally used only.
  *
  * @param response a PLIST_DICT received from device's misagent
  * @param status_code pointer to an int that will be set to the status code

@@ -9,6 +9,8 @@ cdef extern from "libimobiledevice/heartbeat.h":
         HEARTBEAT_E_PLIST_ERROR = -2
         HEARTBEAT_E_MUX_ERROR = -3
         HEARTBEAT_E_SSL_ERROR = -4
+        HEARTBEAT_E_NOT_ENOUGH_DATA = -5
+        HEARTBEAT_E_TIMEOUT = -6
         HEARTBEAT_E_UNKNOWN_ERROR = -256
 
     heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, heartbeat_client_t * client)
@@ -26,6 +28,8 @@ cdef class HeartbeatError(BaseError):
             HEARTBEAT_E_PLIST_ERROR: "Property list error",
             HEARTBEAT_E_MUX_ERROR: "MUX error",
             HEARTBEAT_E_SSL_ERROR: "SSL Error",
+            HEARTBEAT_E_NOT_ENOUGH_DATA: 'Not enough data',
+            HEARTBEAT_E_TIMEOUT: 'Connection timeout',
             HEARTBEAT_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

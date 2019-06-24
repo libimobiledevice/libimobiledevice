@@ -41,7 +41,7 @@
  *
  * @return RESULT_SUCCESS when the result is 'Success',
  *         RESULT_FAILURE when the result is 'Failure',
- *         or a negative value if an error occured during evaluation.
+ *         or a negative value if an error occurred during evaluation.
  */
 static int restored_check_result(plist_t dict)
 {
