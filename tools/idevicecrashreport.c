@@ -135,7 +135,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 
 		char **fileinfo = NULL;
 		struct stat stbuf;
-		stbuf.st_size = 0;
+		memset(&stbuf, '\0', sizeof(struct stat));
 
 		/* assemble absolute source filename */
 		strcpy(((char*)source_filename) + device_directory_length, list[k]);
