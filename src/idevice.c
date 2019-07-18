@@ -453,19 +453,24 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 
 	if (connection->ssl_data) {
 		uint32_t received = 0;
+		int do_select = 1;
 
 		while (received < len) {
+#ifdef HAVE_OPENSSL
+			do_select = (SSL_pending(connection->ssl_data->session) == 0);
+#endif
+			if (do_select) {
+				int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
+				idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
 
-			int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
-			idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
-
-			switch (error) {
-				case IDEVICE_E_SUCCESS:
-					break;
-				case IDEVICE_E_UNKNOWN_ERROR:
-					debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
-				default:
-					return error;
+				switch (error) {
+					case IDEVICE_E_SUCCESS:
+						break;
+					case IDEVICE_E_UNKNOWN_ERROR:
+						debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
+					default:
+						return error;
+				}
 			}
 
 #ifdef HAVE_OPENSSL
