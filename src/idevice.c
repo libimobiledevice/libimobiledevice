@@ -789,6 +789,18 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return ret;
 	}
 
+	/* force use of TLSv1 */
+#ifdef SSL_OP_NO_TLSv1_1
+	int opts = SSL_OP_NO_TLSv1_1;
+#ifdef SSL_OP_NO_TLSv1_2
+	opts |= SSL_OP_NO_TLSv1_2;
+#endif
+#ifdef SSL_OP_NO_TLSv1_3
+	opts |= SSL_OP_NO_TLSv1_3;
+#endif
+	SSL_CTX_set_options(ssl_ctx, SSL_OP_ALL | opts);
+#endif
+
 	BIO* membp;
 	X509* rootCert = NULL;
 	membp = BIO_new_mem_buf(root_cert.data, root_cert.size);
@@ -832,7 +844,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		ssl_data_loc->ctx = ssl_ctx;
 		connection->ssl_data = ssl_data_loc;
 		ret = IDEVICE_E_SUCCESS;
-		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
+		debug_info("SSL mode enabled, %s, cipher: %s", SSL_get_version(ssl), SSL_get_cipher(ssl));
 	}
 	/* required for proper multi-thread clean up to prevent leaks */
 	openssl_remove_thread_state();
