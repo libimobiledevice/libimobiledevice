@@ -29,6 +29,7 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       debugserver.c debugserver.h\
 		       webinspector.c webinspector.h\
 		       mobileactivation.c mobileactivation.h\
+		       preboard.c preboard.h \
 		       syslog_relay.c syslog_relay.h
 
 if WIN32
