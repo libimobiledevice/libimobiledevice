@@ -140,6 +140,17 @@ preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t
  *   Can be NULL if you want to handle receiving messages in your own code.
  * @param user_data User data for callback function or NULL.
  *
+ * The callback or following preboard_receive* invocations will usually
+ * receive a dictionary with:
+ *     { ShowDialog: true }
+ * If the user does not enter a passcode, after 2 minutes a timeout is reached
+ * and the device sends a dictionary with:
+ *     { Timeout: true }
+ *     followed by { HideDialog: true }
+ * If the user aborts the passcode entry, the device sends a dictionary:
+ *     { Error: 1, ErrorString: <error string> }
+ *     followed by { HideDialog: true }
+ *
  * @return PREBOARD_E_SUCCESS if the command was successfully submitted,
  *  PREBOARD_E_INVALID_ARG when client is invalid,
  *  or a PREBOARD_E_* error code on error.
@@ -154,6 +165,12 @@ preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t mani
  * @param status_cb Callback function that will receive status and error messages
  *   Can be NULL if you want to handle receiving messages in your own code.
  * @param user_data User data for callback function or NULL.
+ *
+ * The callback or following preboard_receive* invocations will usually
+ * receive a dictionary with:
+ *     { StashbagCommitComplete: true }
+ * or in case of an error:
+ *     { StashbagCommitComplete: 0, Error: 1, <optional> ErrorString: <error string> }
  *
  * @return PREBOARD_E_SUCCESS if the command was successfully submitted,
  *  PREBOARD_E_INVALID_ARG when client is invalid,

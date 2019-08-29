@@ -229,73 +229,10 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_create_stashbag(preboard_client_t
 	}
 
 	return preboard_receive_status_loop_with_callback(client, status_cb, user_data);
-
-	// return { ShowDialog: true} or {Timeout: true} followed by {HideDialog: true}
-	//     or { Error: 1, ErrorString: <error string> }
-
-
-/*
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>ShowDialog</key>
-	<true/>
-	<key>Version</key>
-	<integer>2</integer>
-</dict>
-</plist>
-
-for success, it will send the HideDialog message, then wait up to 14400 seconds (4h) for the device to reboot?
-
-
-<!-- error: -->
-
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Error</key>
-	<integer>1</integer>
-	<key>ErrorString</key>
-	<string>user authentication failed: Error Domain=com.apple.LocalAuthentication Code=-2 "Canceled by user." UserInfo={BiometryType=1, NSLocalizedDescription=Canceled by user.}</string>
-	<key>Version</key>
-	<integer>2</integer>
-</dict>
-</plist>
-
-<!-- or after 2 minutes -->
-
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Timeout</key>
-	<true/>
-	<key>Version</key>
-	<integer>2</integer>
-</dict>
-</plist>
-
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>HideDialog</key>
-	<true/>
-	<key>Version</key>
-	<integer>2</integer>
-</dict>
-</plist>
-
-*/
 }
 
 LIBIMOBILEDEVICE_API preboard_error_t preboard_commit_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data)
 {
-	// returns { StashbagCommitComplete: true }
-	//      or { StashbagCommitComplete: 0, Error: 1, <optional> ErrorString: <error string> }
-
 	if (!client) {
 		return PREBOARD_E_INVALID_ARG;
 	}
