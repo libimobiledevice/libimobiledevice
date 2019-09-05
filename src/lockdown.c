@@ -715,7 +715,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 			char *s_version = NULL;
 			plist_get_string_val(p_version, &s_version);
 			if (s_version && sscanf(s_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
-				device->version = ((vers[0] & 0xFF) << 16) | ((vers[1] & 0xFF) << 8) | (vers[2] & 0xFF);
+				device->version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
 			}
 			free(s_version);
 		}
@@ -738,7 +738,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	plist_free(pair_record);
 	pair_record = NULL;
 
-	if (device->version < 0x070000) {
+	if (device->version < DEVICE_VERSION(7,0,0)) {
 		/* for older devices, we need to validate pairing to receive trusted host status */
 		ret = lockdownd_validate_pair(client_loc, NULL);
 

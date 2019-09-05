@@ -320,7 +320,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
-		idevice_get_udid(device, &new_connection->udid);
+		new_connection->device = device;
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	} else {
@@ -347,9 +347,6 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_disconnect(idevice_connection_t con
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
-
-	if (connection->udid)
-		free(connection->udid);
 
 	free(connection);
 	connection = NULL;
@@ -759,9 +756,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 #endif
 	plist_t pair_record = NULL;
 
-	userpref_read_pair_record(connection->udid, &pair_record);
+	userpref_read_pair_record(connection->device->udid, &pair_record);
 	if (!pair_record) {
-		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->udid);
+		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->device->udid);
 		return ret;
 	}
 
@@ -789,16 +786,27 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return ret;
 	}
 
-	/* force use of TLSv1 */
+#if OPENSSL_VERSION_NUMBER < 0x10100002L || \
+	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x2060000fL))
+	/* force use of TLSv1 for older devices */
+	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
 #ifdef SSL_OP_NO_TLSv1_1
-	int opts = SSL_OP_NO_TLSv1_1;
+		long opts = SSL_CTX_get_options(ssl_ctx);
+		opts |= SSL_OP_NO_TLSv1_1;
 #ifdef SSL_OP_NO_TLSv1_2
-	opts |= SSL_OP_NO_TLSv1_2;
+		opts |= SSL_OP_NO_TLSv1_2;
 #endif
 #ifdef SSL_OP_NO_TLSv1_3
-	opts |= SSL_OP_NO_TLSv1_3;
+		opts |= SSL_OP_NO_TLSv1_3;
 #endif
-	SSL_CTX_set_options(ssl_ctx, SSL_OP_ALL | opts);
+		SSL_CTX_set_options(ssl_ctx, opts);
+#endif
+	}
+#else
+	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
+	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
+		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
+	}
 #endif
 
 	BIO* membp;
