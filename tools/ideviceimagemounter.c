@@ -34,6 +34,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#include <signal.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -152,6 +153,9 @@ int main(int argc, char **argv)
 	char *image_path = NULL;
 	size_t image_size = 0;
 	char *image_sig_path = NULL;
+
+	/* Connection shutdown may cause SIGPIPE */
+	signal(SIGPIPE, SIG_IGN);
 
 	parse_opts(argc, argv);
 
@@ -434,6 +438,10 @@ int main(int argc, char **argv)
 	if (result) {
 		plist_free(result);
 	}
+
+	/* Ensure we have output even if we crash in teardown */
+	fflush(stdout);
+	fflush(stderr);
 
 	/* perform hangup command */
 	mobile_image_mounter_hangup(mim);
