@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 	lockdownd_client_free(lckd);
 	lckd = NULL;
 
-	mobile_image_mounter_error_t err;
+	mobile_image_mounter_error_t err = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
 	plist_t result = NULL;
 
 	if (list_mode) {
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
 						uint32_t written, total = 0;
 						while (total < amount) {
 							written = 0;
-							if (afc_file_write(afc, af, buf, amount, &written) !=
+							if (afc_file_write(afc, af, buf + total, amount - total, &written) !=
 								AFC_E_SUCCESS) {
 								fprintf(stderr, "AFC Write error!\n");
 								break;
@@ -368,6 +368,14 @@ int main(int argc, char **argv)
 
 		fclose(f);
 
+		if (err != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+			if (err == MOBILE_IMAGE_MOUNTER_E_DEVICE_LOCKED) {
+				printf("ERROR: Device is locked, can't mount. Unlock device and try again.\n");
+			} else {
+				printf("ERROR: Unknown error occurred, can't mount.\n");
+			}
+			goto error_out;
+		}
 		printf("done.\n");
 
 		printf("Mounting...\n");
@@ -435,6 +443,7 @@ int main(int argc, char **argv)
 		plist_free(result);
 	}
 
+error_out:
 	/* perform hangup command */
 	mobile_image_mounter_hangup(mim);
 	/* free client */

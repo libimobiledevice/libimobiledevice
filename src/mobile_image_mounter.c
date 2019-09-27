@@ -2,7 +2,7 @@
  * mobile_image_mounter.c
  * com.apple.mobile.mobile_image_mounter service implementation.
  *
- * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -141,6 +141,43 @@ leave_unlock:
 	return res;
 }
 
+static mobile_image_mounter_error_t process_result(plist_t result, const char *expected_status)
+{
+	mobile_image_mounter_error_t res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
+	char* strval = NULL;
+	plist_t node;
+
+	node = plist_dict_get_item(result, "Error");
+	if (node && plist_get_node_type(node) == PLIST_STRING) {
+		plist_get_string_val(node, &strval);
+	}
+	if (strval) {
+		if (!strcmp(strval, "DeviceLocked")) {
+			debug_info("Device is locked, can't mount");
+			res = MOBILE_IMAGE_MOUNTER_E_DEVICE_LOCKED;
+		} else {
+			debug_info("Unhandled error '%s' received", strval);
+		}
+		free(strval);
+		return res;
+	}
+
+	node = plist_dict_get_item(result, "Status");
+	if (node && plist_get_node_type(node) == PLIST_STRING) {
+		plist_get_string_val(node, &strval);
+	}
+	if (!strval) {
+		debug_info("Error: Unexpected response received!");
+	} else if (strcmp(strval, expected_status) == 0) {
+		res = MOBILE_IMAGE_MOUNTER_E_SUCCESS;
+	} else {
+		debug_info("Error: didn't get %s but %s", expected_status, strval);
+	}
+	free(strval);
+
+	return res;
+}
+
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
 {
 	if (!client || !image_type || (image_size == 0) || !upload_cb) {
@@ -169,23 +206,10 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_im
 		debug_info("Error receiving response from device!");
 		goto leave_unlock;
 	}
-	res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
-
-	char* strval = NULL;
-	plist_t node = plist_dict_get_item(result, "Status");
-	if (node && plist_get_node_type(node) == PLIST_STRING) {
-		plist_get_string_val(node, &strval);
-	}
-	if (!strval) {
-		debug_info("Error: Unexpected response received!");
+	res = process_result(result, "ReceiveBytesAck");
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 		goto leave_unlock;
 	}
-	if (strcmp(strval, "ReceiveBytesAck") != 0) {
-		debug_info("Error: didn't get ReceiveBytesAck but %s", strval);
-		free(strval);
-		goto leave_unlock;
-	}
-	free(strval);
 
 	size_t tx = 0;
 	size_t bufsize = 65536;
@@ -223,26 +247,7 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_im
 		debug_info("Error receiving response from device!");
 		goto leave_unlock;
 	}
-	res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
-
-	strval = NULL;
-	node = plist_dict_get_item(result, "Status");
-	if (node && plist_get_node_type(node) == PLIST_STRING) {
-		plist_get_string_val(node, &strval);
-	}
-	if (!strval) {
-		debug_info("Error: Unexpected response received!");
-		goto leave_unlock;
-	}
-	if (strcmp(strval, "Complete") != 0) {
-		debug_info("Error: didn't get Complete but %s", strval);
-		free(strval);
-		goto leave_unlock;
-	} else {
-		res = MOBILE_IMAGE_MOUNTER_E_SUCCESS;
-	}
-	free(strval);
-
+	res = process_result(result, "Complete");
 
 leave_unlock:
 	mobile_image_mounter_unlock(client);
