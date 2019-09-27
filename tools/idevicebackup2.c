@@ -42,6 +42,7 @@
 #include <libimobiledevice/afc.h>
 #include <libimobiledevice/installation_proxy.h>
 #include <libimobiledevice/sbservices.h>
+#include <libimobiledevice/diagnostics_relay.h>
 #include "common/utils.h"
 
 #include <endianness.h>
@@ -1433,6 +1434,8 @@ static void print_usage(int argc, char **argv)
 	printf("Homepage: <" PACKAGE_URL ">\n");
 }
 
+#define DEVICE_VERSION(maj, min, patch) (((maj & 0xFF) << 16) | ((min & 0xFF) << 8) | (patch & 0xFF))
+
 int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
@@ -1755,6 +1758,25 @@ int main(int argc, char *argv[])
 		}
 		plist_free(node_tmp);
 		node_tmp = NULL;
+	}
+
+	/* get ProductVersion */
+	char *product_version = NULL;
+	int device_version = 0;
+	node_tmp = NULL;
+	lockdownd_get_value(lockdown, NULL, "ProductVersion", &node_tmp);
+	if (node_tmp) {
+		if (plist_get_node_type(node_tmp) == PLIST_STRING) {
+			plist_get_string_val(node_tmp, &product_version);
+		}
+		plist_free(node_tmp);
+		node_tmp = NULL;
+	}
+	if (product_version) {
+		int vers[3] = { 0, 0, 0 };
+		if (sscanf(product_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
+			device_version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
+		}
 	}
 
 	/* start notification_proxy */
@@ -2108,6 +2130,32 @@ checkpoint:
 			}
 			if (newpw || backup_password) {
 				mobilebackup2_send_message(mobilebackup2, "ChangePassword", opts);
+				uint8_t passcode_hint = 0;
+				if (device_version >= DEVICE_VERSION(13,0,0)) {
+					diagnostics_relay_client_t diag = NULL;
+					if (diagnostics_relay_client_start_service(device, &diag, "idevicebackup2") == DIAGNOSTICS_RELAY_E_SUCCESS) {
+						plist_t dict = NULL;
+						plist_t keys = plist_new_array();
+						plist_array_append_item(keys, plist_new_string("PasswordConfigured"));
+						if (diagnostics_relay_query_mobilegestalt(diag, keys, &dict) == DIAGNOSTICS_RELAY_E_SUCCESS) {
+							plist_t node = plist_access_path(dict, 2, "MobileGestalt", "PasswordConfigured");
+							plist_get_bool_val(node, &passcode_hint);
+						}
+						plist_free(keys);
+						plist_free(dict);
+						diagnostics_relay_goodbye(diag);
+						diagnostics_relay_client_free(diag);
+					}
+				}
+				if (passcode_hint) {
+					if (cmd_flags & CMD_FLAG_ENCRYPTION_CHANGEPW) {
+						PRINT_VERBOSE(1, "Please confirm changing the backup password by entering the passcode on the device.\n");
+					} else if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
+						PRINT_VERBOSE(1, "Please confirm enabling the backup encryption by entering the passcode on the device.\n");
+					} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
+						PRINT_VERBOSE(1, "Please confirm disabling the backup encryption by entering the passcode on the device.\n");
+					}
+				}
 				/*if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
 					int retr = 10;
 					while ((retr-- >= 0) && !backup_domain_changed) {
