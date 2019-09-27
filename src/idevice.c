@@ -930,7 +930,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 	if (connection->ssl_data->session) {
 		/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
 		if (SSL_shutdown(connection->ssl_data->session) == 0) {
-			SSL_shutdown(connection->ssl_data->session);
+			/* Only try bidirectional shutdown if we know it can complete */
+			int ssl_error;
+			if ((ssl_error = SSL_get_error(connection->ssl_data->session, 0)) == SSL_ERROR_NONE) {
+				SSL_shutdown(connection->ssl_data->session);
+			} else  {
+				debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i\n", ssl_error);
+			}
 		}
 	}
 #else
