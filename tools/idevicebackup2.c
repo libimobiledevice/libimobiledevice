@@ -2,8 +2,8 @@
  * idevicebackup2.c
  * Command line interface to use the device's backup and restore service
  *
- * Copyright (c) 2010-2018 Nikias Bassen All Rights Reserved.
- * Copyright (c) 2009-2010 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2009-2010 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2128,6 +2128,7 @@ checkpoint:
 			int operation_ok = 0;
 			plist_t message = NULL;
 
+			mobilebackup2_error_t mberr;
 			char *dlmsg = NULL;
 			int file_count = 0;
 			int errcode = 0;
@@ -2138,10 +2139,13 @@ checkpoint:
 			do {
 				free(dlmsg);
 				dlmsg = NULL;
-				mobilebackup2_receive_message(mobilebackup2, &message, &dlmsg);
-				if (!message || !dlmsg) {
-					PRINT_VERBOSE(1, "Device is not ready yet. Going to try again in 2 seconds...\n");
-					sleep(2);
+				mberr = mobilebackup2_receive_message(mobilebackup2, &message, &dlmsg);
+				if (mberr == MOBILEBACKUP2_E_RECEIVE_TIMEOUT) {
+					PRINT_VERBOSE(2, "Device is not ready yet, retrying...\n");
+					goto files_out;
+				} else if (mberr != MOBILEBACKUP2_E_SUCCESS) {
+					PRINT_VERBOSE(0, "ERROR: Could not receive from mobilebackup2 (%d)\n", mberr);
+					quit_flag++;
 					goto files_out;
 				}
 
