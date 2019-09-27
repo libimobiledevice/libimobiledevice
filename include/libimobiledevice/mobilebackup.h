@@ -3,8 +3,8 @@
  * @brief Backup and restore of all device data.
  * \internal
  *
- * Copyright (c) 2009-2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2009-2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,13 +35,15 @@ extern "C" {
 
 /** Error Codes */
 typedef enum {
-	MOBILEBACKUP_E_SUCCESS       =  0,
-	MOBILEBACKUP_E_INVALID_ARG   = -1,
-	MOBILEBACKUP_E_PLIST_ERROR   = -2,
-	MOBILEBACKUP_E_MUX_ERROR     = -3,
-	MOBILEBACKUP_E_BAD_VERSION   = -4,
-	MOBILEBACKUP_E_REPLY_NOT_OK  = -5,
-	MOBILEBACKUP_E_UNKNOWN_ERROR = -256
+	MOBILEBACKUP_E_SUCCESS         =  0,
+	MOBILEBACKUP_E_INVALID_ARG     = -1,
+	MOBILEBACKUP_E_PLIST_ERROR     = -2,
+	MOBILEBACKUP_E_MUX_ERROR       = -3,
+	MOBILEBACKUP_E_SSL_ERROR       = -4,
+	MOBILEBACKUP_E_RECEIVE_TIMEOUT = -5,
+	MOBILEBACKUP_E_BAD_VERSION     = -6,
+	MOBILEBACKUP_E_REPLY_NOT_OK    = -7,
+	MOBILEBACKUP_E_UNKNOWN_ERROR   = -256
 } mobilebackup_error_t;
 
 typedef struct mobilebackup_client_private mobilebackup_client_private;

@@ -2,6 +2,7 @@
  * mobilebackup.c
  * Contains functions for the built-in MobileBackup client.
  *
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -52,6 +53,10 @@ static mobilebackup_error_t mobilebackup_error(device_link_service_error_t err)
 			return MOBILEBACKUP_E_PLIST_ERROR;
 		case DEVICE_LINK_SERVICE_E_MUX_ERROR:
 			return MOBILEBACKUP_E_MUX_ERROR;
+		case DEVICE_LINK_SERVICE_E_SSL_ERROR:
+			return MOBILEBACKUP_E_SSL_ERROR;
+		case DEVICE_LINK_SERVICE_E_RECEIVE_TIMEOUT:
+			return MOBILEBACKUP_E_RECEIVE_TIMEOUT;
 		case DEVICE_LINK_SERVICE_E_BAD_VERSION:
 			return MOBILEBACKUP_E_BAD_VERSION;
 		default:
