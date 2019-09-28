@@ -28,6 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 #include "common/utils.h"
 
 #include <libimobiledevice/libimobiledevice.h>
@@ -322,6 +325,9 @@ int main(int argc, char* argv[])
 	int i;
 	const char* udid = NULL;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {

@@ -28,6 +28,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 #include "common/userpref.h"
 
 #include <libimobiledevice/libimobiledevice.h>
@@ -134,6 +137,9 @@ int main(int argc, char **argv)
 	} op_t;
 	op_t op = OP_NONE;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	parse_opts(argc, argv);
 
 	if ((argc - optind) < 1) {

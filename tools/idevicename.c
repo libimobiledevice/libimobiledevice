@@ -28,6 +28,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -56,6 +59,10 @@ int main(int argc, char** argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0}
 	};
+
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	while ((c = getopt_long(argc, argv, "du:h", longopts, &optidx)) != -1) {
 		switch (c) {

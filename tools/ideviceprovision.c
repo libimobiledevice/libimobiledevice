@@ -29,6 +29,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -291,6 +294,9 @@ int main(int argc, char *argv[])
 	const char* param = NULL;
 	const char* param2 = NULL;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
