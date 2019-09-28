@@ -6,12 +6,10 @@ cdef extern from "libimobiledevice/restore.h":
     ctypedef enum restored_error_t:
         RESTORE_E_SUCCESS = 0
         RESTORE_E_INVALID_ARG = -1
-        RESTORE_E_INVALID_CONF = -2
-        RESTORE_E_PLIST_ERROR = -3
-        RESTORE_E_DICT_ERROR = -4
-        RESTORE_E_NOT_ENOUGH_DATA = -5
-        RESTORE_E_MUX_ERROR = -6
-        RESTORE_E_START_RESTORE_FAILED = -7
+        RESTORE_E_PLIST_ERROR = -2
+        RESTORE_E_MUX_ERROR = -3
+        RESTORE_E_NOT_ENOUGH_DATA = -4
+        RESTORE_E_RECEIVE_TIMEOUT = -5
         RESTORE_E_UNKNOWN_ERROR = -256
 
     restored_error_t restored_client_new(idevice_t device, restored_client_t *client, char *label)
@@ -34,12 +32,10 @@ cdef class RestoreError(BaseError):
         self._lookup_table = {
             RESTORE_E_SUCCESS: "Success",
             RESTORE_E_INVALID_ARG: "Invalid argument",
-            RESTORE_E_INVALID_CONF: "Invalid configuration",
             RESTORE_E_PLIST_ERROR: "Property list error",
-            RESTORE_E_DICT_ERROR: "Dict error",
-            RESTORE_E_NOT_ENOUGH_DATA: "Not enough data",
             RESTORE_E_MUX_ERROR: "MUX Error",
-            RESTORE_E_START_RESTORE_FAILED: "Starting restore failed",
+            RESTORE_E_NOT_ENOUGH_DATA: "Not enough data",
+            RESTORE_E_RECEIVE_TIMEOUT: "Receive timeout",
             RESTORE_E_UNKNOWN_ERROR: "Unknown error"
         }
         BaseError.__init__(self, *args, **kwargs)

@@ -7,11 +7,13 @@ cdef extern from "libimobiledevice/mobilesync.h":
         MOBILESYNC_E_INVALID_ARG = -1
         MOBILESYNC_E_PLIST_ERROR = -2
         MOBILESYNC_E_MUX_ERROR = -3
-        MOBILESYNC_E_BAD_VERSION = -4
-        MOBILESYNC_E_SYNC_REFUSED = -5
-        MOBILESYNC_E_CANCELLED = -6
-        MOBILESYNC_E_WRONG_DIRECTION = -7
-        MOBILESYNC_E_NOT_READY = -8
+        MOBILESYNC_E_SSL_ERROR = -4
+        MOBILESYNC_E_RECEIVE_TIMEOUT = -5
+        MOBILESYNC_E_BAD_VERSION = -6
+        MOBILESYNC_E_SYNC_REFUSED = -7
+        MOBILESYNC_E_CANCELLED = -8
+        MOBILESYNC_E_WRONG_DIRECTION = -9
+        MOBILESYNC_E_NOT_READY = -10
         MOBILESYNC_E_UNKNOWN_ERROR = -256
 
     ctypedef enum mobilesync_sync_type_t:
@@ -60,6 +62,8 @@ cdef class MobileSyncError(BaseError):
             MOBILESYNC_E_INVALID_ARG: "Invalid argument",
             MOBILESYNC_E_PLIST_ERROR: "Property list error",
             MOBILESYNC_E_MUX_ERROR: "MUX error",
+            MOBILESYNC_E_SSL_ERROR: "SSL eror",
+            MOBILESYNC_E_RECEIVE_TIMEOUT: "Receive timeout",
             MOBILESYNC_E_BAD_VERSION: "Bad version",
             MOBILESYNC_E_SYNC_REFUSED: "Sync refused",
             MOBILESYNC_E_CANCELLED: "Sync cancelled",
