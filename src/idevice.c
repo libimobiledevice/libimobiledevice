@@ -384,18 +384,25 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 	}
 
 	if (connection->ssl_data) {
+		uint32_t sent = 0;
+		while (sent < len) {
 #ifdef HAVE_OPENSSL
-		int sent = SSL_write(connection->ssl_data->session, (const void*)data, (int)len);
-		debug_info("SSL_write %d, sent %d", len, sent);
+			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
 #else
-		ssize_t sent = gnutls_record_send(connection->ssl_data->session, (void*)data, (size_t)len);
+			ssize_t s = gnutls_record_send(connection->ssl_data->session, (void*)(data+sent), (size_t)(len-sent));
 #endif
-		if ((uint32_t)sent == (uint32_t)len) {
-			*sent_bytes = sent;
-			return IDEVICE_E_SUCCESS;
+			if (s < 0) {
+				break;
+			}
+			sent += s;
 		}
-		*sent_bytes = 0;
-		return IDEVICE_E_SSL_ERROR;
+		debug_info("SSL_write %d, sent %d", len, sent);
+		if (sent < len) {
+			*sent_bytes = 0;
+			return IDEVICE_E_SSL_ERROR;
+		}
+		*sent_bytes = sent;
+		return IDEVICE_E_SUCCESS;
 	}
 	return internal_connection_send(connection, data, len, sent_bytes);
 }
