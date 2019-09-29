@@ -2504,7 +2504,13 @@ files_out:
 						PRINT_VERBOSE(1, "The device should reboot now.\n");
 					PRINT_VERBOSE(1, "Restore Successful.\n");
 				} else {
-					PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
+					afc_remove_path(afc, "/iTunesRestore/RestoreApplications.plist");
+					afc_remove_path(afc, "/iTunesRestore");
+					if (quit_flag) {
+						PRINT_VERBOSE(1, "Restore Aborted.\n");
+					} else {
+						PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
+					}
 				}
 				break;
 				case CMD_INFO:
