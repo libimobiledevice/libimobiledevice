@@ -48,7 +48,7 @@
 #include <endianness.h>
 
 #define LOCK_ATTEMPTS 50
-#define LOCK_WAIT 200000
+#define LOCK_WAIT 200000000
 
 #ifdef WIN32
 #include <windows.h>
@@ -1878,7 +1878,8 @@ int main(int argc, char *argv[])
 					do_post_notification(device, NP_SYNC_DID_START);
 					break;
 				} else if (aerr == AFC_E_OP_WOULD_BLOCK) {
-					usleep(LOCK_WAIT);
+					struct timespec lockwait = { 0, LOCK_WAIT};
+					nanosleep(&lockwait, NULL);
 					continue;
 				} else {
 					fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
