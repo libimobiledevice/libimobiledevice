@@ -1036,6 +1036,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 {
+	return idevice_connection_disable_bypass_ssl(connection, 0);
+}
+
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass)
+{
 	if (!connection)
 		return IDEVICE_E_INVALID_ARG;
 	if (!connection->ssl_data) {
@@ -1043,24 +1048,29 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 		return IDEVICE_E_SUCCESS;
 	}
 
+	// some services require plain text communication after SSL handshake
+	// sending out SSL_shutdown will cause bytes
+	if (!sslBypass) {
 #ifdef HAVE_OPENSSL
-	if (connection->ssl_data->session) {
-		/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
-		if (SSL_shutdown(connection->ssl_data->session) == 0) {
-			/* Only try bidirectional shutdown if we know it can complete */
-			int ssl_error;
-			if ((ssl_error = SSL_get_error(connection->ssl_data->session, 0)) == SSL_ERROR_NONE) {
-				SSL_shutdown(connection->ssl_data->session);
-			} else  {
-				debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i\n", ssl_error);
+		if (connection->ssl_data->session) {
+			/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
+			if (SSL_shutdown(connection->ssl_data->session) == 0) {
+				/* Only try bidirectional shutdown if we know it can complete */
+				int ssl_error;
+				if ((ssl_error = SSL_get_error(connection->ssl_data->session, 0)) == SSL_ERROR_NONE) {
+					SSL_shutdown(connection->ssl_data->session);
+				} else  {
+					debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i\n", ssl_error);
+				}
 			}
 		}
-	}
 #else
-	if (connection->ssl_data->session) {
-		gnutls_bye(connection->ssl_data->session, GNUTLS_SHUT_RDWR);
-	}
+		if (connection->ssl_data->session) {
+			gnutls_bye(connection->ssl_data->session, GNUTLS_SHUT_RDWR);
+		}
 #endif
+	}
+
 	internal_ssl_cleanup(connection->ssl_data);
 	free(connection->ssl_data);
 	connection->ssl_data = NULL;
