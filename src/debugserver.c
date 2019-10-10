@@ -54,6 +54,8 @@ static debugserver_error_t debugserver_error(service_error_t err)
 			return DEBUGSERVER_E_MUX_ERROR;
 		case SERVICE_E_SSL_ERROR:
 			return DEBUGSERVER_E_SSL_ERROR;
+        case SERVICE_E_TIMEOUT:
+			return DEBUGSERVER_E_TIMEOUT;
 		default:
 			break;
 	}
