@@ -104,15 +104,8 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_
 {
 	if (!client)
 		return SYSLOG_RELAY_E_INVALID_ARG;
-
+	syslog_relay_stop_capture(client);
 	syslog_relay_error_t err = syslog_relay_error(service_client_free(client->parent));
-	client->parent = NULL;
-	if (client->worker) {
-		debug_info("Joining syslog capture callback worker thread");
-		thread_join(client->worker);
-		thread_free(client->worker);
-		client->worker = THREAD_T_NULL;
-	}
 	free(client);
 
 	return err;

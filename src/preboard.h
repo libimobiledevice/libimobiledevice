@@ -1,8 +1,8 @@
 /*
- * mobilebackup2.h
- * Definitions for the mobilebackup2 service (iOS4+)
+ * preboard.h
+ * com.apple.preboard_v2 service header file.
  *
- * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2019 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,14 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __MOBILEBACKUP2_H
-#define __MOBILEBACKUP2_H
+#ifndef __PREBOARD_H
+#define __PREBOARD_H
 
-#include "libimobiledevice/mobilebackup2.h"
-#include "device_link_service.h"
+#include "libimobiledevice/preboard.h"
+#include "property_list_service.h"
+#include "common/thread.h"
 
-struct mobilebackup2_client_private {
-	device_link_service_client_t parent;
+struct preboard_client_private {
+	property_list_service_client_t parent;
+	THREAD_T receive_status_thread;
 };
 
 #endif

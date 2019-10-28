@@ -29,10 +29,6 @@
 #include <string.h>
 #include <errno.h>
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/err.h>
@@ -47,6 +43,10 @@
 #include "common/socket.h"
 #include "common/thread.h"
 #include "common/debug.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #ifdef HAVE_OPENSSL
 
@@ -320,7 +320,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		new_connection->type = CONNECTION_USBMUXD;
 		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
-		idevice_get_udid(device, &new_connection->udid);
+		new_connection->device = device;
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	} else {
@@ -347,9 +347,6 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_disconnect(idevice_connection_t con
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
-
-	if (connection->udid)
-		free(connection->udid);
 
 	free(connection);
 	connection = NULL;
@@ -387,18 +384,25 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 	}
 
 	if (connection->ssl_data) {
+		uint32_t sent = 0;
+		while (sent < len) {
 #ifdef HAVE_OPENSSL
-		int sent = SSL_write(connection->ssl_data->session, (const void*)data, (int)len);
-		debug_info("SSL_write %d, sent %d", len, sent);
+			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
 #else
-		ssize_t sent = gnutls_record_send(connection->ssl_data->session, (void*)data, (size_t)len);
+			ssize_t s = gnutls_record_send(connection->ssl_data->session, (void*)(data+sent), (size_t)(len-sent));
 #endif
-		if ((uint32_t)sent == (uint32_t)len) {
-			*sent_bytes = sent;
-			return IDEVICE_E_SUCCESS;
+			if (s < 0) {
+				break;
+			}
+			sent += s;
 		}
-		*sent_bytes = 0;
-		return IDEVICE_E_SSL_ERROR;
+		debug_info("SSL_write %d, sent %d", len, sent);
+		if (sent < len) {
+			*sent_bytes = 0;
+			return IDEVICE_E_SSL_ERROR;
+		}
+		*sent_bytes = sent;
+		return IDEVICE_E_SUCCESS;
 	}
 	return internal_connection_send(connection, data, len, sent_bytes);
 }
@@ -453,19 +457,24 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 
 	if (connection->ssl_data) {
 		uint32_t received = 0;
+		int do_select = 1;
 
 		while (received < len) {
+#ifdef HAVE_OPENSSL
+			do_select = (SSL_pending(connection->ssl_data->session) == 0);
+#endif
+			if (do_select) {
+				int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
+				idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
 
-			int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
-			idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
-
-			switch (error) {
-				case IDEVICE_E_SUCCESS:
-					break;
-				case IDEVICE_E_UNKNOWN_ERROR:
-					debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
-				default:
-					return error;
+				switch (error) {
+					case IDEVICE_E_SUCCESS:
+						break;
+					case IDEVICE_E_UNKNOWN_ERROR:
+						debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
+					default:
+						return error;
+				}
 			}
 
 #ifdef HAVE_OPENSSL
@@ -754,9 +763,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 #endif
 	plist_t pair_record = NULL;
 
-	userpref_read_pair_record(connection->udid, &pair_record);
+	userpref_read_pair_record(connection->device->udid, &pair_record);
 	if (!pair_record) {
-		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->udid);
+		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->device->udid);
 		return ret;
 	}
 
@@ -783,6 +792,29 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		BIO_free(ssl_bio);
 		return ret;
 	}
+
+#if OPENSSL_VERSION_NUMBER < 0x10100002L || \
+	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x2060000fL))
+	/* force use of TLSv1 for older devices */
+	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
+#ifdef SSL_OP_NO_TLSv1_1
+		long opts = SSL_CTX_get_options(ssl_ctx);
+		opts |= SSL_OP_NO_TLSv1_1;
+#ifdef SSL_OP_NO_TLSv1_2
+		opts |= SSL_OP_NO_TLSv1_2;
+#endif
+#ifdef SSL_OP_NO_TLSv1_3
+		opts |= SSL_OP_NO_TLSv1_3;
+#endif
+		SSL_CTX_set_options(ssl_ctx, opts);
+#endif
+	}
+#else
+	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
+	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
+		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
+	}
+#endif
 
 	BIO* membp;
 	X509* rootCert = NULL;
@@ -827,7 +859,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		ssl_data_loc->ctx = ssl_ctx;
 		connection->ssl_data = ssl_data_loc;
 		ret = IDEVICE_E_SUCCESS;
-		debug_info("SSL mode enabled, cipher: %s", SSL_get_cipher(ssl));
+		debug_info("SSL mode enabled, %s, cipher: %s", SSL_get_version(ssl), SSL_get_cipher(ssl));
 	}
 	/* required for proper multi-thread clean up to prevent leaks */
 	openssl_remove_thread_state();
@@ -905,7 +937,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_conn
 	if (connection->ssl_data->session) {
 		/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
 		if (SSL_shutdown(connection->ssl_data->session) == 0) {
-			SSL_shutdown(connection->ssl_data->session);
+			/* Only try bidirectional shutdown if we know it can complete */
+			int ssl_error;
+			if ((ssl_error = SSL_get_error(connection->ssl_data->session, 0)) == SSL_ERROR_NONE) {
+				SSL_shutdown(connection->ssl_data->session);
+			} else  {
+				debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i\n", ssl_error);
+			}
 		}
 	}
 #else

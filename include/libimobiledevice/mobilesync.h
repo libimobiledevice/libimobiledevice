@@ -3,8 +3,8 @@
  * @brief Synchronize data classes with a device and computer.
  * \internal
  *
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010-2011 Nikias Bassen All Rights Reserved.
  * Copyright (c) 2014 Christophe Fergeau All Rights Reserved.
  * Copyright (c) 2010 Bryan Forbes All Rights Reserved.
  * Copyright (c) 2009 Jonathan Beck All Rights Reserved.
@@ -42,11 +42,13 @@ typedef enum {
 	MOBILESYNC_E_INVALID_ARG     = -1,
 	MOBILESYNC_E_PLIST_ERROR     = -2,
 	MOBILESYNC_E_MUX_ERROR       = -3,
-	MOBILESYNC_E_BAD_VERSION     = -4,
-	MOBILESYNC_E_SYNC_REFUSED    = -5,
-	MOBILESYNC_E_CANCELLED       = -6,
-	MOBILESYNC_E_WRONG_DIRECTION = -7,
-	MOBILESYNC_E_NOT_READY       = -8,
+	MOBILESYNC_E_SSL_ERROR       = -4,
+	MOBILESYNC_E_RECEIVE_TIMEOUT = -5,
+	MOBILESYNC_E_BAD_VERSION     = -6,
+	MOBILESYNC_E_SYNC_REFUSED    = -7,
+	MOBILESYNC_E_CANCELLED       = -8,
+	MOBILESYNC_E_WRONG_DIRECTION = -9,
+	MOBILESYNC_E_NOT_READY       = -10,
 	MOBILESYNC_E_UNKNOWN_ERROR   = -256
 } mobilesync_error_t;
 

@@ -57,6 +57,10 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 			return MOBILESYNC_E_PLIST_ERROR;
 		case DEVICE_LINK_SERVICE_E_MUX_ERROR:
 			return MOBILESYNC_E_MUX_ERROR;
+		case DEVICE_LINK_SERVICE_E_SSL_ERROR:
+			return MOBILESYNC_E_SSL_ERROR;
+		case DEVICE_LINK_SERVICE_E_RECEIVE_TIMEOUT:
+			return MOBILESYNC_E_RECEIVE_TIMEOUT;
 		case DEVICE_LINK_SERVICE_E_BAD_VERSION:
 			return MOBILESYNC_E_BAD_VERSION;
 		default:
