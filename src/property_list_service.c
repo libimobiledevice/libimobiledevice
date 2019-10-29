@@ -197,6 +197,11 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		return service_to_property_list_service_error(serr);
 	}
 
+	if (bytes == 0) {
+		/* success but 0 bytes length, assume timeout */
+		return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;
+	}
+
 	debug_info("initial read=%i", bytes);
 
 	uint32_t curlen = 0;

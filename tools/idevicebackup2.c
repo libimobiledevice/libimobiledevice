@@ -1409,7 +1409,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --full\t\tforce full backup from device.\n");
 	printf("  restore\trestore last backup to the device\n");
 	printf("    --system\t\trestore system files, too.\n");
-	printf("    --no-reboot\t\tdo NOT reboot the system when done (default: yes).\n");
+	printf("    --no-reboot\t\tdo NOT reboot the device when done (default: yes).\n");
 	printf("    --copy\t\tcreate a copy of backup folder before restoring.\n");
 	printf("    --settings\t\trestore device settings from the backup.\n");
 	printf("    --remove\t\tremove items which are not being restored\n");
@@ -2499,12 +2499,18 @@ files_out:
 				}
 				break;
 				case CMD_RESTORE:
-				if ((cmd_flags & CMD_FLAG_RESTORE_NO_REBOOT) == 0)
-					PRINT_VERBOSE(1, "The device should reboot now.\n");
 				if (operation_ok) {
+					if ((cmd_flags & CMD_FLAG_RESTORE_NO_REBOOT) == 0)
+						PRINT_VERBOSE(1, "The device should reboot now.\n");
 					PRINT_VERBOSE(1, "Restore Successful.\n");
 				} else {
-					PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
+					afc_remove_path(afc, "/iTunesRestore/RestoreApplications.plist");
+					afc_remove_path(afc, "/iTunesRestore");
+					if (quit_flag) {
+						PRINT_VERBOSE(1, "Restore Aborted.\n");
+					} else {
+						PRINT_VERBOSE(1, "Restore Failed (Error Code %d).\n", -result_code);
+					}
 				}
 				break;
 				case CMD_INFO:
