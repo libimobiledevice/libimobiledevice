@@ -227,6 +227,62 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
 	return IDEVICE_E_SUCCESS;
 }
 
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count)
+{
+	usbmuxd_device_info_t *dev_list;
+
+	*devices = NULL;
+	*count = 0;
+
+	if (usbmuxd_get_device_list(&dev_list) < 0) {
+		debug_info("ERROR: usbmuxd is not running!", __func__);
+		return IDEVICE_E_NO_DEVICE;
+	}
+
+	idevice_info_t *newlist = NULL;
+	int i, newcount = 0;
+
+	for (i = 0; dev_list[i].handle > 0; i++) {
+		newlist = realloc(*devices, sizeof(idevice_info_t) * (newcount+1));
+		newlist[newcount] = malloc(sizeof(struct idevice_info));
+		newlist[newcount]->udid = strdup(dev_list[i].udid);
+		if (dev_list[i].conn_type == CONNECTION_TYPE_USB) {
+			newlist[newcount]->conn_type = CONNECTION_USBMUXD;
+			newlist[newcount]->conn_data = NULL;
+		} else if (dev_list[i].conn_type == CONNECTION_TYPE_NETWORK) {
+			newlist[newcount]->conn_type = CONNECTION_NETWORK;
+			size_t addrlen = dev_list[i].conn_data[0];
+			newlist[newcount]->conn_data = malloc(addrlen);
+			memcpy(newlist[newcount]->conn_data, dev_list[i].conn_data, addrlen);
+		}
+		newcount++;
+		*devices = newlist;
+	}
+	usbmuxd_device_list_free(&dev_list);
+
+	*count = newcount;
+	newlist = realloc(*devices, sizeof(idevice_info_t) * (newcount+1));
+	newlist[newcount] = NULL;
+	*devices = newlist;
+
+	return IDEVICE_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_extended_free(idevice_info_t *devices)
+{
+	if (devices) {
+		int i = 0;
+		while (devices[i]) {
+			free(devices[i]->udid);
+			free(devices[i]->conn_data);
+			free(devices[i]);
+			i++;
+		}
+		free(devices);
+	}
+	return IDEVICE_E_SUCCESS;
+}
+
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, int *count)
 {
 	usbmuxd_device_info_t *dev_list;

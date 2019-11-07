@@ -124,24 +124,48 @@ idevice_error_t idevice_event_unsubscribe(void);
 /* discovery (synchronous) */
 
 /**
- * Get a list of currently available devices.
+ * Get a list of UDIDs of currently available devices (USBMUX devices only).
  *
- * @param devices List of udids of devices that are currently available.
+ * @param devices List of UDIDs of devices that are currently available.
  *   This list is terminated by a NULL pointer.
  * @param count Number of devices found.
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
+ *
+ * @note This function only returns the UDIDs of USBMUX devices. To also include
+ *   network devices in the list, use idevice_get_device_list_extended().
+ * @see idevice_get_device_list_extended
  */
 idevice_error_t idevice_get_device_list(char ***devices, int *count);
 
 /**
- * Free a list of device udids.
+ * Free a list of device UDIDs.
  *
- * @param devices List of udids to free.
+ * @param devices List of UDIDs to free.
  *
  * @return Always returnes IDEVICE_E_SUCCESS.
  */
 idevice_error_t idevice_device_list_free(char **devices);
+
+/**
+ * Get a list of currently available devices
+ *
+ * @param devices List of idevice_info_t records with device information.
+ *   This list is terminated by a NULL pointer.
+ * @param count Number of devices included in the list.
+ *
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
+ */
+idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count);
+
+/**
+ * Free an extended device list retrieved through idevice_get_device_list_extended().
+ *
+ * @param devices Device list to free.
+ *
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
+ */
+idevice_error_t idevice_device_list_extended_free(idevice_info_t *devices);
 
 /* device structure creation and destruction */
 
