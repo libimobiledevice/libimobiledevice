@@ -2,6 +2,7 @@
  * idevicesyslog.c
  * Relay the syslog of a device to stdout
  *
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +30,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -40,12 +42,12 @@
 
 static int quit_flag = 0;
 
-void print_usage(int argc, char **argv);
-
 static char* udid = NULL;
 
 static idevice_t device = NULL;
 static syslog_relay_client_t syslog = NULL;
+
+enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
 
 static void syslog_callback(char c, void *user_data)
 {
@@ -57,7 +59,7 @@ static void syslog_callback(char c, void *user_data)
 
 static int start_logging(void)
 {
-	idevice_error_t ret = idevice_new(&device, udid);
+	idevice_error_t ret = idevice_new_with_options(&device, udid, lookup_opts);
 	if (ret != IDEVICE_E_SUCCESS) {
 		fprintf(stderr, "Device with udid %s not found!?\n", udid);
 		return -1;
@@ -166,9 +168,31 @@ static void clean_exit(int sig)
 	quit_flag++;
 }
 
+static void print_usage(int argc, char **argv, int is_error)
+{
+	char *name = NULL;
+	name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+	  "Relay syslog of a connected device.\n\n" \
+	  "  -u, --udid UDID  target specific device by UDID\n" \
+	  "  -n, --network    connect to network device even if available via USB\n" \
+	  "  -h, --help       prints usage information\n" \
+	  "  -d, --debug      enable communication debugging\n" \
+	  "\n" \
+	  "Homepage: <" PACKAGE_URL ">\n"
+	);
+}
+
 int main(int argc, char *argv[])
 {
-	int i;
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ NULL, 0, NULL, 0}
+	};
 
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
@@ -177,35 +201,39 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:n", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = strdup(argv[i]);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			free(udid);
+			udid = strdup(optarg);
+			break;
+		case 'n':
+			lookup_opts |= IDEVICE_LOOKUP_PREFER_NETWORK;
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			return 0;
-		}
-		else {
-			print_usage(argc, argv);
-			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
 	}
 
+	argc -= optind;
+	argv += optind;
+
 	int num = 0;
-	char **devices = NULL;
-	idevice_get_device_list(&devices, &num);
-	idevice_device_list_free(devices);
+	idevice_info_t *devices = NULL;
+	idevice_get_device_list_extended(&devices, &num);
+	idevice_device_list_extended_free(devices);
 	if (num == 0) {
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
@@ -223,24 +251,7 @@ int main(int argc, char *argv[])
 	idevice_event_unsubscribe();
 	stop_logging();
 
-	if (udid) {
-		free(udid);
-	}
+	free(udid);
 
 	return 0;
 }
-
-void print_usage(int argc, char **argv)
-{
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Relay syslog of a connected device.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
-}
-
