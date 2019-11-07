@@ -3,6 +3,7 @@
  * @brief Device/Connection handling and communication
  * \internal
  *
+ * Copyright (c) 2010-2019 Nikias Bassen All Rights Reserved.
  * Copyright (c) 2010-2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2014 Christophe Fergeau All Rights Reserved.
  * Copyright (c) 2008 Jonathan Beck All Rights Reserved.
@@ -51,6 +52,26 @@ typedef idevice_private *idevice_t; /**< The device handle. */
 typedef struct idevice_connection_private idevice_connection_private;
 typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
+/** Options for idevice_new_with_options() */
+enum idevice_options {
+	IDEVICE_LOOKUP_USBMUX = 1 << 1,  /**< include USBMUX devices during lookup */
+	IDEVICE_LOOKUP_NETWORK = 1 << 2, /**< include network devices during lookup */
+	IDEVICE_LOOKUP_PREFER_NETWORK = 1 << 3 /**< prefer network connection if device is available via USBMUX *and* network */
+};
+
+/** Type of connection a device is available on */
+enum idevice_connection_type {
+	CONNECTION_USBMUXD = 1,
+	CONNECTION_NETWORK
+};
+
+struct idevice_info {
+	char *udid;
+	enum idevice_connection_type conn_type;
+	void* conn_data;
+};
+typedef struct idevice_info* idevice_info_t;
+
 /* discovery (events/asynchronous) */
 /** The event type for device add or removal */
 enum idevice_event_type {
@@ -64,7 +85,7 @@ enum idevice_event_type {
 typedef struct {
 	enum idevice_event_type event; /**< The event type. */
 	const char *udid; /**< The device unique id. */
-	int conn_type; /**< The connection type. Currently only 1 for usbmuxd. */
+	enum idevice_connection_type conn_type; /**< The connection type. */
 } idevice_event_t;
 
 /* event callback function prototype */
@@ -125,11 +146,15 @@ idevice_error_t idevice_device_list_free(char **devices);
 /* device structure creation and destruction */
 
 /**
- * Creates an idevice_t structure for the device specified by udid,
- *  if the device is available.
+ * Creates an idevice_t structure for the device specified by UDID,
+ *  if the device is available (USBMUX devices only).
  *
  * @note The resulting idevice_t structure has to be freed with
  * idevice_free() if it is no longer used.
+ * If you need to connect to a device available via network, use
+ * idevice_new_with_options() and include IDEVICE_LOOKUP_NETWORK in options.
+ *
+ * @see idevice_new_with_options
  *
  * @param device Upon calling this function, a pointer to a location of type
  *  idevice_t. On successful return, this location will be populated.
@@ -140,9 +165,30 @@ idevice_error_t idevice_device_list_free(char **devices);
 idevice_error_t idevice_new(idevice_t *device, const char *udid);
 
 /**
+ * Creates an idevice_t structure for the device specified by UDID,
+ *  if the device is available, with the given lookup options.
+ *
+ * @note The resulting idevice_t structure has to be freed with
+ * idevice_free() if it is no longer used.
+ *
+ * @param device Upon calling this function, a pointer to a location of type
+ *   idevice_t. On successful return, this location will be populated.
+ * @param udid The UDID to match.
+ * @param options Specifies what connection types should be considered
+ *   when looking up devices. Accepts bitwise or'ed values of idevice_options.
+ *   If 0 (no option) is specified it will default to IDEVICE_LOOKUP_USBMUX.
+ *   To lookup both USB and network-connected devices, pass
+ *   IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK. If a device is available
+ *   both via USBMUX *and* network, it will select the USB connection.
+ *   This behavior can be changed by adding IDEVICE_LOOKUP_PREFER_NETWORK
+ *   to the options in which case it will select the network connection.
+ *
+ * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
+ */
+idevice_error_t idevice_new_with_options(idevice_t *device, const char *udid, enum idevice_options options);
+
+/**
  * Cleans up an idevice structure, then frees the structure itself.
- * This is a library-level function; deals directly with the device to tear
- *  down relations, but otherwise is mostly internal.
  *
  * @param device idevice_t to free.
  */
