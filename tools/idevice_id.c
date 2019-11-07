@@ -104,20 +104,9 @@ int main(int argc, char **argv)
 	}
 	udid = argv[0];
 
-	enum idevice_connection_type conn_type = 0;
-	enum idevice_options opts = 0;
-	if (include_usb) {
-		conn_type |= CONNECTION_USBMUXD;
-		opts |= IDEVICE_LOOKUP_USBMUX;
-	}
-	if (include_network) {
-		conn_type |= CONNECTION_NETWORK;
-		opts |= IDEVICE_LOOKUP_NETWORK;
-	}
-
 	switch (mode) {
 	case MODE_SHOW_ID:
-		idevice_new_with_options(&device, udid, opts);
+		idevice_new_with_options(&device, udid, IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK);
 		if (!device) {
 			fprintf(stderr, "ERROR: No device with UDID %s attached.\n", udid);
 			return -2;
@@ -144,8 +133,8 @@ int main(int argc, char **argv)
 		if (device_name) {
 			free(device_name);
 		}
+		break;
 
-		return ret;
 	case MODE_LIST_DEVICES:
 	default:
 		if (idevice_get_device_list_extended(&dev_list, &i) < 0) {
@@ -153,19 +142,20 @@ int main(int argc, char **argv)
 			return -1;
 		}
 		for (i = 0; dev_list[i] != NULL; i++) {
-			if (dev_list[i]->conn_type & conn_type) {
-				printf("%s", dev_list[i]->udid);
-				if (include_usb && include_network) {
-					if (dev_list[i]->conn_type == CONNECTION_NETWORK) {
-						printf(" (WiFi)");
-					} else {
-						printf(" (USB)");
-					}
+			if (dev_list[i]->conn_type == CONNECTION_USBMUXD && !include_usb) continue;
+			if (dev_list[i]->conn_type == CONNECTION_NETWORK && !include_network) continue;
+			printf("%s", dev_list[i]->udid);
+			if (include_usb && include_network) {
+				if (dev_list[i]->conn_type == CONNECTION_NETWORK) {
+					printf(" (WiFi)");
+				} else {
+					printf(" (USB)");
 				}
-				printf("\n");
 			}
+			printf("\n");
 		}
 		idevice_device_list_extended_free(dev_list);
-		return 0;
+		break;
 	}
+	return ret;
 }
