@@ -188,8 +188,13 @@ LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client)
 
 LIBIMOBILEDEVICE_API service_error_t service_disable_ssl(service_client_t client)
 {
+	return service_disable_bypass_ssl(client, 0);
+}
+
+LIBIMOBILEDEVICE_API service_error_t service_disable_bypass_ssl(service_client_t client, uint8_t sslBypass)
+{
 	if (!client || !client->connection)
 		return SERVICE_E_INVALID_ARG;
-	return idevice_to_service_error(idevice_connection_disable_ssl(client->connection));
+	return idevice_to_service_error(idevice_connection_disable_bypass_ssl(client->connection, sslBypass));
 }
 
