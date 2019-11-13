@@ -2,7 +2,8 @@
  * debugserver.c
  * com.apple.debugserver service implementation.
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2014-2015 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -378,6 +379,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 
 	char* buffer = NULL;
 	uint32_t buffer_size = 0;
+	uint32_t buffer_capacity = 0;
 
 	if (response)
 		*response = NULL;
@@ -390,7 +392,9 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		if (strncmp(ack, command_prefix, sizeof(char)) == 0) {
 			should_receive = 1;
 			skip_prefix = 1;
-			buffer = strdup(command_prefix);
+			buffer = malloc(1024);
+			buffer_capacity = 1024;
+			strcpy(buffer, command_prefix);
 			buffer_size += sizeof(char);
 			debug_info("received ACK");
 		}
@@ -404,9 +408,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		debug_info("received command_prefix: %c", *command_prefix);
 		if (should_receive) {
 			if (buffer) {
-				memcpy(buffer, command_prefix, sizeof(char));
+				strcpy(buffer, command_prefix);
 			} else {
-				buffer = strdup(command_prefix);
+				buffer = malloc(1024);
+				buffer_capacity = 1024;
+				strcpy(buffer, command_prefix);
 				buffer_size += sizeof(char);
 			}
 		}
@@ -418,6 +424,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		uint32_t checksum_length = DEBUGSERVER_CHECKSUM_HASH_LENGTH;
 		int receiving_checksum_response = 0;
 		debug_info("attempting to read up response until checksum");
+
 		while ((checksum_length > 0)) {
 			char data[2] = {'#', '\0'};
 			if (debugserver_client_receive_internal_check(client, data)) {
@@ -426,16 +433,20 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 			if (receiving_checksum_response) {
 				checksum_length--;
 			}
-			char* newbuffer = string_concat(buffer, data, NULL);
+			if (buffer_size + 1 >= buffer_capacity) {
+				char* newbuffer = realloc(buffer, buffer_capacity+1024);
+				if (!newbuffer) {
+					return DEBUGSERVER_E_UNKNOWN_ERROR;
+				}
+				buffer = newbuffer;
+				buffer[buffer_capacity] = '\0';
+				buffer_capacity += 1024;
+			}
+			strcat(buffer, data);
 			buffer_size += sizeof(char);
-			free(buffer);
-			buffer = NULL;
-			buffer = newbuffer;
-			newbuffer = NULL;
 		}
 		debug_info("validating response checksum...");
-		int valid_response = debugserver_response_is_checksum_valid(buffer, buffer_size);
-		if (valid_response) {
+		if (client->noack_mode || debugserver_response_is_checksum_valid(buffer, buffer_size)) {
 			if (response) {
 				/* assemble response string */
 				uint32_t response_size = sizeof(char) * (buffer_size - DEBUGSERVER_CHECKSUM_HASH_LENGTH - 1);
@@ -482,25 +493,15 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugse
 	char* command_arguments = NULL;
 
 	/* concat all arguments */
-	char* tmp = NULL;
-	char* newtmp = NULL;
 	for (i = 0; i < command->argc; i++) {
 		debug_info("argv[%d]: %s", i, command->argv[i]);
-		if (!tmp) {
-			tmp = strdup(command->argv[i]);
-		} else {
-			newtmp = string_concat(tmp, command->argv[i], NULL);
-			free(tmp);
-			tmp = newtmp;
-		}
+		command_arguments = string_append(command_arguments, command->argv[i], NULL);
 	}
-	command_arguments = tmp;
-	tmp = NULL;
 
 	debug_info("command_arguments(%d): %s", command->argc, command_arguments);
 
 	/* encode command arguments, add checksum if required and assemble entire command */
-	debugserver_format_command("$", command->name, command_arguments, !client->noack_mode, &send_buffer, &send_buffer_size);
+	debugserver_format_command("$", command->name, command_arguments, 1, &send_buffer, &send_buffer_size);
 
 	debug_info("sending encoded command: %s", send_buffer);
 

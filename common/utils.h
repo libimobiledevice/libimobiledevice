@@ -1,7 +1,10 @@
 /*
  * utils.h
- * Miscellaneous utilities for string manipulation
+ * Miscellaneous utilities for string manipulation,
+ * file I/O and plist helper.
  *
+ * Copyright (c) 2014-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2013-2014 Martin Szulecki, All Rights Reserved.
  * Copyright (c) 2013 Federico Mena Quintero
  *
  * This library is free software; you can redistribute it and/or
@@ -39,6 +42,7 @@
 char *stpcpy(char *s1, const char *s2);
 #endif
 char *string_concat(const char *str, ...);
+char *string_append(char *str, ...);
 char *string_build_path(const char *elem, ...);
 char *string_format_size(uint64_t size);
 char *string_toupper(char *str);
