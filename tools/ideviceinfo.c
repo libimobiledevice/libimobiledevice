@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
 		{ "network", no_argument, NULL, 'n' },
 		{ "domain", required_argument, NULL, 'q' },
 		{ "key", required_argument, NULL, 'k' },
+		{ "simple", no_argument, NULL, 's' },
 		{ "xml", no_argument, NULL, 'x' },
 		{ NULL, 0, NULL, 0}
 	};
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nq:k:x", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nq:k:sx", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
