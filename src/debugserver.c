@@ -369,7 +369,7 @@ static int debugserver_client_receive_internal_check(debugserver_client_t client
 	return did_receive_char;
 }
 
-LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response, size_t* response_size)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
 
@@ -449,10 +449,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		if (client->noack_mode || debugserver_response_is_checksum_valid(buffer, buffer_size)) {
 			if (response) {
 				/* assemble response string */
-				uint32_t response_size = sizeof(char) * (buffer_size - DEBUGSERVER_CHECKSUM_HASH_LENGTH - 1);
-				*response = (char*)malloc(response_size + 1);
-				memcpy(*response, buffer + 1, response_size);
-				(*response)[response_size] = '\0';
+				uint32_t resp_size = sizeof(char) * (buffer_size - DEBUGSERVER_CHECKSUM_HASH_LENGTH - 1);
+				*response = (char*)malloc(resp_size + 1);
+				memcpy(*response, buffer + 1, resp_size);
+				(*response)[resp_size] = '\0';
+				if (response_size) *response_size = resp_size;
 			}
 			if (!client->noack_mode) {
 				/* confirm valid command */
@@ -481,7 +482,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 	return res;
 }
 
-LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response, size_t* response_size)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
 	int i;
@@ -512,7 +513,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_send_command(debugse
 	}
 
 	/* receive response */
-	res = debugserver_client_receive_response(client, response);
+	res = debugserver_client_receive_response(client, response, response_size);
 	debug_info("response result: %d", res);
 	if (res != DEBUGSERVER_E_SUCCESS) {
 		goto cleanup;
@@ -548,7 +549,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_environment_hex_
 
 	debugserver_command_t command = NULL;
 	debugserver_command_new("QEnvironmentHexEncoded:", 1, env_arg, &command);
-	result = debugserver_client_send_command(client, command, response);
+	result = debugserver_client_send_command(client, command, response, NULL);
 	debugserver_command_free(command);
 
 	free(env_tmp);
@@ -617,7 +618,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 
 	debugserver_command_t command = NULL;
 	debugserver_command_new(pkt, 0, NULL, &command);
-	result = debugserver_client_send_command(client, command, response);
+	result = debugserver_client_send_command(client, command, response, NULL);
 	debugserver_command_free(command);
 
 	if (pkt)
