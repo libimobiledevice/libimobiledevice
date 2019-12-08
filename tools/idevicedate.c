@@ -38,9 +38,9 @@
 #include <libimobiledevice/lockdown.h>
 
 #ifdef _DATE_FMT
-#define DATE_FMT_LANGINFO() nl_langinfo (_DATE_FMT)
+#define DATE_FMT_LANGINFO nl_langinfo (_DATE_FMT)
 #else
-#define DATE_FMT_LANGINFO() ""
+#define DATE_FMT_LANGINFO "%a %b %e %H:%M:%S %Z %Y"
 #endif
 
 static void print_usage(int argc, char **argv)
@@ -75,7 +75,6 @@ int main(int argc, char *argv[])
 	uint64_t datetime = 0;
 	time_t rawtime;
 	struct tm * tmp;
-	char const *format = NULL;
 	char buffer[80];
 	int result = 0;
 
@@ -128,14 +127,6 @@ int main(int argc, char *argv[])
 		else {
 			print_usage(argc, argv);
 			return 0;
-		}
-	}
-
-	/* determine a date format */
-	if (!format) {
-		format = DATE_FMT_LANGINFO ();
-		if (!*format) {
-			format = "%a %b %e %H:%M:%S %Z %Y";
 		}
 	}
 
@@ -195,7 +186,7 @@ int main(int argc, char *argv[])
 		tmp = localtime(&rawtime);
 
 		/* finally we format and print the current date */
-		strftime(buffer, 80, format, tmp);
+		strftime(buffer, 80, DATE_FMT_LANGINFO, tmp);
 		puts(buffer);
 	} else {
 		datetime = setdate;
@@ -217,7 +208,7 @@ int main(int argc, char *argv[])
 
 		if(lockdownd_set_value(client, NULL, "TimeIntervalSince1970", node) == LOCKDOWN_E_SUCCESS) {
 			tmp = localtime(&setdate);
-			strftime(buffer, 80, format, tmp);
+			strftime(buffer, 80, DATE_FMT_LANGINFO, tmp);
 			puts(buffer);
 		} else {
 			printf("ERROR: Failed to set date on device.\n");
