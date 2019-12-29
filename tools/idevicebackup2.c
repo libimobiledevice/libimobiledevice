@@ -1415,6 +1415,7 @@ static void print_usage(int argc, char **argv)
 	printf("    --remove\t\tremove items which are not being restored\n");
 	printf("    --skip-apps\t\tdo not trigger re-installation of apps after restore\n");
 	printf("    --password PWD\tsupply the password of the source backup\n");
+	printf("    --password-from-env NAME\tobtain password from environment variable NAME\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n");
@@ -1534,6 +1535,23 @@ int main(int argc, char *argv[])
 			if (backup_password)
 				free(backup_password);
 			backup_password = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "--password-from-env")) {
+			i++;
+			if (!argv[i]) {
+				print_usage(argc, argv);
+				return -1;
+			}
+			char* password_from_env = getenv(argv[i]);
+			if (password_from_env == NULL) {
+				printf("Environment variable '%s' does not exist.\n", argv[i]);
+				print_usage(argc, argv);
+				return -1;
+			}
+			if (backup_password)
+				free(backup_password);
+			backup_password = strdup(password_from_env);
 			continue;
 		}
 		else if (!strcmp(argv[i], "cloud")) {
