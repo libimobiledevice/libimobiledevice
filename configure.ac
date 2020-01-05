@@ -68,6 +68,7 @@ case ${host_os} in
   *mingw32*|*cygwin*)
     AC_MSG_RESULT([${host_os}])
     win32=true
+    AC_DEFINE(WINVER, 0x0501, [minimum Windows version])
     ;;
   darwin*)
     AC_MSG_RESULT([${host_os}])
