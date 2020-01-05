@@ -52,6 +52,9 @@ static int wsa_init = 0;
 #ifndef ECONNRESET
 #define ECONNRESET 108
 #endif
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
 
 static int verbose = 0;
 

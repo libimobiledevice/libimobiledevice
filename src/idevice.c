@@ -48,6 +48,10 @@
 #include <windows.h>
 #endif
 
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
+
 #ifdef HAVE_OPENSSL
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || \
