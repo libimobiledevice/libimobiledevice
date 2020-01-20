@@ -352,6 +352,8 @@ int main(int argc, char *argv[])
 					}
 					free(response);
 					response = NULL;
+				} else {
+					goto cleanup;
 				}
 			}
 
@@ -370,6 +372,8 @@ int main(int argc, char *argv[])
 				}
 				free(response);
 				response = NULL;
+			} else {
+				goto cleanup;
 			}
 
 			/* set working directory */
@@ -386,6 +390,8 @@ int main(int argc, char *argv[])
 				}
 				free(response);
 				response = NULL;
+			} else {
+				goto cleanup;
 			}
 
 			/* set environment */
@@ -427,6 +433,8 @@ int main(int argc, char *argv[])
 				}
 				free(response);
 				response = NULL;
+			} else {
+				goto cleanup;
 			}
 
 			/* set thread */
@@ -442,6 +450,8 @@ int main(int argc, char *argv[])
 				}
 				free(response);
 				response = NULL;
+			} else {
+				goto cleanup;
 			}
 
 			/* continue running process */
@@ -450,6 +460,10 @@ int main(int argc, char *argv[])
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
+
+			if (!response) {
+				goto cleanup;
+			}
 
 			/* main loop which is parsing/handling packets during the run */
 			debug_info("Entering run loop...");
