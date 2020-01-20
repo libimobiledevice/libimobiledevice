@@ -81,6 +81,19 @@ case ${host_os} in
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 
+AC_CHECK_MEMBER(usbmuxd_device_info_t.conn_type,, AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing conn_type member in usbmuxd_device_info_t. Please update libusbmuxd to build $PACKAGE_NAME]), [#include <usbmuxd.h>])
+AC_TRY_COMPILE([
+  #include <usbmuxd.h>
+], [
+  enum usbmux_connection_type conntypeusb = CONNECTION_TYPE_USB;
+  enum usbmux_connection_type conntypenet = CONNECTION_TYPE_NETWORK;
+],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+AC_TRY_COMPILE([
+  #include <usbmuxd.h>
+], [
+  enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
+],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
 # Cython Python Bindings
