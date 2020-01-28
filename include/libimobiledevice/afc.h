@@ -160,7 +160,7 @@ afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***di
  * Gets information about a specific file.
  *
  * @param client The client to use to get the information of the file.
- * @param path The fully-qualified path to the file.
+ * @param filename The fully-qualified path to the file.
  * @param file_information Pointer to a buffer that will be filled with a
  *        NULL-terminated list of strings with the file information. Set to NULL
  *        before calling this function. Free with afc_dictionary_free().
