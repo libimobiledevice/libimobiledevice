@@ -143,24 +143,26 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E' || r[0] == 'W') {
-		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
-		/* dogben: 'W' + byte seems to mean "process exited with this status." */
-		if (r[0] == 'W' && strlen(o) == 1) {
-			printf("Exit status: %u\n", o[0]);
-			if (exit_status != NULL) {
+		/* dogben: 'W' + hex-encoded byte seems to mean "process exited with this status." */
+		if (r[0] == 'W' && strlen(r) == 3 && exit_status != NULL) {
+			debugserver_decode_string(r + 1, strlen(r) - 1, &o);
+			if (o != NULL) {
+				printf("Exit status: %u\n", o[0]);
 				*exit_status = o[0];
+				free(o);
+				o = NULL;
+				free(*response);
+				*response = NULL;
+				return dres;
 			}
-		} else {
-			printf("%s: %s\n", (r[0] == 'E' ? "ERROR": "WARNING") , o);
 		}
-		if (o != NULL) {
-			free(o);
-			o = NULL;
-		}
+
+		printf("%s: %s\n", (r[0] == 'E' ? "ERROR": "WARNING") , r + 1);
+
 		free(*response);
 		*response = NULL;
 
-		if (!send_reply || (exit_status != NULL && *exit_status >= 0))
+		if (!send_reply)
 			return dres;
 
 		/* send reply */
