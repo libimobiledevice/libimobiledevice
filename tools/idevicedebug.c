@@ -108,7 +108,7 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_dictionary
 	return INSTPROXY_E_SUCCESS;
 }
 
-static debugserver_error_t debugserver_client_handle_response(debugserver_client_t client, char** response, int send_reply)
+static debugserver_error_t debugserver_client_handle_response(debugserver_client_t client, char** response, int send_reply, int* exit_status)
 {
 	debugserver_error_t dres = DEBUGSERVER_E_SUCCESS;
 	debugserver_command_t command = NULL;
@@ -149,12 +149,24 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E' || r[0] == 'W') {
-		printf("%s: %s\n", (r[0] == 'E' ? "ERROR": "WARNING") , r + 1);
-
+		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
+		/* dogben: 'W' + byte seems to mean "process exited with this status." */
+		if (r[0] == 'W' && strlen(o) == 1) {
+			printf("Exit status: %u\n", o[0]);
+			if (exit_status != NULL) {
+				*exit_status = o[0];
+			}
+		} else {
+			printf("%s: %s\n", (r[0] == 'E' ? "ERROR": "WARNING") , o);
+		}
+		if (o != NULL) {
+			free(o);
+			o = NULL;
+		}
 		free(*response);
 		*response = NULL;
 
-		if (!send_reply)
+		if (!send_reply || (exit_status != NULL && *exit_status >= 0))
 			return dres;
 
 		/* send reply */
@@ -229,6 +241,7 @@ int main(int argc, char *argv[])
 	char* response = NULL;
 	debugserver_command_t command = NULL;
 	debugserver_error_t dres = DEBUGSERVER_E_UNKNOWN_ERROR;
+        int exit_status = -1;
 
 	/* map signals */
 	signal(SIGINT, on_signal);
@@ -376,7 +389,7 @@ int main(int argc, char *argv[])
 				command = NULL;
 				if (response) {
 					if (strncmp(response, "OK", 2)) {
-						debugserver_client_handle_response(debugserver_client, &response, 0);
+						debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 						goto cleanup;
 					}
 					free(response);
@@ -394,7 +407,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0);
+					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -410,7 +423,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0);
+					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -451,7 +464,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0);
+					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -477,7 +490,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0);
+					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -502,8 +515,11 @@ int main(int argc, char *argv[])
 				if (response) {
 					log_debug("response: %s", response);
 					if (strncmp(response, "OK", 2)) {
-						dres = debugserver_client_handle_response(debugserver_client, &response, 1);
+						dres = debugserver_client_handle_response(debugserver_client, &response, 1, &exit_status);
 					}
+				}
+				if (exit_status > 0) {
+					goto cleanup;
 				}
 
 				sleep(1);
@@ -517,7 +533,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0);
+					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -552,5 +568,9 @@ cleanup:
 	if (device)
 		idevice_free(device);
 
-	return res;
+	if (exit_status > 0) {
+		return exit_status;
+	} else {
+		return res;
+	}
 }
