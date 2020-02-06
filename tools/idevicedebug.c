@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 	char* response = NULL;
 	debugserver_command_t command = NULL;
 	debugserver_error_t dres = DEBUGSERVER_E_UNKNOWN_ERROR;
-        int exit_status = -1;
+	int exit_status = -1;
 
 	/* map signals */
 	signal(SIGINT, on_signal);
