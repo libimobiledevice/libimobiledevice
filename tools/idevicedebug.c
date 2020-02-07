@@ -115,6 +115,9 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	char* o = NULL;
 	char* r = *response;
 
+        /* Documentation of response codes can be found here:
+           https://github.com/llvm/llvm-project/blob/4fe839ef3a51e0ea2e72ea2f8e209790489407a2/lldb/docs/lldb-gdb-remote.txt#L1269 */
+        
 	if (r[0] == 'O') {
 		/* stdout/stderr */
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
@@ -148,22 +151,8 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 			return dres;
 
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
-	} else if (r[0] == 'E' || r[0] == 'W') {
-		/* dogben: 'W' + hex-encoded byte seems to mean "process exited with this status." */
-		if (r[0] == 'W' && strlen(r) == 3 && exit_status != NULL) {
-			debugserver_decode_string(r + 1, strlen(r) - 1, &o);
-			if (o != NULL) {
-				printf("Exit status: %u\n", o[0]);
-				*exit_status = o[0];
-				free(o);
-				o = NULL;
-				free(*response);
-				*response = NULL;
-				return dres;
-			}
-		}
-
-		printf("%s: %s\n", (r[0] == 'E' ? "ERROR": "WARNING") , r + 1);
+	} else if (r[0] == 'E') {
+		printf("ERROR: %s\n", r + 1);
 
 		free(*response);
 		*response = NULL;
@@ -177,6 +166,18 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
+	} else if (r[0] == 'W' || r[0] == 'X') {
+		/* process exited */
+		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
+		if (o != NULL) {
+			printf("Exit %s: %u\n", (r[0] == 'W' ? "status" : "due to signal"), o[0]);
+			*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
+			free(o);
+			o = NULL;
+		}
+		free(*response);
+		*response = NULL;
+		return dres;
 	} else if (r && strlen(r) == 0) {
 		if (!send_reply)
 			return dres;
@@ -520,7 +521,7 @@ int main(int argc, char *argv[])
 						dres = debugserver_client_handle_response(debugserver_client, &response, 1, &exit_status);
 					}
 				}
-				if (exit_status > 0) {
+				if (exit_status >= 0) {
 					goto cleanup;
 				}
 
