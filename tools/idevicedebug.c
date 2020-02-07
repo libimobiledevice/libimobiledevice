@@ -171,6 +171,7 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
 		if (o != NULL) {
 			printf("Exit %s: %u\n", (r[0] == 'W' ? "status" : "due to signal"), o[0]);
+			/* Use bash convention where signals cause an exit status of 128 + signal */
 			*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
 			free(o);
 			o = NULL;
@@ -244,7 +245,6 @@ int main(int argc, char *argv[])
 	char* response = NULL;
 	debugserver_command_t command = NULL;
 	debugserver_error_t dres = DEBUGSERVER_E_UNKNOWN_ERROR;
-	int exit_status = -1;
 
 	/* map signals */
 	signal(SIGINT, on_signal);
@@ -518,10 +518,10 @@ int main(int argc, char *argv[])
 				if (response) {
 					log_debug("response: %s", response);
 					if (strncmp(response, "OK", 2)) {
-						dres = debugserver_client_handle_response(debugserver_client, &response, 1, &exit_status);
+						dres = debugserver_client_handle_response(debugserver_client, &response, 1, &res);
 					}
 				}
-				if (exit_status >= 0) {
+				if (res >= 0) {
 					goto cleanup;
 				}
 
@@ -571,9 +571,5 @@ cleanup:
 	if (device)
 		idevice_free(device);
 
-	if (exit_status > 0) {
-		return exit_status;
-	} else {
-		return res;
-	}
+	return res;
 }
