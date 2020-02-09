@@ -30,7 +30,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_LIBTOOL
+LT_INIT
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
