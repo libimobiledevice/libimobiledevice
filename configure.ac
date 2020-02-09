@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.64)
-AC_INIT([libimobiledevice], [1.2.1], [https://github.com/libimobiledevice/libimobiledevice/issues],, [http://libimobiledevice.org])
+AC_PREREQ([2.69])
+AC_INIT([libimobiledevice],[1.2.1],[https://github.com/libimobiledevice/libimobiledevice/issues],[],[http://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -82,17 +82,17 @@ esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 
 AC_CHECK_MEMBER(usbmuxd_device_info_t.conn_type,, AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing conn_type member in usbmuxd_device_info_t. Please update libusbmuxd to build $PACKAGE_NAME]), [#include <usbmuxd.h>])
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
   #include <usbmuxd.h>
-], [
+]], [[
   enum usbmux_connection_type conntypeusb = CONNECTION_TYPE_USB;
   enum usbmux_connection_type conntypenet = CONNECTION_TYPE_NETWORK;
-],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
-AC_TRY_COMPILE([
+]])],[],[AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME])])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
   #include <usbmuxd.h>
-], [
+]], [[
   enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
-],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+]])],[],[AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME])])
 
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
@@ -195,7 +195,7 @@ AC_SYS_LARGEFILE
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 common/Makefile
 src/Makefile
@@ -206,6 +206,7 @@ cython/Makefile
 docs/Makefile
 doxygen.cfg
 ])
+AC_OUTPUT
 
 echo "
 Configuration for $PACKAGE $VERSION:
