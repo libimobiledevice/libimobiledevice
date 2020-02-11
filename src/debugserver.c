@@ -85,8 +85,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	debugserver_client_t client_loc = (debugserver_client_t) malloc(sizeof(struct debugserver_client_private));
 	client_loc->parent = parent;
 	client_loc->noack_mode = 0;
-        client_loc->cancel_receive = NULL;
-        client_loc->receive_loop_timeout = 1000;
+	client_loc->cancel_receive = NULL;
+	client_loc->receive_loop_timeout = 1000;
 
 	*client = client_loc;
 
@@ -157,10 +157,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
 {
 	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
-  do {
-    res = debugserver_client_receive_with_timeout(client, data, size, received, client->receive_loop_timeout);
-  } while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
-    return res;
+	do {
+		/* Is this allowed to return DEBUGSERVER_E_TIMEOUT and also set data and received? */
+		res = debugserver_client_receive_with_timeout(client, data, size, received, client->receive_loop_timeout);
+	} while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
+	return res;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command)

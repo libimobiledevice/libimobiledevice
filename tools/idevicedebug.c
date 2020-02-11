@@ -113,8 +113,9 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	char* o = NULL;
 	char* r = *response;
 
-        /* Documentation of response codes can be found here:
-           https://github.com/llvm/llvm-project/blob/4fe839ef3a51e0ea2e72ea2f8e209790489407a2/lldb/docs/lldb-gdb-remote.txt#L1269 */
+	/* Documentation of response codes can be found here:
+	   https://github.com/llvm/llvm-project/blob/4fe839ef3a51e0ea2e72ea2f8e209790489407a2/lldb/docs/lldb-gdb-remote.txt#L1269
+	*/
         
 	if (r[0] == 'O') {
 		/* stdout/stderr */
@@ -124,11 +125,14 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
 		debug_info("Thread stopped. Details:\n%s", r + 1);
-                if (exit_status != NULL) {
-                /* "Thread stopped" seems to happen when assert() fails. Use bash convention where signals cause an exit status of 128 + signal */
-                *exit_status = 128 + SIGABRT;
-                }
-                /* Break out of the loop. */
+		if (exit_status != NULL) {
+			/* "Thread stopped" seems to happen when assert() fails.
+			   Use bash convention where signals cause an exit
+			   status of 128 + signal
+			*/
+			*exit_status = 128 + SIGABRT;
+		}
+		/* Break out of the loop. */
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E') {
 		printf("ERROR: %s\n", r + 1);
@@ -137,13 +141,15 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
 		if (o != NULL) {
 			printf("Exit %s: %u\n", (r[0] == 'W' ? "status" : "due to signal"), o[0]);
-                        if (exit_status != NULL) {
-			/* Use bash convention where signals cause an exit status of 128 + signal */
-			*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
-                        }
+			if (exit_status != NULL) {
+				/* Use bash convention where signals cause an
+				   exit status of 128 + signal
+				*/
+				*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
+			}
 		} else {
-                  debug_info("Unable to decode exit status from %s", r);
-                  dres = DEBUGSERVER_E_UNKNOWN_ERROR;
+			debug_info("Unable to decode exit status from %s", r);
+			dres = DEBUGSERVER_E_UNKNOWN_ERROR;
                 }
 	} else if (r && strlen(r) == 0) {
 		debug_info("empty response");
@@ -151,13 +157,13 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		debug_info("ERROR: unhandled response: %s", r);
 	}
 
-        if (o != NULL) {
-          free(o);
-          o = NULL;
-        }
+	if (o != NULL) {
+		free(o);
+		o = NULL;
+	}
 
-        free(*response);
-        *response = NULL;
+	free(*response);
+	*response = NULL;
 	return dres;
 }
 
@@ -322,8 +328,8 @@ int main(int argc, char *argv[])
 				goto cleanup;
 			}
 
-                        /* set receive params */
-                        if (debugserver_client_set_receive_params(debugserver_client, cancel_receive, 250) != DEBUGSERVER_E_SUCCESS) {
+			/* set receive params */
+			if (debugserver_client_set_receive_params(debugserver_client, cancel_receive, 250) != DEBUGSERVER_E_SUCCESS) {
 				fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
 				goto cleanup;
 			}
@@ -445,17 +451,17 @@ int main(int argc, char *argv[])
 			debug_info("Entering run loop...");
 			while (!quit_flag) {
 				if (dres != DEBUGSERVER_E_SUCCESS) {
-                                  debug_info("failed to receive response; error %d", dres);
+					debug_info("failed to receive response; error %d", dres);
 					break;
 				}
 
 				if (response) {
 					debug_info("response: %s", response);
 					dres = debugserver_client_handle_response(debugserver_client, &response, &res);
-				if (dres != DEBUGSERVER_E_SUCCESS) {
-                                  debug_info("failed to process response; error %d; %s", dres, response);
-					break;
-				}
+					if (dres != DEBUGSERVER_E_SUCCESS) {
+						debug_info("failed to process response; error %d", dres);
+						break;
+					}
 				}
 				if (res >= 0) {
 					goto cleanup;
@@ -479,9 +485,9 @@ int main(int argc, char *argv[])
 				response = NULL;
 			}
 
-                        if (res < 0) {
-                          res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
-                        }
+			if (res < 0) {
+				res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+			}
 		break;
 	}
 
