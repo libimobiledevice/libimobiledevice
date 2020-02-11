@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
 					goto cleanup;
 				}
 
-				dres = debugserver_client_receive(debugserver_client, &response, NULL);
+				dres = debugserver_client_receive_response(debugserver_client, &response, NULL);
 			}
 
 			/* kill process after we finished */
