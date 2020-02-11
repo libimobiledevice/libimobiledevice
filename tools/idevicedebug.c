@@ -55,7 +55,7 @@ static void on_signal(int sig)
 	quit_flag++;
 }
 
-static void cancel_receive()
+static int cancel_receive()
 {
 	return quit_flag;
 }
@@ -124,8 +124,10 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
 		debug_info("Thread stopped. Details:\n%s", r + 1);
+                if (exit_status != NULL) {
                 /* "Thread stopped" seems to happen when assert() fails. Use bash convention where signals cause an exit status of 128 + signal */
                 *exit_status = 128 + SIGABRT;
+                }
                 /* Break out of the loop. */
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E') {
@@ -135,8 +137,10 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
 		if (o != NULL) {
 			printf("Exit %s: %u\n", (r[0] == 'W' ? "status" : "due to signal"), o[0]);
+                        if (exit_status != NULL) {
 			/* Use bash convention where signals cause an exit status of 128 + signal */
 			*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
+                        }
 		} else {
                   debug_info("Unable to decode exit status from %s", r);
                   dres = DEBUGSERVER_E_UNKNOWN_ERROR;
