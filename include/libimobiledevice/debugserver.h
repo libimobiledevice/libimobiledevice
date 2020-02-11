@@ -119,7 +119,8 @@ debugserver_error_t debugserver_client_send(debugserver_client_t client, const c
  * @return DEBUGSERVER_E_SUCCESS on success,
  *      DEBUGSERVER_E_INVALID_ARG when one or more parameters are
  *      invalid, DEBUGSERVER_E_MUX_ERROR when a communication error
- *      occurs, or DEBUGSERVER_E_UNKNOWN_ERROR when an unspecified
+ *      occurs, DEBUGSERVER_E_TIMEOUT when the timeout is reached,
+ *      or DEBUGSERVER_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
 debugserver_error_t debugserver_client_receive_with_timeout(debugserver_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
@@ -176,6 +177,20 @@ debugserver_error_t debugserver_client_receive_response(debugserver_client_t cli
  *     code otherwise.
  */
 debugserver_error_t debugserver_client_set_ack_mode(debugserver_client_t client, int enabled);
+
+/**
+ * Sets behavior when awaiting a response from the server.
+ *
+ * @see debugserver_client_send_command, debugserver_client_receive_response, debugserver_client_receive
+ *
+ * @param client The debugserver client
+ * @param cancel_receive A function pointer that will be called approximately every receive_loop_timeout milliseconds; the function should return a boolean flag specifying whether to stop waiting for a response. If NULL, behaves as if it always returns true.
+ * @param receive_loop_timeout Time in milliseconds between calls to cancel_receive.
+ *
+ * @return DEBUGSERVER_E_SUCCESS on success, or an DEBUGSERVER_E_* error
+ *     code otherwise.
+ */
+debugserver_error_t debugserver_client_set_receive_params(debugserver_client_t client, int (*cancel_receive)(), int receive_loop_timeout);
 
 /**
  * Sets the argv which launches an app.

@@ -89,6 +89,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	debugserver_client_t client_loc = (debugserver_client_t) malloc(sizeof(struct debugserver_client_private));
 	client_loc->parent = parent;
 	client_loc->noack_mode = 0;
+        client_loc->cancel_receive = NULL;
+        client_loc->receive_loop_timeout = 1000;
 
 	*client = client_loc;
 
@@ -150,7 +152,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 	}
 
 	res = debugserver_error(service_receive_with_timeout(client->parent, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	if (bytes <= 0 && res != DEBUGSERVER_E_TIMEOUT) {
 		debug_info("Could not read data, error %d", res);
 	}
 	if (received) {
@@ -162,7 +164,11 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
 {
-	return debugserver_client_receive_with_timeout(client, data, size, received, 1000);
+	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
+  do {
+    res = debugserver_client_receive_with_timeout(client, data, size, received, client->receive_loop_timeout);
+    while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
+    return res;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command)
@@ -355,6 +361,19 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_ack_mode(debugse
 	return DEBUGSERVER_E_SUCCESS;
 }
 
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_receive_params(debugserver_client_t client, int (*cancel_receive)(), int receive_loop_timeout)
+{
+	if (!client)
+		return DEBUGSERVER_E_INVALID_ARG;
+
+	client->cancel_receive = cancel_receive;
+	client->receive_loop_timeout = receive_loop_timeout;
+
+	debug_info("receive params: cancel_receive %s, receive_loop_timeout %dms", (client->cancel_receive == NULL ? "unset": "set"), client->receive_loop_timeout);
+
+	return DEBUGSERVER_E_SUCCESS;
+}
+
 static int debugserver_client_receive_internal_check(debugserver_client_t client, char* received_char)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
@@ -363,7 +382,7 @@ static int debugserver_client_receive_internal_check(debugserver_client_t client
 	uint32_t bytes = 0;
 
 	/* we loop here as we expect an answer */
-	res = debugserver_client_receive_with_timeout(client, &buffer, sizeof(char), &bytes, 1000);
+	res = debugserver_client_receive(client, &buffer, sizeof(char), &bytes);
 	if (res == DEBUGSERVER_E_SUCCESS && received_char[0] != 0) {
 		if (memcmp(&buffer, received_char, sizeof(char)) == 0) {
 			did_receive_char = 1;
