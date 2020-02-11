@@ -469,6 +469,11 @@ int main(int argc, char *argv[])
 
 				dres = debugserver_client_receive_response(debugserver_client, &response, NULL);
 			}
+			/* ignore quit_flag after this point */
+			if (debugserver_client_set_receive_params(debugserver_client, NULL, 5000) != DEBUGSERVER_E_SUCCESS) {
+				fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
+				goto cleanup;
+			}
 
 			/* kill process after we finished */
 			debug_info("Killing process...");
