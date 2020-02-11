@@ -159,7 +159,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_
 	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
   do {
     res = debugserver_client_receive_with_timeout(client, data, size, received, client->receive_loop_timeout);
-    while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
+  } while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
     return res;
 }
 
