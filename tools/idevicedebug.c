@@ -55,6 +55,11 @@ static void on_signal(int sig)
 	quit_flag++;
 }
 
+static void cancel_receive()
+{
+	return quit_flag;
+}
+
 static instproxy_error_t instproxy_client_get_object_by_key_from_info_directionary_for_bundle_identifier(instproxy_client_t client, const char* appid, const char* key, plist_t* node)
 {
 	if (!client || !appid || !key)
@@ -102,10 +107,9 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_directiona
 	return INSTPROXY_E_SUCCESS;
 }
 
-static debugserver_error_t debugserver_client_handle_response(debugserver_client_t client, char** response, int send_reply, int* exit_status)
+static debugserver_error_t debugserver_client_handle_response(debugserver_client_t client, char** response, int* exit_status)
 {
 	debugserver_error_t dres = DEBUGSERVER_E_SUCCESS;
-	debugserver_command_t command = NULL;
 	char* o = NULL;
 	char* r = *response;
 
@@ -117,49 +121,13 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
 		printf("%s", o);
 		fflush(stdout);
-		if (o != NULL) {
-			free(o);
-			o = NULL;
-		}
-
-		free(*response);
-		*response = NULL;
-
-		if (!send_reply)
-			return dres;
-
-		/* send reply */
-		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
-		debugserver_command_free(command);
-		command = NULL;
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
 		debug_info("Thread stopped. Details:\n%s", r + 1);
-
-		free(*response);
-		*response = NULL;
-
-		if (!send_reply)
-			return dres;
-
+                /* Break out of the loop. */
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E') {
 		printf("ERROR: %s\n", r + 1);
-
-		free(*response);
-		*response = NULL;
-
-		if (!send_reply)
-			return dres;
-
-		/* send reply */
-		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
-		debugserver_command_free(command);
-		command = NULL;
 	} else if (r[0] == 'W' || r[0] == 'X') {
 		/* process exited */
 		debugserver_decode_string(r + 1, strlen(r) - 1, &o);
@@ -167,29 +135,23 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 			printf("Exit %s: %u\n", (r[0] == 'W' ? "status" : "due to signal"), o[0]);
 			/* Use bash convention where signals cause an exit status of 128 + signal */
 			*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
-			free(o);
-			o = NULL;
-		}
-		free(*response);
-		*response = NULL;
-		return dres;
+		} else {
+                  debug_info("Unable to decode exit status from %s", r);
+                  dres = DEBUGSERVER_E_UNKNOWN_ERROR;
+                }
 	} else if (r && strlen(r) == 0) {
-		if (!send_reply)
-			return dres;
-
-		free(*response);
-		*response = NULL;
-
-		/* no command */
-		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
-		debugserver_command_free(command);
-		command = NULL;
+		debug_info("empty response");
 	} else {
-		debug_info("ERROR: unhandled response", r);
+		debug_info("ERROR: unhandled response: %s", r);
 	}
 
+        if (o != NULL) {
+          free(o);
+          o = NULL;
+        }
+
+        free(*response);
+        *response = NULL;
 	return dres;
 }
 
@@ -354,6 +316,12 @@ int main(int argc, char *argv[])
 				goto cleanup;
 			}
 
+                        /* set receive params */
+                        if (debugserver_client_set_receive_params(debugserver_client, cancel_receive, 250) != DEBUGSERVER_E_SUCCESS) {
+				fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
+				goto cleanup;
+			}
+
 			/* enable logging for the session in debug mode */
 			if (debug_level) {
 				debug_info("Setting logging bitmask...");
@@ -363,7 +331,7 @@ int main(int argc, char *argv[])
 				command = NULL;
 				if (response) {
 					if (strncmp(response, "OK", 2)) {
-						debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+						debugserver_client_handle_response(debugserver_client, &response, NULL);
 						goto cleanup;
 					}
 					free(response);
@@ -381,7 +349,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+					debugserver_client_handle_response(debugserver_client, &response, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -397,7 +365,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+					debugserver_client_handle_response(debugserver_client, &response, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -438,7 +406,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+					debugserver_client_handle_response(debugserver_client, &response, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -453,7 +421,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+					debugserver_client_handle_response(debugserver_client, &response, NULL);
 					goto cleanup;
 				}
 				free(response);
@@ -471,19 +439,19 @@ int main(int argc, char *argv[])
 			debug_info("Entering run loop...");
 			while (!quit_flag) {
 				if (dres != DEBUGSERVER_E_SUCCESS) {
-					debug_info("failed to receive response");
+                                  debug_info("failed to receive response; error %d", dres);
 					break;
 				}
 
 				if (response) {
 					debug_info("response: %s", response);
-					dres = debugserver_client_handle_response(debugserver_client, &response, 1, &res);
+					dres = debugserver_client_handle_response(debugserver_client, &response, &res);
 				}
 				if (res >= 0) {
 					goto cleanup;
 				}
 
-				sleep(1);
+				dres = debugserver_client_receive(debugserver_client, &response, NULL);
 			}
 
 			/* kill process after we finished */
@@ -494,7 +462,7 @@ int main(int argc, char *argv[])
 			command = NULL;
 			if (response) {
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, 0, NULL);
+					debugserver_client_handle_response(debugserver_client, &response, NULL);
 					goto cleanup;
 				}
 				free(response);
