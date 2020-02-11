@@ -124,6 +124,8 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
 		debug_info("Thread stopped. Details:\n%s", r + 1);
+                /* "Thread stopped" seems to happen when assert() fails. Use bash convention where signals cause an exit status of 128 + signal */
+                *exit_status = 128 + SIGABRT;
                 /* Break out of the loop. */
 		dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 	} else if (r[0] == 'E') {
@@ -446,6 +448,10 @@ int main(int argc, char *argv[])
 				if (response) {
 					debug_info("response: %s", response);
 					dres = debugserver_client_handle_response(debugserver_client, &response, &res);
+				if (dres != DEBUGSERVER_E_SUCCESS) {
+                                  debug_info("failed to process response; error %d; %s", dres, response);
+					break;
+				}
 				}
 				if (res >= 0) {
 					goto cleanup;
@@ -469,7 +475,9 @@ int main(int argc, char *argv[])
 				response = NULL;
 			}
 
-			res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+                        if (res < 0) {
+                          res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+                        }
 		break;
 	}
 
