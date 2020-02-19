@@ -443,8 +443,6 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(deb
 		}
 	}
 
-	debug_info("buffer: %*s", buffer_size, buffer);
-
 	uint32_t checksum_length = DEBUGSERVER_CHECKSUM_HASH_LENGTH;
 	int receiving_checksum_response = 0;
 	debug_info("attempting to read up response until checksum");
