@@ -42,6 +42,10 @@
 #include <plist/plist.h>
 #include "common/debug.h"
 
+static int debug_level = 0;
+
+#define log_debug(...) if (debug_level > 0) { printf(__VA_ARGS__); fputc('\n', stdout); }
+
 enum cmd_mode {
 	CMD_NONE = 0,
 	CMD_RUN
@@ -93,7 +97,7 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_directiona
 	if (object) {
 		*node = plist_copy(object);
 	} else {
-		debug_info("key %s not found", key);
+		log_debug("key %s not found", key);
 		return INSTPROXY_E_OP_FAILED;
 	}
 
@@ -128,12 +132,12 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		/* send reply */
 		debugserver_command_new("OK", 0, NULL, &command);
 		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
-		debug_info("Thread stopped. Details:\n%s", r + 1);
+		log_debug("Thread stopped. Details:\n%s", r + 1);
 
 		free(*response);
 		*response = NULL;
@@ -154,7 +158,7 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		/* send reply */
 		debugserver_command_new("OK", 0, NULL, &command);
 		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else if (r && strlen(r) == 0) {
@@ -167,11 +171,11 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 		/* no command */
 		debugserver_command_new("OK", 0, NULL, &command);
 		dres = debugserver_client_send_command(client, command, response, NULL);
-		debug_info("result: %d", dres);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else {
-		debug_info("ERROR: unhandled response", r);
+		log_debug("ERROR: unhandled response '%s'", r);
 	}
 
 	return dres;
@@ -203,7 +207,6 @@ int main(int argc, char *argv[])
 	instproxy_client_t instproxy_client = NULL;
 	debugserver_client_t debugserver_client = NULL;
 	int i;
-	int debug_level = 0;
 	int cmd = CMD_NONE;
 	const char* udid = NULL;
 	const char* bundle_identifier = NULL;
@@ -319,7 +322,7 @@ int main(int argc, char *argv[])
 
 			if (container && (plist_get_node_type(container) == PLIST_STRING)) {
 				plist_get_string_val(container, &working_directory);
-				debug_info("working_directory: %s\n", working_directory);
+				log_debug("working_directory: %s\n", working_directory);
 				plist_free(container);
 			} else {
 				plist_free(container);
@@ -340,7 +343,7 @@ int main(int argc, char *argv[])
 
 			/* enable logging for the session in debug mode */
 			if (debug_level) {
-				debug_info("Setting logging bitmask...");
+				log_debug("Setting logging bitmask...");
 				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS", 0, NULL, &command);
 				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
@@ -356,7 +359,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* set maximum packet size */
-			debug_info("Setting maximum packet size...");
+			log_debug("Setting maximum packet size...");
 			char* packet_size[2] = {strdup("1024"), NULL};
 			debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
 			free(packet_size[0]);
@@ -373,7 +376,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* set working directory */
-			debug_info("Setting working directory...");
+			log_debug("Setting working directory...");
 			char* working_dir[2] = {working_directory, NULL};
 			debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
@@ -390,23 +393,23 @@ int main(int argc, char *argv[])
 
 			/* set environment */
 			if (environment) {
-				debug_info("Setting environment...");
+				log_debug("Setting environment...");
 				for (environment_index = 0; environment_index < environment_count; environment_index++) {
-					debug_info("setting environment variable: %s", environment[environment_index]);
+					log_debug("setting environment variable: %s", environment[environment_index]);
 					debugserver_client_set_environment_hex_encoded(debugserver_client, environment[environment_index], NULL);
 				}
 			}
 
 			/* set arguments and run app */
-			debug_info("Setting argv...");
+			log_debug("Setting argv...");
 			i++; /* i is the offset of the bundle identifier, thus skip it */
 			int app_argc = (argc - i + 2);
 			char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
 			app_argv[0] = path;
-			debug_info("app_argv[%d] = %s", 0, app_argv[0]);
+			log_debug("app_argv[%d] = %s", 0, app_argv[0]);
 			app_argc = 1;
 			while (i < argc && argv && argv[i]) {
-				debug_info("app_argv[%d] = %s", app_argc, argv[i]);
+				log_debug("app_argv[%d] = %s", app_argc, argv[i]);
 				app_argv[app_argc++] = argv[i];
 				i++;
 			}
@@ -415,7 +418,7 @@ int main(int argc, char *argv[])
 			free(app_argv);
 
 			/* check if launch succeeded */
-			debug_info("Checking if launch succeeded...");
+			log_debug("Checking if launch succeeded...");
 			debugserver_command_new("qLaunchSuccess", 0, NULL, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
@@ -430,7 +433,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* set thread */
-			debug_info("Setting thread...");
+			log_debug("Setting thread...");
 			debugserver_command_new("Hc0", 0, NULL, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
@@ -445,22 +448,22 @@ int main(int argc, char *argv[])
 			}
 
 			/* continue running process */
-			debug_info("Continue running process...");
+			log_debug("Continue running process...");
 			debugserver_command_new("c", 0, NULL, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 
 			/* main loop which is parsing/handling packets during the run */
-			debug_info("Entering run loop...");
+			log_debug("Entering run loop...");
 			while (!quit_flag) {
 				if (dres != DEBUGSERVER_E_SUCCESS) {
-					debug_info("failed to receive response");
+					log_debug("failed to receive response");
 					break;
 				}
 
 				if (response) {
-					debug_info("response: %s", response);
+					log_debug("response: %s", response);
 					dres = debugserver_client_handle_response(debugserver_client, &response, 1);
 				}
 
@@ -468,7 +471,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* kill process after we finished */
-			debug_info("Killing process...");
+			log_debug("Killing process...");
 			debugserver_command_new("k", 0, NULL, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
