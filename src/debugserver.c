@@ -80,7 +80,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 		debug_info("Creating base service client failed. Error: %i", ret);
 		return ret;
 	}
-	service_disable_ssl(parent);
+	service_disable_bypass_ssl(parent, 1);
 
 	debugserver_client_t client_loc = (debugserver_client_t) malloc(sizeof(struct debugserver_client_private));
 	client_loc->parent = parent;
@@ -610,8 +610,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_argv(debugserver
 		char *p = m;
 		char *q = (char*)argv[i];
 		while (*q) {
-			*p++ = debugserver_int2hex(*q >> 4);
-			*p++ = debugserver_int2hex(*q & 0xf);
+			*p++ = DEBUGSERVER_HEX_ENCODE_FIRST_BYTE(*q);
+			*p++ = DEBUGSERVER_HEX_ENCODE_SECOND_BYTE(*q);
 			q++;
 		}
 

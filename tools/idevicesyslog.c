@@ -79,7 +79,7 @@ static int start_logging(void)
 	lerr = lockdownd_start_service(lockdown, SYSLOG_RELAY_SERVICE_NAME, &svc);
 	if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
 		fprintf(stderr, "*** Device is passcode protected, enter passcode on the device to continue ***\n");
-		while (1) {
+		while (!quit_flag) {
 			lerr = lockdownd_start_service(lockdown, SYSLOG_RELAY_SERVICE_NAME, &svc);
 			if (lerr != LOCKDOWN_E_PASSWORD_PROTECTED) {
 				break;

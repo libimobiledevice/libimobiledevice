@@ -311,6 +311,20 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
 idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 /**
+ * Disable bypass SSL for the given connection without sending out terminate messages.
+ *
+ * @param connection The connection to disable SSL for.
+ * @param sslBypass  if true ssl connection will not be terminated but just cleaned up, allowing
+ *                   plain text data going on underlying connection
+ *
+ * @return IDEVICE_E_SUCCESS on success, IDEVICE_E_INVALID_ARG when connection
+ *     is NULL. This function also returns IDEVICE_E_SUCCESS when SSL is not
+ *     enabled and does no further error checking on cleanup.
+ */
+idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass);
+
+
+/**
  * Get the underlying file descriptor for a connection
  *
  * @param connection The connection to get fd of
