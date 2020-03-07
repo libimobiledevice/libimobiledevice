@@ -1660,7 +1660,7 @@ int main(int argc, char *argv[])
 
 	idevice_t device = NULL;
 	if (udid) {
-		ret = idevice_new(&device, udid);
+		ret = idevice_new_with_options(&device, udid, IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found with udid %s, is it plugged in?\n", udid);
 			return -1;
@@ -1668,7 +1668,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		ret = idevice_new(&device, NULL);
+		ret = idevice_new_with_options(&device, NULL, IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK);
 		if (ret != IDEVICE_E_SUCCESS) {
 			printf("No device found, is it plugged in?\n");
 			return -1;
