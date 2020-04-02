@@ -23,4 +23,5 @@ nobase_include_HEADERS = libimobiledevice/libimobiledevice.h \
 			 libimobiledevice/mobileactivation.h\
 			 libimobiledevice/preboard.h\
 			 libimobiledevice/property_list_service.h\
-			 libimobiledevice/service.h
+			 libimobiledevice/service.h\
+			 libimobiledevice/devicebackup2.h

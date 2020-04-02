@@ -30,7 +30,8 @@ libimobiledevice_la_SOURCES = idevice.c idevice.h \
 		       webinspector.c webinspector.h\
 		       mobileactivation.c mobileactivation.h\
 		       preboard.c preboard.h \
-		       syslog_relay.c syslog_relay.h
+		       syslog_relay.c syslog_relay.h \
+			   devicebackup2.c devicebackup2.h
 
 if WIN32
 libimobiledevice_la_LDFLAGS += -avoid-version -static-libgcc
