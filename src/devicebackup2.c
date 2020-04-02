@@ -2324,18 +2324,5 @@ files_out:
 	idevice_free(device);
 	device = NULL;
 
-	if (backup_password) {
-		free(backup_password);
-	}
-
-	if (udid) {
-		free(udid);
-		udid = NULL;
-	}
-	if (source_udid) {
-		free(source_udid);
-		source_udid = NULL;
-	}
-
 	return result_code;
 }

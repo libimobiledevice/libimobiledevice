@@ -286,6 +286,21 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	return run_cmd(cmd, cmd_flags, udid, source_udid, backup_directory, interactive_mode, backup_password, newpw);
+	int err = run_cmd(cmd, cmd_flags, udid, source_udid, backup_directory, interactive_mode, backup_password, newpw);
+
+	if (backup_password) {
+		free(backup_password);
+	}
+
+	if (udid) {
+		free(udid);
+		udid = NULL;
+	}
+	if (source_udid) {
+		free(source_udid);
+		source_udid = NULL;
+	}
+
+	return err;
 }
 
