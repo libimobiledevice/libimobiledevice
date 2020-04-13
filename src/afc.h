@@ -53,8 +53,6 @@ typedef struct {
 struct afc_client_private {
 	service_client_t parent;
 	AFCPacket *afc_packet;
-	int file_handle;
-	int lock;
 	mutex_t mutex;
 	int free_parent;
 };
