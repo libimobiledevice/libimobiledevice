@@ -88,8 +88,6 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_new_with_service_client(service_clie
 	client_loc->afc_packet->entire_length = 0;
 	client_loc->afc_packet->this_length = 0;
 	memcpy(client_loc->afc_packet->magic, AFC_MAGIC, AFC_MAGIC_LEN);
-	client_loc->file_handle = 0;
-	client_loc->lock = 0;
 	mutex_init(&client_loc->mutex);
 
 	*client = client_loc;
