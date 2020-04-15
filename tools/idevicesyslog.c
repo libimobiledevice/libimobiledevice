@@ -41,6 +41,7 @@
 #include <libimobiledevice/syslog_relay.h>
 
 static int quit_flag = 0;
+static int exit_on_disconnect = 0;
 
 static char* udid = NULL;
 
@@ -155,6 +156,9 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 		if (syslog && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
 			fprintf(stdout, "[disconnected]\n");
+			if (exit_on_disconnect) {
+				quit_flag++;
+			}
 		}
 	}
 }
@@ -179,6 +183,7 @@ static void print_usage(int argc, char **argv, int is_error)
 	  "  -n, --network    connect to network device even if available via USB\n" \
 	  "  -h, --help       prints usage information\n" \
 	  "  -d, --debug      enable communication debugging\n" \
+	  "  -x, --exit       exit when device disconnects\n" \
 	  "\n" \
 	  "Homepage: <" PACKAGE_URL ">\n"
 	);
@@ -191,6 +196,8 @@ int main(int argc, char *argv[])
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "exit", no_argument, NULL, 'x' },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -201,7 +208,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:n", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nx", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -217,6 +224,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			lookup_opts |= IDEVICE_LOOKUP_PREFER_NETWORK;
+			break;
+		case 'x':
+			exit_on_disconnect = 1;
 			break;
 		case 'h':
 			print_usage(argc, argv, 0);
