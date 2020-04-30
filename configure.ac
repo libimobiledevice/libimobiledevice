@@ -81,6 +81,12 @@ case ${host_os} in
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 
+AC_SUBST(libusbmuxd_CFLAGS)
+AC_SUBST(libusbmuxd_LIBS)
+
+CACHED_CFLAGS="$CFLAGS"
+CFLAGS+=" $libusbmuxd_CFLAGS"
+
 AC_CHECK_MEMBER(usbmuxd_device_info_t.conn_type,, AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing conn_type member in usbmuxd_device_info_t. Please update libusbmuxd to build $PACKAGE_NAME]), [#include <usbmuxd.h>])
 AC_TRY_COMPILE([
   #include <usbmuxd.h>
@@ -93,6 +99,8 @@ AC_TRY_COMPILE([
 ], [
   enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
 ],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+
+CFLAGS="$CACHED_CFLAGS"
 
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
@@ -182,7 +190,7 @@ else
 	building_debug_code=yes
 fi
 
-AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith  -Wwrite-strings -Wswitch-default -Wno-unused-parameter -fsigned-char -fvisibility=hidden")
+AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith  -Wwrite-strings -Wswitch-default -Wno-unused-parameter -fsigned-char -fvisibility=hidden -fsanitize=address")
 AC_SUBST(GLOBAL_CFLAGS)
 
 case "$GLOBAL_CFLAGS" in
