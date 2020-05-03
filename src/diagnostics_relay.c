@@ -370,18 +370,18 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_mobileges
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result)
+LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* entry_name, const char* entry_class, plist_t* result)
 {
-	if (!client || (name == NULL && class == NULL) || result == NULL)
+	if (!client || (entry_name == NULL && entry_class == NULL) || result == NULL)
 		return DIAGNOSTICS_RELAY_E_INVALID_ARG;
 
 	diagnostics_relay_error_t ret = DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR;
 
 	plist_t dict = plist_new_dict();
-	if (name)
-		plist_dict_set_item(dict,"EntryName", plist_new_string(name));
-	if (class)
-		plist_dict_set_item(dict,"EntryClass", plist_new_string(class));
+	if (entry_name)
+		plist_dict_set_item(dict,"EntryName", plist_new_string(entry_name));
+	if (entry_class)
+		plist_dict_set_item(dict,"EntryClass", plist_new_string(entry_class));
 	plist_dict_set_item(dict,"Request", plist_new_string("IORegistry"));
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
