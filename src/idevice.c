@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
@@ -866,11 +867,6 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return IDEVICE_E_INVALID_ARG;
 
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
-#ifdef HAVE_OPENSSL
-	uint32_t return_me = 0;
-#else
-	int return_me = 0;
-#endif
 	plist_t pair_record = NULL;
 
 	userpref_read_pair_record(connection->device->udid, &pair_record);
@@ -958,9 +954,22 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	SSL_set_verify(ssl, 0, ssl_verify_callback);
 	SSL_set_bio(ssl, ssl_bio, ssl_bio);
 
-	return_me = SSL_do_handshake(ssl);
-	if (return_me != 1) {
-		debug_info("ERROR in SSL_do_handshake: %s", ssl_error_to_string(SSL_get_error(ssl, return_me)));
+	debug_info("Performing SSL handshake");
+	int ssl_error = 0;
+	do {
+		ssl_error = SSL_get_error(ssl, SSL_do_handshake(ssl));
+		if (ssl_error == 0 || ssl_error != SSL_ERROR_WANT_READ) {
+			break;
+		}
+#ifdef WIN32
+		Sleep(100);
+#else
+		struct timespec ts = { 0, 100000000 };
+		nanosleep(&ts, NULL);
+#endif
+	} while (1);
+	if (ssl_error != 0) {
+		debug_info("ERROR during SSL handshake: %s", ssl_error_to_string(ssl_error));
 		SSL_free(ssl);
 		SSL_CTX_free(ssl_ctx);
 	} else {
@@ -1014,6 +1023,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		debug_info("WARNING: errno says %s before handshake!", strerror(errno));
 	}
 
+	int return_me = 0;
 	do {
 		return_me = gnutls_handshake(ssl_data_loc->session);
 	} while(return_me == GNUTLS_E_AGAIN || return_me == GNUTLS_E_INTERRUPTED);
