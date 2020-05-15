@@ -92,7 +92,7 @@ static int lp = 0;
 #define COLOR_WHITE         "\e[1;37m"
 #define COLOR_DARK_WHITE    "\e[0;37m"
 
-#define TEXT_COLOR(x) if (use_colors) { fwrite(x, 1, sizeof(x), stdout); }
+#define TEXT_COLOR(x) if (use_colors) { fwrite(x, 1, sizeof(x)-1, stdout); }
 
 static void add_filter(const char* filterstr)
 {
