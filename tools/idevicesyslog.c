@@ -99,7 +99,7 @@ static void TEXT_COLOR(WORD attr)
 {
 	if (use_colors) {
 		SetConsoleTextAttribute(h_stdout, attr);
-	}	
+	}
 }
 #else
 
