@@ -73,6 +73,36 @@ static char *line = NULL;
 static int line_buffer_size = 0;
 static int lp = 0;
 
+#ifdef WIN32
+static WORD COLOR_RESET = 0;
+static HANDLE h_stdout = INVALID_HANDLE_VALUE;
+
+#define COLOR_NORMAL        COLOR_RESET
+#define COLOR_DARK          FOREGROUND_INTENSITY
+#define COLOR_RED           FOREGROUND_RED |FOREGROUND_INTENSITY
+#define COLOR_DARK_RED      FOREGROUND_RED
+#define COLOR_GREEN         FOREGROUND_GREEN | FOREGROUND_INTENSITY
+#define COLOR_DARK_GREEN    FOREGROUND_GREEN
+#define COLOR_YELLOW        FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY
+#define COLOR_DARK_YELLOW   FOREGROUND_GREEN | FOREGROUND_RED
+#define COLOR_BLUE          FOREGROUND_BLUE | FOREGROUND_INTENSITY
+#define COLOR_DARK_BLUE     FOREGROUND_BLUE
+#define COLOR_MAGENTA       FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_INTENSITY
+#define COLOR_DARK_MAGENTA  FOREGROUND_BLUE | FOREGROUND_RED
+#define COLOR_CYAN          FOREGROUND_BLUE | FOREGROUND_GREEN
+#define COLOR_BRIGHT_CYAN   FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY
+#define COLOR_DARK_CYAN     FOREGROUND_BLUE | FOREGROUND_GREEN
+#define COLOR_WHITE         FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+#define COLOR_DARK_WHITE    FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
+
+static void TEXT_COLOR(WORD attr)
+{
+	if (use_colors) {
+		SetConsoleTextAttribute(h_stdout, attr);
+	}	
+}
+#else
+
 #define COLOR_RESET         "\e[m"
 #define COLOR_NORMAL        "\e[0m"
 #define COLOR_DARK          "\e[2m"
@@ -93,6 +123,7 @@ static int lp = 0;
 #define COLOR_DARK_WHITE    "\e[0;37m"
 
 #define TEXT_COLOR(x) if (use_colors) { fwrite(x, 1, sizeof(x)-1, stdout); }
+#endif
 
 static void add_filter(const char* filterstr)
 {
@@ -298,7 +329,11 @@ static void syslog_callback(char c, void *user_data)
 				/* log level */
 				char* level_start = p;
 				char* level_end = p;
+#ifdef WIN32
+				WORD level_color = COLOR_NORMAL;
+#else
 				const char* level_color = NULL;
+#endif
 				if (!strncmp(p, "<Notice>:", 9)) {
 					level_end += 9;
 					level_color = COLOR_GREEN;
@@ -511,6 +546,13 @@ static void print_usage(int argc, char **argv, int is_error)
 
 int main(int argc, char *argv[])
 {
+#ifdef WIN32
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (GetConsoleScreenBufferInfo(h_stdout, &csbi)) {
+		COLOR_RESET = csbi.wAttributes;
+	}
+#endif
 	int include_filter = 0;
 	int exclude_filter = 0;
 	int include_kernel = 0;
