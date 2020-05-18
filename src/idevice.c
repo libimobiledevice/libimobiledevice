@@ -565,8 +565,24 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 		}
 		*sent_bytes = sent;
 		return IDEVICE_E_SUCCESS;
+	} else {
+		uint32_t sent = 0;
+		while (sent < len) {
+			uint32_t bytes = 0;
+			int s = internal_connection_send(connection, data+sent, len-sent, &bytes);
+			if (s < 0) {
+				break;
+			}
+			sent += bytes;
+		}
+		debug_info("internal_connection_send %d, sent %d", len, sent);
+		if (sent < len) {
+			*sent_bytes = 0;
+			return IDEVICE_E_NOT_ENOUGH_DATA;
+		}
+		*sent_bytes = sent;
+		return IDEVICE_E_SUCCESS;
 	}
-	return internal_connection_send(connection, data, len, sent_bytes);
 }
 
 static idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len, uint32_t received)
