@@ -549,7 +549,20 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 		uint32_t sent = 0;
 		while (sent < len) {
 #ifdef HAVE_OPENSSL
+			int c = socket_check_fd((int)(long)connection->data, FDM_WRITE, 100);
+			if (c < 0) {
+				break;
+			} else if (c == 0) {
+				continue;
+			}
 			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
+			if (s <= 0) {
+				int sslerr = SSL_get_error(connection->ssl_data->session, s);
+				if (sslerr == SSL_ERROR_WANT_WRITE) {
+					continue;
+				}
+				break;
+			}
 #else
 			ssize_t s = gnutls_record_send(connection->ssl_data->session, (void*)(data+sent), (size_t)(len-sent));
 #endif
