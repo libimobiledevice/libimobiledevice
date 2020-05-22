@@ -104,11 +104,7 @@ AC_TRY_COMPILE([
   enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
 ],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
 
-AC_TRY_LINK([
-  #include <plist/plist.h>
-], [
-  plist_string_val_compare(plist_new_string("str"), "str");
-],, AC_MSG_ERROR([[libplist is not up-to-date; missing plist_string_val_compare() etc. functions - Please update libplist to build $PACKAGE_NAME]]))
+AC_CHECK_LIB([plist], [plist_string_val_compare],, [AC_MSG_ERROR([[libplist is not up-to-date; missing plist_string_val_compare() etc. functions - Please update libplist to build $PACKAGE_NAME]])])
 
 CFLAGS="$CACHED_CFLAGS"
 LDFLAGS="$CACHED_LDFLAGS"
