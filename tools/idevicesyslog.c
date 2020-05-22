@@ -65,7 +65,7 @@ static int triggered = 0;
 static idevice_t device = NULL;
 static syslog_relay_client_t syslog = NULL;
 
-static const char QUIET_FILTER[] = "CommCenter|SpringBoard|UserEventAgent|WirelessRadioManagerd|aggregated|appstored|backboardd|biometrickitd|bluetoothd|callservicesd|contextstored|corespeechd|dasd|gpsd|homed|identityservicesd|itunesstored|kernel|locationd|mDNSResponder|mediaremoted|mediaserverd|navd|nsurlsessiond|powerd|rapportd|routined|runningboardd|sharingd|symptomsd|thermalmonitord|useractivityd|wifid";
+static const char QUIET_FILTER[] = "CircleJoinRequested|CommCenter|HeuristicInterpreter|MobileMail|PowerUIAgent|ProtectedCloudKeySyncing|SpringBoard|UserEventAgent|WirelessRadioManagerd|accessoryd|accountsd|aggregated|analyticsd|appstored|apsd|assetsd|assistant_service|backboardd|biometrickitd|bluetoothd|calaccessd|callservicesd|cloudd|com.apple.Safari.SafeBrowsing.Service|contextstored|coreduetd|corespeechd|cdpd|dasd|distnoted|dprivacyd|duetexpertd|findmydeviced|fmfd|fmflocatord|gpsd|healthd|homed|identityservicesd|imagent|itunescloudd|itunesstored|kernel|locationd|maild|mDNSResponder|mediaremoted|mediaserverd|mobileassetd|nanoregistryd|nanotimekitcompaniond|navd|nsurlsessiond|passd|pasted|photoanalysisd|powerd|powerlogHelperd|ptpd|rapportd|remindd|routined|runningboardd|searchd|sharingd|suggestd|symptomsd|timed|thermalmonitord|useractivityd|vmd|wifid|wirelessproxd";
 
 enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
 
