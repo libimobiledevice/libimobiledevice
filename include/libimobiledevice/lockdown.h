@@ -202,7 +202,7 @@ lockdownd_error_t lockdownd_remove_value(lockdownd_client_t client, const char *
  *
  * @param client The lockdownd client
  * @param identifier The identifier of the service to start
- * @param descriptor The service descriptor on success or NULL on failure
+ * @param service The service descriptor on success or NULL on failure
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
@@ -217,7 +217,7 @@ lockdownd_error_t lockdownd_start_service(lockdownd_client_t client, const char 
  *
  * @param client The lockdownd client
  * @param identifier The identifier of the service to start
- * @param descriptor The service descriptor on success or NULL on failure
+ * @param service The service descriptor on success or NULL on failure
  *
  * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if a parameter
  *  is NULL, LOCKDOWN_E_INVALID_SERVICE if the requested service is not known
@@ -412,7 +412,7 @@ void lockdownd_client_set_label(lockdownd_client_t client, const char *label);
 /**
  * Returns the unique id of the device from lockdownd.
  *
- * @param client An initialized lockdownd client.
+ * @param control An initialized lockdownd client.
  * @param udid Holds the unique id of the device. The caller is responsible
  *  for freeing the memory.
  *
@@ -458,7 +458,7 @@ lockdownd_error_t lockdownd_data_classes_free(char **classes);
 /**
  * Frees memory of a service descriptor as returned by lockdownd_start_service()
  *
- * @param sevice A service descriptor instance to free.
+ * @param service A service descriptor instance to free.
  *
  * @return LOCKDOWN_E_SUCCESS on success
  */
