@@ -526,6 +526,7 @@ static void print_usage(int argc, char **argv, int is_error)
 	  "  -x, --exit       exit when device disconnects\n" \
 	  "  -h, --help       prints usage information\n" \
 	  "  -d, --debug      enable communication debugging\n" \
+	  " --no-colors       disable colored output\n" \
 	  "\n" \
 	  "FILTER OPTIONS:\n" \
 	  "  -m, --match STRING     only print messages that contain STRING\n" \
@@ -553,6 +554,7 @@ int main(int argc, char *argv[])
 		COLOR_RESET = csbi.wAttributes;
 	}
 #endif
+	int no_colors = 0;
 	int include_filter = 0;
 	int exclude_filter = 0;
 	int include_kernel = 0;
@@ -573,6 +575,7 @@ int main(int argc, char *argv[])
 		{ "kernel", no_argument, NULL, 'k' },
 		{ "no-kernel", no_argument, NULL, 'K' },
 		{ "quiet-list", no_argument, NULL, 1 },
+		{ "no-colors", no_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -682,6 +685,9 @@ int main(int argc, char *argv[])
 			printf("%s\n", QUIET_FILTER);
 			return 0;
 		}
+		case 2:
+			no_colors = 1;
+			break;
 		default:
 			print_usage(argc, argv, 1);
 			return 2;
@@ -733,7 +739,7 @@ int main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (isatty(1)) {
+	if (!no_colors && isatty(1)) {
 		use_colors = 1;
 	}
 
