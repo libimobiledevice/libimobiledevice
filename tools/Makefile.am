@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)
 AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(libgcrypt_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS)
 AM_LDFLAGS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(libgcrypt_LIBS) $(openssl_LIBS) $(libplist_LIBS)
 
-bin_PROGRAMS = idevice_id ideviceinfo idevicename idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate idevicebackup idevicebackup2 ideviceprovision idevicedebugserverproxy idevicediagnostics idevicedebug idevicenotificationproxy idevicecrashreport idevicecopycontainer
+bin_PROGRAMS = idevice_id ideviceinfo idevicename idevicepair idevicesyslog ideviceimagemounter idevicescreenshot ideviceenterrecovery idevicedate idevicebackup idevicebackup2 ideviceprovision idevicedebugserverproxy idevicediagnostics idevicedebug idevicenotificationproxy idevicecrashreport idevicesetlocation
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS)
@@ -90,7 +90,7 @@ idevicecrashreport_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
 idevicecrashreport_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicecrashreport_LDADD = $(top_builddir)/src/libimobiledevice.la
 
-idevicecopycontainer_SOURCES = idevicecopycontainer.c
-idevicecopycontainer_CFLAGS = $(AM_CFLAGS)
-idevicecopycontainer_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
-idevicecopycontainer_LDADD = $(top_builddir)/src/libimobiledevice.la
+idevicesetlocation_SOURCES = idevicesetlocation.c
+idevicesetlocation_CFLAGS = $(AM_CFLAGS)
+idevicesetlocation_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicesetlocation_LDADD = $(top_builddir)/src/libimobiledevice.la

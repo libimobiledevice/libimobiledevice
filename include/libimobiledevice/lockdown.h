@@ -464,6 +464,15 @@ lockdownd_error_t lockdownd_data_classes_free(char **classes);
  */
 lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service);
 
+/**
+ * Gets a readable error string for a given lockdown error code.
+ *
+ * @params err A lockdownd error code
+ *
+ * @returns A readable error string
+ */
+const char* lockdownd_strerror(lockdownd_error_t err);
+
 #ifdef __cplusplus
 }
 #endif

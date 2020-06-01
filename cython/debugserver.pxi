@@ -17,10 +17,10 @@ cdef extern from "libimobiledevice/debugserver.h":
     debugserver_error_t debugserver_client_free(debugserver_client_t client)
 
     debugserver_error_t debugserver_client_send(debugserver_client_t client, const char* data, uint32_t size, uint32_t *sent)
-    debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response)
+    debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response, size_t* response_size)
     debugserver_error_t debugserver_client_receive(debugserver_client_t client, char *data, uint32_t size, uint32_t *received)
     debugserver_error_t debugserver_client_receive_with_timeout(debugserver_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout)
-    debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response)
+    debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response, size_t* response_size)
     debugserver_error_t debugserver_client_set_argv(debugserver_client_t client, int argc, char* argv[], char** response)
     debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_client_t client, const char* env, char** response)
 
@@ -119,7 +119,7 @@ cdef class DebugServerClient(BaseService):
             bytes result
 
         try:
-            self.handle_error(debugserver_client_send_command(self._c_client, command._c_command, &c_response))
+            self.handle_error(debugserver_client_send_command(self._c_client, command._c_command, &c_response, NULL))
             if c_response:
                 result = c_response
                 return result
@@ -166,7 +166,7 @@ cdef class DebugServerClient(BaseService):
             bytes result
 
         try:
-            self.handle_error(debugserver_client_receive_response(self._c_client, &c_response))
+            self.handle_error(debugserver_client_receive_response(self._c_client, &c_response, NULL))
             if c_response:
                 result = c_response
                 return result

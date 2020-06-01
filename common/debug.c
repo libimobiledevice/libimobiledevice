@@ -66,13 +66,10 @@ static void debug_print_line(const char *func, const char *file, int line, const
 	/* trim ending newlines */
 
 	/* print header */
-	printf ("%s: ", header);
+	fprintf(stderr, "%s: ", header);
 
 	/* print actual debug content */
-	printf ("%s\n", buffer);
-
-	/* flush this output, as we need to debug */
-	fflush (stdout);
+	fprintf(stderr, "%s\n", buffer);
 
 	free (header);
 }

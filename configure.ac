@@ -18,14 +18,12 @@ dnl libtool versioning
 LIBIMOBILEDEVICE_SO_VERSION=6:0:0
 
 dnl Minimum package versions
-LIBUSBMUXD_VERSION=1.1.0
-LIBPLIST_VERSION=1.11
-LIBPLISTMM_VERSION=1.11
+LIBUSBMUXD_VERSION=2.0.1
+LIBPLIST_VERSION=2.1.0
 
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 AC_SUBST(LIBUSBMUXD_VERSION)
 AC_SUBST(LIBPLIST_VERSION)
-AC_SUBST(LIBPLISTMM_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
@@ -36,7 +34,6 @@ AC_PROG_LIBTOOL
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist >= $LIBPLIST_VERSION)
-PKG_CHECK_MODULES(libplistmm, libplist++ >= $LIBPLISTMM_VERSION)
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -71,6 +68,7 @@ case ${host_os} in
   *mingw32*|*cygwin*)
     AC_MSG_RESULT([${host_os}])
     win32=true
+    AC_DEFINE(WINVER, 0x0501, [minimum Windows version])
     ;;
   darwin*)
     AC_MSG_RESULT([${host_os}])
@@ -82,6 +80,34 @@ case ${host_os} in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+
+AC_SUBST(libusbmuxd_CFLAGS)
+AC_SUBST(libusbmuxd_LIBS)
+AC_SUBST(libplist_CFLAGS)
+AC_SUBST(libplist_LIBS)
+
+CACHED_CFLAGS="$CFLAGS"
+CFLAGS+=" $libusbmuxd_CFLAGS $libplist_CFLAGS"
+CACHED_LDFLAGS="$LDFLAGS"
+LDFLAGS+=" $libusbmuxd_LIBS $libplist_LIBS"
+
+AC_CHECK_MEMBER(usbmuxd_device_info_t.conn_type,, AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing conn_type member in usbmuxd_device_info_t. Please update libusbmuxd to build $PACKAGE_NAME]), [#include <usbmuxd.h>])
+AC_TRY_COMPILE([
+  #include <usbmuxd.h>
+], [
+  enum usbmux_connection_type conntypeusb = CONNECTION_TYPE_USB;
+  enum usbmux_connection_type conntypenet = CONNECTION_TYPE_NETWORK;
+],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+AC_TRY_COMPILE([
+  #include <usbmuxd.h>
+], [
+  enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
+],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+
+AC_CHECK_LIB([plist], [plist_string_val_compare],, [AC_MSG_ERROR([[libplist is not up-to-date; missing plist_string_val_compare() etc. functions - Please update libplist to build $PACKAGE_NAME]])])
+
+CFLAGS="$CACHED_CFLAGS"
+LDFLAGS="$CACHED_LDFLAGS"
 
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 

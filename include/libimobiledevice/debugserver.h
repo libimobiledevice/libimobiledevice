@@ -39,6 +39,7 @@ typedef enum {
 	DEBUGSERVER_E_MUX_ERROR      = -2,
 	DEBUGSERVER_E_SSL_ERROR      = -3,
 	DEBUGSERVER_E_RESPONSE_ERROR = -4,
+	DEBUGSERVER_E_TIMEOUT        = -5,
 	DEBUGSERVER_E_UNKNOWN_ERROR  = -256
 } debugserver_error_t;
 
@@ -142,22 +143,24 @@ debugserver_error_t debugserver_client_receive(debugserver_client_t client, char
  * @param client The debugserver client
  * @param command Command to process and send
  * @param response Response received for the command (can be NULL to ignore)
+ * @param response_size Pointer to receive response size. Set to NULL to ignore.
  *
  * @return DEBUGSERVER_E_SUCCESS on success,
  *  DEBUGSERVER_E_INVALID_ARG when client or command is NULL
  */
-debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response);
+debugserver_error_t debugserver_client_send_command(debugserver_client_t client, debugserver_command_t command, char** response, size_t* response_size);
 
 /**
  * Receives and parses response of debugserver service.
  *
  * @param client The debugserver client
  * @param response Response received for last command (can be NULL to ignore)
+ * @param response_size Pointer to receive response size. Set to NULL to ignore.
  *
  * @return DEBUGSERVER_E_SUCCESS on success,
  *  DEBUGSERVER_E_INVALID_ARG when client is NULL
  */
-debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response);
+debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response, size_t* response_size);
 
 /**
  * Controls status of ACK mode when sending commands or receiving responses.

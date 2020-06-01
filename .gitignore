@@ -53,6 +53,7 @@ tools/ideviceprovision
 tools/idevicecrashreport
 tools/idevicedebug
 tools/idevicenotificationproxy
+tools/idevicesetlocation
 cython/.libs/*
 cython/*.c
 doxygen.cfg

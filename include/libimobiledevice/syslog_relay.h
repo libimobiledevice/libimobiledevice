@@ -3,7 +3,8 @@
  * @brief Capture the syslog output from a device.
  * \internal
  *
- * Copyright (c) 2013-2014 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2019-2020 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2013-2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -107,6 +108,27 @@ syslog_relay_error_t syslog_relay_client_free(syslog_relay_client_t client);
  *      error occurs or a syslog capture has already been started.
  */
 syslog_relay_error_t syslog_relay_start_capture(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data);
+
+/**
+ * Starts capturing the *raw* syslog of the device using a callback.
+ * This function is like syslog_relay_start_capture with the difference that
+ * it will neither check nor process the received data before passing it to
+ * the callback function.
+ *
+ * Use syslog_relay_stop_capture() to stop receiving the syslog.
+ *
+ * @note Use syslog_relay_start_capture for a safer implementation.
+ *
+ * @param client The syslog_relay client to use
+ * @param callback Callback to receive each character from the syslog.
+ * @param user_data Custom pointer passed to the callback function.
+ *
+ * @return SYSLOG_RELAY_E_SUCCESS on success,
+ *      SYSLOG_RELAY_E_INVALID_ARG when one or more parameters are
+ *      invalid or SYSLOG_RELAY_E_UNKNOWN_ERROR when an unspecified
+ *      error occurs or a syslog capture has already been started.
+ */
+syslog_relay_error_t syslog_relay_start_capture_raw(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data);
 
 /**
  * Stops capturing the syslog of the device.

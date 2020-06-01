@@ -15,7 +15,7 @@ cdef extern from "libimobiledevice/diagnostics_relay.h":
         DIAGNOSTICS_RELAY_E_MUX_ERROR = -3
         DIAGNOSTICS_RELAY_E_UNKNOWN_REQUEST = -4
         DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR = -256
-    cdef enum:
+    ctypedef enum diagnostics_relay_action_t:
         DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT = (1 << 1)
         DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS = (1 << 2)
         DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL = (1 << 3)
@@ -25,8 +25,8 @@ cdef extern from "libimobiledevice/diagnostics_relay.h":
 
     diagnostics_relay_error_t diagnostics_relay_goodbye(diagnostics_relay_client_t client)
     diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t client)
-    diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags)
-    diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags)
+    diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, diagnostics_relay_action_t flags)
+    diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, diagnostics_relay_action_t flags)
     diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_relay_client_t client, char* type, plist.plist_t* diagnostics)
     diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist.plist_t keys, plist.plist_t* result)
     diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, char* name, char* class_name, plist.plist_t* result)
@@ -66,10 +66,10 @@ cdef class DiagnosticsRelayClient(PropertyListService):
     cpdef sleep(self):
         self.handle_error(diagnostics_relay_sleep(self._c_client))
 
-    cpdef restart(self, int flags):
+    cpdef restart(self, diagnostics_relay_action_t flags):
         self.handle_error(diagnostics_relay_restart(self._c_client, flags))
 
-    cpdef shutdown(self, int flags):
+    cpdef shutdown(self, diagnostics_relay_action_t flags):
         self.handle_error(diagnostics_relay_shutdown(self._c_client, flags))
 
     cpdef plist.Node request_diagnostics(self, bytes type):
