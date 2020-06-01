@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 			if (debug_level) {
 				debug_info("Setting logging bitmask...");
 				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS;", 0, NULL, &command);
-				dres = debugserver_client_send_command(debugserver_client, command, &response);
+				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
 				command = NULL;
 				if (response) {
