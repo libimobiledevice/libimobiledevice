@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.64)
-AC_INIT([libimobiledevice], [1.2.1], [https://github.com/libimobiledevice/libimobiledevice/issues],, [http://libimobiledevice.org])
+AC_PREREQ([2.69])
+AC_INIT([libimobiledevice],[1.2.1],[https://github.com/libimobiledevice/libimobiledevice/issues],[],[http://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -29,7 +29,8 @@ AC_SUBST(LIBPLIST_VERSION)
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
-AC_PROG_LIBTOOL
+AM_PROG_AR
+LT_INIT
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
@@ -92,17 +93,17 @@ CACHED_LDFLAGS="$LDFLAGS"
 LDFLAGS+=" $libusbmuxd_LIBS $libplist_LIBS"
 
 AC_CHECK_MEMBER(usbmuxd_device_info_t.conn_type,, AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing conn_type member in usbmuxd_device_info_t. Please update libusbmuxd to build $PACKAGE_NAME]), [#include <usbmuxd.h>])
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
   #include <usbmuxd.h>
-], [
+]], [[
   enum usbmux_connection_type conntypeusb = CONNECTION_TYPE_USB;
   enum usbmux_connection_type conntypenet = CONNECTION_TYPE_NETWORK;
-],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
-AC_TRY_COMPILE([
+]])],[],[AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_connection_type with CONNECTION_TYPE_USB and CONNECTION_TYPE_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME])])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
   #include <usbmuxd.h>
-], [
+]], [[
   enum usbmux_lookup_options opts = DEVICE_LOOKUP_USBMUX | DEVICE_LOOKUP_NETWORK | DEVICE_LOOKUP_PREFER_NETWORK;
-],, AC_MSG_ERROR([[libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME]]))
+]])],[],[AC_MSG_ERROR([libusbmuxd (usbmuxd.h) is not up-to-date; missing enum usbmux_lookup_options with DEVICE_LOOKUP_USBMUX, DEVICE_LOOKUP_NETWORK, and DEVICE_LOOKUP_PREFER_NETWORK - Please update libusbmuxd to build $PACKAGE_NAME])])
 
 AC_CHECK_LIB([plist], [plist_string_val_compare],, [AC_MSG_ERROR([[libplist is not up-to-date; missing plist_string_val_compare() etc. functions - Please update libplist to build $PACKAGE_NAME]])])
 
@@ -210,7 +211,7 @@ AC_SYS_LARGEFILE
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 common/Makefile
 src/Makefile
@@ -221,6 +222,7 @@ cython/Makefile
 docs/Makefile
 doxygen.cfg
 ])
+AC_OUTPUT
 
 echo "
 Configuration for $PACKAGE $VERSION:
