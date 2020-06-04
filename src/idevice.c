@@ -670,8 +670,8 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 					case IDEVICE_E_SUCCESS:
 						break;
 					case IDEVICE_E_UNKNOWN_ERROR:
-						debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
 					default:
+						debug_info("ERROR: socket_check_fd returned %d (%s)", conn_error, strerror(-conn_error));
 						return error;
 				}
 			}
