@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 					continue;
 				}
 
-				printf("Unknown TYPE %s\n", argv[i]);
+				printf("ERROR: Unknown TYPE %s\n", argv[i]);
 				print_usage(argc, argv);
 				goto cleanup;
 			}
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 			i++;
 
 			if (!argv[i] || argv[i] == NULL || (!strncmp(argv[i], "-", 1))) {
-				printf("Please supply the key to query.\n");
+				printf("ERROR: Please supply the key to query.\n");
 				print_usage(argc, argv);
 				goto cleanup;
 			}
@@ -208,10 +208,11 @@ int main(int argc, char **argv)
 
 	lockdownd_client_free(lockdown_client);
 
+	result = -1;
+
 	if ((ret == LOCKDOWN_E_SUCCESS) && service && (service->port > 0)) {
 		if (diagnostics_relay_client_new(device, service, &diagnostics_client) != DIAGNOSTICS_RELAY_E_SUCCESS) {
-			printf("Could not connect to diagnostics_relay!\n");
-			result = -1;
+			printf("ERROR: Could not connect to diagnostics_relay!\n");
 		} else {
 			switch (cmd) {
 				case CMD_SLEEP:
@@ -219,7 +220,7 @@ int main(int argc, char **argv)
 						printf("Putting device into deep sleep mode.\n");
 						result = EXIT_SUCCESS;
 					} else {
-						printf("Failed to put device into deep sleep mode.\n");
+						printf("ERROR: Failed to put device into deep sleep mode.\n");
 					}
 				break;
 				case CMD_RESTART:
@@ -227,7 +228,7 @@ int main(int argc, char **argv)
 						printf("Restarting device.\n");
 						result = EXIT_SUCCESS;
 					} else {
-						printf("Failed to restart device.\n");
+						printf("ERROR: Failed to restart device.\n");
 					}
 				break;
 				case CMD_SHUTDOWN:
@@ -235,7 +236,7 @@ int main(int argc, char **argv)
 						printf("Shutting down device.\n");
 						result = EXIT_SUCCESS;
 					} else {
-						printf("Failed to shutdown device.\n");
+						printf("ERROR: Failed to shutdown device.\n");
 					}
 				break;
 				case CMD_MOBILEGESTALT:
@@ -245,7 +246,7 @@ int main(int argc, char **argv)
 							result = EXIT_SUCCESS;
 						}
 					} else {
-						printf("Unable to query mobilegestalt keys.\n");
+						printf("ERROR: Unable to query mobilegestalt keys.\n");
 					}
 				break;
 				case CMD_IOREGISTRY_ENTRY:
@@ -255,7 +256,7 @@ int main(int argc, char **argv)
 							result = EXIT_SUCCESS;
 						}
 					} else {
-						printf("Unable to retrieve IORegistry from device.\n");
+						printf("ERROR: Unable to retrieve IORegistry from device.\n");
 					}
 					break;
 				case CMD_IOREGISTRY:
@@ -265,7 +266,7 @@ int main(int argc, char **argv)
 							result = EXIT_SUCCESS;
 						}
 					} else {
-						printf("Unable to retrieve IORegistry from device.\n");
+						printf("ERROR: Unable to retrieve IORegistry from device.\n");
 					}
 					break;
 				case CMD_DIAGNOSTICS:
@@ -276,7 +277,7 @@ int main(int argc, char **argv)
 							result = EXIT_SUCCESS;
 						}
 					} else {
-						printf("Unable to retrieve diagnostics from device.\n");
+						printf("ERROR: Unable to retrieve diagnostics from device.\n");
 					}
 					break;
 			}
@@ -285,7 +286,7 @@ int main(int argc, char **argv)
 			diagnostics_relay_client_free(diagnostics_client);
 		}
 	} else {
-		printf("Could not start diagnostics service!\n");
+		printf("ERROR: Could not start diagnostics service!\n");
 	}
 
 	if (service) {
