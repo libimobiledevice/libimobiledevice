@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	diagnostics_relay_client_t diagnostics_client = NULL;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	lockdownd_service_descriptor_t service = NULL;
-	int result = -1;
+	int result = EXIT_FAILURE;
 	int i;
 	const char *udid = NULL;
 	int cmd = CMD_NONE;
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
-				result = 0;
+				result = EXIT_SUCCESS;
 				goto cleanup;
 			}
 			udid = argv[i];
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
-			result = 0;
+			result = EXIT_SUCCESS;
 			goto cleanup;
 		}
 		else if (!strcmp(argv[i], "sleep")) {
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		}
 		else {
 			print_usage(argc, argv);
-			return 0;
+			return EXIT_SUCCESS;
 		}
 	}
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 
 	lockdownd_client_free(lockdown_client);
 
-	result = -1;
+	result = EXIT_FAILURE;
 
 	if ((ret == LOCKDOWN_E_SUCCESS) && service && (service->port > 0)) {
 		if (diagnostics_relay_client_new(device, service, &diagnostics_client) != DIAGNOSTICS_RELAY_E_SUCCESS) {
