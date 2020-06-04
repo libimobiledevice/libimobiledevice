@@ -186,17 +186,20 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Interact with the debugserver service of a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Interact with the debugserver service of a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
 	printf("\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("The following OPTIONS are accepted:\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char *argv[])

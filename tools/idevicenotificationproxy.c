@@ -63,17 +63,20 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Post or observe notifications on a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Post or observe notifications on a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  post ID [...]\t\tpost notification IDs to device and exit\n");
 	printf("  observe ID [...]\tobserve notification IDs in the foreground until CTRL+C or signal is received\n");
 	printf("\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("The following OPTIONS are accepted:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void notify_cb(const char *notification, void *user_data)

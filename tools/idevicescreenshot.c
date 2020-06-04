@@ -157,15 +157,20 @@ void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] [FILE]\n", (name ? name + 1: argv[0]));
+	printf("\n");
 	printf("Gets a screenshot from a device.\n");
+	printf("\n");
 	printf("The screenshot is saved as a TIFF image with the given FILE name,\n");
 	printf("where the default name is \"screenshot-DATE.tiff\", e.g.:\n");
-	printf("   ./screenshot-2013-12-31-23-59-59.tiff\n\n");
+	printf("   ./screenshot-2013-12-31-23-59-59.tiff\n");
+	printf("\n");
 	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
-	printf("the screenshotr service is not available.\n\n");
+	printf("the screenshotr service is not available.\n");
+	printf("\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }

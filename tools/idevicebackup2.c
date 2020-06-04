@@ -1403,8 +1403,10 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] CMD [CMDOPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
-	printf("Create or restore backup from the current or specified directory.\n\n");
-	printf("commands:\n");
+	printf("\n");
+	printf("Create or restore backup from the current or specified directory.\n");
+	printf("\n");
+	printf("CMD:\n");
 	printf("  backup\tcreate backup for the device\n");
 	printf("    --full\t\tforce full backup from device.\n");
 	printf("  restore\trestore last backup to the device\n");
@@ -1424,14 +1426,15 @@ static void print_usage(int argc, char **argv)
 	printf("    NOTE: passwords will be requested in interactive mode if omitted\n");
 	printf("  cloud on|off\tenable or disable cloud use (requires iCloud account)\n");
 	printf("\n");
-	printf("options:\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
 	printf("  -i, --interactive\trequest passwords interactively\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 #define DEVICE_VERSION(maj, min, patch) (((maj & 0xFF) << 16) | ((min & 0xFF) << 8) | (patch & 0xFF))

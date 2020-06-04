@@ -93,24 +93,28 @@ static void print_usage(int argc, char **argv, int is_error)
 	name = strrchr(argv[0], '/');
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
-	  "Show information about a connected device.\n\n" \
-	  "  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
-	  "  -u, --udid UDID    target specific device by UDID\n" \
-	  "  -n, --network      connect to network device even if available via USB\n" \
-	  "  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
-	  "  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
-	  "  -x, --xml          output information as xml plist instead of key/value pairs\n" \
-	  "  -h, --help         prints usage information\n" \
-	  "  -d, --debug        enable communication debugging\n" \
-	  "\n"
+		"\n" \
+		"Show information about a connected device.\n" \
+		"\n" \
+		"OPTIONS:\n" \
+		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
+		"  -u, --udid UDID    target specific device by UDID\n" \
+		"  -n, --network      connect to network device even if available via USB\n" \
+		"  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
+		"  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
+		"  -x, --xml          output information as xml plist instead of key/value pairs\n" \
+		"  -h, --help         prints usage information\n" \
+		"  -d, --debug        enable communication debugging\n" \
+		"\n"
 	);
-	fprintf(is_error ? stderr : stdout, "  Known domains are:\n\n");
+	fprintf(is_error ? stderr : stdout, "Known domains are:\n\n");
 	while (domains[i] != NULL) {
 		fprintf(is_error ? stderr : stdout, "  %s\n", domains[i++]);
 	}
 	fprintf(is_error ? stderr : stdout,
-	  "\n" \
-	  "Homepage: <" PACKAGE_URL ">\n"
+		"\n" \
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
 	);
 }
 

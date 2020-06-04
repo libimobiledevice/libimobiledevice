@@ -38,13 +38,16 @@
 static void print_usage(void)
 {
 	printf("Usage: idevicename [OPTIONS] [NAME]\n");
+	printf("\n");
 	printf("Display the device name or set it to NAME if specified.\n");
 	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprint usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char** argv)

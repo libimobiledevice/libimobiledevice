@@ -69,12 +69,16 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
-	printf("Proxy debugserver connection from device to a local socket at PORT.\n\n");
+	printf("\n");
+	printf("Proxy debugserver connection from device to a local socket at PORT.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void *thread_device_to_client(void *data)

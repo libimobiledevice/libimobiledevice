@@ -40,16 +40,21 @@ static void print_usage(int argc, char **argv, int is_error)
 	name = strrchr(argv[0], '/');
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
-	  "Prints device name or a list of attached devices.\n\n" \
-	  "  If UDID is given, the name of the connected device with that UDID" \
-	  "  will be retrieved.\n\n" \
-	  "  -l, --list      list UDIDs of all devices attached via USB\n" \
-	  "  -n, --network   list UDIDs of all devices available via network\n" \
-	  "  -d, --debug     enable communication debugging\n" \
-	  "  -h, --help      prints usage information\n" \
-	  "\n" \
-	  "Homepage: <" PACKAGE_URL ">\n"
-        );
+		"\n" \
+		"Prints device name or a list of attached devices.\n" \
+		"\n" \
+		"  If UDID is given, the name of the connected device with that UDID" \
+		"  will be retrieved.\n" \
+		"\n" \
+		"OPTIONS:\n" \
+		"  -l, --list      list UDIDs of all devices attached via USB\n" \
+		"  -n, --network   list UDIDs of all devices available via network\n" \
+		"  -d, --debug     enable communication debugging\n" \
+		"  -h, --help      prints usage information\n" \
+		"\n" \
+		"Homepage:    <" PACKAGE_URL ">\n" \
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char **argv)

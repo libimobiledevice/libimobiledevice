@@ -65,21 +65,25 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("\n%s - Manage host pairings with devices and usbmuxd.\n\n", (name ? name + 1: argv[0]));
-	printf("Usage: %s [OPTIONS] COMMAND\n\n", (name ? name + 1: argv[0]));
-	printf(" Where COMMAND is one of:\n");
+	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	printf("\n");
+	printf("Manage host pairings with devices and usbmuxd.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  systembuid   print the system buid of the usbmuxd host\n");
 	printf("  hostid       print the host id for target device\n");
 	printf("  pair         pair device with this host\n");
 	printf("  validate     validate if device is paired with this host\n");
 	printf("  unpair       unpair device with this host\n");
-	printf("  list         list devices paired with this host\n\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("  list         list devices paired with this host\n");
+	printf("\n");
+	printf("The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by UDID\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void parse_opts(int argc, char **argv)

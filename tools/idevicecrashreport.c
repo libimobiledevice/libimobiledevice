@@ -302,14 +302,18 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
-	printf("Move crash reports from device to a local DIRECTORY.\n\n");
+	printf("\n");
+	printf("Move crash reports from device to a local DIRECTORY.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -e, --extract\t\textract raw crash report into separate '.crash' file\n");
 	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char* argv[])

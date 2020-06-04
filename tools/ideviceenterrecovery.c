@@ -40,11 +40,15 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] UDID\n", (name ? name + 1: argv[0]));
-	printf("Makes a device with the supplied UDID enter recovery mode immediately.\n\n");
+	printf("\n");
+	printf("Makes a device with the supplied UDID enter recovery mode immediately.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char *argv[])

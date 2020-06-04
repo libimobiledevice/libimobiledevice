@@ -49,16 +49,21 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Display the current date or set it on a device.\n\n");
+	printf("\n");
+	printf("Display the current date or set it on a device.\n");
+	printf("\n");
 	printf("NOTE: Setting the time on iOS 6 and later is only supported\n");
-	printf("      in the setup wizard screens before device activation.\n\n");
+	printf("      in the setup wizard screens before device activation.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -s, --set TIMESTAMP\tset UTC time described by TIMESTAMP\n");
 	printf("  -c, --sync\t\tset time of device to current system time\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char *argv[])

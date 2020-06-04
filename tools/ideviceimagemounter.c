@@ -64,8 +64,11 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n\n", (name ? name + 1: argv[0]));
-	printf("Mounts the specified disk image on the device.\n\n");
+	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n", (name ? name + 1: argv[0]));
+	printf("\n");
+	printf("Mounts the specified disk image on the device.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -l, --list\t\tList mount information\n");
 	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
@@ -73,7 +76,8 @@ static void print_usage(int argc, char **argv)
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void parse_opts(int argc, char **argv)

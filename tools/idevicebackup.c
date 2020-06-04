@@ -665,16 +665,20 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] CMD [DIRECTORY]\n", (name ? name + 1: argv[0]));
-	printf("Create or restore backup from the current or specified directory.\n\n");
-	printf("commands:\n");
+	printf("\n");
+	printf("Create or restore backup from the current or specified directory.\n");
+	printf("\n");
+	printf("CMD:\n");
 	printf("  backup\tSaves a device backup into DIRECTORY\n");
-	printf("  restore\tRestores a device backup from DIRECTORY.\n\n");
-	printf("options:\n");
+	printf("  restore\tRestores a device backup from DIRECTORY.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char *argv[])

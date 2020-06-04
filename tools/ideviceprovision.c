@@ -50,8 +50,10 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Manage provisioning profiles on a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Manage provisioning profiles on a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  install FILE\tInstalls the provisioning profile specified by FILE.\n");
 	printf("              \tA valid .mobileprovision file is expected.\n");
 	printf("  list\t\tGet a list of all provisioning profiles on the device.\n");
@@ -64,14 +66,16 @@ static void print_usage(int argc, char **argv)
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
 	printf("  remove-all\tRemoves all installed provisioning profiles.\n");
 	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
-	printf("           \tspecified by FILE.\n\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("           \tspecified by FILE.\n");
+	printf("\n");
+	printf("The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by UDID\n");
 	printf("  -x, --xml        print XML output when using the 'dump' command\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 enum {
