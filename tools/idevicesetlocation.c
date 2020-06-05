@@ -54,7 +54,7 @@ static void print_usage(int argc, char **argv, int is_error)
 	fprintf(is_error ? stderr : stdout, "\n" \
 		"OPTIONS:\n" \
 		"  -u, --udid UDID    target specific device by UDID\n" \
-		"  -n, --network      connect to network device even if available via USB\n" \
+		"  -n, --network      connect to network device\n" \
 		"  -d, --debug        enable communication debugging\n" \
 		"  -h, --help         prints usage information\n" \
 		"  -v, --version      prints version information\n" \
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 	};
 	uint32_t mode = 0;
 	char *udid = NULL;
-	enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
+	int use_network = 0;
 
 	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
 		switch (c) {
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 			udid = strdup(optarg);
 			break;
 		case 'n':
-			lookup_opts |= IDEVICE_LOOKUP_PREFER_NETWORK;
+			use_network = 1;
 			break;
 		case 'h':
 			print_usage(argc, argv, 0);
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 
 	idevice_t device = NULL;
 
-	if (idevice_new_with_options(&device, udid, lookup_opts) != IDEVICE_E_SUCCESS) {
+	if (idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX) != IDEVICE_E_SUCCESS) {
 		if (udid) {
 			printf("ERROR: Device %s not found!\n", udid);
 		} else {

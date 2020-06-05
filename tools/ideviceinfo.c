@@ -100,7 +100,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"\n" \
 		"OPTIONS:\n" \
 		"  -u, --udid UDID    target specific device by UDID\n" \
-		"  -n, --network      connect to network device even if available via USB\n" \
+		"  -n, --network      connect to network device\n" \
 		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
 		"  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
 		"  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
@@ -130,12 +130,12 @@ int main(int argc, char *argv[])
 	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
 	char* udid = NULL;
+	int use_network = 0;
 	char *domain = NULL;
 	char *key = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
-	enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
 
 	int c = 0;
 	const struct option longopts[] = {
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 			udid = strdup(optarg);
 			break;
 		case 'n':
-			lookup_opts |= IDEVICE_LOOKUP_PREFER_NETWORK;
+			use_network = 1;
 			break;
 		case 'q':
 			if (!*optarg) {
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	ret = idevice_new_with_options(&device, udid, lookup_opts);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
 			printf("ERROR: Device %s not found!\n", udid);

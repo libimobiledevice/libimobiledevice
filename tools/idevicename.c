@@ -44,8 +44,9 @@ static void print_usage(void)
 	printf("Display the device name or set it to NAME if specified.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprint usage information\n");
 	printf("  -v, --version\t\tprint version information\n");
 	printf("\n");
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
 	int c = 0;
 	const struct option longopts[] = {
 		{ "udid",    required_argument, NULL, 'u' },
+		{ "network", no_argument,       NULL, 'n' },
 		{ "debug",   no_argument,       NULL, 'd' },
 		{ "help",    no_argument,       NULL, 'h' },
 		{ "version", no_argument,       NULL, 'v' },
@@ -65,12 +67,13 @@ int main(int argc, char** argv)
 	};
 	int res = -1;
 	char* udid = NULL;
+	int use_network = 0;
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "du:hv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "du:hnv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'u':
 			if (!*optarg) {
@@ -80,6 +83,9 @@ int main(int argc, char** argv)
 			}
 			free(udid);
 			udid = strdup(optarg);
+			break;
+		case 'n':
+			use_network = 1;
 			break;
 		case 'h':
 			print_usage();
@@ -105,8 +111,12 @@ int main(int argc, char** argv)
 	}
 
 	idevice_t device = NULL;
-	if (idevice_new(&device, udid) != IDEVICE_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Could not connect to device\n");
+	if (idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX) != IDEVICE_E_SUCCESS) {
+		if (udid) {
+			fprintf(stderr, "ERROR: No device found with udid %s.\n", udid);
+		} else {
+			fprintf(stderr, "ERROR: No device found.\n");
+		}
 		return -1;
 	}
 

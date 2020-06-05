@@ -196,6 +196,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
@@ -215,6 +216,7 @@ int main(int argc, char *argv[])
 	int i;
 	int cmd = CMD_NONE;
 	const char* udid = NULL;
+	int use_network = 0;
 	const char* bundle_identifier = NULL;
 	char* path = NULL;
 	char* working_directory = NULL;
@@ -248,6 +250,9 @@ int main(int argc, char *argv[])
 				goto cleanup;
 			}
 			udid = argv[i];
+			continue;
+		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		} else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
 			i++;
@@ -306,12 +311,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* connect to the device */
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		goto cleanup;
 	}

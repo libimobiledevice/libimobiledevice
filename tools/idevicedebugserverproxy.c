@@ -76,6 +76,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("  -v, --version\t\tprints version information\n");
@@ -250,6 +251,7 @@ int main(int argc, char *argv[])
 	idevice_t device = NULL;
 	thread_info_t *thread_list = NULL;
 	const char* udid = NULL;
+	int use_network = 0;
 	uint16_t local_port = 0;
 	int server_fd;
 	int result = EXIT_SUCCESS;
@@ -294,6 +296,10 @@ int main(int argc, char *argv[])
 			udid = argv[i];
 			continue;
 		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return EXIT_SUCCESS;
@@ -320,12 +326,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* start services and connect to device */
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			fprintf(stderr, "No device found with udid %s, is it plugged in?\n", udid);
+			fprintf(stderr, "No device found with udid %s.\n", udid);
 		} else {
-			fprintf(stderr, "No device found, is it plugged in?\n");
+			fprintf(stderr, "No device found.\n");
 		}
 		result = EXIT_FAILURE;
 		goto leave_cleanup;

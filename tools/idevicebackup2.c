@@ -1431,6 +1431,7 @@ static void print_usage(int argc, char **argv)
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -s, --source UDID\tuse backup data from device specified by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -i, --interactive\trequest passwords interactively\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
@@ -1449,6 +1450,7 @@ int main(int argc, char *argv[])
 	int i;
 	char* udid = NULL;
 	char* source_udid = NULL;
+	int use_network = 0;
 	lockdownd_service_descriptor_t service = NULL;
 	int cmd = -1;
 	int cmd_flags = 0;
@@ -1494,6 +1496,10 @@ int main(int argc, char *argv[])
 				return -1;
 			}
 			source_udid = strdup(argv[i]);
+			continue;
+		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--interactive")) {
@@ -1669,20 +1675,17 @@ int main(int argc, char *argv[])
 	}
 
 	idevice_t device = NULL;
-	if (udid) {
-		ret = idevice_new(&device, udid);
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
-			return -1;
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
+	if (ret != IDEVICE_E_SUCCESS) {
+		if (udid) {
+			printf("No device found with udid %s.\n", udid);
+		} else {
+			printf("No device found.\n");
 		}
+		return -1;
 	}
-	else
-	{
-		ret = idevice_new(&device, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found, is it plugged in?\n");
-			return -1;
-		}
+
+	if (!udid) {
 		idevice_get_udid(device, &udid);
 	}
 

@@ -69,7 +69,7 @@ static syslog_relay_client_t syslog = NULL;
 
 static const char QUIET_FILTER[] = "CircleJoinRequested|CommCenter|HeuristicInterpreter|MobileMail|PowerUIAgent|ProtectedCloudKeySyncing|SpringBoard|UserEventAgent|WirelessRadioManagerd|accessoryd|accountsd|aggregated|analyticsd|appstored|apsd|assetsd|assistant_service|backboardd|biometrickitd|bluetoothd|calaccessd|callservicesd|cloudd|com.apple.Safari.SafeBrowsing.Service|contextstored|corecaptured|coreduetd|corespeechd|cdpd|dasd|dataaccessd|distnoted|dprivacyd|duetexpertd|findmydeviced|fmfd|fmflocatord|gpsd|healthd|homed|identityservicesd|imagent|itunescloudd|itunesstored|kernel|locationd|maild|mDNSResponder|mediaremoted|mediaserverd|mobileassetd|nanoregistryd|nanotimekitcompaniond|navd|nsurlsessiond|passd|pasted|photoanalysisd|powerd|powerlogHelperd|ptpd|rapportd|remindd|routined|runningboardd|searchd|sharingd|suggestd|symptomsd|timed|thermalmonitord|useractivityd|vmd|wifid|wirelessproxd";
 
-enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
+static int use_network = 0;
 
 static char *line = NULL;
 static int line_buffer_size = 0;
@@ -403,7 +403,7 @@ static void syslog_callback(char c, void *user_data)
 
 static int start_logging(void)
 {
-	idevice_error_t ret = idevice_new_with_options(&device, udid, lookup_opts);
+	idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		fprintf(stderr, "Device with udid %s not found!?\n", udid);
 		return -1;
@@ -526,7 +526,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"\n" \
 		"OPTIONS:\n" \
 		"  -u, --udid UDID  target specific device by UDID\n" \
-		"  -n, --network    connect to network device even if available via USB\n" \
+		"  -n, --network    connect to network device\n" \
 		"  -x, --exit       exit when device disconnects\n" \
 		"  -h, --help       prints usage information\n" \
 		"  -d, --debug      enable communication debugging\n" \
@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
 			udid = strdup(optarg);
 			break;
 		case 'n':
-			lookup_opts |= IDEVICE_LOOKUP_PREFER_NETWORK;
+			use_network = 1;
 			break;
 		case 'q':
 			exclude_filter++;

@@ -49,6 +49,7 @@
 #include "common/utils.h"
 
 static int list_mode = 0;
+static int use_network = 0;
 static int xml_mode = 0;
 static char *udid = NULL;
 static char *imagetype = NULL;
@@ -72,6 +73,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -l, --list\t\tList mount information\n");
 	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
 	printf("  -x, --xml\t\tUse XML output\n");
@@ -86,19 +88,20 @@ static void print_usage(int argc, char **argv)
 static void parse_opts(int argc, char **argv)
 {
 	static struct option longopts[] = {
-		{ "help",      no_argument,       NULL, 'h'},
-		{ "udid",      required_argument, NULL, 'u'},
-		{ "list",      no_argument,       NULL, 'l'},
-		{ "imagetype", required_argument, NULL, 't'},
-		{ "xml",       no_argument,       NULL, 'x'},
-		{ "debug",     no_argument,       NULL, 'd'},
+		{ "help",      no_argument,       NULL, 'h' },
+		{ "udid",      required_argument, NULL, 'u' },
+		{ "network",   no_argument,       NULL, 'n' },
+		{ "list",      no_argument,       NULL, 'l' },
+		{ "imagetype", required_argument, NULL, 't' },
+		{ "xml",       no_argument,       NULL, 'x' },
+		{ "debug",     no_argument,       NULL, 'd' },
 		{ "version",   no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
 	int c;
 
 	while (1) {
-		c = getopt_long(argc, argv, "hu:lt:xdv", longopts, NULL);
+		c = getopt_long(argc, argv, "hu:lt:xdnv", longopts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -115,6 +118,9 @@ static void parse_opts(int argc, char **argv)
 			}
 			free(udid);
 			udid = strdup(optarg);
+			break;
+		case 'n':
+			use_network = 1;
 			break;
 		case 'l':
 			list_mode = 1;
@@ -191,8 +197,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
-		printf("No device found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX)) {
+		if (udid) {
+			printf("No device found with udid %s.\n", udid);
+		} else {
+			printf("No device found.\n");
+		}
 		return -1;
 	}
 

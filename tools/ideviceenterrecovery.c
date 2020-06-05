@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
 	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
-		printf("No device found with udid %s, is it plugged in?\n", udid);
+		printf("No device found with udid %s.\n", udid);
 		return -1;
 	}
 

@@ -309,6 +309,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -e, --extract\t\textract raw crash report into separate '.crash' file\n");
 	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
@@ -331,6 +332,7 @@ int main(int argc, char* argv[])
 
 	int i;
 	const char* udid = NULL;
+	int use_network = 0;
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
@@ -348,6 +350,10 @@ int main(int argc, char* argv[])
 				return 0;
 			}
 			udid = argv[i];
+			continue;
+		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -389,12 +395,12 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	device_error = idevice_new(&device, udid);
+	device_error = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (device_error != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}

@@ -50,6 +50,7 @@ int main(int argc, char **argv)
 	int result = -1;
 	int i;
 	const char *udid = NULL;
+	int use_network = 0;
 	char *filename = NULL;
 
 #ifndef WIN32
@@ -70,6 +71,10 @@ int main(int argc, char **argv)
 			udid = argv[i];
 			continue;
 		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
@@ -88,11 +93,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
+	if (IDEVICE_E_SUCCESS != idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX)) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}
@@ -174,6 +179,7 @@ void print_usage(int argc, char **argv)
 	printf("the screenshotr service is not available.\n");
 	printf("\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
 	printf("  -v, --version\t\tprints version information\n");

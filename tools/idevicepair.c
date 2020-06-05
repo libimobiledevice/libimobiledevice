@@ -202,28 +202,23 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	if (udid) {
-		ret = idevice_new(&device, udid);
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
-			free(udid);
-			return EXIT_FAILURE;
+	ret = idevice_new(&device, udid);
+	if (ret != IDEVICE_E_SUCCESS) {
+		if (udid) {
+			printf("No device found with udid %s.\n", udid);
+		} else {
+			printf("No device found.\n");
 		}
 		free(udid);
-		udid = NULL;
-	} else {
-		ret = idevice_new(&device, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found, is it plugged in?\n");
-			return EXIT_FAILURE;
-		}
+		return EXIT_FAILURE;
 	}
-
-	ret = idevice_get_udid(device, &udid);
-	if (ret != IDEVICE_E_SUCCESS) {
-		printf("ERROR: Could not get device udid, error code %d\n", ret);
-		result = EXIT_FAILURE;
-		goto leave;
+	if (!udid) {
+		ret = idevice_get_udid(device, &udid);
+		if (ret != IDEVICE_E_SUCCESS) {
+			printf("ERROR: Could not get device udid, error code %d\n", ret);
+			result = EXIT_FAILURE;
+			goto leave;
+		}
 	}
 
 	if (op == OP_HOSTID) {
@@ -244,7 +239,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	lerr = lockdownd_client_new(device, &client, "idevicepair");
+	lerr = lockdownd_client_new(device, &client, TOOL_NAME);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);

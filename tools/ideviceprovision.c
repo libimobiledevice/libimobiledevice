@@ -72,6 +72,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
 	printf("  -u, --udid UDID  target specific device by UDID\n");
+	printf("  -n, --network    connect to network device\n");
 	printf("  -x, --xml        print XML output when using the 'dump' command\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -h, --help       prints usage information\n");
@@ -300,6 +301,7 @@ int main(int argc, char *argv[])
 	const char* udid = NULL;
 	const char* param = NULL;
 	const char* param2 = NULL;
+	int use_network = 0;
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
@@ -317,6 +319,10 @@ int main(int argc, char *argv[])
 				return 0;
 			}
 			udid = argv[i];
+			continue;
+		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "install")) {
@@ -437,12 +443,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}
