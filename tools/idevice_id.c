@@ -43,7 +43,7 @@ static void print_usage(int argc, char **argv, int is_error)
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
 		"\n" \
-		"Prints device name or a list of attached devices.\n" \
+		"List attached devices or print device name of given device.\n" \
 		"\n" \
 		"  If UDID is given, the name of the connected device with that UDID" \
 		"  will be retrieved.\n" \
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	char *device_name = NULL;
 	int ret = 0;
 	int i;
-	int mode = MODE_SHOW_ID;
+	int mode = MODE_LIST_DEVICES;
 	int include_usb = 0;
 	int include_network = 0;
 	const char* udid = NULL;
@@ -110,9 +110,11 @@ int main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (mode == MODE_SHOW_ID && argc != 1) {
-		print_usage(argc + optind, argv - optind, 1);
-		exit(EXIT_FAILURE);
+	if (argc == 1) {
+		mode = MODE_SHOW_ID;
+	} else if (argc == 0 && optind == 1) {
+		include_usb = 1;
+		include_network = 1;
 	}
 	udid = argv[0];
 
