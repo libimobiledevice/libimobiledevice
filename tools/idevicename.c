@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicename"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -45,6 +47,7 @@ static void print_usage(void)
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprint usage information\n");
+	printf("  -v, --version\t\tprint version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -52,22 +55,22 @@ static void print_usage(void)
 
 int main(int argc, char** argv)
 {
-	int res = -1;
-	char* udid = NULL;
-
 	int c = 0;
-	int optidx = 0;
 	const struct option longopts[] = {
-		{ "udid", required_argument, NULL, 'u' },
-		{ "help", no_argument, NULL, 'h' },
+		{ "udid",    required_argument, NULL, 'u' },
+		{ "debug",   no_argument,       NULL, 'd' },
+		{ "help",    no_argument,       NULL, 'h' },
+		{ "version", no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
+	int res = -1;
+	char* udid = NULL;
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "du:h", longopts, &optidx)) != -1) {
+	while ((c = getopt_long(argc, argv, "du:hv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'u':
 			if (!*optarg) {
@@ -84,9 +87,12 @@ int main(int argc, char** argv)
 		case 'd':
 			idevice_set_debug_level(1);
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
 		default:
 			print_usage();
-			return -1;
+			return 2;
 		}
 	}
 
@@ -105,7 +111,7 @@ int main(int argc, char** argv)
 	}
 
 	lockdownd_client_t lockdown = NULL;
-	lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, "idevicename");
+	lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(device);
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lerr);

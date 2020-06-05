@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicedate"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,11 +58,12 @@ static void print_usage(int argc, char **argv)
 	printf("      in the setup wizard screens before device activation.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -s, --set TIMESTAMP\tset UTC time described by TIMESTAMP\n");
 	printf("  -c, --sync\t\tset time of device to current system time\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -129,6 +132,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv);
 			return 0;
 		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
+		}
 		else {
 			print_usage(argc, argv);
 			return 0;
@@ -145,7 +152,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "idevicedate"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		result = -1;
 		goto cleanup;

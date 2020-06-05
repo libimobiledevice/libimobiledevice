@@ -24,6 +24,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicecrashreport"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -306,11 +308,12 @@ static void print_usage(int argc, char **argv)
 	printf("Move crash reports from device to a local DIRECTORY.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -e, --extract\t\textract raw crash report into separate '.crash' file\n");
 	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -349,6 +352,10 @@ int main(int argc, char* argv[])
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			return 0;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
 		else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--extract")) {
@@ -392,7 +399,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	lockdownd_error = lockdownd_client_new_with_handshake(device, &lockdownd, "idevicecrashreport");
+	lockdownd_error = lockdownd_client_new_with_handshake(device, &lockdownd, TOOL_NAME);
 	if (lockdownd_error != LOCKDOWN_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lockdownd_error);
 		idevice_free(device);

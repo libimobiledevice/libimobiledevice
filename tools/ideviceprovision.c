@@ -24,6 +24,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceprovision"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,10 +71,11 @@ static void print_usage(int argc, char **argv)
 	printf("           \tspecified by FILE.\n");
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
-	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by UDID\n");
 	printf("  -x, --xml        print XML output when using the 'dump' command\n");
+	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -h, --help       prints usage information\n");
+	printf("  -v, --version    prints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -376,6 +379,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv);
 			return 0;
 		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
+		}
 		else {
 			print_usage(argc, argv);
 			return 0;
@@ -440,7 +447,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "ideviceprovision"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;

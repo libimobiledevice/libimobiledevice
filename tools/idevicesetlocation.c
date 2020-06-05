@@ -21,6 +21,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#define TOOL_NAME "idevicesetlocation"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -52,8 +55,9 @@ static void print_usage(int argc, char **argv, int is_error)
 		"OPTIONS:\n" \
 		"  -u, --udid UDID    target specific device by UDID\n" \
 		"  -n, --network      connect to network device even if available via USB\n" \
-		"  -h, --help         prints usage information\n" \
 		"  -d, --debug        enable communication debugging\n" \
+		"  -h, --help         prints usage information\n" \
+		"  -v, --version      prints version information\n" \
 		"\n" \
 		"Homepage:    <" PACKAGE_URL ">\n" \
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
@@ -62,19 +66,20 @@ static void print_usage(int argc, char **argv, int is_error)
 
 int main(int argc, char **argv)
 {
+	int c = 0;
 	const struct option longopts[] = {
-		{ "help", no_argument, NULL, 'h' },
-		{ "udid", required_argument, NULL, 'u' },
-		{ "debug", no_argument, NULL, 'd' },
-		{ "network", no_argument, NULL, 'n' },
+		{ "help",    no_argument,       NULL, 'h' },
+		{ "udid",    required_argument, NULL, 'u' },
+		{ "debug",   no_argument,       NULL, 'd' },
+		{ "network", no_argument,       NULL, 'n' },
+		{ "version", no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
 	uint32_t mode = 0;
 	char *udid = NULL;
 	enum idevice_options lookup_opts = IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK;
 
-	int c = 0;
-	while ((c = getopt_long(argc, argv, "dhu:n", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -93,6 +98,9 @@ int main(int argc, char **argv)
 			break;
 		case 'h':
 			print_usage(argc, argv, 0);
+			return 0;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		default:
 			print_usage(argc, argv, 1);
@@ -131,7 +139,7 @@ int main(int argc, char **argv)
 	}
 
 	lockdownd_client_t lockdown;
-	lockdownd_client_new_with_handshake(device, &lockdown, NULL);
+	lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
 
 	lockdownd_service_descriptor_t svc = NULL;
 	if (lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc) != LOCKDOWN_E_SUCCESS) {

@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevice_id"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,6 +53,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -n, --network   list UDIDs of all devices available via network\n" \
 		"  -d, --debug     enable communication debugging\n" \
 		"  -h, --help      prints usage information\n" \
+		"  -v, --version   prints version information\n" \
 		"\n" \
 		"Homepage:    <" PACKAGE_URL ">\n" \
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
@@ -76,10 +79,11 @@ int main(int argc, char **argv)
 		{ "help",  no_argument, NULL, 'h' },
 		{ "list",  no_argument, NULL, 'l' },
 		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
 
-	while ((c = getopt_long(argc, argv, "dhln", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhlnv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -95,6 +99,9 @@ int main(int argc, char **argv)
 			mode = MODE_LIST_DEVICES;
 			include_network = 1;
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
 		default:
 			print_usage(argc, argv, 1);
 			exit(EXIT_FAILURE);
@@ -117,7 +124,7 @@ int main(int argc, char **argv)
 			return -2;
 		}
 
-		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(device, &client, "idevice_id")) {
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(device, &client, TOOL_NAME)) {
 			idevice_free(device);
 			fprintf(stderr, "ERROR: Connecting to device failed!\n");
 			return -2;

@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicedebug"
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,10 +195,11 @@ static void print_usage(int argc, char **argv)
 	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
-	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -265,6 +268,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv);
 			res = 0;
 			goto cleanup;
+		} else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			res = 0;
+			goto cleanup;
 		} else if (!strcmp(argv[i], "run")) {
 			cmd = CMD_RUN;
 
@@ -313,7 +320,7 @@ int main(int argc, char *argv[])
 		case CMD_RUN:
 		default:
 			/* get the path to the app and it's working directory */
-			if (instproxy_client_start_service(device, &instproxy_client, "idevicerun") != INSTPROXY_E_SUCCESS) {
+			if (instproxy_client_start_service(device, &instproxy_client, TOOL_NAME) != INSTPROXY_E_SUCCESS) {
 				fprintf(stderr, "Could not start installation proxy service.\n");
 				goto cleanup;
 			}
@@ -334,7 +341,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* start and connect to debugserver */
-			if (debugserver_client_start_service(device, &debugserver_client, "idevicerun") != DEBUGSERVER_E_SUCCESS) {
+			if (debugserver_client_start_service(device, &debugserver_client, TOOL_NAME) != DEBUGSERVER_E_SUCCESS) {
 				fprintf(stderr,
 					"Could not start com.apple.debugserver!\n"
 					"Please make sure to mount the developer disk image first:\n"

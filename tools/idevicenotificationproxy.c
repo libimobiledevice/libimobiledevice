@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicenotificationproxy"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -71,9 +73,10 @@ static void print_usage(int argc, char **argv)
 	printf("  observe ID [...]\tobserve notification IDs in the foreground until CTRL+C or signal is received\n");
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -127,6 +130,11 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			result = 0;
+			goto cleanup;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			result = 0;
 			goto cleanup;
 		}
@@ -186,7 +194,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &client, "idevicenotificationproxy"))) {
+	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ret);
 		goto cleanup;
 	}

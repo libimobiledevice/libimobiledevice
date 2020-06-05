@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceenterrecovery"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -46,6 +48,7 @@ static void print_usage(int argc, char **argv)
 	printf("OPTIONS:\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -73,6 +76,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv);
 			return 0;
 		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
+		}
 	}
 
 	i--;
@@ -88,7 +95,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new(device, &client, "ideviceenterrecovery"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new(device, &client, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;

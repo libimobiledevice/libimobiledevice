@@ -24,6 +24,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicepair"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -78,9 +80,10 @@ static void print_usage(int argc, char **argv)
 	printf("  list         list devices paired with this host\n");
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
-	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by UDID\n");
+	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -h, --help       prints usage information\n");
+	printf("  -v, --version    prints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -88,20 +91,16 @@ static void print_usage(int argc, char **argv)
 
 static void parse_opts(int argc, char **argv)
 {
+	int c = 0;
 	static struct option longopts[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"udid", required_argument, NULL, 'u'},
-		{"debug", no_argument, NULL, 'd'},
-		{NULL, 0, NULL, 0}
+		{ "help",    no_argument,       NULL, 'h' },
+		{ "udid",    required_argument, NULL, 'u' },
+		{ "debug",   no_argument,       NULL, 'd' },
+		{ "version", no_argument,       NULL, 'v' },
+		{ NULL, 0, NULL, 0}
 	};
-	int c;
 
-	while (1) {
-		c = getopt_long(argc, argv, "hu:d", longopts, (int*)0);
-		if (c == -1) {
-			break;
-		}
-
+	while ((c = getopt_long(argc, argv, "hu:dv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(argc, argv);
@@ -119,6 +118,9 @@ static void parse_opts(int argc, char **argv)
 		case 'd':
 			idevice_set_debug_level(1);
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			exit(EXIT_SUCCESS);
 		default:
 			print_usage(argc, argv);
 			exit(EXIT_SUCCESS);
@@ -280,7 +282,7 @@ int main(int argc, char **argv)
 		case OP_VALIDATE:
 		lockdownd_client_free(client);
 		client = NULL;
-		lerr = lockdownd_client_new_with_handshake(device, &client, "idevicepair");
+		lerr = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME);
 		if (lerr == LOCKDOWN_E_SUCCESS) {
 			printf("SUCCESS: Validated pairing with device %s\n", udid);
 		} else {

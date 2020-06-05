@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceimagemounter"
+
 #include <stdlib.h>
 #define _GNU_SOURCE 1
 #define __USE_GNU 1
@@ -75,6 +77,7 @@ static void print_usage(int argc, char **argv)
 	printf("  -x, --xml\t\tUse XML output\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -83,18 +86,19 @@ static void print_usage(int argc, char **argv)
 static void parse_opts(int argc, char **argv)
 {
 	static struct option longopts[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"udid", required_argument, NULL, 'u'},
-		{"list", no_argument, NULL, 'l'},
-		{"imagetype", required_argument, NULL, 't'},
-		{"xml", no_argument, NULL, 'x'},
-		{"debug", no_argument, NULL, 'd'},
-		{NULL, 0, NULL, 0}
+		{ "help",      no_argument,       NULL, 'h'},
+		{ "udid",      required_argument, NULL, 'u'},
+		{ "list",      no_argument,       NULL, 'l'},
+		{ "imagetype", required_argument, NULL, 't'},
+		{ "xml",       no_argument,       NULL, 'x'},
+		{ "debug",     no_argument,       NULL, 'd'},
+		{ "version",   no_argument,       NULL, 'v' },
+		{ NULL, 0, NULL, 0 }
 	};
 	int c;
 
 	while (1) {
-		c = getopt_long(argc, argv, "hu:lt:xd", longopts, NULL);
+		c = getopt_long(argc, argv, "hu:lt:xdv", longopts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -126,6 +130,9 @@ static void parse_opts(int argc, char **argv)
 		case 'd':
 			idevice_set_debug_level(1);
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			exit(0);
 		default:
 			print_usage(argc, argv);
 			exit(2);
@@ -189,7 +196,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, "ideviceimagemounter"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdown, error code %d.\n", ldret);
 		goto leave;
 	}

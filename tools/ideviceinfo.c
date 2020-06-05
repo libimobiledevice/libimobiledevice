@@ -24,6 +24,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceinfo"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -97,14 +99,15 @@ static void print_usage(int argc, char **argv, int is_error)
 		"Show information about a connected device.\n" \
 		"\n" \
 		"OPTIONS:\n" \
-		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
 		"  -u, --udid UDID    target specific device by UDID\n" \
 		"  -n, --network      connect to network device even if available via USB\n" \
+		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
 		"  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
 		"  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
 		"  -x, --xml          output information as xml plist instead of key/value pairs\n" \
 		"  -h, --help         prints usage information\n" \
 		"  -d, --debug        enable communication debugging\n" \
+		"  -v, --version      prints version information\n" \
 		"\n"
 	);
 	fprintf(is_error ? stderr : stdout, "Known domains are:\n\n");
@@ -144,6 +147,7 @@ int main(int argc, char *argv[])
 		{ "key", required_argument, NULL, 'k' },
 		{ "simple", no_argument, NULL, 's' },
 		{ "xml", no_argument, NULL, 'x' },
+		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -151,7 +155,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nq:k:sx", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -195,6 +199,9 @@ int main(int argc, char *argv[])
 		case 'h':
 			print_usage(argc, argv, 0);
 			return 0;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
 		default:
 			print_usage(argc, argv, 1);
 			return 2;
@@ -215,8 +222,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
-			lockdownd_client_new(device, &client, "ideviceinfo"):
-			lockdownd_client_new_with_handshake(device, &client, "ideviceinfo"))) {
+			lockdownd_client_new(device, &client, TOOL_NAME):
+			lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
 		idevice_free(device);
 		return -1;

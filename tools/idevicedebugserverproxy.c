@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicedebugserverproxy"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,9 +75,10 @@ static void print_usage(int argc, char **argv)
 	printf("Proxy debugserver connection from device to a local socket at PORT.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
@@ -213,7 +216,7 @@ static void* connection_handler(void* data)
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
 
-	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, "idevicedebugserverproxy");
+	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, TOOL_NAME);
 	if (derr != DEBUGSERVER_E_SUCCESS) {
 		fprintf(stderr, "Could not start debugserver on device!\nPlease make sure to mount a developer disk image first.\n");
 		return NULL;
@@ -293,6 +296,10 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			return EXIT_SUCCESS;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return EXIT_SUCCESS;
 		}
 		else if (atoi(argv[i]) > 0) {

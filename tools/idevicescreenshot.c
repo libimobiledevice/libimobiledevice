@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicescreenshot"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -72,6 +74,10 @@ int main(int argc, char **argv)
 			print_usage(argc, argv);
 			return 0;
 		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
+		}
 		else if (argv[i][0] != '-' && !filename) {
 			filename = strdup(argv[i]);
 			continue;
@@ -91,7 +97,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, NULL))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, TOOL_NAME))) {
 		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		return -1;
@@ -167,9 +173,10 @@ void print_usage(int argc, char **argv)
 	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
 	printf("the screenshotr service is not available.\n");
 	printf("\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
 	printf("Homepage:    <" PACKAGE_URL ">\n");
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");

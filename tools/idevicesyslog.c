@@ -24,6 +24,8 @@
 #include "config.h"
 #endif
 
+#define TOOL_NAME "idevicesyslog"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -408,7 +410,7 @@ static int start_logging(void)
 	}
 
 	lockdownd_client_t lockdown = NULL;
-	lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, "idevicesyslog");
+	lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd: %d\n", lerr);
 		idevice_free(device);
@@ -528,6 +530,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -x, --exit       exit when device disconnects\n" \
 		"  -h, --help       prints usage information\n" \
 		"  -d, --debug      enable communication debugging\n" \
+		"  -v, --version    prints version information\n" \
 		" --no-colors       disable colored output\n" \
 		"\n" \
 		"FILTER OPTIONS:\n" \
@@ -581,6 +584,7 @@ int main(int argc, char *argv[])
 		{ "no-kernel", no_argument, NULL, 'K' },
 		{ "quiet-list", no_argument, NULL, 1 },
 		{ "no-colors", no_argument, NULL, 2 },
+		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -591,7 +595,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:e:p:qkK", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:e:p:qkKv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -693,6 +697,9 @@ int main(int argc, char *argv[])
 		case 2:
 			no_colors = 1;
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
 		default:
 			print_usage(argc, argv, 1);
 			return 2;
