@@ -446,8 +446,8 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		else if (((char*)device->conn_data)[1] == 0x1E) { // AF_INET6 (bsd)
 #ifdef AF_INET6
 			saddr->sa_family = AF_INET6;
-			/* copy just the address without the scope id as it might be from a different host */
-			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 22);
+			/* copy the address and the host dependent scope id */
+			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 26);
 #else
 			debug_info("ERROR: Got an IPv6 address but this system doesn't support IPv6");
 			return IDEVICE_E_UNKNOWN_ERROR;
