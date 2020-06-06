@@ -455,23 +455,30 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 			debug_info("Unsupported address family 0x%02x", ((char*)device->conn_data)[1]);
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
+
 		char addrtxt[48];
 		addrtxt[0] = '\0';
+
 		if (!socket_addr_to_string(saddr, addrtxt, sizeof(addrtxt))) {
 			debug_info("Failed to convert network address: %d (%s)", errno, strerror(errno));
 		}
+
 		debug_info("Connecting to %s port %d...", addrtxt, port);
+
 		int sfd = socket_connect_addr(saddr, port);
 		if (sfd < 0) {
 			debug_info("ERROR: Connecting to network device failed: %d (%s)", errno, strerror(errno));
 			return IDEVICE_E_NO_DEVICE;
 		}
+
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_NETWORK;
 		new_connection->data = (void*)(long)sfd;
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
+
 		*connection = new_connection;
+
 		return IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", device->conn_type);
