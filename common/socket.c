@@ -43,6 +43,10 @@ static int wsa_init = 0;
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#ifdef AF_INET6
+#include <net/if.h>
+#include <ifaddrs.h>
+#endif
 #endif
 #include "socket.h"
 
@@ -310,6 +314,97 @@ int socket_create(uint16_t port)
 	return sfd;
 }
 
+#ifdef AF_INET6
+static uint32_t _in6_addr_scope(struct in6_addr* addr)
+{
+	uint32_t scope = 0;
+
+	if (IN6_IS_ADDR_MULTICAST(addr)) {
+		if (IN6_IS_ADDR_MC_NODELOCAL(addr)) {
+			scope = 1;
+		} else if (IN6_IS_ADDR_MC_LINKLOCAL(addr)) {
+			scope = 2;
+		} else if (IN6_IS_ADDR_MC_SITELOCAL(addr)) {
+			scope = 3;
+		}
+
+		return scope;
+	}
+
+	if (IN6_IS_ADDR_LINKLOCAL(addr)) {
+		scope = 2;
+	} else if (IN6_IS_ADDR_SITELOCAL(addr)) {
+		scope = 3;
+	} else if (IN6_IS_ADDR_LOOPBACK(addr)) {
+		scope = 4;
+	} else if (IN6_IS_ADDR_UNSPECIFIED(addr)) {
+		scope = 0;
+	}
+
+	return scope;
+}
+
+static int32_t _in6_addr_scope_id(struct in6_addr* addr)
+{
+	int32_t res = -1;
+
+	struct ifaddrs *ifaddr, *ifa;
+	uint32_t addr_scope;
+
+	/* get scope for requested address */
+	addr_scope = _in6_addr_scope(addr);
+	if (addr_scope == 0) {
+		/* global scope doesn't need a specific scope id */
+		return addr_scope;
+	}
+
+	/* get interfaces */
+	if (getifaddrs(&ifaddr) == -1) {
+		perror("getifaddrs");
+		return res;
+	}
+
+	/* loop over interfaces */
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+		/* skip if no address is available */
+		if (ifa->ifa_addr == NULL) {
+			continue;
+		}
+
+		/* skip if wrong family */
+		if (ifa->ifa_addr->sa_family != AF_INET6) {
+			continue;
+		}
+
+		/* skip if not up */
+		if ((ifa->ifa_flags & IFF_UP) == 0) {
+			continue;
+		}
+
+		/* skip if not running */
+		if ((ifa->ifa_flags & IFF_RUNNING) == 0) {
+			continue;
+		}
+
+		struct sockaddr_in6* addr_in = (struct sockaddr_in6*)ifa->ifa_addr;
+
+		/* skip if scopes do not match */
+		if (_in6_addr_scope(&addr_in->sin6_addr) != addr_scope) {
+			continue;
+		}
+
+		/* use the scope id of this interface */
+		res = addr_in->sin6_scope_id;
+
+		break;
+	}
+
+	freeifaddrs(ifaddr);
+
+	return res;
+}
+#endif
+
 int socket_connect_addr(struct sockaddr* addr, uint16_t port)
 {
 	int sfd = -1;
@@ -337,6 +432,18 @@ int socket_connect_addr(struct sockaddr* addr, uint16_t port)
 	else if (addr->sa_family == AF_INET6) {
 		struct sockaddr_in6* addr_in = (struct sockaddr_in6*)addr;
 		addr_in->sin6_port = htons(port);
+
+		/*
+		 * IPv6 Routing Magic:
+		 *
+		 * If the scope of the address is a link-local one, IPv6 requires the
+		 * scope id set to an interface number to allow proper routing. However,
+		 * as the provided sockaddr might contain a wrong scope id, we must find
+		 * a scope id from a suitable interface on this system or routing might
+		 * fail. An IPv6 guru should have another look though...
+		 */
+		addr_in->sin6_scope_id = _in6_addr_scope_id(&addr_in->sin6_addr);
+
 		addrlen = sizeof(struct sockaddr_in6);
 	}
 #endif
