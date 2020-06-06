@@ -325,7 +325,7 @@ static uint32_t _in6_addr_scope(struct in6_addr* addr)
 		} else if (IN6_IS_ADDR_MC_LINKLOCAL(addr)) {
 			scope = 2;
 		} else if (IN6_IS_ADDR_MC_SITELOCAL(addr)) {
-			scope = 3;
+			scope = 5;
 		}
 
 		return scope;
@@ -333,10 +333,10 @@ static uint32_t _in6_addr_scope(struct in6_addr* addr)
 
 	if (IN6_IS_ADDR_LINKLOCAL(addr)) {
 		scope = 2;
-	} else if (IN6_IS_ADDR_SITELOCAL(addr)) {
-		scope = 3;
 	} else if (IN6_IS_ADDR_LOOPBACK(addr)) {
-		scope = 4;
+		scope = 2;
+	} else if (IN6_IS_ADDR_SITELOCAL(addr)) {
+		scope = 5;
 	} else if (IN6_IS_ADDR_UNSPECIFIED(addr)) {
 		scope = 0;
 	}
