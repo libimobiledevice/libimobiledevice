@@ -435,17 +435,19 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	} else if (device->conn_type == CONNECTION_NETWORK) {
-		unsigned char saddr_[32];
-		memset(saddr_, '\0', sizeof(saddr_));
-		struct sockaddr* saddr = (struct sockaddr*)&saddr_[0];
+		struct sockaddr_storage saddr_storage;
+		struct sockaddr* saddr = (struct sockaddr*)&saddr_storage;
+
+		/* FIXME: Improve handling of this platform/host dependent connection data */
 		if (((char*)device->conn_data)[1] == 0x02) { // AF_INET
 			saddr->sa_family = AF_INET;
-			memcpy(&saddr->sa_data[0], (char*)device->conn_data+2, 14);
+			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 14);
 		}
-		else if (((char*)device->conn_data)[1] == 0x1E) { //AF_INET6 (bsd)
+		else if (((char*)device->conn_data)[1] == 0x1E) { // AF_INET6 (bsd)
 #ifdef AF_INET6
 			saddr->sa_family = AF_INET6;
-			memcpy(&saddr->sa_data[0], (char*)device->conn_data+2, 26);
+			/* copy just the address without the scope id as it might be from a different host */
+			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 22);
 #else
 			debug_info("ERROR: Got an IPv6 address but this system doesn't support IPv6");
 			return IDEVICE_E_UNKNOWN_ERROR;
