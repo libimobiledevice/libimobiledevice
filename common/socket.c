@@ -344,15 +344,14 @@ static uint32_t _in6_addr_scope(struct in6_addr* addr)
 	return scope;
 }
 
-static int32_t _in6_addr_scope_id(struct in6_addr* addr)
+static int32_t _sockaddr_in6_scope_id(struct sockaddr_in6* addr)
 {
 	int32_t res = -1;
-
 	struct ifaddrs *ifaddr, *ifa;
 	uint32_t addr_scope;
 
 	/* get scope for requested address */
-	addr_scope = _in6_addr_scope(addr);
+	addr_scope = _in6_addr_scope(&addr->sin6_addr);
 	if (addr_scope == 0) {
 		/* global scope doesn't need a specific scope id */
 		return addr_scope;
@@ -393,10 +392,29 @@ static int32_t _in6_addr_scope_id(struct in6_addr* addr)
 			continue;
 		}
 
-		/* use the scope id of this interface */
+		/* use if address is equal */
+		if (memcmp(&addr->sin6_addr.s6_addr, &addr_in->sin6_addr.s6_addr, sizeof(addr_in->sin6_addr.s6_addr)) == 0) {
+			res = addr_in->sin6_scope_id;
+			/* if scope id equals the requested one then assume it was valid */
+			if (addr->sin6_scope_id == addr_in->sin6_scope_id) {
+				break;
+			} else {
+				continue;
+			}
+		}
+
+		/* skip loopback interface if not already matched exactly above */
+		if ((ifa->ifa_flags & IFF_LOOPBACK) != 0) {
+			continue;
+		}
+
+		/* set the scope id of this interface as most likely candidate */
 		res = addr_in->sin6_scope_id;
 
-		break;
+		/* if scope id equals the requested one then assume it was valid */
+		if (addr->sin6_scope_id == addr_in->sin6_scope_id) {
+			break;
+		}
 	}
 
 	freeifaddrs(ifaddr);
@@ -442,7 +460,7 @@ int socket_connect_addr(struct sockaddr* addr, uint16_t port)
 		 * a scope id from a suitable interface on this system or routing might
 		 * fail. An IPv6 guru should have another look though...
 		 */
-		addr_in->sin6_scope_id = _in6_addr_scope_id(&addr_in->sin6_addr);
+		addr_in->sin6_scope_id = _sockaddr_in6_scope_id(addr_in);
 
 		addrlen = sizeof(struct sockaddr_in6);
 	}
