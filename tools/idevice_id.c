@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 			printf("%s", dev_list[i]->udid);
 			if (include_usb && include_network) {
 				if (dev_list[i]->conn_type == CONNECTION_NETWORK) {
-					printf(" (network)");
+					printf(" (Network)");
 				} else {
 					printf(" (USB)");
 				}
