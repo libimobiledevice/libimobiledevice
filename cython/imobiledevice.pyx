@@ -40,6 +40,10 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
         IDEVICE_E_NOT_ENOUGH_DATA = -4
         IDEVICE_E_SSL_ERROR = -6
         IDEVICE_E_TIMEOUT = -7
+    cdef enum idevice_options:
+        IDEVICE_LOOKUP_USBMUX = 1 << 1
+        IDEVICE_LOOKUP_NETWORK = 1 << 2
+        IDEVICE_LOOKUP_PREFER_NETWORK = 1 << 3
     ctypedef void (*idevice_event_cb_t) (const_idevice_event_t event, void *user_data)
     cdef extern idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
     cdef extern idevice_error_t idevice_event_unsubscribe()
@@ -47,6 +51,7 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     idevice_error_t idevice_device_list_free(char **devices)
     void idevice_set_debug_level(int level)
     idevice_error_t idevice_new(idevice_t *device, char *udid)
+    idevice_error_t idevice_new_with_options(idevice_t *device, const char *udid, idevice_options options);
     idevice_error_t idevice_free(idevice_t device)
     idevice_error_t idevice_get_udid(idevice_t device, char** udid)
     idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)
