@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 		{ NULL, 0, NULL, 0}
 	};
 	int res = -1;
-	char* udid = NULL;
+	const char* udid = NULL;
 	int use_network = 0;
 
 #ifndef WIN32
@@ -81,8 +81,7 @@ int main(int argc, char** argv)
 				print_usage();
 				exit(2);
 			}
-			free(udid);
-			udid = strdup(optarg);
+			udid = optarg;
 			break;
 		case 'n':
 			use_network = 1;
@@ -152,10 +151,6 @@ int main(int argc, char** argv)
 
 	lockdownd_client_free(lockdown);
 	idevice_free(device);
-
-	if (udid) {
-		free(udid);
-	}
 
 	return res;
 }

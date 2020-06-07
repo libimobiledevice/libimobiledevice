@@ -129,10 +129,10 @@ int main(int argc, char *argv[])
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
-	char* udid = NULL;
+	const char* udid = NULL;
 	int use_network = 0;
-	char *domain = NULL;
-	char *key = NULL;
+	const char *domain = NULL;
+	const char *key = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
@@ -166,8 +166,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv, 1);
 				return 2;
 			}
-			free(udid);
-			udid = strdup(optarg);
+			udid = optarg;
 			break;
 		case 'n':
 			use_network = 1;
@@ -178,8 +177,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv, 1);
 				return 2;
 			}
-			free(domain);
-			domain = strdup(optarg);
+			domain = optarg;
 			break;
 		case 'k':
 			if (!*optarg) {
@@ -187,8 +185,7 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv, 1);
 				return 2;
 			}
-			free(key);
-			key = strdup(optarg);
+			key = optarg;
 			break;
 		case 'x':
 			format = FORMAT_XML;
@@ -255,8 +252,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (domain != NULL)
-		free(domain);
 	lockdownd_client_free(client);
 	idevice_free(device);
 

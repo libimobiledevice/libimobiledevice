@@ -51,8 +51,8 @@
 static int list_mode = 0;
 static int use_network = 0;
 static int xml_mode = 0;
-static char *udid = NULL;
-static char *imagetype = NULL;
+static const char *udid = NULL;
+static const char *imagetype = NULL;
 
 static const char PKG_PATH[] = "PublicStaging";
 static const char PATH_PREFIX[] = "/private/var/mobile/Media";
@@ -116,8 +116,7 @@ static void parse_opts(int argc, char **argv)
 				print_usage(argc, argv);
 				exit(2);
 			}
-			free(udid);
-			udid = strdup(optarg);
+			udid = optarg;
 			break;
 		case 'n':
 			use_network = 1;
@@ -126,9 +125,7 @@ static void parse_opts(int argc, char **argv)
 			list_mode = 1;
 			break;
 		case 't':
-			if (imagetype)
-				free(imagetype);
-			imagetype = strdup(optarg);
+			imagetype = optarg;
 			break;
 		case 'x':
 			xml_mode = 1;
@@ -281,10 +278,9 @@ int main(int argc, char **argv)
 	if (list_mode) {
 		/* list mounts mode */
 		if (!imagetype) {
-			imagetype = strdup("Developer");
+			imagetype = "Developer";
 		}
 		err = mobile_image_mounter_lookup_image(mim, imagetype, &result);
-		free(imagetype);
 		if (err == MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 			res = 0;
 			if (xml_mode) {
@@ -329,7 +325,7 @@ int main(int argc, char **argv)
 
 
 		if (!imagetype) {
-			imagetype = strdup("Developer");
+			imagetype = "Developer";
 		}
 
 		switch(disk_image_upload_type) {
@@ -407,7 +403,6 @@ int main(int argc, char **argv)
 
 		printf("Mounting...\n");
 		err = mobile_image_mounter_mount_image(mim, mountname, sig, sig_length, imagetype, &result);
-		free(imagetype);
 		if (err == MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 			if (result) {
 				plist_t node = plist_dict_get_item(result, "Status");

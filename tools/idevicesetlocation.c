@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 		{ NULL, 0, NULL, 0}
 	};
 	uint32_t mode = 0;
-	char *udid = NULL;
+	const char *udid = NULL;
 	int use_network = 0;
 
 	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
@@ -90,8 +90,7 @@ int main(int argc, char **argv)
 				print_usage(argc, argv, 1);
 				return 2;
 			}
-			free(udid);
-			udid = strdup(optarg);
+			udid = optarg;
 			break;
 		case 'n':
 			use_network = 1;
