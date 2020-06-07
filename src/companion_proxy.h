@@ -1,5 +1,5 @@
 /*
- * compproxy.h
+ * companion_proxy.h
  * com.apple.companion_proxy service header file.
  *
  * Copyright (c) 2019-2020 Nikias Bassen, All Rights Reserved.

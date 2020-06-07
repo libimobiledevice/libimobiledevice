@@ -1,5 +1,5 @@
 /*
- * compproxy.c
+ * companion_proxy.c
  * com.apple.companion_proxy service implementation.
  *
  * Copyright (c) 2019-2020 Nikias Bassen, All Rights Reserved.
