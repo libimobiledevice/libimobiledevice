@@ -26,7 +26,7 @@
 #include "property_list_service.h"
 #include "common/thread.h"
 
-struct compproxy_client_private {
+struct companion_proxy_client_private {
 	property_list_service_client_t parent;
 	THREAD_T event_thread;
 };
