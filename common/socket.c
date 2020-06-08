@@ -394,11 +394,16 @@ static int32_t _sockaddr_in6_scope_id(struct sockaddr_in6* addr)
 
 		/* use if address is equal */
 		if (memcmp(&addr->sin6_addr.s6_addr, &addr_in->sin6_addr.s6_addr, sizeof(addr_in->sin6_addr.s6_addr)) == 0) {
-			res = addr_in->sin6_scope_id;
 			/* if scope id equals the requested one then assume it was valid */
 			if (addr->sin6_scope_id == addr_in->sin6_scope_id) {
+				res = addr_in->sin6_scope_id;
 				break;
 			} else {
+				if ((addr_in->sin6_scope_id > addr->sin6_scope_id) && (res >= 0)) {
+					// use last valid scope id as we're past the requested scope id
+					break;
+				}
+				res = addr_in->sin6_scope_id;
 				continue;
 			}
 		}
@@ -408,11 +413,16 @@ static int32_t _sockaddr_in6_scope_id(struct sockaddr_in6* addr)
 			continue;
 		}
 
-		/* set the scope id of this interface as most likely candidate */
+		if ((addr_in->sin6_scope_id > addr->sin6_scope_id) && (res >= 0)) {
+			// use last valid scope id as we're past the requested scope id
+			break;
+		}
+
 		res = addr_in->sin6_scope_id;
 
 		/* if scope id equals the requested one then assume it was valid */
 		if (addr->sin6_scope_id == addr_in->sin6_scope_id) {
+			/* set the scope id of this interface as most likely candidate */
 			break;
 		}
 	}
