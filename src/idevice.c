@@ -559,10 +559,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 		while (sent < len) {
 #ifdef HAVE_OPENSSL
 			int c = socket_check_fd((int)(long)connection->data, FDM_WRITE, 100);
-			if (c < 0) {
-				break;
-			} else if (c == 0) {
+			if (c == 0 || c == -ETIMEDOUT || c == -EAGAIN) {
 				continue;
+			} else if (c < 0) {
+				break;
 			}
 			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
 			if (s <= 0) {
