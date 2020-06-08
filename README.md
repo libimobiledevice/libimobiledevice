@@ -51,18 +51,18 @@ By default, OpenSSL will be used. If you prefer GnuTLS, configure with
 
 ## Who/What/Where?
 
-* Home: https://www.libimobiledevice.org/
+* Home: https://libimobiledevice.org/
 * Code: `git clone https://git.libimobiledevice.org/libimobiledevice.git`
 * Code (Mirror): `git clone https://github.com/libimobiledevice/libimobiledevice.git`
 * Tickets: https://github.com/libimobiledevice/libimobiledevice/issues
 * Mailing List: https://lists.libimobiledevice.org/mailman/listinfo/libimobiledevice-devel
-* IRC: irc://irc.freenode.net#libimobiledevice
 * Twitter: https://twitter.com/libimobiledev
 
 ## Credits
 
 Apple, iPhone, iPod, and iPod Touch are trademarks of Apple Inc.
+
 libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
-README Updated on: 2019-06-21
+README Updated on: 2020-06-08
