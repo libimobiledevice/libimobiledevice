@@ -1,38 +1,55 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = \
+	-I$(top_srcdir)/include
 
-AM_CFLAGS = $(GLOBAL_CFLAGS) $(libgnutls_CFLAGS) $(libtasn1_CFLAGS) $(openssl_CFLAGS) $(libplist_CFLAGS) $(LFS_CFLAGS) $(PTHREAD_CFLAGS)
-AM_LIBS = $(libgnutls_LIBS) $(libtasn1_LIBS) $(openssl_LIBS) $(libplist_LIBS) $(PTHREAD_LIBS)
+AM_CFLAGS = \
+	$(GLOBAL_CFLAGS) \
+	$(libgnutls_CFLAGS) \
+	$(libtasn1_CFLAGS) \
+	$(openssl_CFLAGS) \
+	$(libplist_CFLAGS) \
+	$(LFS_CFLAGS) \
+	$(PTHREAD_CFLAGS)
+
+AM_LIBS = \
+	$(libgnutls_LIBS) \
+	$(libtasn1_LIBS) \
+	$(openssl_LIBS) \
+	$(libplist_LIBS) \
+	$(PTHREAD_LIBS)
 
 if HAVE_CYTHON
 
 BUILT_SOURCES = imobiledevice.c
 PXDINCLUDES = imobiledevice.pxd $(CYTHON_PLIST_INCLUDE_DIR)/plist.pxd
-PXIINCLUDES =					\
-	lockdown.pxi				\
-	mobilesync.pxi				\
-	notification_proxy.pxi		\
-	sbservices.pxi				\
-	mobilebackup.pxi			\
-	mobilebackup2.pxi			\
-	afc.pxi						\
-	file_relay.pxi				\
-	screenshotr.pxi				\
-	installation_proxy.pxi		\
-	webinspector.pxi			\
-	heartbeat.pxi				\
-	diagnostics_relay.pxi		\
-	misagent.pxi				\
-	house_arrest.pxi			\
-	restore.pxi					\
-	mobile_image_mounter.pxi    \
+PXIINCLUDES = \
+	lockdown.pxi \
+	mobilesync.pxi \
+	notification_proxy.pxi \
+	sbservices.pxi \
+	mobilebackup.pxi \
+	mobilebackup2.pxi \
+	afc.pxi \
+	file_relay.pxi \
+	screenshotr.pxi \
+	installation_proxy.pxi \
+	webinspector.pxi \
+	heartbeat.pxi \
+	diagnostics_relay.pxi \
+	misagent.pxi \
+	house_arrest.pxi \
+	restore.pxi \
+	mobile_image_mounter.pxi \
 	debugserver.pxi
 
-CLEANFILES =		\
-	*.pyc			\
-	*.pyo			\
+CLEANFILES = \
+	*.pyc \
+	*.pyo \
 	imobiledevice.c
 
-EXTRA_DIST = imobiledevice.pyx imobiledevice.pxd $(PXIINCLUDES)
+EXTRA_DIST = \
+	imobiledevice.pyx \
+	imobiledevice.pxd \
+	$(PXIINCLUDES)
 
 imobiledevicedir = $(pyexecdir)
 imobiledevice_LTLIBRARIES = imobiledevice.la
