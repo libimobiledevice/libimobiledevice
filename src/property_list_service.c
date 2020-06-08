@@ -224,6 +224,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("received %d bytes", bytes);
 		curlen += bytes;
 	}
+
 	if (curlen < pktlen) {
 		debug_info("received incomplete packet (%d of %d bytes)", curlen, pktlen);
 		if (curlen > 0) {
@@ -233,6 +234,7 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		free(content);
 		return res;
 	}
+
 	if ((pktlen > 8) && !memcmp(content, "bplist00", 8)) {
 		plist_from_bin(content, pktlen, plist);
 	} else if ((pktlen > 5) && !memcmp(content, "<?xml", 5)) {
@@ -246,15 +248,17 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		debug_info("WARNING: received unexpected non-plist content");
 		debug_buffer(content, pktlen);
 	}
+
 	if (*plist) {
 		debug_plist(*plist);
 		res = PROPERTY_LIST_SERVICE_E_SUCCESS;
 	} else {
 		res = PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
+
 	free(content);
 	content = NULL;
-	
+
 	return res;
 }
 

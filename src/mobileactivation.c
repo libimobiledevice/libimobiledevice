@@ -264,7 +264,7 @@ LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_create_activation
 	plist_free(result);
 	result = NULL;
 
-	return ret;	
+	return ret;
 }
 
 LIBIMOBILEDEVICE_API mobileactivation_error_t mobileactivation_activate(mobileactivation_client_t client, plist_t activation_record)

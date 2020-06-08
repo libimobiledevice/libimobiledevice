@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		s = 0;
 		service_send(service, buf, len, &s);
 	}
-	
+
 	idevice_free(device);
 
 	return 0;

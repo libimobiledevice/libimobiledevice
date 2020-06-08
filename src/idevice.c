@@ -711,7 +711,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 			*recv_bytes = 0;
 			return IDEVICE_E_SSL_ERROR;
 		}
-		
+
 		*recv_bytes = received;
 		return IDEVICE_E_SUCCESS;
 	}
