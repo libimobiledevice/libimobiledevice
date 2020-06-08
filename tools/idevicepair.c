@@ -89,7 +89,7 @@ static void print_usage(int argc, char **argv)
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
-static void parse_opts(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int c = 0;
 	static struct option longopts[] = {
@@ -99,37 +99,6 @@ static void parse_opts(int argc, char **argv)
 		{ "version", no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
-
-	while ((c = getopt_long(argc, argv, "hu:dv", longopts, NULL)) != -1) {
-		switch (c) {
-		case 'h':
-			print_usage(argc, argv);
-			exit(EXIT_SUCCESS);
-		case 'u':
-			if (!*optarg) {
-				fprintf(stderr, "ERROR: UDID must not be empty!\n");
-				print_usage(argc, argv);
-				exit(2);
-			}
-			if (udid)
-				free(udid);
-			udid = strdup(optarg);
-			break;
-		case 'd':
-			idevice_set_debug_level(1);
-			break;
-		case 'v':
-			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
-			exit(EXIT_SUCCESS);
-		default:
-			print_usage(argc, argv);
-			exit(EXIT_SUCCESS);
-		}
-	}
-}
-
-int main(int argc, char **argv)
-{
 	lockdownd_client_t client = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
@@ -143,15 +112,44 @@ int main(int argc, char **argv)
 	} op_t;
 	op_t op = OP_NONE;
 
+	while ((c = getopt_long(argc, argv, "hu:dv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'h':
+			print_usage(argc, argv);
+			exit(EXIT_SUCCESS);
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv);
+				result = EXIT_FAILURE;
+				goto leave;
+			}
+			free(udid);
+			udid = strdup(optarg);
+			break;
+		case 'd':
+			idevice_set_debug_level(1);
+			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			result = EXIT_SUCCESS;
+			goto leave;
+		default:
+			print_usage(argc, argv);
+			result = EXIT_FAILURE;
+			goto leave;
+		}
+	}
+
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
-	parse_opts(argc, argv);
 
 	if ((argc - optind) < 1) {
 		printf("ERROR: You need to specify a COMMAND!\n");
 		print_usage(argc, argv);
-		exit(EXIT_FAILURE);
+		result = EXIT_FAILURE;
+		goto leave;
 	}
 
 	cmd = (argv+optind)[0];
@@ -180,10 +178,10 @@ int main(int argc, char **argv)
 
 		printf("%s\n", systembuid);
 
-		if (systembuid)
-			free(systembuid);
+		free(systembuid);
 
-		return EXIT_SUCCESS;
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
 	if (op == OP_LIST) {
@@ -195,11 +193,9 @@ int main(int argc, char **argv)
 			printf("%s\n", udids[i]);
 			free(udids[i]);
 		}
-		if (udids)
-			free(udids);
-		if (udid)
-			free(udid);
-		return EXIT_SUCCESS;
+		free(udids);
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
 	ret = idevice_new(&device, udid);
@@ -209,8 +205,8 @@ int main(int argc, char **argv)
 		} else {
 			printf("No device found.\n");
 		}
-		free(udid);
-		return EXIT_FAILURE;
+		result = EXIT_FAILURE;
+		goto leave;
 	}
 	if (!udid) {
 		ret = idevice_get_udid(device, &udid);
@@ -230,20 +226,18 @@ int main(int argc, char **argv)
 
 		printf("%s\n", hostid);
 
-		if (hostid)
-			free(hostid);
+		free(hostid);
+		plist_free(pair_record);
 
-		if (pair_record)
-			plist_free(pair_record);
-
-		return EXIT_SUCCESS;
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
 	lerr = lockdownd_client_new(device, &client, TOOL_NAME);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
-		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
-		return EXIT_FAILURE;
+		result = EXIT_FAILURE;
+		goto leave;
 	}
 
 	result = EXIT_SUCCESS;
@@ -257,9 +251,7 @@ int main(int argc, char **argv)
 		if (strcmp("com.apple.mobile.lockdown", type)) {
 			printf("WARNING: QueryType request returned '%s'\n", type);
 		}
-		if (type) {
-			free(type);
-		}
+		free(type);
 	}
 
 	switch(op) {
@@ -300,9 +292,8 @@ int main(int argc, char **argv)
 leave:
 	lockdownd_client_free(client);
 	idevice_free(device);
-	if (udid) {
-		free(udid);
-	}
+	free(udid);
+
 	return result;
 }
 
