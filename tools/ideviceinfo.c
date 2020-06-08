@@ -77,7 +77,7 @@ static const char *domains[] = {
 	NULL
 };
 
-static int is_domain_known(char *domain)
+static int is_domain_known(const char *domain)
 {
 	int i = 0;
 	while (domains[i] != NULL) {
