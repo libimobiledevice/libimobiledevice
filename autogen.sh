@@ -7,7 +7,7 @@ test -z "$srcdir" && srcdir=.
 cd "$srcdir"
 
 gprefix=`which glibtoolize 2>&1 >/dev/null`
-if [ $? -eq 0 ]; then 
+if [ $? -eq 0 ]; then
   glibtoolize --force
 else
   libtoolize --force
@@ -20,5 +20,5 @@ autoconf
 cd "$olddir"
 
 if [ -z "$NOCONFIGURE" ]; then
-    $srcdir/configure "$@"
+  $srcdir/configure "$@"
 fi
