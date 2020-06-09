@@ -167,7 +167,7 @@ afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***di
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
-afc_error_t afc_get_file_info(afc_client_t client, const char *filename, char ***file_information);
+afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***file_information);
 
 /**
  * Opens a file on the device.
