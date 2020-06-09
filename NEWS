@@ -1,7 +1,7 @@
 Version 1.2.1
 ~~~~~~~~~~~~~
 
-* Development release "Let's get this going."
+* Development release "Let's get the party started."
 * Changes:
   - Fix Python 3 support
   - Add more lockdown error codes
@@ -53,10 +53,17 @@ Version 1.2.1
   - API: Add syslog_relay_start_capture_raw() for raw syslog capture
   - Add color output and process filter support to idevicesyslog
   - API: Add companion_proxy service implementation
-  - Bump dependency to libusbmuxd 2.0.1
-  - Bump dependency to libplist 2.1.0
+  - Bump dependency to libusbmuxd 2.0.2
+  - Bump dependency to libplist 2.2.0
   - Improve error handling and reporting in library and tools
   - Fix various memory leaks in library and tools
+  - Add "--network" and "--version" options to all tools
+  - Fix socket_connect_addr() not connecting to network devices using IPv6
+    in some cases.
+  - Improve IPv6 "scope id" detection to fix connecting to network devices with
+    link-local adresses.
+  - Fixed memory leaks
+* API is UNSTABLE
 
 Version 1.2.0
 ~~~~~~~~~~~~~
