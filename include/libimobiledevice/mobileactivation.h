@@ -138,7 +138,7 @@ mobileactivation_error_t mobileactivation_create_activation_info(mobileactivatio
  * provided by mobileactivation_create_activation_session_info().
  *
  * @param client The mobileactivation client
- * @aram handshake_result The handshake result returned from drmHandshake
+ * @aram handshake_response The handshake response returned from drmHandshake
  * @param info Pointer to a plist_t variable that will be set to the
  *     activation info created by the mobileactivation service. The
  *     consumer is responsible for freeing the returned object using
@@ -147,7 +147,7 @@ mobileactivation_error_t mobileactivation_create_activation_info(mobileactivatio
  * @return MOBILEACTIVATION_E_SUCCESS on success, or an MOBILEACTIVATION_E_*
  *     error code otherwise.
  */
-mobileactivation_error_t mobileactivation_create_activation_info_with_session(mobileactivation_client_t client, plist_t handshake_result, plist_t *info);
+mobileactivation_error_t mobileactivation_create_activation_info_with_session(mobileactivation_client_t client, plist_t handshake_response, plist_t *info);
 
 /**
  * Activates the device with the given activation record.
