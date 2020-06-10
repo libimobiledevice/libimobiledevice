@@ -33,15 +33,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
-#ifdef HAVE_OPENSSL
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#else
-#include <libtasn1.h>
-#include <gnutls/x509.h>
-#include <gnutls/crypto.h>
-#endif
 #include <plist/plist.h>
 
 #include "property_list_service.h"
