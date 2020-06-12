@@ -922,7 +922,7 @@ static const char *ssl_error_to_string(int e)
 		case SSL_ERROR_NONE:
 			return "SSL_ERROR_NONE";
 		case SSL_ERROR_SSL:
-			return "SSL_ERROR_SSL";
+			return ERR_error_string(ERR_get_error(), NULL);
 		case SSL_ERROR_WANT_READ:
 			return "SSL_ERROR_WANT_READ";
 		case SSL_ERROR_WANT_WRITE:
@@ -1014,6 +1014,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		BIO_free(ssl_bio);
 		return ret;
 	}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 
+	SSL_CTX_set_security_level(ssl_ctx, 0);
+#endif
 
 #if OPENSSL_VERSION_NUMBER < 0x10100002L || \
 	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x2060000fL))
