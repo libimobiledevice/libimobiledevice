@@ -56,7 +56,7 @@ imobiledevice_LTLIBRARIES = imobiledevice.la
 imobiledevice_la_SOURCES = imobiledevice.pyx
 imobiledevice_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src $(PYTHON_CPPFLAGS) $(AM_CFLAGS) -Wno-shadow -Wno-redundant-decls -Wno-switch-default -Wno-strict-aliasing -Wno-implicit-function-declaration -Wno-cast-function-type -fvisibility=default
 imobiledevice_la_LDFLAGS = -module -avoid-version -L$(libdir) $(PYTHON_LIBS) $(AM_LIBS) -no-undefined
-imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice.la
+imobiledevice_la_LIBADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 imobiledevice.c: imobiledevice.pyx $(PXDINCLUDES) $(PXIINCLUDES)
 
