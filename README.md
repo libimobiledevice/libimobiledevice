@@ -154,7 +154,8 @@ also included in the repository in the `COPYING` file.
 
 ## Credits
 
-Apple, iPhone, iPod, and iPod Touch are trademarks of Apple Inc.
+Apple, iPhone, iPad, iPod, iPod Touch, Apple TV, Apple Watch, Mac, iOS,
+iPadOS, tvOS, watchOS, and macOS are trademarks of Apple Inc.
 
 This project is an independent software and has not been authorized, sponsored,
 or otherwise approved by Apple Inc.
