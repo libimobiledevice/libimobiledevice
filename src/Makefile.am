@@ -21,10 +21,10 @@ AM_LDFLAGS = \
 	$(openssl_LIBS) \
 	$(PTHREAD_LIBS)
 
-lib_LTLIBRARIES = libimobiledevice.la
-libimobiledevice_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
-libimobiledevice_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
-libimobiledevice_la_SOURCES = \
+lib_LTLIBRARIES = libimobiledevice-1.0.la
+libimobiledevice_1_0_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
+libimobiledevice_1_0_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
+libimobiledevice_1_0_la_SOURCES = \
 	idevice.c idevice.h \
 	service.c service.h \
 	property_list_service.c property_list_service.h \
@@ -53,8 +53,8 @@ libimobiledevice_la_SOURCES = \
 	syslog_relay.c syslog_relay.h
 
 if WIN32
-libimobiledevice_la_LDFLAGS += -avoid-version -static-libgcc
-libimobiledevice_la_LIBADD += -lole32 -lws2_32 -lgdi32
+libimobiledevice_1_0_la_LDFLAGS += -avoid-version -static-libgcc
+libimobiledevice_1_0_la_LIBADD += -lole32 -lws2_32 -lgdi32
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig
