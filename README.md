@@ -138,6 +138,25 @@ ideviceinfo --help
 man ideviceinfo
 ```
 
+## Contributing
+
+We welcome contributions from anyone and are grateful for every pull request!
+
+If you'd like to contribute, please fork the `master` branch, change, commit and
+send a pull request for review. Once approved it can be merged into the main
+code base.
+
+If you plan to contribute larger changes or a major refactoring, please create a
+ticket first to discuss the idea upfront to ensure less effort for everyone.
+
+Please make sure your contribution adheres to:
+* Try to follow the code style of the project
+* Commit messages should describe the change well without being to short
+* Try to split larger changes into individual commits of a common domain
+* Use your real name and a valid email address for your commits
+
+We are still working on the guidelines so bear with us!
+
 ## Links
 
 * Homepage: https://libimobiledevice.org/
