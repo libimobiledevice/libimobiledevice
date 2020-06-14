@@ -104,7 +104,7 @@ if [test "x$CYTHON" != "xfalse"]; then
                 CYTHON_SUB=
                 cython_python_bindings=no
                 AC_MSG_RESULT([no])
-                AC_MSG_WARN([cannot find libplist Cython bindings. You should install your distribution specific libplist Cython bindings package.])
+                AC_MSG_WARN([Unable to find libplist Cython bindings. You should install your distribution specific libplist Cython bindings package.])
             else
                 AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
                 AC_MSG_RESULT([$CYTHON_PLIST_INCLUDE_DIR])
