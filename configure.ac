@@ -87,16 +87,26 @@ AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define i
 AC_ARG_WITH([cython],
             [AS_HELP_STRING([--without-cython],
             [build Python bindings using Cython (default is yes)])],
-            [build_cython=$withval],
-            [build_cython=yes])
-if test "$build_cython" = "yes"; then
-            AM_PATH_PYTHON(2.3)
-            AC_PROG_CYTHON(0.17.0)
-            CYTHON_PYTHON
+            [build_cython=false],
+            [build_cython=true])
+if test "$build_cython" = "true"; then
+            AC_PROG_CYTHON([0.17.0])
+            if [test "x$CYTHON" != "xfalse"]; then
+              AM_PATH_PYTHON([2.3], [
+                CYTHON_PYTHON
+                AS_COMPILER_FLAG([-Wno-cast-function-type -Werror], [
+                  CYTHON_CFLAGS+=" -Wno-cast-function-type"
+                  AC_SUBST([CYTHON_CFLAGS])
+                ], [])
+              ])
+            else
+              AC_MSG_WARN([Use the "--without-cython" option to avoid this warning.])
+            fi
 else
             CYTHON=false
 fi
 if [test "x$CYTHON" != "xfalse"]; then
+            PKG_PROG_PKG_CONFIG
             AC_MSG_CHECKING([for libplist Cython bindings])
             CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist-2.0)/plist/cython
             if [test ! -d "$CYTHON_PLIST_INCLUDE_DIR"]; then

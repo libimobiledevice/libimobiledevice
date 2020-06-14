@@ -68,7 +68,7 @@ imobiledevice_la_CFLAGS = \
 	-Wno-strict-aliasing \
 	-Wno-implicit-function-declaration \
 	-fvisibility=default \
-	-Wno-cast-function-type
+	$(CYTHON_CFLAGS)
 
 imobiledevice_la_LDFLAGS = \
 	-module \
