@@ -63,7 +63,4 @@ imobiledevice.c: imobiledevice.pyx $(PXDINCLUDES) $(PXIINCLUDES)
 .pyx.c:
 	$(CYTHON) -I$(CYTHON_PLIST_INCLUDE_DIR) -I$(top_srcdir)/src -o $@ $<
 
-# imobiledevice_private.c: $(IMOBILEDEVICE_PRIVATE_SOURCES) $(IMOBILEDEVICE_INCLUDES) $(PLIST_INCLUDES)
-#	$(CYTHON) $(IMOBILEDEVICE_CPPFLAGS) -I$(top_srcdir)/src -o $@ $<
-
 endif
