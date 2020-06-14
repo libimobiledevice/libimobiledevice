@@ -157,14 +157,14 @@ else
   AC_SUBST(ssl_requires)
 fi
 
-AC_ARG_ENABLE([debug-code],
-            [AS_HELP_STRING([--enable-debug-code],
-            [enable debug message reporting in library (default is no)])],
+AC_ARG_ENABLE([debug],
+            [AS_HELP_STRING([--enable-debug],
+            [build debug message output code (default is no)])],
             [no_debug_code=false],
             [no_debug_code=true])
 if test "$no_debug_code" = true; then
 	building_debug_code=no
-	AC_DEFINE(STRIP_DEBUG_CODE,1,[Strip debug reporting code])
+	AC_DEFINE(STRIP_DEBUG_CODE,1,[Define if debug message output code should not be built.])
 else
 	building_debug_code=yes
 fi
