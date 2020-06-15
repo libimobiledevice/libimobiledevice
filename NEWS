@@ -62,7 +62,18 @@ Version 1.3.0
     in some cases.
   - Improve IPv6 "scope id" detection to fix connecting to network devices with
     link-local adresses.
+  - Update man pages
+  - Fix various inconsistent declarations in public headers
+  - Allow OpenSSL >= 1.1.0 to use older/disallowed TLS versions fixing issues
+    where pairing records were getting removed repeatingly
   - Fixed memory leaks
+  - Cython: Rewrite version detection logic in configure.ac
+  - Rename "--enable-debug-code" configure option to "--enable-debug"
+  - Improve README.md with project description, installation, contributing and
+    usage sections
+  - Rename library and all related files by adding an API version resulting
+    in "libimobiledevice-1.0"
+  - Bump soname version
 * API is UNSTABLE
 
 Version 1.2.0
