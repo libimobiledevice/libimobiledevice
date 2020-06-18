@@ -484,6 +484,11 @@ static void stop_logging(void)
 
 static void device_event_cb(const idevice_event_t* event, void* userdata)
 {
+	if (use_network && event->conn_type != CONNECTION_NETWORK) {
+		return;
+	} else if (!use_network && event->conn_type != CONNECTION_USBMUXD) {
+		return;
+	}
 	if (event->event == IDEVICE_DEVICE_ADD) {
 		if (!syslog) {
 			if (!udid) {
