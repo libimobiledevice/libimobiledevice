@@ -34,7 +34,7 @@ extern "C" {
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MOBILEBACKUP_E_SUCCESS         =  0,
 	MOBILEBACKUP_E_INVALID_ARG     = -1,
 	MOBILEBACKUP_E_PLIST_ERROR     = -2,
@@ -49,7 +49,7 @@ typedef enum {
 typedef struct mobilebackup_client_private mobilebackup_client_private;
 typedef mobilebackup_client_private *mobilebackup_client_t; /**< The client handle. */
 
-typedef enum {
+typedef enum : uint32_t {
 	MB_RESTORE_NOTIFY_SPRINGBOARD = 1 << 0,
 	MB_RESTORE_PRESERVE_SETTINGS = 1 << 1,
 	MB_RESTORE_PRESERVE_CAMERA_ROLL = 1 << 2

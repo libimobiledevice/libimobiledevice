@@ -34,7 +34,7 @@ extern "C" {
 #define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MOBILEBACKUP2_E_SUCCESS           =  0,
 	MOBILEBACKUP2_E_INVALID_ARG       = -1,
 	MOBILEBACKUP2_E_PLIST_ERROR       = -2,

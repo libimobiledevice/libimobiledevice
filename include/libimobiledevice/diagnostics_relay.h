@@ -33,7 +33,7 @@ extern "C" {
 #define DIAGNOSTICS_RELAY_SERVICE_NAME "com.apple.mobile.diagnostics_relay"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	DIAGNOSTICS_RELAY_E_SUCCESS         =  0,
 	DIAGNOSTICS_RELAY_E_INVALID_ARG     = -1,
 	DIAGNOSTICS_RELAY_E_PLIST_ERROR     = -2,
@@ -42,7 +42,7 @@ typedef enum {
 	DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR   = -256
 } diagnostics_relay_error_t;
 
-typedef enum {
+typedef enum : uint32_t {
     DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT = 1 << 1,
     DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS = 1 << 2,
     DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL = 1 << 3

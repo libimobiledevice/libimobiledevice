@@ -36,7 +36,7 @@ extern "C" {
 #define INSTPROXY_SERVICE_NAME "com.apple.mobile.installation_proxy"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	/* custom */
 	INSTPROXY_E_SUCCESS                                                   =  0,
 	INSTPROXY_E_INVALID_ARG                                               = -1,

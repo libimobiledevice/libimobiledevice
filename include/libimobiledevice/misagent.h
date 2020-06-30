@@ -34,7 +34,7 @@ extern "C" {
 #define MISAGENT_SERVICE_NAME "com.apple.misagent"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MISAGENT_E_SUCCESS        =  0,
 	MISAGENT_E_INVALID_ARG    = -1,
 	MISAGENT_E_PLIST_ERROR    = -2,

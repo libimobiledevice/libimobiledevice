@@ -34,7 +34,7 @@ extern "C" {
 #define SYSLOG_RELAY_SERVICE_NAME "com.apple.syslog_relay"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	SYSLOG_RELAY_E_SUCCESS         =  0,
 	SYSLOG_RELAY_E_INVALID_ARG     = -1,
 	SYSLOG_RELAY_E_MUX_ERROR       = -2,

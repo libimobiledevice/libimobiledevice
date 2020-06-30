@@ -34,7 +34,7 @@ extern "C" {
 #define SBSERVICES_SERVICE_NAME "com.apple.springboardservices"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	SBSERVICES_E_SUCCESS       =  0,
 	SBSERVICES_E_INVALID_ARG   = -1,
 	SBSERVICES_E_PLIST_ERROR   = -2,
@@ -44,7 +44,7 @@ typedef enum {
 
 /** @name Orientation of the user interface on the device */
 /*@{*/
-typedef enum {
+typedef enum : uint32_t {
   SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN                = 0,
   SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT               = 1,
   SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT_UPSIDE_DOWN   = 2,

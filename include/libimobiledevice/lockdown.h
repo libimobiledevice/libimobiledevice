@@ -34,7 +34,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	/* custom */
 	LOCKDOWN_E_SUCCESS                                 =   0,
 	LOCKDOWN_E_INVALID_ARG                             =  -1,

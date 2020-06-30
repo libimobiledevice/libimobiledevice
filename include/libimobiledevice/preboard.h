@@ -33,7 +33,7 @@ extern "C" {
 #define PREBOARD_SERVICE_NAME "com.apple.preboardservice_v2"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	PREBOARD_E_SUCCESS         =  0,
 	PREBOARD_E_INVALID_ARG     = -1,
 	PREBOARD_E_PLIST_ERROR     = -2,

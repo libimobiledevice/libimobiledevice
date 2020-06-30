@@ -34,7 +34,7 @@ extern "C" {
 #define AFC_SERVICE_NAME "com.apple.afc"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	AFC_E_SUCCESS               =  0,
 	AFC_E_UNKNOWN_ERROR         =  1,
 	AFC_E_OP_HEADER_INVALID     =  2,
@@ -67,7 +67,7 @@ typedef enum {
 } afc_error_t;
 
 /** Flags for afc_file_open */
-typedef enum {
+typedef enum : uint32_t {
 	AFC_FOPEN_RDONLY   = 0x00000001, /**< r   O_RDONLY */
 	AFC_FOPEN_RW       = 0x00000002, /**< r+  O_RDWR   | O_CREAT */
 	AFC_FOPEN_WRONLY   = 0x00000003, /**< w   O_WRONLY | O_CREAT  | O_TRUNC */
@@ -77,7 +77,7 @@ typedef enum {
 } afc_file_mode_t;
 
 /** Type of link for afc_make_link() calls */
-typedef enum {
+typedef enum : uint32_t {
 	AFC_HARDLINK = 1,
 	AFC_SYMLINK = 2
 } afc_link_type_t;

@@ -34,7 +34,7 @@ extern "C" {
 #define MOBILE_IMAGE_MOUNTER_SERVICE_NAME "com.apple.mobile.mobile_image_mounter"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MOBILE_IMAGE_MOUNTER_E_SUCCESS        =  0,
 	MOBILE_IMAGE_MOUNTER_E_INVALID_ARG    = -1,
 	MOBILE_IMAGE_MOUNTER_E_PLIST_ERROR    = -2,
