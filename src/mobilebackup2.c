@@ -30,7 +30,7 @@
 #include "device_link_service.h"
 #include "common/debug.h"
 
-#define MBACKUP2_VERSION_INT1 300
+#define MBACKUP2_VERSION_INT1 400
 #define MBACKUP2_VERSION_INT2 0
 
 #define IS_FLAG_SET(x, y) ((x & y) == y)
