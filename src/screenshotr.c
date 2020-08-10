@@ -30,7 +30,7 @@
 #include "device_link_service.h"
 #include "common/debug.h"
 
-#define SCREENSHOTR_VERSION_INT1 300
+#define SCREENSHOTR_VERSION_INT1 400
 #define SCREENSHOTR_VERSION_INT2 0
 
 /**
