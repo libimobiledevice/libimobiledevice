@@ -89,6 +89,35 @@ static misagent_error_t misagent_check_result(plist_t response, int* status_code
 		return MISAGENT_E_REQUEST_FAILED;
 	}
 }
+static misagent_error_t misagent_check_mc_result(plist_t response, int* status_code)
+{
+    if (plist_get_node_type(response) != PLIST_DICT) {
+        return MISAGENT_E_PLIST_ERROR;
+    }
+
+    plist_t node = plist_dict_get_item(response, "Status");
+    if (!node || (plist_get_node_type(node) != PLIST_STRING)) {
+        debug_info("plist error");
+        return MISAGENT_E_PLIST_ERROR;
+    }
+    char *query_value = NULL;
+
+    plist_get_string_val(node, &query_value);
+    if (!query_value) {
+        debug_info("no plist value");
+        return MISAGENT_E_REQUEST_FAILED;
+    }
+
+    if (strcmp(query_value, "Acknowledged") == 0) {
+        debug_info("success");
+        free(query_value);
+        return MISAGENT_E_SUCCESS;
+    } else {
+        debug_info("values not equal %s", query_value);
+        free(query_value);
+        return MISAGENT_E_REQUEST_FAILED;
+    }
+}
 
 LIBIMOBILEDEVICE_API misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client)
 {
@@ -163,6 +192,81 @@ LIBIMOBILEDEVICE_API misagent_error_t misagent_install(misagent_client_t client,
 	plist_free(dict);
 
 	return res;
+}
+
+LIBIMOBILEDEVICE_API misagent_error_t misagent_installmc(misagent_client_t client, plist_t profile)
+{
+    if (!client || !client->parent || !profile || (plist_get_node_type(profile) != PLIST_DATA))
+        return MISAGENT_E_INVALID_ARG;
+
+    client->last_error = MISAGENT_E_UNKNOWN_ERROR;
+
+    plist_t dict = plist_new_dict();
+    plist_dict_set_item(dict, "RequestType", plist_new_string("InstallProfile"));
+    plist_dict_set_item(dict, "Payload", plist_copy(profile));
+
+    misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
+    plist_free(dict);
+    dict = NULL;
+
+    if (res != MISAGENT_E_SUCCESS) {
+        debug_info("could not send plist, error %d", res);
+        return res;
+    }
+
+    res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
+    if (res != MISAGENT_E_SUCCESS) {
+        debug_info("could not receive response, error %d", res);
+        return res;
+    }
+    if (!dict) {
+        debug_info("could not get response plist");
+        return MISAGENT_E_UNKNOWN_ERROR;
+    }
+
+    res = misagent_check_mc_result(dict, &client->last_error);
+    plist_free(dict);
+
+    return res;
+}
+
+LIBIMOBILEDEVICE_API misagent_error_t misagent_copy_mc(misagent_client_t client, plist_t* profiles)
+{
+	if (!client || !client->parent || !profiles)
+		return MISAGENT_E_INVALID_ARG;
+
+	client->last_error = MISAGENT_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "RequestType", plist_new_string("GetProfileList"));
+
+	misagent_error_t res = misagent_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+	dict = NULL;
+
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+		return res;
+	}
+
+	res = misagent_error(property_list_service_receive_plist(client->parent, &dict));
+	if (res != MISAGENT_E_SUCCESS) {
+		debug_info("could not receive response, error %d", res);
+		return res;
+	}
+	if (!dict) {
+		debug_info("could not get response plist");
+		return MISAGENT_E_UNKNOWN_ERROR;
+	}
+
+	res = misagent_check_mc_result(dict, &client->last_error);
+	if (res == MISAGENT_E_SUCCESS) {
+		*profiles = plist_copy(dict);
+	}
+	plist_free(dict);
+
+	return res;
+
 }
 
 LIBIMOBILEDEVICE_API misagent_error_t misagent_copy(misagent_client_t client, plist_t* profiles)

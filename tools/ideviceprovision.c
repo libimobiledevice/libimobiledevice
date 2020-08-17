@@ -84,7 +84,9 @@ static void print_usage(int argc, char **argv)
 
 enum {
 	OP_INSTALL,
+	OP_PROFILE,
 	OP_LIST,
+	OP_PROFILE_LIST,
 	OP_COPY,
 	OP_REMOVE,
 	OP_DUMP,
@@ -335,8 +337,21 @@ int main(int argc, char *argv[])
 			op = OP_INSTALL;
 			continue;
 		}
+		else if (!strcmp(argv[i], "profile")) {
+				i++;
+				if (!argv[i] || (strlen(argv[i]) < 1)) {
+						print_usage(argc, argv);
+						return 0;
+				}
+				param = argv[i];
+				op = OP_PROFILE;
+				continue;
+		}
 		else if (!strcmp(argv[i], "list")) {
 			op = OP_LIST;
+		}
+		else if (!strcmp(argv[i], "profilelist")) {
+			op = OP_PROFILE_LIST;
 		}
 		else if (!strcmp(argv[i], "copy")) {
 			i++;
@@ -480,30 +495,72 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	int product_version = ((product_version_major & 0xFF) << 16) | ((product_version_minor & 0xFF) << 8) | (product_version_patch & 0xFF);
-
-	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
-		fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
-		lockdownd_client_free(client);
-		idevice_free(device);
-		return -1;
-	}
-	lockdownd_client_free(client);
-	client = NULL;
-
 	misagent_client_t mis = NULL;
-	if (misagent_client_new(device, service, &mis) != MISAGENT_E_SUCCESS) {
-		fprintf(stderr, "Could not connect to \"com.apple.misagent\" on device\n");
-		if (service)
-			lockdownd_service_descriptor_free(service);
+	if (op != OP_PROFILE && op != OP_PROFILE_LIST){
+		if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
+			fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
+			lockdownd_client_free(client);
+			idevice_free(device);
+			return -1;
+		}
 		lockdownd_client_free(client);
-		idevice_free(device);
-		return -1;
+		client = NULL;
+
+
+		if (misagent_client_new(device, service, &mis) != MISAGENT_E_SUCCESS) {
+			fprintf(stderr, "Could not connect to \"com.apple.misagent\" on device\n");
+			if (service)
+				lockdownd_service_descriptor_free(service);
+			lockdownd_client_free(client);
+			idevice_free(device);
+			return -1;
+		}
+	} else {
+		if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.mobile.MCInstall", &service)) {
+				fprintf(stderr, "Could not start service \"com.apple.mobile.MCInstall\"\n");
+				lockdownd_client_free(client);
+				idevice_free(device);
+				return -1;
+		}
+
+		lockdownd_client_free(client);
+		client = NULL;
+
+
+		if (misagent_client_new(device, service, &mis) != MISAGENT_E_SUCCESS) {
+				fprintf(stderr, "Could not connect to \"com.apple.mobile.MCInstall\" on device\n");
+				if (service)
+						lockdownd_service_descriptor_free(service);
+				lockdownd_client_free(client);
+				idevice_free(device);
+				return -1;
+		}
 	}
 
 	if (service)
 		lockdownd_service_descriptor_free(service);
 
 	switch (op) {
+		case OP_PROFILE:
+		{
+				unsigned char* profile_data = NULL;
+				unsigned int profile_size = 0;
+				if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
+						break;
+				}
+
+				uint64_t psize = profile_size;
+				plist_t pdata = plist_new_data((const char*)profile_data, psize);
+				free(profile_data);
+
+				if (misagent_installmc(mis, pdata) == MISAGENT_E_SUCCESS) {
+						printf("Profile '%s' installed successfully.\n", param);
+				} else {
+						int sc = misagent_get_status_code(mis);
+						fprintf(stderr, "Could not install profile '%s', status code: 0x%x\n", param, sc);
+				}
+		}
+				break;
 		case OP_INSTALL:
 		{
 			unsigned char* profile_data = NULL;
@@ -524,6 +581,39 @@ int main(int argc, char *argv[])
 			}
 		}
 			break;
+		case OP_PROFILE_LIST:
+			{
+				plist_t profiles = NULL;
+				misagent_error_t merr;
+				merr = misagent_copy_mc(mis, &profiles);
+				if (merr == MISAGENT_E_SUCCESS) {
+
+					int found_match = 0;
+					plist_t profileIdentifiers = plist_dict_get_item(profiles, "OrderedIdentifiers");
+					uint32_t num_profiles = plist_array_get_size(profileIdentifiers);
+					if (op == OP_PROFILE_LIST || !param2) {
+						printf("Device has %d configuration %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
+					}
+					uint32_t j;
+					for (j = 0; !found_match && j < num_profiles; j++) {
+						char* p_name = NULL;
+						char* p_uuid = NULL;
+						plist_t profileName = plist_array_get_item(profileIdentifiers, j);
+						plist_get_string_val(profileName, &p_name);
+						printf("%s\n", (p_name) ? p_name : "(no name)");
+						free(p_uuid);
+						free(p_name);
+						plist_free(profileName);
+					}
+					plist_free(profileIdentifiers);
+				} else {
+					int sc = misagent_get_status_code(mis);
+					fprintf(stderr, "Could not get installed profiles from device, status code: 0x%x\n", sc);
+					res = -1;
+				}
+				plist_free(profiles);
+			}
+		break;
 		case OP_LIST:
 		case OP_COPY:
 		{
@@ -669,4 +759,3 @@ int main(int argc, char *argv[])
 
 	return res;
 }
-
