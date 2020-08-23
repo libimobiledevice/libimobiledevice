@@ -38,6 +38,7 @@
 #include "property_list_service.h"
 #include "lockdown.h"
 #include "idevice.h"
+#include "debugserver.h"
 #include "common/debug.h"
 #include "common/userpref.h"
 #include "common/utils.h"
@@ -1251,6 +1252,36 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
 	return LOCKDOWN_E_SUCCESS;
 }
 
+static void send_start_service_receive_response(lockdownd_client_t client, plist_t *dict, const char *identifier, lockdownd_error_t *ret, int send_escrow_bag) {
+    /* create StartService request */
+    *ret = lockdownd_build_start_service_request(client, identifier, send_escrow_bag, dict);
+    if (LOCKDOWN_E_SUCCESS != *ret)
+        return;
+
+    /* send to device */
+    *ret = lockdownd_send(client, *dict);
+    plist_free(*dict);
+    *dict = NULL;
+
+    if (LOCKDOWN_E_SUCCESS != *ret)
+        return;
+
+    /* receive respose */
+    *ret = lockdownd_receive(client, dict);
+
+    if (LOCKDOWN_E_SUCCESS != *ret)
+        return;
+
+    if (!*dict) {
+        *ret = LOCKDOWN_E_PLIST_ERROR;
+        return;
+    }
+    
+
+    /* extract response error */
+    *ret = lockdown_check_result(*dict, "StartService");
+}
+
 /**
  * Function used internally by lockdownd_start_service and lockdownd_start_service_with_escrow_bag.
  *
@@ -1274,39 +1305,39 @@ static lockdownd_error_t lockdownd_do_start_service(lockdownd_client_t client, c
 		// reset fields if service descriptor is reused
 		(*service)->port = 0;
 		(*service)->ssl_enabled = 0;
+        if ((*service)->identifier) {
+            free((*service)->identifier);
+            (*service)->identifier = NULL;
+        }
 	}
 
 	plist_t dict = NULL;
 	uint16_t port_loc = 0;
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
-	/* create StartService request */
-	ret = lockdownd_build_start_service_request(client, identifier, send_escrow_bag, &dict);
-	if (LOCKDOWN_E_SUCCESS != ret)
-		return ret;
-
-	/* send to device */
-	ret = lockdownd_send(client, dict);
-	plist_free(dict);
-	dict = NULL;
-
-	if (LOCKDOWN_E_SUCCESS != ret)
-		return ret;
-
-	ret = lockdownd_receive(client, &dict);
-
-	if (LOCKDOWN_E_SUCCESS != ret)
-		return ret;
-
-	if (!dict)
-		return LOCKDOWN_E_PLIST_ERROR;
-
-	ret = lockdown_check_result(dict, "StartService");
+    
+    send_start_service_receive_response(client, &dict, identifier, &ret, send_escrow_bag);
+    
+    if (ret == LOCKDOWN_E_INVALID_SERVICE) {
+        /* In iOS 14 some DDI services were removed in favor of a secured version */
+        if (strcmp("com.apple.instruments.remoteserver", identifier) == 0) {
+            identifier = "com.apple.instruments.remoteserver.DVTSecureSocketProxy";
+            send_start_service_receive_response(client, &dict, identifier, &ret, send_escrow_bag);
+        } else if (strcmp("com.apple.testmanagerd.lockdown", identifier) == 0) {
+            identifier = "com.apple.testmanagerd.lockdown.secure";
+            send_start_service_receive_response(client, &dict, identifier, &ret, send_escrow_bag);
+        } else if (strcmp(DEBUGSERVER_SERVICE_NAME, identifier) == 0) {
+            identifier = DEBUGSERVER_SECURED_SERVICE_NAME;
+            send_start_service_receive_response(client, &dict, identifier, &ret, send_escrow_bag);
+        }
+    }
+    
 	if (ret == LOCKDOWN_E_SUCCESS) {
 		if (*service == NULL)
 			*service = (lockdownd_service_descriptor_t)malloc(sizeof(struct lockdownd_service_descriptor));
 		(*service)->port = 0;
 		(*service)->ssl_enabled = 0;
+        (*service)->identifier = strdup(identifier);
 
 		/* read service port number */
 		plist_t node = plist_dict_get_item(dict, "Port");
@@ -1511,8 +1542,12 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_data_classes_free(char **classe
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service)
 {
-	if (service)
+    if (service) {
+        if (service->identifier) {
+            free(service->identifier);
+        }
 		free(service);
+    }
 
 	return LOCKDOWN_E_SUCCESS;
 }

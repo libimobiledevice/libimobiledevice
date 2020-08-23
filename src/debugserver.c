@@ -80,7 +80,12 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 		debug_info("Creating base service client failed. Error: %i", ret);
 		return ret;
 	}
-	service_disable_bypass_ssl(parent, 1);
+    
+    /* Disable service SSL only in iOS 13, where "com.apple.debugserver"
+     is not yet replaced by "com.apple.debugserver.DVTSecureSocketProxy" */
+    if (strcmp(service->identifier, "com.apple.debugserver")) {
+        service_disable_bypass_ssl(parent, 1);
+    }
 
 	debugserver_client_t client_loc = (debugserver_client_t) malloc(sizeof(struct debugserver_client_private));
 	client_loc->parent = parent;
