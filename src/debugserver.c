@@ -83,7 +83,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
     
     /* Disable service SSL only in iOS 13, where "com.apple.debugserver"
      is not yet replaced by "com.apple.debugserver.DVTSecureSocketProxy" */
-    if (strcmp(service->identifier, "com.apple.debugserver")) {
+    if (strcmp(service->identifier, DEBUGSERVER_SERVICE_NAME)) {
         service_disable_bypass_ssl(parent, 1);
     }
 
