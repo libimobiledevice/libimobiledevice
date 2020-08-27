@@ -2,7 +2,7 @@
 AC_DEFUN([AC_PROG_CYTHON],[
         AC_PATH_PROG([CYTHON],[cython])
         if test -z "$CYTHON" ; then
-                AC_MSG_WARN([cannot find 'cython' program. You should look at http://www.cython.org] or install your distribution specific cython package.)
+                AC_MSG_WARN([Unable to find 'cython' program. You should look at http://www.cython.org] or install your distribution specific cython package.)
                 CYTHON=false
         elif test -n "$1" ; then
                 AC_MSG_CHECKING([for Cython version])
@@ -59,7 +59,7 @@ AC_DEFUN([AC_PROG_CYTHON],[
                                 CYTHON='echo "Error: Cython version >= $1 is required.  You have '"$cython_version"'.  You should look at http://www.cython.org" ; false'
                         fi
                 else
-                        AC_MSG_WARN([cannot determine Cython version])
+                        AC_MSG_WARN([Unable to determine Cython version])
                         CYTHON=false
                 fi
         fi

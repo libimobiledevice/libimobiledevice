@@ -24,11 +24,16 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceprovision"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -47,8 +52,10 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Manage provisioning profiles on a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Manage provisioning profiles on a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  install FILE\tInstalls the provisioning profile specified by FILE.\n");
 	printf("              \tA valid .mobileprovision file is expected.\n");
 	printf("  list\t\tGet a list of all provisioning profiles on the device.\n");
@@ -56,19 +63,23 @@ static void print_usage(int argc, char **argv)
 	printf("           \tstores them into the existing directory specified by PATH.\n");
 	printf("           \tThe files will be stored as UUID.mobileprovision\n");
 	printf("  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n");
-	printf("           \tfrom the device and stores it into the exisiting directory\n");
+	printf("           \tfrom the device and stores it into the existing directory\n");
 	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
 	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
 	printf("  remove-all\tRemoves all installed provisioning profiles.\n");
 	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
-	printf("           \tspecified by FILE.\n\n");
-	printf(" The following OPTIONS are accepted:\n");
-	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
-	printf("  -x, --xml        print XML output when using the 'dump' command\n");
-	printf("  -h, --help       prints usage information\n");
+	printf("           \tspecified by FILE.\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("The following OPTIONS are accepted:\n");
+	printf("  -u, --udid UDID  target specific device by UDID\n");
+	printf("  -n, --network    connect to network device\n");
+	printf("  -x, --xml        print XML output when using the 'dump' command\n");
+	printf("  -d, --debug      enable communication debugging\n");
+	printf("  -h, --help       prints usage information\n");
+	printf("  -v, --version    prints version information\n");
+	printf("\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 enum {
@@ -290,7 +301,11 @@ int main(int argc, char *argv[])
 	const char* udid = NULL;
 	const char* param = NULL;
 	const char* param2 = NULL;
+	int use_network = 0;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
@@ -299,11 +314,15 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				return 0;
 			}
 			udid = argv[i];
+			continue;
+		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		}
 		else if (!strcmp(argv[i], "install")) {
@@ -366,6 +385,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv);
 			return 0;
 		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			return 0;
+		}
 		else {
 			print_usage(argc, argv);
 			return 0;
@@ -420,17 +443,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "ideviceprovision"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;

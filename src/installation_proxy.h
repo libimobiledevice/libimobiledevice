@@ -30,7 +30,7 @@
 struct instproxy_client_private {
 	property_list_service_client_t parent;
 	mutex_t mutex;
-	thread_t receive_status_thread;
+	THREAD_T receive_status_thread;
 };
 
 #endif

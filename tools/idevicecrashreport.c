@@ -24,15 +24,21 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicecrashreport"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 #include "common/utils.h"
 
-#include <libimobiledevice/afc.h>
-#include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
+#include <libimobiledevice/service.h>
+#include <libimobiledevice/afc.h>
 #include <plist/plist.h>
 
 #ifdef WIN32
@@ -55,7 +61,8 @@ static int file_exists(const char* path)
 #endif
 }
 
-static int extract_raw_crash_report(const char* filename) {
+static int extract_raw_crash_report(const char* filename)
+{
 	int res = 0;
 	plist_t report = NULL;
 	char* raw = NULL;
@@ -135,7 +142,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 
 		char **fileinfo = NULL;
 		struct stat stbuf;
-		stbuf.st_size = 0;
+		memset(&stbuf, '\0', sizeof(struct stat));
 
 		/* assemble absolute source filename */
 		strcpy(((char*)source_filename) + device_directory_length, list[k]);
@@ -297,17 +304,24 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
-	printf("Move crash reports from device to a local DIRECTORY.\n\n");
+	printf("\n");
+	printf("Move crash reports from device to a local DIRECTORY.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -e, --extract\t\textract raw crash report into separate '.crash' file\n");
 	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	idevice_t device = NULL;
 	lockdownd_client_t lockdownd = NULL;
 	afc_client_t afc = NULL;
@@ -318,7 +332,11 @@ int main(int argc, char* argv[]) {
 
 	int i;
 	const char* udid = NULL;
+	int use_network = 0;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
@@ -327,15 +345,23 @@ int main(int argc, char* argv[]) {
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				return 0;
 			}
 			udid = argv[i];
 			continue;
 		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			return 0;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
 		else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--extract")) {
@@ -369,17 +395,17 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	device_error = idevice_new(&device, udid);
+	device_error = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (device_error != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}
 
-	lockdownd_error = lockdownd_client_new_with_handshake(device, &lockdownd, "idevicecrashreport");
+	lockdownd_error = lockdownd_client_new_with_handshake(device, &lockdownd, TOOL_NAME);
 	if (lockdownd_error != LOCKDOWN_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lockdownd_error);
 		idevice_free(device);
@@ -396,9 +422,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	/* trigger move operation on device */
-	idevice_connection_t connection = NULL;
-	device_error = idevice_connect(device, service->port, &connection);
-	if(device_error != IDEVICE_E_SUCCESS) {
+	service_client_t svcmove = NULL;
+	service_error_t service_error = service_client_new(device, service, &svcmove);
+	lockdownd_service_descriptor_free(service);
+	service = NULL;
+	if (service_error != SERVICE_E_SUCCESS) {
 		lockdownd_client_free(lockdownd);
 		idevice_free(device);
 		return -1;
@@ -410,22 +438,17 @@ int main(int argc, char* argv[]) {
 	int attempts = 0;
 	while ((strncmp(ping, "ping", 4) != 0) && (attempts < 10)) {
 		uint32_t bytes = 0;
-		device_error = idevice_connection_receive_timeout(connection, ping, 4, &bytes, 2000);
-		if ((bytes == 0) && (device_error == IDEVICE_E_SUCCESS)) {
+		service_error = service_receive_with_timeout(svcmove, ping, 4, &bytes, 2000);
+		if (service_error == SERVICE_E_SUCCESS || service_error == SERVICE_E_TIMEOUT) {
 			attempts++;
 			continue;
-		} else if (device_error < 0) {
-			fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted.\n");
+		} else {
+			fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted (%d).\n", service_error);
 			break;
 		}
 	}
-	idevice_disconnect(connection);
+	service_client_free(svcmove);
 	free(ping);
-
-	if (service) {
-		lockdownd_service_descriptor_free(service);
-		service = NULL;
-	}
 
 	if (device_error != IDEVICE_E_SUCCESS || attempts > 10) {
 		fprintf(stderr, "ERROR: Failed to receive ping message from crash report mover.\n");

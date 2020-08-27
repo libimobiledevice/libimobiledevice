@@ -2,6 +2,7 @@
  * ideviceinfo.c
  * Simple utility to show information about an attached device
  *
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -23,10 +24,16 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceinfo"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <getopt.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -70,7 +77,7 @@ static const char *domains[] = {
 	NULL
 };
 
-static int is_domain_known(char *domain)
+static int is_domain_known(const char *domain)
 {
 	int i = 0;
 	while (domains[i] != NULL) {
@@ -81,28 +88,37 @@ static int is_domain_known(char *domain)
 	return 0;
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
 	int i = 0;
 	char *name = NULL;
-
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
-	printf("Show information about a connected device.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -s, --simple\t\tuse a simple connection to avoid auto-pairing with the device\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
-	printf("  -q, --domain NAME\tset domain of query to NAME. Default: None\n");
-	printf("  -k, --key NAME\tonly query key specified by NAME. Default: All keys.\n");
-	printf("  -x, --xml\t\toutput information as xml plist instead of key/value pairs\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("\n");
-	printf("  Known domains are:\n\n");
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n" \
+		"Show information about a connected device.\n" \
+		"\n" \
+		"OPTIONS:\n" \
+		"  -u, --udid UDID    target specific device by UDID\n" \
+		"  -n, --network      connect to network device\n" \
+		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
+		"  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
+		"  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
+		"  -x, --xml          output information as xml plist instead of key/value pairs\n" \
+		"  -h, --help         prints usage information\n" \
+		"  -d, --debug        enable communication debugging\n" \
+		"  -v, --version      prints version information\n" \
+		"\n"
+	);
+	fprintf(is_error ? stderr : stdout, "Known domains are:\n\n");
 	while (domains[i] != NULL) {
-		printf("  %s\n", domains[i++]);
+		fprintf(is_error ? stderr : stdout, "  %s\n", domains[i++]);
 	}
-	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	fprintf(is_error ? stderr : stdout,
+		"\n" \
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char *argv[])
@@ -111,86 +127,107 @@ int main(int argc, char *argv[])
 	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
-	int i;
 	int simple = 0;
 	int format = FORMAT_KEY_VALUE;
 	const char* udid = NULL;
-	char *domain = NULL;
-	char *key = NULL;
+	int use_network = 0;
+	const char *domain = NULL;
+	const char *key = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
 
-	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "domain", required_argument, NULL, 'q' },
+		{ "key", required_argument, NULL, 'k' },
+		{ "simple", no_argument, NULL, 's' },
+		{ "xml", no_argument, NULL, 'x' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
+
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
+
+	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--domain")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) < 4)) {
-				print_usage(argc, argv);
-				return 0;
+			udid = optarg;
+			break;
+		case 'n':
+			use_network = 1;
+			break;
+		case 'q':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: 'domain' must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			if (!is_domain_known(argv[i])) {
-				fprintf(stderr, "WARNING: Sending query with unknown domain \"%s\".\n", argv[i]);
+			domain = optarg;
+			break;
+		case 'k':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: 'key' must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			domain = strdup(argv[i]);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--key")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) <= 1)) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			key = strdup(argv[i]);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--xml")) {
+			key = optarg;
+			break;
+		case 'x':
 			format = FORMAT_XML;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--simple")) {
+			break;
+		case 's':
 			simple = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			return 0;
-		}
-		else {
-			print_usage(argc, argv);
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
 	}
 
-	ret = idevice_new(&device, udid);
+	argc -= optind;
+	argv += optind;
+
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("ERROR: Device %s not found!\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("ERROR: No device found!\n");
 		}
 		return -1;
 	}
 
 	if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
-			lockdownd_client_new(device, &client, "ideviceinfo"):
-			lockdownd_client_new_with_handshake(device, &client, "ideviceinfo"))) {
-		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
+			lockdownd_client_new(device, &client, TOOL_NAME):
+			lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
+		fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
 		idevice_free(device);
 		return -1;
+	}
+
+	if (domain && !is_domain_known(domain)) {
+		fprintf(stderr, "WARNING: Sending query with unknown domain \"%s\".\n", domain);
 	}
 
 	/* run query and output information */
@@ -215,8 +252,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (domain != NULL)
-		free(domain);
 	lockdownd_client_free(client);
 	idevice_free(device);
 

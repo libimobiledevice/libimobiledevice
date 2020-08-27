@@ -2,8 +2,8 @@
  * idevicepair.c
  * Manage pairings with devices and this host
  *
- * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,10 +24,15 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicepair"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 #include "common/userpref.h"
 
 #include <libimobiledevice/libimobiledevice.h>
@@ -41,6 +46,7 @@ static void print_error_message(lockdownd_error_t err)
 		case LOCKDOWN_E_PASSWORD_PROTECTED:
 			printf("ERROR: Could not validate with device %s because a passcode is set. Please enter the passcode on the device and retry.\n", udid);
 			break;
+		case LOCKDOWN_E_INVALID_CONF:
 		case LOCKDOWN_E_INVALID_HOST_ID:
 			printf("ERROR: Device %s is not paired with this host\n", udid);
 			break;
@@ -61,63 +67,38 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("\n%s - Manage host pairings with devices and usbmuxd.\n\n", (name ? name + 1: argv[0]));
-	printf("Usage: %s [OPTIONS] COMMAND\n\n", (name ? name + 1: argv[0]));
-	printf(" Where COMMAND is one of:\n");
+	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	printf("\n");
+	printf("Manage host pairings with devices and usbmuxd.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  systembuid   print the system buid of the usbmuxd host\n");
 	printf("  hostid       print the host id for target device\n");
 	printf("  pair         pair device with this host\n");
 	printf("  validate     validate if device is paired with this host\n");
 	printf("  unpair       unpair device with this host\n");
-	printf("  list         list devices paired with this host\n\n");
-	printf(" The following OPTIONS are accepted:\n");
-	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
-	printf("  -h, --help       prints usage information\n");
+	printf("  list         list devices paired with this host\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
-}
-
-static void parse_opts(int argc, char **argv)
-{
-	static struct option longopts[] = {
-		{"help", 0, NULL, 'h'},
-		{"udid", 1, NULL, 'u'},
-		{"debug", 0, NULL, 'd'},
-		{NULL, 0, NULL, 0}
-	};
-	int c;
-
-	while (1) {
-		c = getopt_long(argc, argv, "hu:d", longopts, (int*)0);
-		if (c == -1) {
-			break;
-		}
-
-		switch (c) {
-		case 'h':
-			print_usage(argc, argv);
-			exit(EXIT_SUCCESS);
-		case 'u':
-			if (strlen(optarg) != 40) {
-				printf("%s: invalid UDID specified (length != 40)\n", argv[0]);
-				print_usage(argc, argv);
-				exit(2);
-			}
-			udid = strdup(optarg);
-			break;
-		case 'd':
-			idevice_set_debug_level(1);
-			break;
-		default:
-			print_usage(argc, argv);
-			exit(EXIT_SUCCESS);
-		}
-	}
+	printf("The following OPTIONS are accepted:\n");
+	printf("  -u, --udid UDID  target specific device by UDID\n");
+	printf("  -d, --debug      enable communication debugging\n");
+	printf("  -h, --help       prints usage information\n");
+	printf("  -v, --version    prints version information\n");
+	printf("\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char **argv)
 {
+	int c = 0;
+	static struct option longopts[] = {
+		{ "help",    no_argument,       NULL, 'h' },
+		{ "udid",    required_argument, NULL, 'u' },
+		{ "debug",   no_argument,       NULL, 'd' },
+		{ "version", no_argument,       NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
 	lockdownd_client_t client = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
@@ -131,12 +112,44 @@ int main(int argc, char **argv)
 	} op_t;
 	op_t op = OP_NONE;
 
-	parse_opts(argc, argv);
+	while ((c = getopt_long(argc, argv, "hu:dv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'h':
+			print_usage(argc, argv);
+			exit(EXIT_SUCCESS);
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv);
+				result = EXIT_FAILURE;
+				goto leave;
+			}
+			free(udid);
+			udid = strdup(optarg);
+			break;
+		case 'd':
+			idevice_set_debug_level(1);
+			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			result = EXIT_SUCCESS;
+			goto leave;
+		default:
+			print_usage(argc, argv);
+			result = EXIT_FAILURE;
+			goto leave;
+		}
+	}
+
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	if ((argc - optind) < 1) {
 		printf("ERROR: You need to specify a COMMAND!\n");
 		print_usage(argc, argv);
-		exit(EXIT_FAILURE);
+		result = EXIT_FAILURE;
+		goto leave;
 	}
 
 	cmd = (argv+optind)[0];
@@ -165,10 +178,10 @@ int main(int argc, char **argv)
 
 		printf("%s\n", systembuid);
 
-		if (systembuid)
-			free(systembuid);
+		free(systembuid);
 
-		return EXIT_SUCCESS;
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
 	if (op == OP_LIST) {
@@ -180,34 +193,28 @@ int main(int argc, char **argv)
 			printf("%s\n", udids[i]);
 			free(udids[i]);
 		}
-		if (udids)
-			free(udids);
-		if (udid)
-			free(udid);
-		return EXIT_SUCCESS;
+		free(udids);
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
-	if (udid) {
-		ret = idevice_new(&device, udid);
-		free(udid);
-		udid = NULL;
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
-			return EXIT_FAILURE;
-		}
-	} else {
-		ret = idevice_new(&device, NULL);
-		if (ret != IDEVICE_E_SUCCESS) {
-			printf("No device found, is it plugged in?\n");
-			return EXIT_FAILURE;
-		}
-	}
-
-	ret = idevice_get_udid(device, &udid);
+	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
-		printf("ERROR: Could not get device udid, error code %d\n", ret);
+		if (udid) {
+			printf("No device found with udid %s.\n", udid);
+		} else {
+			printf("No device found.\n");
+		}
 		result = EXIT_FAILURE;
 		goto leave;
+	}
+	if (!udid) {
+		ret = idevice_get_udid(device, &udid);
+		if (ret != IDEVICE_E_SUCCESS) {
+			printf("ERROR: Could not get device udid, error code %d\n", ret);
+			result = EXIT_FAILURE;
+			goto leave;
+		}
 	}
 
 	if (op == OP_HOSTID) {
@@ -219,20 +226,18 @@ int main(int argc, char **argv)
 
 		printf("%s\n", hostid);
 
-		if (hostid)
-			free(hostid);
+		free(hostid);
+		plist_free(pair_record);
 
-		if (pair_record)
-			plist_free(pair_record);
-
-		return EXIT_SUCCESS;
+		result = EXIT_SUCCESS;
+		goto leave;
 	}
 
-	lerr = lockdownd_client_new(device, &client, "idevicepair");
+	lerr = lockdownd_client_new(device, &client, TOOL_NAME);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
-		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
-		return EXIT_FAILURE;
+		result = EXIT_FAILURE;
+		goto leave;
 	}
 
 	result = EXIT_SUCCESS;
@@ -246,9 +251,7 @@ int main(int argc, char **argv)
 		if (strcmp("com.apple.mobile.lockdown", type)) {
 			printf("WARNING: QueryType request returned '%s'\n", type);
 		}
-		if (type) {
-			free(type);
-		}
+		free(type);
 	}
 
 	switch(op) {
@@ -264,7 +267,9 @@ int main(int argc, char **argv)
 		break;
 
 		case OP_VALIDATE:
-		lerr = lockdownd_validate_pair(client, NULL);
+		lockdownd_client_free(client);
+		client = NULL;
+		lerr = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME);
 		if (lerr == LOCKDOWN_E_SUCCESS) {
 			printf("SUCCESS: Validated pairing with device %s\n", udid);
 		} else {
@@ -287,9 +292,8 @@ int main(int argc, char **argv)
 leave:
 	lockdownd_client_free(client);
 	idevice_free(device);
-	if (udid) {
-		free(udid);
-	}
+	free(udid);
+
 	return result;
 }
 

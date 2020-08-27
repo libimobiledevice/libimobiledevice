@@ -20,9 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #define _GNU_SOURCE 1
 #define __USE_GNU 1
-
 #include <plist/plist.h>
 #include <string.h>
 #include <stdlib.h>
@@ -57,6 +59,10 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 			return MOBILESYNC_E_PLIST_ERROR;
 		case DEVICE_LINK_SERVICE_E_MUX_ERROR:
 			return MOBILESYNC_E_MUX_ERROR;
+		case DEVICE_LINK_SERVICE_E_SSL_ERROR:
+			return MOBILESYNC_E_SSL_ERROR;
+		case DEVICE_LINK_SERVICE_E_RECEIVE_TIMEOUT:
+			return MOBILESYNC_E_RECEIVE_TIMEOUT;
 		case DEVICE_LINK_SERVICE_E_BAD_VERSION:
 			return MOBILESYNC_E_BAD_VERSION;
 		default:

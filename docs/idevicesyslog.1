@@ -10,20 +10,112 @@ idevicesyslog \- Relay syslog of a connected device.
 Relay syslog of a connected device.
 
 .SH OPTIONS
-.TP 
-.B \-d, \-\-debug
-enable communication debugging.
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID
-.TP 
+target specific device by UDID
+.TP
+.B \-n, \-\-network
+connect to network device
+.TP
+.B \-x, \-\-exit
+exit when device disconnects
+.TP
+.B \-d, \-\-debug
+enable communication debugging
+.TP
 .B \-h, \-\-help
-prints usage information.
+prints usage information
+.TP
+.B \-v, \-\-version
+prints version information.
+.TP
+.B \-\-no\-colors
+disable colored output
 
-.SH AUTHOR
-Martin Szulecki
+.SH FILTER OPTIONS
+.TP
+.B \-m, \-\-match STRING
+only print messages that contain STRING
+
+This option will set a filter to only printed log messages that contain the given string.
+.TP
+.B \-t, \-\-trigger STRING
+start logging when matching STRING
+
+When specified, logging will start as soon as a log messages is encountered that contains the given string. See also
+\f[B]\-T, \-\-untrigger\f[]. Other filters are still applied but obviously filtered messages are only printed after logging has started.
+.TP
+.B \-T, \-\-untrigger STRING
+stop logging when matching STRING
+
+When specified logging will halt as soon as a log message is encountered that contains the given string. See also
+\f[B]\-t, \-\-trigger\f[]. Other filters are still applied but obviously filtered messages are only printed before logging stops.
+
+NOTE: If no \f[B]\-\-trigger\f[] is given, idevicesyslog will exit after a matching log message was encountered.
+.TP
+.B \-p, \-\-process PROCESS
+only print messages from matching process(es)
+
+PROCESS is a string that can either be a numeric pid or a process name. It also supports multiple process names or pids in one string, separated by | (make sure to use quotes!).
+.TP
+.B \-e, \-\-exclude PROCESS
+print all messages except matching process(es)
+
+PROCESS is a string that can either be a numeric pid or a process name. It also supports multiple process names or pids in one string, separated by | (make sure to use quotes!).
+.TP
+.B \-q, \-\-quiet
+set a filter to exclude common noisy processes
+
+Since the syslog can be quite noisy, this quick command line switch allows to silence out a predefined set of commonly known processes. The list of processes that are silenced can be retrieved with \f[B]\-\-quiet\-list\f[].
+.TP
+.B \-\-quiet\-list
+prints the list of processes for \f[B]\-\-quiet\f[] and exits
+.TP
+.B \-k, \-\-kernel
+only print kernel messages
+
+This is actually equivalent to passing \f[B]\-\-process kernel\f[] with the exception that it can be used with \f[B]\-\-quiet\f[] to silence out the noisy process but still get all the kernel log messages.
+.TP
+.B \-K, \-\-no\-kernel
+suppress kernel messages
+
+This is equivalent to passing \f[B]\-\-exclude kernel\f[].
+
+.SH EXAMPLES
+.TP
+.B idevicesyslog \-u 00008030\-0000111ABC000DEF
+Relay syslog of device with UDID 00008030-0000111ABC000DEF.
+.TP
+.B idevicesyslog \-x
+Relay syslog of device and exit when the device is unplugged.
+.TP
+.B idevicesyslog \-m '####' \-e 'identityservicesd' \-K
+Only print log messages that contain the string #### and do NOT originate from identityservicesd or the kernel.
+.TP
+.B idevicesyslog \-p MyApp \-p ReportCrash
+Only print log messages from the process named 'MyApp' and 'ReportCrash'.
+.TP
+.B idevicesyslog \-p 'MyApp|ReportCrash'
+Same as previous example with different syntax.
+.TP
+.B idevicesyslog \-e 'backboardd|CommCenter|mDNSResponder'
+Suppress log messages from backboardd, CommCenter, and mDNSResponder.
+.TP
+.B idevicesyslog \-q \-k
+Suppress log messages from common noisy processes, but DO print kernel log messages.
+.TP
+.B idevicesyslog \-K
+Suppress log messages from kernel, but print everything else
+.TP
+.B idevicesyslog \-t 'backlight on' \-T 'backlight off' \-q
+Start logging when the device turns on backlight and stop logging when it turns backlight off, and suppress noisy processes
+
+.SH AUTHORS
+Nikias Bassen, Martin Szulecki
 
 Man page written to conform with Debian by Julien Lavergne.
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

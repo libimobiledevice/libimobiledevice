@@ -1,8 +1,8 @@
 /*
  * socket.h
  *
- * Copyright (c) 2012 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2012 Nikias Bassen All Rights Reserved.
+ * Copyright (C) 2012-2020 Nikias Bassen <nikias@gmx.li>
+ * Copyright (C) 2012 Martin Szulecki <m.szulecki@libimobiledevice.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __SOCKET_SOCKET_H
-#define __SOCKET_SOCKET_H
+#ifndef SOCKET_SOCKET_H
+#define SOCKET_SOCKET_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -46,6 +46,7 @@ int socket_create_unix(const char *filename);
 int socket_connect_unix(const char *filename);
 #endif
 int socket_create(uint16_t port);
+int socket_connect_addr(struct sockaddr *addr, uint16_t port);
 int socket_connect(const char *addr, uint16_t port);
 int socket_check_fd(int fd, fd_mode fdm, unsigned int timeout);
 int socket_accept(int fd, uint16_t port);
@@ -62,4 +63,6 @@ int socket_send(int fd, void *data, size_t size);
 
 void socket_set_verbose(int level);
 
-#endif	/* __SOCKET_SOCKET_H */
+const char *socket_addr_to_string(struct sockaddr *addr, char *addr_out, size_t addr_out_size);
+
+#endif	/* SOCKET_SOCKET_H */

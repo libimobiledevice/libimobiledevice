@@ -2,7 +2,8 @@
  * syslog_relay.c
  * com.apple.syslog_relay service implementation.
  *
- * Copyright (c) 2013 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2019-2020 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2013-2015 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +34,7 @@ struct syslog_relay_worker_thread {
 	syslog_relay_client_t client;
 	syslog_relay_receive_cb_t cbfunc;
 	void *user_data;
+	int is_raw;
 };
 
 /**
@@ -55,6 +57,10 @@ static syslog_relay_error_t syslog_relay_error(service_error_t err)
 			return SYSLOG_RELAY_E_MUX_ERROR;
 		case SERVICE_E_SSL_ERROR:
 			return SYSLOG_RELAY_E_SSL_ERROR;
+		case SERVICE_E_NOT_ENOUGH_DATA:
+			return SYSLOG_RELAY_E_NOT_ENOUGH_DATA;
+		case SERVICE_E_TIMEOUT:
+			return SYSLOG_RELAY_E_TIMEOUT;
 		default:
 			break;
 	}
@@ -81,7 +87,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_new(idevice_t devi
 
 	syslog_relay_client_t client_loc = (syslog_relay_client_t) malloc(sizeof(struct syslog_relay_client_private));
 	client_loc->parent = parent;
-	client_loc->worker = (thread_t)NULL;
+	client_loc->worker = THREAD_T_NULL;
 
 	*client = client_loc;
 
@@ -100,15 +106,8 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_client_free(syslog_relay_
 {
 	if (!client)
 		return SYSLOG_RELAY_E_INVALID_ARG;
-
+	syslog_relay_stop_capture(client);
 	syslog_relay_error_t err = syslog_relay_error(service_client_free(client->parent));
-	client->parent = NULL;
-	if (client->worker) {
-		debug_info("Joining syslog capture callback worker thread");
-		thread_join(client->worker);
-		thread_free(client->worker);
-		client->worker = (thread_t)NULL;
-	}
 	free(client);
 
 	return err;
@@ -129,7 +128,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_receive_with_timeout(sysl
 	}
 
 	res = syslog_relay_error(service_receive_with_timeout(client->parent, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	if (res != SYSLOG_RELAY_E_SUCCESS && res != SYSLOG_RELAY_E_TIMEOUT && res != SYSLOG_RELAY_E_NOT_ENOUGH_DATA) {
 		debug_info("Could not read data, error %d", res);
 	}
 	if (received) {
@@ -153,14 +152,18 @@ void *syslog_relay_worker(void *arg)
 		char c;
 		uint32_t bytes = 0;
 		ret = syslog_relay_receive_with_timeout(srwt->client, &c, 1, &bytes, 100);
-		if ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS)) {
+		if (ret == SYSLOG_RELAY_E_TIMEOUT || ret == SYSLOG_RELAY_E_NOT_ENOUGH_DATA || ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS))) {
 			continue;
 		} else if (ret < 0) {
 			debug_info("Connection to syslog relay interrupted");
 			break;
 		}
-		if(c != 0) {
+		if (srwt->is_raw) {
 			srwt->cbfunc(c, srwt->user_data);
+		} else {
+			if (c != 0) {
+				srwt->cbfunc(c, srwt->user_data);
+			}
 		}
 	}
 
@@ -191,6 +194,35 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture(syslog_rela
 		srwt->client = client;
 		srwt->cbfunc = callback;
 		srwt->user_data = user_data;
+		srwt->is_raw = 0;
+
+		if (thread_new(&client->worker, syslog_relay_worker, srwt) == 0) {
+			res = SYSLOG_RELAY_E_SUCCESS;
+		}
+	}
+
+	return res;
+}
+
+LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_start_capture_raw(syslog_relay_client_t client, syslog_relay_receive_cb_t callback, void* user_data)
+{
+	if (!client || !callback)
+		return SYSLOG_RELAY_E_INVALID_ARG;
+
+	syslog_relay_error_t res = SYSLOG_RELAY_E_UNKNOWN_ERROR;
+
+	if (client->worker) {
+		debug_info("Another syslog capture thread appears to be running already.");
+		return res;
+	}
+
+	/* start worker thread */
+	struct syslog_relay_worker_thread *srwt = (struct syslog_relay_worker_thread*)malloc(sizeof(struct syslog_relay_worker_thread));
+	if (srwt) {
+		srwt->client = client;
+		srwt->cbfunc = callback;
+		srwt->user_data = user_data;
+		srwt->is_raw = 1;
 
 		if (thread_new(&client->worker, syslog_relay_worker, srwt) == 0) {
 			res = SYSLOG_RELAY_E_SUCCESS;
@@ -209,7 +241,7 @@ LIBIMOBILEDEVICE_API syslog_relay_error_t syslog_relay_stop_capture(syslog_relay
 		/* join thread to make it exit */
 		thread_join(client->worker);
 		thread_free(client->worker);
-		client->worker = (thread_t)NULL;
+		client->worker = THREAD_T_NULL;
 		client->parent = parent;
 	}
 

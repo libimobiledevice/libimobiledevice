@@ -124,7 +124,7 @@ typedef void (*instproxy_status_cb_t) (plist_t command, plist_t status, void *us
  *        instproxy_client_t upon successful return.
  *
  * @return INSTPROXY_E_SUCCESS on success, or an INSTPROXY_E_* error value
- *         when an error occured.
+ *         when an error occurred.
  */
 instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client);
 
@@ -168,7 +168,7 @@ instproxy_error_t instproxy_client_free(instproxy_client_t client);
  *        of PLIST_DICT holding information about the applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  */
 instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result);
 
@@ -187,7 +187,7 @@ instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_opt
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  */
 instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
 
@@ -203,7 +203,7 @@ instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plis
  *        holding requested information about the application or NULL on errors.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  */
 instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appids, plist_t client_options, plist_t *result);
 
@@ -224,7 +224,7 @@ instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appid
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -252,7 +252,7 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -273,7 +273,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *     an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -294,7 +294,7 @@ instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *app
  *        holding information about the archived applications found.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  */
 instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result);
 
@@ -315,7 +315,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t c
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *     an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -339,7 +339,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *     an error occured.
+ *     an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -362,7 +362,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  * @param user_data Callback data passed to status_cb.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
@@ -383,7 +383,7 @@ instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char
  *        holding information if the capabilities matched or NULL on errors.
  *
  * @return INSTPROXY_E_SUCCESS on success or an INSTPROXY_E_* error value if
- *         an error occured.
+ *         an error occurred.
  */
 instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result);
 
@@ -493,7 +493,7 @@ void instproxy_client_options_free(plist_t client_options);
  *
  * @return INSTPROXY_E_SUCCESS on success, INSTPROXY_E_OP_FAILED if
  *         the path could not be determined or an INSTPROXY_E_* error
- *         value if an error occured.
+ *         value if an error occurred.
  */
 instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
 

@@ -29,7 +29,7 @@
 struct np_client_private {
 	property_list_service_client_t parent;
 	mutex_t mutex;
-	thread_t notifier;
+	THREAD_T notifier;
 };
 
 void* np_notifier(void* arg);

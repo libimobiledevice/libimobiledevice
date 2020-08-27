@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicenotificationproxy"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -63,17 +65,22 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Post or observe notifications on a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Post or observe notifications on a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  post ID [...]\t\tpost notification IDs to device and exit\n");
 	printf("  observe ID [...]\tobserve notification IDs in the foreground until CTRL+C or signal is received\n");
 	printf("\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("The following OPTIONS are accepted:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void notify_cb(const char *notification, void *user_data)
@@ -92,6 +99,7 @@ int main(int argc, char *argv[])
 	int result = -1;
 	int i;
 	const char* udid = NULL;
+	int use_network = 0;
 	int cmd = CMD_NONE;
 	char* cmd_arg = NULL;
 
@@ -114,7 +122,7 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				result = 0;
 				goto cleanup;
@@ -124,6 +132,15 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			result = 0;
+			goto cleanup;
+		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			result = 0;
 			goto cleanup;
 		}
@@ -174,16 +191,16 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
+	if (IDEVICE_E_SUCCESS != idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX)) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		goto cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &client, "idevicenotificationproxy"))) {
+	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ret);
 		goto cleanup;
 	}

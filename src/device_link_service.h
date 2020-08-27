@@ -2,7 +2,7 @@
  * device_link_service.h
  * Definitions for the DeviceLink service
  *
- * Copyright (c) 2010 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,16 +25,16 @@
 #include "property_list_service.h"
 
 /* Error Codes */
-#define DEVICE_LINK_SERVICE_E_SUCCESS                0
-#define DEVICE_LINK_SERVICE_E_INVALID_ARG           -1
-#define DEVICE_LINK_SERVICE_E_PLIST_ERROR           -2
-#define DEVICE_LINK_SERVICE_E_MUX_ERROR             -3
-#define DEVICE_LINK_SERVICE_E_BAD_VERSION           -4
-
-#define DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR       -256
-
-/** Represents an error code. */
-typedef int16_t device_link_service_error_t;
+typedef enum {
+	DEVICE_LINK_SERVICE_E_SUCCESS         =    0,
+	DEVICE_LINK_SERVICE_E_INVALID_ARG     =   -1,
+	DEVICE_LINK_SERVICE_E_PLIST_ERROR     =   -2,
+	DEVICE_LINK_SERVICE_E_MUX_ERROR       =   -3,
+	DEVICE_LINK_SERVICE_E_SSL_ERROR       =   -4,
+	DEVICE_LINK_SERVICE_E_RECEIVE_TIMEOUT =   -5,
+	DEVICE_LINK_SERVICE_E_BAD_VERSION     =   -6,
+	DEVICE_LINK_SERVICE_E_UNKNOWN_ERROR   = -256
+} device_link_service_error_t;
 
 struct device_link_service_client_private {
 	property_list_service_client_t parent;

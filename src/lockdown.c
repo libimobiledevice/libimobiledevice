@@ -33,15 +33,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
-#ifdef HAVE_OPENSSL
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#else
-#include <libtasn1.h>
-#include <gnutls/x509.h>
-#include <gnutls/crypto.h>
-#endif
 #include <plist/plist.h>
 
 #include "property_list_service.h"
@@ -57,6 +48,46 @@
 #define sleep(x) Sleep(x*1000)
 #endif
 
+struct st_lockdownd_error_str_map {
+	const char *lockdown_errstr;
+	const char *errstr;
+	lockdownd_error_t errcode;
+};
+
+static struct st_lockdownd_error_str_map lockdownd_error_str_map[] = {
+	{ "InvalidResponse", "Invalid response", LOCKDOWN_E_INVALID_RESPONSE },
+	{ "MissingKey", "Missing key", LOCKDOWN_E_MISSING_KEY },
+	{ "MissingValue", "Missing value", LOCKDOWN_E_MISSING_VALUE },
+	{ "GetProhibited", "Get value prohibited", LOCKDOWN_E_GET_PROHIBITED },
+	{ "SetProhibited", "Set value prohibited", LOCKDOWN_E_SET_PROHIBITED },
+	{ "RemoveProhibited", "Remove value prohibited", LOCKDOWN_E_REMOVE_PROHIBITED },
+	{ "ImmutableValue", "Immutable value", LOCKDOWN_E_IMMUTABLE_VALUE },
+	{ "PasswordProtected", "Password protected", LOCKDOWN_E_PASSWORD_PROTECTED },
+	{ "UserDeniedPairing", "User denied pairing", LOCKDOWN_E_USER_DENIED_PAIRING },
+	{ "PairingDialogResponsePending", "Pairing dialog response pending", LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING },
+	{ "MissingHostID", "Missing HostID", LOCKDOWN_E_MISSING_HOST_ID },
+	{ "InvalidHostID", "Invalid HostID", LOCKDOWN_E_INVALID_HOST_ID },
+	{ "SessionActive", "Session active", LOCKDOWN_E_SESSION_ACTIVE },
+	{ "SessionInactive", "Session inactive", LOCKDOWN_E_SESSION_INACTIVE },
+	{ "MissingSessionID", "Missing session ID", LOCKDOWN_E_MISSING_SESSION_ID },
+	{ "InvalidSessionID", "Invalid session ID", LOCKDOWN_E_INVALID_SESSION_ID },
+	{ "MissingService", "Missing service", LOCKDOWN_E_MISSING_SERVICE },
+	{ "InvalidService", "Invalid service", LOCKDOWN_E_INVALID_SERVICE },
+	{ "ServiceLimit", "Service limit reached", LOCKDOWN_E_SERVICE_LIMIT },
+	{ "MissingPairRecord", "Missing pair record", LOCKDOWN_E_MISSING_PAIR_RECORD },
+	{ "SavePairRecordFailed", "Saving pair record failed", LOCKDOWN_E_SAVE_PAIR_RECORD_FAILED },
+	{ "InvalidPairRecord", "Invalid pair record", LOCKDOWN_E_INVALID_PAIR_RECORD },
+	{ "InvalidActivationRecord", "Invalid activation record", LOCKDOWN_E_INVALID_ACTIVATION_RECORD },
+	{ "MissingActivationRecord", "Missing activation record", LOCKDOWN_E_MISSING_ACTIVATION_RECORD },
+	{ "ServiceProhibited", "Service prohibited", LOCKDOWN_E_SERVICE_PROHIBITED },
+	{ "EscrowLocked", "Escrow lockded", LOCKDOWN_E_ESCROW_LOCKED },
+	{ "PairingProhibitedOverThisConnection", "Pairing prohibited over this connection", LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION },
+	{ "FMiPProtected", "Find My iPhone/iPod/iPad protected", LOCKDOWN_E_FMIP_PROTECTED },
+	{ "MCProtected", "MC protected" , LOCKDOWN_E_MC_PROTECTED },
+	{ "MCChallengeRequired", "MC challenge required", LOCKDOWN_E_MC_CHALLENGE_REQUIRED },
+	{ NULL, NULL, 0 }
+};
+
 /**
  * Convert an error string identifier to a lockdownd_error_t value.
  * Used internally to get correct error codes from a response.
@@ -69,69 +100,13 @@
 static lockdownd_error_t lockdownd_strtoerr(const char* name)
 {
 	lockdownd_error_t err = LOCKDOWN_E_UNKNOWN_ERROR;
-
-	if (strcmp(name, "InvalidResponse") == 0) {
-		err = LOCKDOWN_E_INVALID_RESPONSE;
-	} else if (strcmp(name, "MissingKey") == 0) {
-		err = LOCKDOWN_E_MISSING_KEY;
-	} else if (strcmp(name, "MissingValue") == 0) {
-		err = LOCKDOWN_E_MISSING_VALUE;
-	} else if (strcmp(name, "GetProhibited") == 0) {
-		err = LOCKDOWN_E_GET_PROHIBITED;
-	} else if (strcmp(name, "SetProhibited") == 0) {
-		err = LOCKDOWN_E_SET_PROHIBITED;
-	} else if (strcmp(name, "RemoveProhibited") == 0) {
-		err = LOCKDOWN_E_REMOVE_PROHIBITED;
-	} else if (strcmp(name, "ImmutableValue") == 0) {
-		err = LOCKDOWN_E_IMMUTABLE_VALUE;
-	} else if (strcmp(name, "PasswordProtected") == 0) {
-		err = LOCKDOWN_E_PASSWORD_PROTECTED;
-	} else if (strcmp(name, "UserDeniedPairing") == 0) {
-		err = LOCKDOWN_E_USER_DENIED_PAIRING;
-	} else if (strcmp(name, "PairingDialogResponsePending") == 0) {
-		err = LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING;
-	} else if (strcmp(name, "MissingHostID") == 0) {
-		err = LOCKDOWN_E_MISSING_HOST_ID;
-	} else if (strcmp(name, "InvalidHostID") == 0) {
-		err = LOCKDOWN_E_INVALID_HOST_ID;
-	} else if (strcmp(name, "SessionActive") == 0) {
-		err = LOCKDOWN_E_SESSION_ACTIVE;
-	} else if (strcmp(name, "SessionInactive") == 0) {
-		err = LOCKDOWN_E_SESSION_INACTIVE;
-	} else if (strcmp(name, "MissingSessionID") == 0) {
-		err = LOCKDOWN_E_MISSING_SESSION_ID;
-	} else if (strcmp(name, "InvalidSessionID") == 0) {
-		err = LOCKDOWN_E_INVALID_SESSION_ID;
-	} else if (strcmp(name, "MissingService") == 0) {
-		err = LOCKDOWN_E_MISSING_SERVICE;
-	} else if (strcmp(name, "InvalidService") == 0) {
-		err = LOCKDOWN_E_INVALID_SERVICE;
-	} else if (strcmp(name, "ServiceLimit") == 0) {
-		err = LOCKDOWN_E_SERVICE_LIMIT;
-	} else if (strcmp(name, "MissingPairRecord") == 0) {
-		err = LOCKDOWN_E_MISSING_PAIR_RECORD;
-	} else if (strcmp(name, "SavePairRecordFailed") == 0) {
-		err = LOCKDOWN_E_SAVE_PAIR_RECORD_FAILED;
-	} else if (strcmp(name, "InvalidPairRecord") == 0) {
-		err = LOCKDOWN_E_INVALID_PAIR_RECORD;
-	} else if (strcmp(name, "InvalidActivationRecord") == 0) {
-		err = LOCKDOWN_E_INVALID_ACTIVATION_RECORD;
-	} else if (strcmp(name, "MissingActivationRecord") == 0) {
-		err = LOCKDOWN_E_MISSING_ACTIVATION_RECORD;
-	} else if (strcmp(name, "ServiceProhibited") == 0) {
-		err = LOCKDOWN_E_SERVICE_PROHIBITED;
-	} else if (strcmp(name, "EscrowLocked") == 0) {
-		err = LOCKDOWN_E_ESCROW_LOCKED;
-	} else if (strcmp(name, "PairingProhibitedOverThisConnection") == 0) {
-		err = LOCKDOWN_E_PAIRING_PROHIBITED_OVER_THIS_CONNECTION;
-	} else if (strcmp(name, "FMiPProtected") == 0) {
-		err = LOCKDOWN_E_FMIP_PROTECTED;
-	} else if (strcmp(name, "MCProtected") == 0) {
-		err = LOCKDOWN_E_MC_PROTECTED;
-	} else if (strcmp(name, "MCChallengeRequired") == 0) {
-		err = LOCKDOWN_E_MC_CHALLENGE_REQUIRED;
+	int i = 0;
+	while (lockdownd_error_str_map[i].lockdown_errstr) {
+		if (strcmp(lockdownd_error_str_map[i].lockdown_errstr, name) == 0) {
+			return lockdownd_error_str_map[i].errcode;
+		}
+		i++;
 	}
-
 	return err;
 }
 
@@ -219,7 +194,7 @@ static lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_m
 					ret = lockdownd_strtoerr(err_value);
 					free(err_value);
 				} else {
-					debug_info("ERROR: unknown error occured");
+					debug_info("ERROR: unknown error occurred");
 				}
 			}
 			return ret;
@@ -668,6 +643,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lo
 	client_loc->parent = plistclient;
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
+	client_loc->mux_id = device->mux_id;
 
 	if (idevice_get_udid(device, &client_loc->udid) != IDEVICE_E_SUCCESS) {
 		debug_info("failed to get device udid.");
@@ -707,11 +683,25 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	}
 	free(type);
 
+	if (device->version == 0) {
+		plist_t p_version = NULL;
+		if (lockdownd_get_value(client_loc, NULL, "ProductVersion", &p_version) == LOCKDOWN_E_SUCCESS) {
+			int vers[3] = {0, 0, 0};
+			char *s_version = NULL;
+			plist_get_string_val(p_version, &s_version);
+			if (s_version && sscanf(s_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
+				device->version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
+			}
+			free(s_version);
+		}
+		plist_free(p_version);
+	}
+
 	userpref_read_pair_record(client_loc->udid, &pair_record);
 	if (pair_record) {
 		pair_record_get_host_id(pair_record, &host_id);
 	}
-	if (LOCKDOWN_E_SUCCESS == ret && !host_id) {
+	if (LOCKDOWN_E_SUCCESS == ret && pair_record && !host_id) {
 		ret = LOCKDOWN_E_INVALID_CONF;
 	}
 
@@ -723,18 +713,18 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	plist_free(pair_record);
 	pair_record = NULL;
 
-	/* in any case, we need to validate pairing to receive trusted host status */
-	ret = lockdownd_validate_pair(client_loc, NULL);
+	if (device->version < DEVICE_VERSION(7,0,0)) {
+		/* for older devices, we need to validate pairing to receive trusted host status */
+		ret = lockdownd_validate_pair(client_loc, NULL);
 
-	/* if not paired yet, let's do it now */
-	if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
-		free(host_id);
-		host_id = NULL;
-		ret = lockdownd_pair(client_loc, NULL);
-		if (LOCKDOWN_E_SUCCESS == ret) {
-			ret = lockdownd_validate_pair(client_loc, NULL);
-		} else if (LOCKDOWN_E_PAIRING_DIALOG_RESPONSE_PENDING == ret) {
-			debug_info("Device shows the pairing dialog.");
+		/* if not paired yet, let's do it now */
+		if (LOCKDOWN_E_INVALID_HOST_ID == ret) {
+			free(host_id);
+			host_id = NULL;
+			ret = lockdownd_pair(client_loc, NULL);
+			if (LOCKDOWN_E_SUCCESS == ret) {
+				ret = lockdownd_validate_pair(client_loc, NULL);
+			}
 		}
 	}
 
@@ -987,7 +977,7 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 						wifi_node = NULL;
 					}
 
-					userpref_save_pair_record(client->udid, pair_record_plist);
+					userpref_save_pair_record(client->udid, client->mux_id, pair_record_plist);
 				}
 			}
 		} else {
@@ -1525,4 +1515,42 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_service_descriptor_free(lockdow
 		free(service);
 
 	return LOCKDOWN_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API const char* lockdownd_strerror(lockdownd_error_t err)
+{
+	switch (err) {
+		case LOCKDOWN_E_SUCCESS:
+			return "Success";
+		case LOCKDOWN_E_INVALID_ARG:
+			return "Invalid argument";
+		case LOCKDOWN_E_INVALID_CONF:
+			return "Invalid configuration";
+		case LOCKDOWN_E_PLIST_ERROR:
+			return "PropertyList error";
+		case LOCKDOWN_E_PAIRING_FAILED:
+			return "Pairing failed";
+		case LOCKDOWN_E_SSL_ERROR:
+			return "SSL error";
+		case LOCKDOWN_E_DICT_ERROR:
+			return "Invalid dictionary";
+		case LOCKDOWN_E_RECEIVE_TIMEOUT:
+			return "Receive timeout";
+		case LOCKDOWN_E_MUX_ERROR:
+			return "Mux error";
+		case LOCKDOWN_E_NO_RUNNING_SESSION:
+			return "No running session";
+		case LOCKDOWN_E_UNKNOWN_ERROR:
+			return "Unknown Error";
+		default: {
+			int i = 0;
+			while (lockdownd_error_str_map[i].lockdown_errstr) {
+				if (lockdownd_error_str_map[i].errcode == err) {
+					return lockdownd_error_str_map[i].errstr;
+				}
+				i++;
+			}
+		} break;
+	}
+	return "Unknown Error";
 }

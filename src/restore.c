@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -41,7 +44,7 @@
  *
  * @return RESULT_SUCCESS when the result is 'Success',
  *         RESULT_FAILURE when the result is 'Failure',
- *         or a negative value if an error occured during evaluation.
+ *         or a negative value if an error occurred during evaluation.
  */
 static int restored_check_result(plist_t dict)
 {
@@ -89,6 +92,25 @@ static void plist_dict_add_label(plist_t plist, const char *label)
 	}
 }
 
+static restored_error_t restored_error(property_list_service_error_t err)
+{
+        switch (err) {
+                case PROPERTY_LIST_SERVICE_E_SUCCESS:
+                        return RESTORE_E_SUCCESS;
+                case PROPERTY_LIST_SERVICE_E_INVALID_ARG:
+                        return RESTORE_E_INVALID_ARG;
+                case PROPERTY_LIST_SERVICE_E_PLIST_ERROR:
+                        return RESTORE_E_PLIST_ERROR;
+                case PROPERTY_LIST_SERVICE_E_MUX_ERROR:
+                        return RESTORE_E_MUX_ERROR;
+                case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+                        return RESTORE_E_RECEIVE_TIMEOUT;
+                default:
+                        break;
+        }
+        return RESTORE_E_UNKNOWN_ERROR;
+}
+
 LIBIMOBILEDEVICE_API restored_error_t restored_client_free(restored_client_t client)
 {
 	if (!client)
@@ -99,9 +121,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_free(restored_client_t cli
 	if (client->parent) {
 		restored_goodbye(client);
 
-		if (property_list_service_client_free(client->parent) == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			ret = RESTORE_E_SUCCESS;
-		}
+		ret = restored_error(property_list_service_client_free(client->parent));
 	}
 
 	if (client->udid) {
@@ -134,18 +154,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_receive(restored_client_t client,
 	if (!client || !plist || (plist && *plist))
 		return RESTORE_E_INVALID_ARG;
 
-	restored_error_t ret = RESTORE_E_SUCCESS;
-	property_list_service_error_t err;
-
-	err = property_list_service_receive_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = RESTORE_E_UNKNOWN_ERROR;
-	}
-
-	if (!*plist)
-		ret = RESTORE_E_PLIST_ERROR;
-
-	return ret;
+	return restored_error(property_list_service_receive_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API restored_error_t restored_send(restored_client_t client, plist_t plist)
@@ -153,14 +162,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_send(restored_client_t client, pl
 	if (!client || !plist)
 		return RESTORE_E_INVALID_ARG;
 
-	restored_error_t ret = RESTORE_E_SUCCESS;
-	property_list_service_error_t err;
-
-	err = property_list_service_send_xml_plist(client->parent, plist);
-	if (err != PROPERTY_LIST_SERVICE_E_SUCCESS) {
-		ret = RESTORE_E_UNKNOWN_ERROR;
-	}
-	return ret;
+	return restored_error(property_list_service_send_xml_plist(client->parent, plist));
 }
 
 LIBIMOBILEDEVICE_API restored_error_t restored_query_type(restored_client_t client, char **type, uint64_t *version)
@@ -305,9 +307,10 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	};
 
 	property_list_service_client_t plistclient = NULL;
-	if (property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
+	ret = restored_error(property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient));
+	if (ret != RESTORE_E_SUCCESS) {
 		debug_info("could not connect to restored (device %s)", device->udid);
-		return RESTORE_E_MUX_ERROR;
+		return ret;
 	}
 
 	restored_client_t client_loc = (restored_client_t) malloc(sizeof(struct restored_client_private));
@@ -321,7 +324,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, rest
 	idev_ret = idevice_get_udid(device, &client_loc->udid);
 	if (IDEVICE_E_SUCCESS != idev_ret) {
 		debug_info("failed to get device udid.");
-		ret = RESTORE_E_DEVICE_ERROR;
+		ret = RESTORE_E_UNKNOWN_ERROR;
 	}
 	debug_info("device udid: %s", client_loc->udid);
 

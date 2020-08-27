@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.64)
-AC_INIT([libimobiledevice], [1.2.1], [https://github.com/libimobiledevice/libimobiledevice/issues],, [http://libimobiledevice.org])
+AC_INIT([libimobiledevice], [1.3.1], [https://github.com/libimobiledevice/libimobiledevice/issues],, [https://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -18,14 +18,12 @@ dnl libtool versioning
 LIBIMOBILEDEVICE_SO_VERSION=6:0:0
 
 dnl Minimum package versions
-LIBUSBMUXD_VERSION=1.0.9
-LIBPLIST_VERSION=1.11
-LIBPLISTMM_VERSION=1.11
+LIBUSBMUXD_VERSION=2.0.2
+LIBPLIST_VERSION=2.2.0
 
 AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 AC_SUBST(LIBUSBMUXD_VERSION)
 AC_SUBST(LIBPLIST_VERSION)
-AC_SUBST(LIBPLISTMM_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
@@ -34,9 +32,8 @@ AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
 # Checks for libraries.
-PKG_CHECK_MODULES(libusbmuxd, libusbmuxd >= $LIBUSBMUXD_VERSION)
-PKG_CHECK_MODULES(libplist, libplist >= $LIBPLIST_VERSION)
-PKG_CHECK_MODULES(libplistmm, libplist++ >= $LIBPLISTMM_VERSION)
+PKG_CHECK_MODULES(libusbmuxd, libusbmuxd-2.0 >= $LIBUSBMUXD_VERSION)
+PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -66,22 +63,25 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
 fi
 
 # Check for operating system
-AC_MSG_CHECKING([whether we need platform-specific build settings])
+AC_MSG_CHECKING([for platform-specific build settings])
 case ${host_os} in
   *mingw32*|*cygwin*)
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([${host_os}])
     win32=true
+    AC_DEFINE(WINVER, 0x0501, [minimum Windows version])
     ;;
   darwin*)
-    AC_MSG_RESULT([no])
+    AC_MSG_RESULT([${host_os}])
     ;;
   *)
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([${host_os}])
     AX_PTHREAD([], [AC_MSG_ERROR([pthread is required to build $PACKAGE_NAME])])
     AC_CHECK_LIB(pthread, [pthread_once], [], [AC_MSG_ERROR([pthread with pthread_once required to build $PACKAGE_NAME])])
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+
+AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
 # Cython Python Bindings
 AC_ARG_WITH([cython],
@@ -90,21 +90,31 @@ AC_ARG_WITH([cython],
             [build_cython=false],
             [build_cython=true])
 if test "$build_cython" = "true"; then
-            AM_PATH_PYTHON(2.3)
-            AC_PROG_CYTHON(0.17.0)
-            CYTHON_PYTHON
+            AC_PROG_CYTHON([0.17.0])
+            if [test "x$CYTHON" != "xfalse"]; then
+              AM_PATH_PYTHON([2.3], [
+                CYTHON_PYTHON
+                AS_COMPILER_FLAG([-Wno-cast-function-type -Werror], [
+                  CYTHON_CFLAGS+=" -Wno-cast-function-type"
+                  AC_SUBST([CYTHON_CFLAGS])
+                ], [])
+              ])
+            else
+              AC_MSG_WARN([Use the "--without-cython" option to avoid this warning.])
+            fi
 else
             CYTHON=false
 fi
 if [test "x$CYTHON" != "xfalse"]; then
+            PKG_PROG_PKG_CONFIG
             AC_MSG_CHECKING([for libplist Cython bindings])
-            CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist)/plist/cython
+            CYTHON_PLIST_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir libplist-2.0)/plist/cython
             if [test ! -d "$CYTHON_PLIST_INCLUDE_DIR"]; then
                 CYTHON=false
                 CYTHON_SUB=
                 cython_python_bindings=no
                 AC_MSG_RESULT([no])
-                AC_MSG_WARN([cannot find libplist Cython bindings. You should install your distribution specific libplist Cython bindings package.])
+                AC_MSG_WARN([Unable to find libplist Cython bindings. You should install your distribution specific libplist Cython bindings package.])
             else
                 AC_SUBST([CYTHON_PLIST_INCLUDE_DIR])
                 AC_MSG_RESULT([$CYTHON_PLIST_INCLUDE_DIR])
@@ -157,19 +167,19 @@ else
   AC_SUBST(ssl_requires)
 fi
 
-AC_ARG_ENABLE([debug-code],
-            [AS_HELP_STRING([--enable-debug-code],
-            [enable debug message reporting in library (default is no)])],
+AC_ARG_ENABLE([debug],
+            [AS_HELP_STRING([--enable-debug],
+            [build debug message output code (default is no)])],
             [no_debug_code=false],
             [no_debug_code=true])
 if test "$no_debug_code" = true; then
 	building_debug_code=no
-	AC_DEFINE(STRIP_DEBUG_CODE,1,[Strip debug reporting code])
+	AC_DEFINE(STRIP_DEBUG_CODE,1,[Define if debug message output code should not be built.])
 else
 	building_debug_code=yes
 fi
 
-AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith  -Wwrite-strings -Wswitch-default -Wno-unused-parameter -fsigned-char -fvisibility=hidden")
+AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith -Wwrite-strings -Wswitch-default -Wno-unused-parameter -fsigned-char -fvisibility=hidden")
 AC_SUBST(GLOBAL_CFLAGS)
 
 case "$GLOBAL_CFLAGS" in
@@ -179,30 +189,6 @@ esac
 
 # check for large file support
 AC_SYS_LARGEFILE
-LFS_CFLAGS=''
-if test "$enable_largefile" != no; then
-    if test "$ac_cv_sys_file_offset_bits" != 'no'; then
-	LFS_CFLAGS="$LFS_CFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
-    else
-	AC_MSG_CHECKING(for native large file support)
-	AC_RUN_IFELSE([AC_LANG_SOURCE([#include <unistd.h>
-	  int main (int argc, char **argv)
-	  {
-	      exit(!(sizeof(off_t) == 8));
-	  }])],
-	[ac_cv_sys_file_offset_bits=64; AC_DEFINE(_FILE_OFFSET_BITS,64)
-	 AC_MSG_RESULT(yes)],
-	[AC_MSG_RESULT(no)])
-    fi
-    if test "$ac_cv_sys_large_files" != 'no'; then
-	LFS_CFLAGS="$LFS_CFLAGS -D_LARGE_FILES=1"
-    fi
-    AC_FUNC_FSEEKO
-    if test "$ac_cv_sys_largefile_source" != 'no'; then
-	LFS_CFLAGS="$LFS_CFLAGS -D_LARGEFILE_SOURCE=1"
-    fi
-fi
-AC_SUBST(LFS_CFLAGS)
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 

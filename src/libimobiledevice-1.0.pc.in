@@ -6,7 +6,7 @@ includedir=@includedir@
 Name: @PACKAGE_NAME@
 Description: A library to communicate with services running on Apple iOS devices.
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -limobiledevice
+Libs: -L${libdir} -limobiledevice-1.0
 Cflags: -I${includedir}
-Requires: libplist >= @LIBPLIST_VERSION@
-Requires.private: libusbmuxd >= @LIBUSBMUXD_VERSION@ @ssl_requires@
+Requires: libplist-2.0 >= @LIBPLIST_VERSION@
+Requires.private: libusbmuxd-2.0 >= @LIBUSBMUXD_VERSION@ @ssl_requires@

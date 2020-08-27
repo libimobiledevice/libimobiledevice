@@ -37,10 +37,16 @@
 #include <unistd.h>
 #include <usbmuxd.h>
 #ifdef HAVE_OPENSSL
+#include <openssl/bn.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL || \
+	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x20700000L))
+#define X509_set1_notBefore X509_set_notBefore
+#define X509_set1_notAfter X509_set_notAfter
+#endif
 #else
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -208,14 +214,8 @@ int userpref_read_system_buid(char **system_buid)
  */
 userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 {
-	struct slist_t {
-		char *name;
-		void *next;
-	};
 	DIR *config_dir;
 	const char *config_path = NULL;
-	struct slist_t *udids = NULL;
-	unsigned int i;
 	unsigned int found = 0;
 
 	if (!list || (list && *list)) {
@@ -226,41 +226,42 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
 	if (count) {
 		*count = 0;
 	}
+	*list = (char**)malloc(sizeof(char*));
 
 	config_path = userpref_get_config_dir();
 	config_dir = opendir(config_path);
 	if (config_dir) {
 		struct dirent *entry;
-		struct slist_t *listp = udids;
 		while ((entry = readdir(config_dir))) {
-			char *ext = strstr(entry->d_name, USERPREF_CONFIG_EXTENSION);
-			if (ext && ((ext - entry->d_name) == 40) && (strlen(entry->d_name) == (40 + strlen(ext)))) {
-				struct slist_t *ne = (struct slist_t*)malloc(sizeof(struct slist_t));
-				ne->name = (char*)malloc(41);
-				strncpy(ne->name, entry->d_name, 40);
-				ne->name[40] = 0;
-				ne->next = NULL;
-				if (!listp) {
-					listp = ne;
-					udids = listp;
-				} else {
-					listp->next = ne;
-					listp = listp->next;
+			if (strcmp(entry->d_name, USERPREF_CONFIG_FILE) == 0) {
+				/* ignore SystemConfiguration.plist */
+				continue;
+			}
+			char *ext = strrchr(entry->d_name, '.');
+			if (ext && (strcmp(ext, USERPREF_CONFIG_EXTENSION) == 0)) {
+				size_t len = strlen(entry->d_name) - strlen(USERPREF_CONFIG_EXTENSION);
+				char **newlist = (char**)realloc(*list, sizeof(char*) * (found+2));
+				if (!newlist) {
+					fprintf(stderr, "ERROR: Out of memory\n");
+					break;
+				}
+				*list = newlist;
+				char *tmp = (char*)malloc(len+1);
+				if (tmp) {
+					strncpy(tmp, entry->d_name, len);
+					tmp[len] = '\0';
+				}
+				(*list)[found] = tmp;
+				if (!tmp) {
+					fprintf(stderr, "ERROR: Out of memory\n");
+					break;
 				}
 				found++;
 			}
 		}
 		closedir(config_dir);
 	}
-	*list = (char**)malloc(sizeof(char*) * (found+1));
-	i = 0;
-	while (udids) {
-		(*list)[i++] = udids->name;
-		struct slist_t *old = udids;
-		udids = udids->next;
-		free(old);
-	}
-	(*list)[i] = NULL;
+	(*list)[found] = NULL;
 
 	if (count) {
 		*count = found;
@@ -273,19 +274,20 @@ userpref_error_t userpref_get_paired_udids(char ***list, unsigned int *count)
  * Save a pair record for a device.
  *
  * @param udid The device UDID as given by the device
+ * @param device_id The usbmux device id (handle) of the connected device, or 0
  * @param pair_record The pair record to save
  *
  * @return 1 on success and 0 if no device record is given or if it has already
  *         been saved previously.
  */
-userpref_error_t userpref_save_pair_record(const char *udid, plist_t pair_record)
+userpref_error_t userpref_save_pair_record(const char *udid, uint32_t device_id, plist_t pair_record)
 {
 	char* record_data = NULL;
 	uint32_t record_size = 0;
 
 	plist_to_bin(pair_record, &record_data, &record_size);
 
-	int res = usbmuxd_save_pair_record(udid, record_data, record_size);
+	int res = usbmuxd_save_pair_record_with_device_id(udid, device_id, record_data, record_size);
 
 	free(record_data);
 
@@ -424,9 +426,9 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		/* set key validity */
 		ASN1_TIME* asn1time = ASN1_TIME_new();
 		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(root_cert, asn1time);
+		X509_set1_notBefore(root_cert, asn1time);
 		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(root_cert, asn1time);
+		X509_set1_notAfter(root_cert, asn1time);
 		ASN1_TIME_free(asn1time);
 
 		/* use root public key for root cert */
@@ -457,9 +459,9 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		/* set key validity */
 		ASN1_TIME* asn1time = ASN1_TIME_new();
 		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(host_cert, asn1time);
+		X509_set1_notBefore(host_cert, asn1time);
 		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(host_cert, asn1time);
+		X509_set1_notAfter(host_cert, asn1time);
 		ASN1_TIME_free(asn1time);
 
 		/* use host public key for host cert */
@@ -537,9 +539,9 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 		ASN1_TIME* asn1time = ASN1_TIME_new();
 		ASN1_TIME_set(asn1time, time(NULL));
-		X509_set_notBefore(dev_cert, asn1time);
+		X509_set1_notBefore(dev_cert, asn1time);
 		ASN1_TIME_set(asn1time, time(NULL) + (60 * 60 * 24 * 365 * 10));
-		X509_set_notAfter(dev_cert, asn1time);
+		X509_set1_notAfter(dev_cert, asn1time);
 		ASN1_TIME_free(asn1time);
 
 		EVP_PKEY* pkey = EVP_PKEY_new();
@@ -598,21 +600,21 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	/* generate certificates */
 	gnutls_x509_crt_set_key(root_cert, root_privkey);
-	gnutls_x509_crt_set_serial(root_cert, "\x00", 1);
+	gnutls_x509_crt_set_serial(root_cert, "\x01", 1);
 	gnutls_x509_crt_set_version(root_cert, 3);
 	gnutls_x509_crt_set_ca_status(root_cert, 1);
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(root_cert, root_cert, root_privkey);
+	gnutls_x509_crt_sign2(root_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
-	gnutls_x509_crt_set_serial(host_cert, "\x00", 1);
+	gnutls_x509_crt_set_serial(host_cert, "\x01", 1);
 	gnutls_x509_crt_set_version(host_cert, 3);
 	gnutls_x509_crt_set_ca_status(host_cert, 0);
 	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
 	gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign(host_cert, root_cert, root_privkey);
+	gnutls_x509_crt_sign2(host_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 
 	/* export to PEM format */
 	size_t root_key_export_size = 0;
@@ -703,7 +705,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		if (GNUTLS_E_SUCCESS == gnutls_error) {
 			/* now generate device certificate */
 			gnutls_x509_crt_set_key(dev_cert, fake_privkey);
-			gnutls_x509_crt_set_serial(dev_cert, "\x00", 1);
+			gnutls_x509_crt_set_serial(dev_cert, "\x01", 1);
 			gnutls_x509_crt_set_version(dev_cert, 3);
 			gnutls_x509_crt_set_ca_status(dev_cert, 0);
 			gnutls_x509_crt_set_activation_time(dev_cert, time(NULL));
@@ -720,7 +722,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 			}
 
 			gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
-			gnutls_error = gnutls_x509_crt_sign(dev_cert, root_cert, root_privkey);
+			gnutls_error = gnutls_x509_crt_sign2(dev_cert, root_cert, root_privkey, GNUTLS_DIG_SHA1, 0);
 			if (GNUTLS_E_SUCCESS == gnutls_error) {
 				/* if everything went well, export in PEM format */
 				size_t export_size = 0;

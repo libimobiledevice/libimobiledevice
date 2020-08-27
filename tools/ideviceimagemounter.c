@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "ideviceimagemounter"
+
 #include <stdlib.h>
 #define _GNU_SOURCE 1
 #define __USE_GNU 1
@@ -34,6 +36,9 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -44,9 +49,10 @@
 #include "common/utils.h"
 
 static int list_mode = 0;
+static int use_network = 0;
 static int xml_mode = 0;
-static char *udid = NULL;
-static char *imagetype = NULL;
+static const char *udid = NULL;
+static const char *imagetype = NULL;
 
 static const char PKG_PATH[] = "PublicStaging";
 static const char PATH_PREFIX[] = "/private/var/mobile/Media";
@@ -61,34 +67,41 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n\n", (name ? name + 1: argv[0]));
-	printf("Mounts the specified disk image on the device.\n\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
+	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n", (name ? name + 1: argv[0]));
+	printf("\n");
+	printf("Mounts the specified disk image on the device.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -l, --list\t\tList mount information\n");
 	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
 	printf("  -x, --xml\t\tUse XML output\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void parse_opts(int argc, char **argv)
 {
 	static struct option longopts[] = {
-		{"help", 0, NULL, 'h'},
-		{"udid", 0, NULL, 'u'},
-		{"list", 0, NULL, 'l'},
-		{"imagetype", 0, NULL, 't'},
-		{"xml", 0, NULL, 'x'},
-		{"debug", 0, NULL, 'd'},
-		{NULL, 0, NULL, 0}
+		{ "help",      no_argument,       NULL, 'h' },
+		{ "udid",      required_argument, NULL, 'u' },
+		{ "network",   no_argument,       NULL, 'n' },
+		{ "list",      no_argument,       NULL, 'l' },
+		{ "imagetype", required_argument, NULL, 't' },
+		{ "xml",       no_argument,       NULL, 'x' },
+		{ "debug",     no_argument,       NULL, 'd' },
+		{ "version",   no_argument,       NULL, 'v' },
+		{ NULL, 0, NULL, 0 }
 	};
 	int c;
 
 	while (1) {
-		c = getopt_long(argc, argv, "hu:lt:xd", longopts,
-						(int *) 0);
+		c = getopt_long(argc, argv, "hu:lt:xdnv", longopts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -98,19 +111,21 @@ static void parse_opts(int argc, char **argv)
 			print_usage(argc, argv);
 			exit(0);
 		case 'u':
-			if (strlen(optarg) != 40) {
-				printf("%s: invalid UDID specified (length != 40)\n",
-					   argv[0]);
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
 				print_usage(argc, argv);
 				exit(2);
 			}
-			udid = strdup(optarg);
+			udid = optarg;
+			break;
+		case 'n':
+			use_network = 1;
 			break;
 		case 'l':
 			list_mode = 1;
 			break;
 		case 't':
-			imagetype = strdup(optarg);
+			imagetype = optarg;
 			break;
 		case 'x':
 			xml_mode = 1;
@@ -118,6 +133,9 @@ static void parse_opts(int argc, char **argv)
 		case 'd':
 			idevice_set_debug_level(1);
 			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
+			exit(0);
 		default:
 			print_usage(argc, argv);
 			exit(2);
@@ -152,6 +170,9 @@ int main(int argc, char **argv)
 	size_t image_size = 0;
 	char *image_sig_path = NULL;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	parse_opts(argc, argv);
 
 	argc -= optind;
@@ -173,12 +194,16 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
-		printf("No device found, is it plugged in?\n");
+	if (IDEVICE_E_SUCCESS != idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX)) {
+		if (udid) {
+			printf("No device found with udid %s.\n", udid);
+		} else {
+			printf("No device found.\n");
+		}
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, "ideviceimagemounter"))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdown, error code %d.\n", ldret);
 		goto leave;
 	}
@@ -247,16 +272,15 @@ int main(int argc, char **argv)
 	lockdownd_client_free(lckd);
 	lckd = NULL;
 
-	mobile_image_mounter_error_t err;
+	mobile_image_mounter_error_t err = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
 	plist_t result = NULL;
 
 	if (list_mode) {
 		/* list mounts mode */
 		if (!imagetype) {
-			imagetype = strdup("Developer");
+			imagetype = "Developer";
 		}
 		err = mobile_image_mounter_lookup_image(mim, imagetype, &result);
-		free(imagetype);
 		if (err == MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 			res = 0;
 			if (xml_mode) {
@@ -301,7 +325,7 @@ int main(int argc, char **argv)
 
 
 		if (!imagetype) {
-			imagetype = strdup("Developer");
+			imagetype = "Developer";
 		}
 
 		switch(disk_image_upload_type) {
@@ -343,7 +367,7 @@ int main(int argc, char **argv)
 						uint32_t written, total = 0;
 						while (total < amount) {
 							written = 0;
-							if (afc_file_write(afc, af, buf, amount, &written) !=
+							if (afc_file_write(afc, af, buf + total, amount - total, &written) !=
 								AFC_E_SUCCESS) {
 								fprintf(stderr, "AFC Write error!\n");
 								break;
@@ -367,11 +391,18 @@ int main(int argc, char **argv)
 
 		fclose(f);
 
+		if (err != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+			if (err == MOBILE_IMAGE_MOUNTER_E_DEVICE_LOCKED) {
+				printf("ERROR: Device is locked, can't mount. Unlock device and try again.\n");
+			} else {
+				printf("ERROR: Unknown error occurred, can't mount.\n");
+			}
+			goto error_out;
+		}
 		printf("done.\n");
 
 		printf("Mounting...\n");
 		err = mobile_image_mounter_mount_image(mim, mountname, sig, sig_length, imagetype, &result);
-		free(imagetype);
 		if (err == MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 			if (result) {
 				plist_t node = plist_dict_get_item(result, "Status");
@@ -434,6 +465,7 @@ int main(int argc, char **argv)
 		plist_free(result);
 	}
 
+error_out:
 	/* perform hangup command */
 	mobile_image_mounter_hangup(mim);
 	/* free client */

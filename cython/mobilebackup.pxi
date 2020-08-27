@@ -8,8 +8,10 @@ cdef extern from "libimobiledevice/mobilebackup.h":
         MOBILEBACKUP_E_INVALID_ARG = -1
         MOBILEBACKUP_E_PLIST_ERROR = -2
         MOBILEBACKUP_E_MUX_ERROR = -3
-        MOBILEBACKUP_E_BAD_VERSION = -4
-        MOBILEBACKUP_E_REPLY_NOT_OK = -5
+        MOBILEBACKUP_E_SSL_ERROR = -4
+        MOBILEBACKUP_E_RECEIVE_TIMEOUT = -5
+        MOBILEBACKUP_E_BAD_VERSION = -6
+        MOBILEBACKUP_E_REPLY_NOT_OK = -7
         MOBILEBACKUP_E_UNKNOWN_ERROR = -256
 
     ctypedef enum mobilebackup_flags_t:
@@ -36,6 +38,8 @@ cdef class MobileBackupError(BaseError):
             MOBILEBACKUP_E_INVALID_ARG: "Invalid argument",
             MOBILEBACKUP_E_PLIST_ERROR: "Property list error",
             MOBILEBACKUP_E_MUX_ERROR: "MUX error",
+            MOBILEBACKUP_E_SSL_ERROR: "SSL error",
+            MOBILEBACKUP_E_RECEIVE_TIMEOUT: "Receive timeout",
             MOBILEBACKUP_E_BAD_VERSION: "Bad version",
             MOBILEBACKUP_E_REPLY_NOT_OK: "Reply not OK",
             MOBILEBACKUP_E_UNKNOWN_ERROR: "Unknown error"

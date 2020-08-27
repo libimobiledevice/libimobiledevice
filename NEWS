@@ -1,3 +1,81 @@
+Version 1.3.0
+~~~~~~~~~~~~~
+
+* Development release "Let's get the party started."
+* Changes:
+  - Fix Python 3 support
+  - Add more lockdown error codes
+  - Add new lockdownd_pair_with_options() function
+  - Fix GnuTLS support with iOS 10
+  - Make sure sockets only listen locally due to security reasons
+  - Plug various memory leaks
+  - Fix SSL version negotiation for newer versions of OpenSSL
+  - Optimize lockdown pair record handling
+  - Return proper error code when a lockdown pair record is missing
+  - Fix building with MingGW
+  - Store application information in Info.plist using idevicebackup2
+  - Fix application backup handling to allow the device to restore applications
+    that were installed using idevicebackup2
+  - Make idevicebackup2 reboot after restore the default to allow the device to
+    migrate data correctly and thus improve the restored device data state
+  - Improve console frontend information output in idevicebackup2
+  - Extend ideviceprovision tool to allow retrieving and removing all
+    provisioning profiles
+  - Fix parsing large provisioning profile using ideviceprovision
+  - Fix receiving large property lists in property list service
+  - Propagate lower level errors to callers instead of returning
+    IDEVICE_E_UNKNOWN_ERROR
+  - API: Add IDEVICE_DEVICE_PAIRED event type
+  - Detect screenshot format to support png, tiff and dat formats using
+    idevicescreenshot tool
+  - API: Add mobileactivation service implementation
+  - Wait for passcode entry if required using idevicesyslog
+  - Add HDMI option to diagnostics command for idevicediagnostics
+  - Fix IORegistry command for iOS 11+ devices in idevicediagnostics
+  - Remove 40-digit character limit for UDID in tools to support newer devices
+  - Fix broken validate command in idevicepair with iOS 11+
+  - Fix OpenSSL version checks for configure target when using LibreSSL
+  - Migrate latest improved common code from libusbmuxd
+  - Convert README file to markdown format
+  - Fix idevicecrashreport tool to work with iOS 13+
+  - Fix various errors in SSL communication logic
+  - API: Add preboard service implementation
+  - Output hint to user to enter passcode when changing password using
+    idevicebackup2
+  - Cython: Fix and improve debugserver and diagnostics service bindings
+  - API: Add WiFi device support via new idevice_new_with_options() function
+  - API: Add idevice_get_device_list_extended() to also list network devices
+  - API: Add lockdown_strerror() helper to get error representation as string
+  - Add network device support to idevicesyslog and ideviceinfo tools
+  - Make debug output consistently output to stderr
+  - Add new idevicesetlocation tool (requires mounted developer image)
+  - Add option to exit if device disconnects in idevicesyslog
+  - API: Add syslog_relay_start_capture_raw() for raw syslog capture
+  - Add color output and process filter support to idevicesyslog
+  - API: Add companion_proxy service implementation
+  - Bump dependency to libusbmuxd 2.0.2
+  - Bump dependency to libplist 2.2.0
+  - Improve error handling and reporting in library and tools
+  - Fix various memory leaks in library and tools
+  - Add "--network" and "--version" options to all tools
+  - Fix socket_connect_addr() not connecting to network devices using IPv6
+    in some cases.
+  - Improve IPv6 "scope id" detection to fix connecting to network devices with
+    link-local adresses.
+  - Update man pages
+  - Fix various inconsistent declarations in public headers
+  - Allow OpenSSL >= 1.1.0 to use older/disallowed TLS versions fixing issues
+    where pairing records were getting removed repeatingly
+  - Fixed memory leaks
+  - Cython: Rewrite version detection logic in configure.ac
+  - Rename "--enable-debug-code" configure option to "--enable-debug"
+  - Improve README.md with project description, installation, contributing and
+    usage sections
+  - Rename library and all related files by adding an API version resulting
+    in "libimobiledevice-1.0"
+  - Bump soname version
+* API is UNSTABLE
+
 Version 1.2.0
 ~~~~~~~~~~~~~
 

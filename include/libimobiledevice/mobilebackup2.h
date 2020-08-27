@@ -3,8 +3,8 @@
  * @brief Backup and restore of all device data (mobilebackup2, iOS4+ only)
  * \internal
  *
- * Copyright (c) 2011-2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2010-2012 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2011-2014 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,11 @@ typedef enum {
 	MOBILEBACKUP2_E_INVALID_ARG       = -1,
 	MOBILEBACKUP2_E_PLIST_ERROR       = -2,
 	MOBILEBACKUP2_E_MUX_ERROR         = -3,
-	MOBILEBACKUP2_E_BAD_VERSION       = -4,
-	MOBILEBACKUP2_E_REPLY_NOT_OK      = -5,
-	MOBILEBACKUP2_E_NO_COMMON_VERSION = -6,
+	MOBILEBACKUP2_E_SSL_ERROR         = -4,
+	MOBILEBACKUP2_E_RECEIVE_TIMEOUT   = -5,
+	MOBILEBACKUP2_E_BAD_VERSION       = -6,
+	MOBILEBACKUP2_E_REPLY_NOT_OK      = -7,
+	MOBILEBACKUP2_E_NO_COMMON_VERSION = -8,
 	MOBILEBACKUP2_E_UNKNOWN_ERROR     = -256
 } mobilebackup2_error_t;
 
@@ -146,7 +148,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
  * Receive binary from the device.
  *
  * @note This function returns MOBILEBACKUP2_E_SUCCESS even if no data
- *     has been received (unless a communication error occured).
+ *     has been received (unless a communication error occurred).
  *     The fourth parameter is required and must be checked to know how
  *     many bytes were actually received.
  *

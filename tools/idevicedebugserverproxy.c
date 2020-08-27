@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicedebugserverproxy"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +52,7 @@ typedef struct {
 } socket_info_t;
 
 struct thread_info {
-	thread_t th;
+	THREAD_T th;
 	struct thread_info *next;
 };
 
@@ -69,12 +71,18 @@ static void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
-	printf("Proxy debugserver connection from device to a local socket at PORT.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
-	printf("  -h, --help\t\tprints usage information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Proxy debugserver connection from device to a local socket at PORT.\n");
+	printf("\n");
+	printf("OPTIONS:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
+	printf("\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 static void *thread_device_to_client(void *data)
@@ -140,7 +148,7 @@ static void *thread_client_to_device(void *data)
 	int recv_len;
 	int sent;
 	char buffer[131072];
-	thread_t dtoc;
+	THREAD_T dtoc;
 
 	debug("%s: started thread...\n", __func__);
 
@@ -205,11 +213,11 @@ static void* connection_handler(void* data)
 {
 	debugserver_error_t derr = DEBUGSERVER_E_SUCCESS;
 	socket_info_t* socket_info = (socket_info_t*)data;
-	thread_t ctod;
+	THREAD_T ctod;
 
 	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
 
-	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, "idevicedebugserverproxy");
+	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, TOOL_NAME);
 	if (derr != DEBUGSERVER_E_SUCCESS) {
 		fprintf(stderr, "Could not start debugserver on device!\nPlease make sure to mount a developer disk image first.\n");
 		return NULL;
@@ -243,6 +251,7 @@ int main(int argc, char *argv[])
 	idevice_t device = NULL;
 	thread_info_t *thread_list = NULL;
 	const char* udid = NULL;
+	int use_network = 0;
 	uint16_t local_port = 0;
 	int server_fd;
 	int result = EXIT_SUCCESS;
@@ -280,15 +289,23 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				return 0;
 			}
 			udid = argv[i];
 			continue;
 		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			return EXIT_SUCCESS;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return EXIT_SUCCESS;
 		}
 		else if (atoi(argv[i]) > 0) {
@@ -309,12 +326,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* start services and connect to device */
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			fprintf(stderr, "No device found with udid %s, is it plugged in?\n", udid);
+			fprintf(stderr, "No device found with udid %s.\n", udid);
 		} else {
-			fprintf(stderr, "No device found, is it plugged in?\n");
+			fprintf(stderr, "No device found.\n");
 		}
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
@@ -364,7 +381,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Could not start connection handler.\n");
 			socket_shutdown(server_fd, SHUT_RDWR);
 			socket_close(server_fd);
-			continue;
+			break;
 		}
 	}
 
