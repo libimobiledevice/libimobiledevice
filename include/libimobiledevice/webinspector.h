@@ -35,12 +35,14 @@ extern "C" {
 
 /** Error Codes */
 typedef enum {
-	WEBINSPECTOR_E_SUCCESS       =  0,
-	WEBINSPECTOR_E_INVALID_ARG   = -1,
-	WEBINSPECTOR_E_PLIST_ERROR   = -2,
-	WEBINSPECTOR_E_MUX_ERROR     = -3,
-	WEBINSPECTOR_E_SSL_ERROR     = -4,
-	WEBINSPECTOR_E_UNKNOWN_ERROR = -256
+	WEBINSPECTOR_E_SUCCESS         =  0,
+	WEBINSPECTOR_E_INVALID_ARG     = -1,
+	WEBINSPECTOR_E_PLIST_ERROR     = -2,
+	WEBINSPECTOR_E_MUX_ERROR       = -3,
+	WEBINSPECTOR_E_SSL_ERROR       = -4,
+	WEBINSPECTOR_E_RECEIVE_TIMEOUT = -5,
+	WEBINSPECTOR_E_NOT_ENOUGH_DATA = -6,
+	WEBINSPECTOR_E_UNKNOWN_ERROR   = -256
 } webinspector_error_t;
 
 typedef struct webinspector_client_private webinspector_client_private;

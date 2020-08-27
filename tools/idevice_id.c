@@ -2,7 +2,7 @@
  * idevice_id.c
  * Prints device name or a list of attached devices
  *
- * Copyright (C) 2010 Nikias Bassen <nikias@gmx.li>
+ * Copyright (C) 2010-2018 Nikias Bassen <nikias@gmx.li>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,9 +23,12 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevice_id"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
@@ -33,68 +36,97 @@
 #define MODE_SHOW_ID 1
 #define MODE_LIST_DEVICES 2
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
 	char *name = NULL;
-
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
-	printf("Prints device name or a list of attached devices.\n\n");
-	printf("  The UDID is a 40-digit hexadecimal number of the device\n");
-	printf("  for which the name should be retrieved.\n\n");
-	printf("  -l, --list\t\tlist UDID of all attached devices\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] [UDID]\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n" \
+		"List attached devices or print device name of given device.\n" \
+		"\n" \
+		"  If UDID is given, the name of the connected device with that UDID" \
+		"  will be retrieved.\n" \
+		"\n" \
+		"OPTIONS:\n" \
+		"  -l, --list      list UDIDs of all devices attached via USB\n" \
+		"  -n, --network   list UDIDs of all devices available via network\n" \
+		"  -d, --debug     enable communication debugging\n" \
+		"  -h, --help      prints usage information\n" \
+		"  -v, --version   prints version information\n" \
+		"\n" \
+		"Homepage:    <" PACKAGE_URL ">\n" \
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char **argv)
 {
 	idevice_t device = NULL;
 	lockdownd_client_t client = NULL;
-	char **dev_list = NULL;
+	idevice_info_t *dev_list = NULL;
 	char *device_name = NULL;
 	int ret = 0;
 	int i;
-	int mode = MODE_SHOW_ID;
+	int mode = MODE_LIST_DEVICES;
+	int include_usb = 0;
+	int include_network = 0;
 	const char* udid = NULL;
 
-	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
-			mode = MODE_LIST_DEVICES;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
-			return 0;
-		}
-	}
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help",  no_argument, NULL, 'h' },
+		{ "list",  no_argument, NULL, 'l' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
 
-	/* check if udid was passed */
-	if (mode == MODE_SHOW_ID) {
-		i--;
-		if (!argv[i] || (strlen(argv[i]) != 40)) {
-			print_usage(argc, argv);
+	while ((c = getopt_long(argc, argv, "dhlnv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
+			idevice_set_debug_level(1);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
+			exit(EXIT_SUCCESS);
+		case 'l':
+			mode = MODE_LIST_DEVICES;
+			include_usb = 1;
+			break;
+		case 'n':
+			mode = MODE_LIST_DEVICES;
+			include_network = 1;
+			break;
+		case 'v':
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			exit(EXIT_FAILURE);
 		}
-		udid = argv[i];
 	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc == 1) {
+		mode = MODE_SHOW_ID;
+	} else if (argc == 0 && optind == 1) {
+		include_usb = 1;
+		include_network = 1;
+	}
+	udid = argv[0];
 
 	switch (mode) {
 	case MODE_SHOW_ID:
-		idevice_new(&device, udid);
+		idevice_new_with_options(&device, udid, IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK);
 		if (!device) {
-			fprintf(stderr, "ERROR: No device with UDID=%s attached.\n", udid);
+			fprintf(stderr, "ERROR: No device with UDID %s attached.\n", udid);
 			return -2;
 		}
 
-		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(device, &client, "idevice_id")) {
+		if (LOCKDOWN_E_SUCCESS != lockdownd_client_new(device, &client, TOOL_NAME)) {
 			idevice_free(device);
 			fprintf(stderr, "ERROR: Connecting to device failed!\n");
 			return -2;
@@ -115,18 +147,29 @@ int main(int argc, char **argv)
 		if (device_name) {
 			free(device_name);
 		}
+		break;
 
-		return ret;
 	case MODE_LIST_DEVICES:
 	default:
-		if (idevice_get_device_list(&dev_list, &i) < 0) {
+		if (idevice_get_device_list_extended(&dev_list, &i) < 0) {
 			fprintf(stderr, "ERROR: Unable to retrieve device list!\n");
 			return -1;
 		}
 		for (i = 0; dev_list[i] != NULL; i++) {
-			printf("%s\n", dev_list[i]);
+			if (dev_list[i]->conn_type == CONNECTION_USBMUXD && !include_usb) continue;
+			if (dev_list[i]->conn_type == CONNECTION_NETWORK && !include_network) continue;
+			printf("%s", dev_list[i]->udid);
+			if (include_usb && include_network) {
+				if (dev_list[i]->conn_type == CONNECTION_NETWORK) {
+					printf(" (Network)");
+				} else {
+					printf(" (USB)");
+				}
+			}
+			printf("\n");
 		}
-		idevice_device_list_free(dev_list);
-		return 0;
+		idevice_device_list_extended_free(dev_list);
+		break;
 	}
+	return ret;
 }

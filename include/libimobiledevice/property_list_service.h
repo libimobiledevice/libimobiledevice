@@ -38,6 +38,7 @@ typedef enum {
 	PROPERTY_LIST_SERVICE_E_MUX_ERROR       = -3,
 	PROPERTY_LIST_SERVICE_E_SSL_ERROR       = -4,
 	PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT = -5,
+	PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA = -6,
 	PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR   = -256
 } property_list_service_error_t;
 
@@ -67,7 +68,7 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *     PROPERTY_LIST_SERVICE_E_INVALID_ARG when client is invalid, or a
- *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when another error occured.
+ *     PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when another error occurred.
  */
 property_list_service_error_t property_list_service_client_free(property_list_service_client_t client);
 
@@ -130,6 +131,8 @@ property_list_service_error_t property_list_service_receive_plist_with_timeout(p
  *
  * @return PROPERTY_LIST_SERVICE_E_SUCCESS on success,
  *      PROPERTY_LIST_SERVICE_E_INVALID_ARG when client or *plist is NULL,
+ *      PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA when not enough data
+ *      received, PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT when the connection times out,
  *      PROPERTY_LIST_SERVICE_E_PLIST_ERROR when the received data cannot be
  *      converted to a plist, PROPERTY_LIST_SERVICE_E_MUX_ERROR when a
  *      communication error occurs, or PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR when

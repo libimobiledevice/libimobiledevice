@@ -12,18 +12,24 @@ command is "run" and allows execution of developer apps and watch the
 stdout/stderr of the process.
 
 .SH OPTIONS
-.TP 
+.TP
+.B \-u, \-\-udid UDID
+target specific device by UDID.
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
 .B \-e, \-\-env NAME=VALUE
 set environment variable NAME to VALUE.
 .TP
-.B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
-.TP 
 .B \-d, \-\-debug
 enable communication debugging.
-.TP 
+.TP
 .B \-h, \-\-help
 prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH COMMANDS
 .TP
@@ -34,4 +40,6 @@ run app with BUNDLEID and optional ARGS on device.
 Martin Szulecki
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

@@ -23,11 +23,16 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicescreenshot"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -45,8 +50,12 @@ int main(int argc, char **argv)
 	int result = -1;
 	int i;
 	const char *udid = NULL;
+	int use_network = 0;
 	char *filename = NULL;
 
+#ifndef WIN32
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	/* parse cmdline args */
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
@@ -55,15 +64,23 @@ int main(int argc, char **argv)
 		}
 		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				return 0;
 			}
 			udid = argv[i];
 			continue;
 		}
+		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			return 0;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
 		else if (argv[i][0] != '-' && !filename) {
@@ -76,16 +93,16 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (IDEVICE_E_SUCCESS != idevice_new(&device, udid)) {
+	if (IDEVICE_E_SUCCESS != idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX)) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, NULL))) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lckd, TOOL_NAME))) {
 		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		return -1;
@@ -151,15 +168,22 @@ void print_usage(int argc, char **argv)
 
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] [FILE]\n", (name ? name + 1: argv[0]));
+	printf("\n");
 	printf("Gets a screenshot from a device.\n");
+	printf("\n");
 	printf("The screenshot is saved as a TIFF image with the given FILE name,\n");
 	printf("where the default name is \"screenshot-DATE.tiff\", e.g.:\n");
-	printf("   ./screenshot-2013-12-31-23-59-59.tiff\n\n");
-	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
-	printf("the screenshotr service is not available.\n\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
-	printf("  -h, --help\t\tprints usage information\n");
+	printf("   ./screenshot-2013-12-31-23-59-59.tiff\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("NOTE: A mounted developer disk image is required on the device, otherwise\n");
+	printf("the screenshotr service is not available.\n");
+	printf("\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
+	printf("  -d, --debug\t\tenable communication debugging\n");
+	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
+	printf("\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }

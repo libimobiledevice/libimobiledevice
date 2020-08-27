@@ -35,13 +35,10 @@ extern "C" {
 typedef enum {
 	RESTORE_E_SUCCESS              =  0,
 	RESTORE_E_INVALID_ARG          = -1,
-	RESTORE_E_INVALID_CONF         = -2,
-	RESTORE_E_PLIST_ERROR          = -3,
-	RESTORE_E_DICT_ERROR           = -4,
-	RESTORE_E_NOT_ENOUGH_DATA      = -5,
-	RESTORE_E_MUX_ERROR            = -6,
-	RESTORE_E_START_RESTORE_FAILED = -7,
-	RESTORE_E_DEVICE_ERROR         = -8,
+	RESTORE_E_PLIST_ERROR          = -2,
+	RESTORE_E_MUX_ERROR            = -3,
+	RESTORE_E_NOT_ENOUGH_DATA      = -4,
+	RESTORE_E_RECEIVE_TIMEOUT      = -5,
 	RESTORE_E_UNKNOWN_ERROR        = -256
 } restored_error_t;
 

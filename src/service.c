@@ -46,6 +46,10 @@ static service_error_t idevice_to_service_error(idevice_error_t err)
 			return SERVICE_E_INVALID_ARG;
 		case IDEVICE_E_SSL_ERROR:
 			return SERVICE_E_SSL_ERROR;
+		case IDEVICE_E_NOT_ENOUGH_DATA:
+			return SERVICE_E_NOT_ENOUGH_DATA;
+		case IDEVICE_E_TIMEOUT:
+			return SERVICE_E_TIMEOUT;
 		default:
 			break;
 	}
@@ -131,19 +135,19 @@ LIBIMOBILEDEVICE_API service_error_t service_client_free(service_client_t client
 LIBIMOBILEDEVICE_API service_error_t service_send(service_client_t client, const char* data, uint32_t size, uint32_t *sent)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
-	int bytes = 0;
+	uint32_t bytes = 0;
 
 	if (!client || (client && !client->connection) || !data || (size == 0)) {
 		return SERVICE_E_INVALID_ARG;
 	}
 
 	debug_info("sending %d bytes", size);
-	res = idevice_to_service_error(idevice_connection_send(client->connection, data, size, (uint32_t*)&bytes));
-	if (bytes <= 0) {
+	res = idevice_to_service_error(idevice_connection_send(client->connection, data, size, &bytes));
+	if (res != SERVICE_E_SUCCESS) {
 		debug_info("ERROR: sending to device failed.");
 	}
 	if (sent) {
-		*sent = (uint32_t)bytes;
+		*sent = bytes;
 	}
 
 	return res;
@@ -152,18 +156,19 @@ LIBIMOBILEDEVICE_API service_error_t service_send(service_client_t client, const
 LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
-	int bytes = 0;
+	uint32_t bytes = 0;
 
 	if (!client || (client && !client->connection) || !data || (size == 0)) {
 		return SERVICE_E_INVALID_ARG;
 	}
 
-	res = idevice_to_service_error(idevice_connection_receive_timeout(client->connection, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	res = idevice_to_service_error(idevice_connection_receive_timeout(client->connection, data, size, &bytes, timeout));
+	if (res != SERVICE_E_SUCCESS && res != SERVICE_E_TIMEOUT) {
 		debug_info("could not read data");
+		return res;
 	}
 	if (received) {
-		*received = (uint32_t)bytes;
+		*received = bytes;
 	}
 
 	return res;
@@ -171,7 +176,7 @@ LIBIMOBILEDEVICE_API service_error_t service_receive_with_timeout(service_client
 
 LIBIMOBILEDEVICE_API service_error_t service_receive(service_client_t client, char* data, uint32_t size, uint32_t *received)
 {
-	return service_receive_with_timeout(client, data, size, received, 10000);
+	return service_receive_with_timeout(client, data, size, received, 30000);
 }
 
 LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client)
@@ -183,8 +188,13 @@ LIBIMOBILEDEVICE_API service_error_t service_enable_ssl(service_client_t client)
 
 LIBIMOBILEDEVICE_API service_error_t service_disable_ssl(service_client_t client)
 {
+	return service_disable_bypass_ssl(client, 0);
+}
+
+LIBIMOBILEDEVICE_API service_error_t service_disable_bypass_ssl(service_client_t client, uint8_t sslBypass)
+{
 	if (!client || !client->connection)
 		return SERVICE_E_INVALID_ARG;
-	return idevice_to_service_error(idevice_connection_disable_ssl(client->connection));
+	return idevice_to_service_error(idevice_connection_disable_bypass_ssl(client->connection, sslBypass));
 }
 

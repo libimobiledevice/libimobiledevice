@@ -11,11 +11,17 @@ Show information about the first connected device.
 
 .SH OPTIONS
 .TP
-.B \-d, \-\-debug
-enable communication debugging.
+.B \-s, \-\-simple
+use a simple connection to avoid auto-pairing with the device.
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
+target specific device by UDID.
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
+.B \-d, \-\-debug
+enable communication debugging.
 .TP
 .B \-q, \-\-domain NAME
 set domain of query to NAME. Default: None.
@@ -27,7 +33,10 @@ only query key specified by NAME. Default: All keys.
 output information as xml plist instead of key/value pairs.
 .TP
 .B \-h, \-\-help
-prints usage information
+prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH AUTHOR
 Martin Szulecki
@@ -35,4 +44,6 @@ Martin Szulecki
 Man page written to conform with Debian by Julien Lavergne.
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

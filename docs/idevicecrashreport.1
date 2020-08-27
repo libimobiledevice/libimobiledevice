@@ -15,6 +15,12 @@ the device to the target DIRECTORY.
 
 .SH OPTIONS
 .TP
+.B \-u, \-\-udid UDID
+target specific device by UDID.
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
 .B \-e, \-\-extract
 extract raw crash report into separate '.crash' files.
 .TP
@@ -24,11 +30,11 @@ copy but do not remove crash reports from device.
 .B \-d, \-\-debug
 enable communication debugging.
 .TP
-.B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
-.TP
 .B \-h, \-\-help
 prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH AUTHOR
 Martin Szulecki
@@ -36,4 +42,6 @@ Martin Szulecki
 Nikias Bassen
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

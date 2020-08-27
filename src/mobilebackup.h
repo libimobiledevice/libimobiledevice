@@ -2,6 +2,7 @@
  * mobilebackup.h
  * Definitions for the mobilebackup service
  *
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2009 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or

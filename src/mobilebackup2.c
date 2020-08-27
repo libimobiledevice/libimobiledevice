@@ -2,7 +2,7 @@
  * mobilebackup2.c
  * Contains functions for the built-in MobileBackup2 client (iOS4+ only)
  *
- * Copyright (c) 2010 Nikias Bassen All Rights Reserved.
+ * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <plist/plist.h>
 #include <string.h>
 #include <stdlib.h>
@@ -27,7 +30,7 @@
 #include "device_link_service.h"
 #include "common/debug.h"
 
-#define MBACKUP2_VERSION_INT1 300
+#define MBACKUP2_VERSION_INT1 400
 #define MBACKUP2_VERSION_INT2 0
 
 #define IS_FLAG_SET(x, y) ((x & y) == y)
@@ -53,6 +56,10 @@ static mobilebackup2_error_t mobilebackup2_error(device_link_service_error_t err
 			return MOBILEBACKUP2_E_PLIST_ERROR;
 		case DEVICE_LINK_SERVICE_E_MUX_ERROR:
 			return MOBILEBACKUP2_E_MUX_ERROR;
+		case DEVICE_LINK_SERVICE_E_SSL_ERROR:
+			return MOBILEBACKUP2_E_SSL_ERROR;
+		case DEVICE_LINK_SERVICE_E_RECEIVE_TIMEOUT:
+			return MOBILEBACKUP2_E_RECEIVE_TIMEOUT;
 		case DEVICE_LINK_SERVICE_E_BAD_VERSION:
 			return MOBILEBACKUP2_E_BAD_VERSION;
 		default:

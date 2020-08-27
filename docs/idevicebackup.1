@@ -9,16 +9,24 @@ idevicebackup \- Create or restore backup for devices.
 
 Create or restore backup from the current or specified directory.
 
+\f[B]NOTE\f[]: This tool is outdated. See idevicebackup2(1) for an updated tool.
+
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
-.TP 
+target specific device by UDID.
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
 .B \-d, \-\-debug
 enable communication debugging.
 .TP 
 .B \-h, \-\-help
 prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH COMMANDS
 .TP
@@ -35,5 +43,10 @@ Nikias Bassen
 
 Man page written to conform with Debian by Julien Lavergne.
 
+.SH SEE ALSO
+idevicebackup2(1)
+
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

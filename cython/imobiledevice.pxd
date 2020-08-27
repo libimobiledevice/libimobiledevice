@@ -23,13 +23,17 @@ cdef extern from "libimobiledevice/libimobiledevice.h":
     cdef struct idevice_connection_private:
         pass
     ctypedef idevice_connection_private* idevice_connection_t
+    cdef enum idevice_connection_type:
+        CONNECTION_USBMUXD = 1
+        CONNECTION_NETWORK
     cdef enum idevice_event_type:
-        IDEVICE_DEVICE_ADD = 1,
+        IDEVICE_DEVICE_ADD = 1
         IDEVICE_DEVICE_REMOVE
+        IDEVICE_DEVICE_PAIRED
     ctypedef struct idevice_event_t:
         idevice_event_type event
         char *udid
-        int conn_type
+        idevice_connection_type conn_type
     ctypedef idevice_event_t* const_idevice_event_t "const idevice_event_t*"
 
 cdef class iDeviceEvent:

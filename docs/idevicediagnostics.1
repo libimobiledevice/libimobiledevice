@@ -7,7 +7,7 @@ idevicediagnostics \- Interact with the diagnostics interface of a device.
 
 .SH DESCRIPTION
 
-Interact with the diagnostics interface of a device which allows to retrive
+Interact with the diagnostics interface of a device which allows one to retrieve
 all kinds of information including diagnostics data, mobilegestalt data, remote
 access to the IORegistry and certain commands like restart, shutdown and sleep.
 Only available for iOS 4 and later. Accessing IORegistry is only supported on
@@ -16,13 +16,19 @@ iOS 5 and later.
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
-.TP 
+target specific device by UDID.
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
 .B \-d, \-\-debug
 enable communication debugging.
-.TP 
+.TP
 .B \-h, \-\-help
 prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH COMMANDS
 .TP
@@ -32,7 +38,7 @@ print diagnostics information from device optionally by TYPE. This includes
 .TP
 .B mobilegestalt KEY [...]
 print values of mobilegestalt keys passed as arguments after the command and 
-seperated by a space.
+separated by a space.
 .TP
 .B ioreg [PLANE]
 print IORegistry of device, optionally by PLANE like "IODeviceTree", "IOPower"
@@ -51,4 +57,6 @@ put device into sleep mode which also disconnects it from the host.
 Martin Szulecki
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

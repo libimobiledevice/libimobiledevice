@@ -52,6 +52,10 @@ static webinspector_error_t webinspector_error(property_list_service_error_t err
 			return WEBINSPECTOR_E_MUX_ERROR;
 		case PROPERTY_LIST_SERVICE_E_SSL_ERROR:
 			return WEBINSPECTOR_E_SSL_ERROR;
+		case PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT:
+			return WEBINSPECTOR_E_RECEIVE_TIMEOUT;
+		case PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA:
+			return WEBINSPECTOR_E_NOT_ENOUGH_DATA;
 		default:
 			break;
 	}

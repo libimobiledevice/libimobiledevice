@@ -8,7 +8,9 @@ cdef extern from "libimobiledevice/screenshotr.h":
         SCREENSHOTR_E_INVALID_ARG = -1
         SCREENSHOTR_E_PLIST_ERROR = -2
         SCREENSHOTR_E_MUX_ERROR = -3
-        SCREENSHOTR_E_BAD_VERSION = -4
+        SCREENSHOTR_E_SSL_ERROR = -4
+        SCREENSHOTR_E_RECEIVE_TIMEOUT = 5
+        SCREENSHOTR_E_BAD_VERSION = -6
         SCREENSHOTR_E_UNKNOWN_ERROR = -256
 
     screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, screenshotr_client_t * client)
@@ -22,6 +24,8 @@ cdef class ScreenshotrError(BaseError):
             SCREENSHOTR_E_INVALID_ARG: "Invalid argument",
             SCREENSHOTR_E_PLIST_ERROR: "Property list error",
             SCREENSHOTR_E_MUX_ERROR: "MUX error",
+            SCREENSHOTR_E_SSL_ERROR: "SSL error",
+            SCREENSHOTR_E_RECEIVE_TIMEOUT: "Receive timeout",
             SCREENSHOTR_E_BAD_VERSION: "Bad version",
             SCREENSHOTR_E_UNKNOWN_ERROR: "Unknown error"
         }

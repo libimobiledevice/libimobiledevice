@@ -8,9 +8,11 @@ cdef extern from "libimobiledevice/mobilebackup2.h":
         MOBILEBACKUP2_E_INVALID_ARG = -1
         MOBILEBACKUP2_E_PLIST_ERROR = -2
         MOBILEBACKUP2_E_MUX_ERROR = -3
-        MOBILEBACKUP2_E_BAD_VERSION = -4
-        MOBILEBACKUP2_E_REPLY_NOT_OK = -5
-        MOBILEBACKUP2_E_NO_COMMON_VERSION = -6
+        MOBILEBACKUP2_E_SSL_ERROR = -4
+        MOBILEBACKUP2_E_RECEIVE_TIMEOUT = -5
+        MOBILEBACKUP2_E_BAD_VERSION = -6
+        MOBILEBACKUP2_E_REPLY_NOT_OK = -7
+        MOBILEBACKUP2_E_NO_COMMON_VERSION = -8
         MOBILEBACKUP2_E_UNKNOWN_ERROR = -256
 
     mobilebackup2_error_t mobilebackup2_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, mobilebackup2_client_t * client)
@@ -31,6 +33,8 @@ cdef class MobileBackup2Error(BaseError):
             MOBILEBACKUP2_E_INVALID_ARG: "Invalid argument",
             MOBILEBACKUP2_E_PLIST_ERROR: "Property list error",
             MOBILEBACKUP2_E_MUX_ERROR: "MUX error",
+            MOBILEBACKUP2_E_SSL_ERROR: "SSL error",
+            MOBILEBACKUP2_E_RECEIVE_TIMEOUT: "Receive timeout",
             MOBILEBACKUP2_E_BAD_VERSION: "Bad version",
             MOBILEBACKUP2_E_REPLY_NOT_OK: "Reply not OK",
             MOBILEBACKUP2_E_NO_COMMON_VERSION: "No common version",

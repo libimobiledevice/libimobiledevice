@@ -12,24 +12,33 @@ Create or restore backup from the current or specified directory.
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by its 40-digit device UDID.
+target specific device by UDID.
 .TP
 .B \-s, \-\-source UDID
 use backup data from device specified by UDID.
 .TP
 .B \-i, \-\-interactive
 request passwords interactively on the command line.
-.TP 
+.TP
+.B \-n, \-\-network
+connect to network device.
+.TP
 .B \-d, \-\-debug
 enable communication debugging.
-.TP 
+.TP
 .B \-h, \-\-help
 prints usage information.
+.TP
+.B \-v, \-\-version
+prints version information.
 
 .SH COMMANDS
 .TP
 .B backup
 create backup for the device.
+.TP
+.B \t\-\-full
+force full backup from device.
 .TP
 .B restore
 restore last backup to the device.
@@ -37,7 +46,7 @@ restore last backup to the device.
 .B \t\-\-system
 restore system files, too.
 .TP
-.BI \t\-\-reboot
+.B \t\-\-no\-reboot
 reboot the system when done.
 .TP
 .B \t\-\-copy
@@ -49,6 +58,9 @@ restore device settings from the backup.
 .B \t\-\-remove
 remove items which are not being restored.
 .TP
+.B \t\-\-skip-apps
+do not trigger re-installation of apps after restore.
+.TP
 .B \t\-\-password PWD
 supply the password of the source backup.
 .TP
@@ -58,18 +70,23 @@ show details about last completed backup of device.
 .B list
 list files of last completed backup in CSV format.
 .TP
+.B unback
+unpack a completed backup in DIRECTORY/_unback_/
+.TP
 .B encryption on|off [PWD]
 enable or disable backup encryption.
 .TP
 .B changepw [OLD NEW]
 change backup password on target device.
+.TP
+.B cloud on|off
+enable or disable cloud use (requires iCloud account).
 .SH AUTHORS
 Martin Szulecki
 
 Nikias Bassen
 
-.SH SEE ALSO
-idevicebackup(1)
-
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

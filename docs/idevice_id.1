@@ -1,52 +1,43 @@
 .TH "idevice_id" 1
 .SH NAME
-idevice_id \- Prints device name or a list of attached devices.
+idevice_id \- List attached devices or print device name of given device.
 .SH SYNOPSIS
 .B idevice_id
 [OPTIONS] [UDID]
 
 .SH DESCRIPTION
 
-Prints device name or a list of attached devices.
-The UDID is a 40-digit hexadecimal number of the device
-for which the name should be retrieved.
+\f[B]idevice_id\f[] prints a list of attached devices. If a UDID is given,
+the name of the connected device with that UDID will be retrieved.
+
+Without any options, \f[B]idevice_id\f[] will list all available devices,
+USB and network.
+The output can be further controlled with the following OPTIONS.
 
 .SH OPTIONS
 .TP
 .B \-l, \-\-list
-list UDID of all attached devices
-.TP 
+List UDIDs of all devices attached via USB.
+.TP
+.B \-n, \-\-network
+List UDIDs of all devices available via network.
+.TP
 .B \-d, \-\-debug
-enable communication debugging.
-.TP 
+Enable communication debugging.
+.TP
 .B \-h, \-\-help
-prints usage information.
-.TP 
+Prints usage information.
+.TP
+.B \-v, \-\-version
+Prints version information.
+.TP
 
-.SH AUTHORS
- Zach C.
-
- Jonathan Beck
-
- Matt Colyer
-
- Martin Aumueller
-
- Christophe Fergeau
-
- Martin S.
-
- Paul Sladen
-
- Patrick Walton
-
- Zoltan Balaton
-
- Nikias Bassen
-
- Todd Zullinger
+.SH AUTHOR
+Nikias Bassen
 
 Man page written to conform with Debian by Julien Lavergne.
 
 .SH ON THE WEB
-http://libimobiledevice.org
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

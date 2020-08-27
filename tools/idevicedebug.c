@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#define TOOL_NAME "idevicedebug"
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +43,10 @@
 #include <libimobiledevice/debugserver.h>
 #include <plist/plist.h>
 #include "common/debug.h"
+
+static int debug_level = 0;
+
+#define log_debug(...) if (debug_level > 0) { printf(__VA_ARGS__); fputc('\n', stdout); }
 
 enum cmd_mode {
 	CMD_NONE = 0,
@@ -93,7 +99,7 @@ static instproxy_error_t instproxy_client_get_object_by_key_from_info_directiona
 	if (object) {
 		*node = plist_copy(object);
 	} else {
-		debug_info("key %s not found", key);
+		log_debug("key %s not found", key);
 		return INSTPROXY_E_OP_FAILED;
 	}
 
@@ -127,13 +133,13 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 		/* send reply */
 		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response);
-		debug_info("result: %d", dres);
+		dres = debugserver_client_send_command(client, command, response, NULL);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else if (r[0] == 'T') {
 		/* thread stopped information */
-		debug_info("Thread stopped. Details:\n%s", r + 1);
+		log_debug("Thread stopped. Details:\n%s", r + 1);
 
 		free(*response);
 		*response = NULL;
@@ -153,8 +159,8 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 		/* send reply */
 		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response);
-		debug_info("result: %d", dres);
+		dres = debugserver_client_send_command(client, command, response, NULL);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else if (r && strlen(r) == 0) {
@@ -166,12 +172,12 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 		/* no command */
 		debugserver_command_new("OK", 0, NULL, &command);
-		dres = debugserver_client_send_command(client, command, response);
-		debug_info("result: %d", dres);
+		dres = debugserver_client_send_command(client, command, response, NULL);
+		log_debug("result: %d", dres);
 		debugserver_command_free(command);
 		command = NULL;
 	} else {
-		debug_info("ERROR: unhandled response", r);
+		log_debug("ERROR: unhandled response '%s'", r);
 	}
 
 	return dres;
@@ -182,17 +188,22 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("Interact with the debugserver service of a device.\n\n");
-	printf(" Where COMMAND is one of:\n");
+	printf("\n");
+	printf("Interact with the debugserver service of a device.\n");
+	printf("\n");
+	printf("Where COMMAND is one of:\n");
 	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
 	printf("\n");
-	printf(" The following OPTIONS are accepted:\n");
+	printf("The following OPTIONS are accepted:\n");
+	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
+	printf("  -n, --network\t\tconnect to network device\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
-	printf("  -u, --udid UDID\ttarget specific device by its 40-digit device UDID\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
+	printf("  -v, --version\t\tprints version information\n");
 	printf("\n");
-	printf("Homepage: <" PACKAGE_URL ">\n");
+	printf("Homepage:    <" PACKAGE_URL ">\n");
+	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
 int main(int argc, char *argv[])
@@ -203,9 +214,9 @@ int main(int argc, char *argv[])
 	instproxy_client_t instproxy_client = NULL;
 	debugserver_client_t debugserver_client = NULL;
 	int i;
-	int debug_level = 0;
 	int cmd = CMD_NONE;
 	const char* udid = NULL;
+	int use_network = 0;
 	const char* bundle_identifier = NULL;
 	char* path = NULL;
 	char* working_directory = NULL;
@@ -233,12 +244,15 @@ int main(int argc, char *argv[])
 			continue;
 		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
-			if (!argv[i] || (strlen(argv[i]) != 40)) {
+			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
 				res = 0;
 				goto cleanup;
 			}
 			udid = argv[i];
+			continue;
+		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			use_network = 1;
 			continue;
 		} else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
 			i++;
@@ -257,6 +271,10 @@ int main(int argc, char *argv[])
 			continue;
 		} else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
+			res = 0;
+			goto cleanup;
+		} else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			res = 0;
 			goto cleanup;
 		} else if (!strcmp(argv[i], "run")) {
@@ -293,12 +311,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* connect to the device */
-	ret = idevice_new(&device, udid);
+	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("No device found with udid %s, is it plugged in?\n", udid);
+			printf("No device found with udid %s.\n", udid);
 		} else {
-			printf("No device found, is it plugged in?\n");
+			printf("No device found.\n");
 		}
 		goto cleanup;
 	}
@@ -307,7 +325,7 @@ int main(int argc, char *argv[])
 		case CMD_RUN:
 		default:
 			/* get the path to the app and it's working directory */
-			if (instproxy_client_start_service(device, &instproxy_client, "idevicerun") != INSTPROXY_E_SUCCESS) {
+			if (instproxy_client_start_service(device, &instproxy_client, TOOL_NAME) != INSTPROXY_E_SUCCESS) {
 				fprintf(stderr, "Could not start installation proxy service.\n");
 				goto cleanup;
 			}
@@ -319,7 +337,7 @@ int main(int argc, char *argv[])
 
 			if (container && (plist_get_node_type(container) == PLIST_STRING)) {
 				plist_get_string_val(container, &working_directory);
-				debug_info("working_directory: %s\n", working_directory);
+				log_debug("working_directory: %s\n", working_directory);
 				plist_free(container);
 			} else {
 				plist_free(container);
@@ -328,7 +346,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* start and connect to debugserver */
-			if (debugserver_client_start_service(device, &debugserver_client, "idevicerun") != DEBUGSERVER_E_SUCCESS) {
+			if (debugserver_client_start_service(device, &debugserver_client, TOOL_NAME) != DEBUGSERVER_E_SUCCESS) {
 				fprintf(stderr,
 					"Could not start com.apple.debugserver!\n"
 					"Please make sure to mount the developer disk image first:\n"
@@ -340,9 +358,9 @@ int main(int argc, char *argv[])
 
 			/* enable logging for the session in debug mode */
 			if (debug_level) {
-				debug_info("Setting logging bitmask...");
+				log_debug("Setting logging bitmask...");
 				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS", 0, NULL, &command);
-				dres = debugserver_client_send_command(debugserver_client, command, &response);
+				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
 				command = NULL;
 				if (response) {
@@ -356,11 +374,11 @@ int main(int argc, char *argv[])
 			}
 
 			/* set maximum packet size */
-			debug_info("Setting maximum packet size...");
+			log_debug("Setting maximum packet size...");
 			char* packet_size[2] = {strdup("1024"), NULL};
 			debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
 			free(packet_size[0]);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
@@ -373,10 +391,10 @@ int main(int argc, char *argv[])
 			}
 
 			/* set working directory */
-			debug_info("Setting working directory...");
+			log_debug("Setting working directory...");
 			char* working_dir[2] = {working_directory, NULL};
 			debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
@@ -390,23 +408,23 @@ int main(int argc, char *argv[])
 
 			/* set environment */
 			if (environment) {
-				debug_info("Setting environment...");
+				log_debug("Setting environment...");
 				for (environment_index = 0; environment_index < environment_count; environment_index++) {
-					debug_info("setting environment variable: %s", environment[environment_index]);
+					log_debug("setting environment variable: %s", environment[environment_index]);
 					debugserver_client_set_environment_hex_encoded(debugserver_client, environment[environment_index], NULL);
 				}
 			}
 
 			/* set arguments and run app */
-			debug_info("Setting argv...");
+			log_debug("Setting argv...");
 			i++; /* i is the offset of the bundle identifier, thus skip it */
 			int app_argc = (argc - i + 2);
 			char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
 			app_argv[0] = path;
-			debug_info("app_argv[%d] = %s", 0, app_argv[0]);
+			log_debug("app_argv[%d] = %s", 0, app_argv[0]);
 			app_argc = 1;
 			while (i < argc && argv && argv[i]) {
-				debug_info("app_argv[%d] = %s", app_argc, argv[i]);
+				log_debug("app_argv[%d] = %s", app_argc, argv[i]);
 				app_argv[app_argc++] = argv[i];
 				i++;
 			}
@@ -415,9 +433,9 @@ int main(int argc, char *argv[])
 			free(app_argv);
 
 			/* check if launch succeeded */
-			debug_info("Checking if launch succeeded...");
+			log_debug("Checking if launch succeeded...");
 			debugserver_command_new("qLaunchSuccess", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
@@ -430,9 +448,9 @@ int main(int argc, char *argv[])
 			}
 
 			/* set thread */
-			debug_info("Setting thread...");
+			log_debug("Setting thread...");
 			debugserver_command_new("Hc0", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
@@ -445,22 +463,22 @@ int main(int argc, char *argv[])
 			}
 
 			/* continue running process */
-			debug_info("Continue running process...");
+			log_debug("Continue running process...");
 			debugserver_command_new("c", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 
 			/* main loop which is parsing/handling packets during the run */
-			debug_info("Entering run loop...");
+			log_debug("Entering run loop...");
 			while (!quit_flag) {
 				if (dres != DEBUGSERVER_E_SUCCESS) {
-					debug_info("failed to receive response");
+					log_debug("failed to receive response");
 					break;
 				}
 
 				if (response) {
-					debug_info("response: %s", response);
+					log_debug("response: %s", response);
 					dres = debugserver_client_handle_response(debugserver_client, &response, 1);
 				}
 
@@ -468,9 +486,9 @@ int main(int argc, char *argv[])
 			}
 
 			/* kill process after we finished */
-			debug_info("Killing process...");
+			log_debug("Killing process...");
 			debugserver_command_new("k", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response);
+			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {

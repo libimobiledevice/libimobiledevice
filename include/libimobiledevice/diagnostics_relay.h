@@ -42,9 +42,11 @@ typedef enum {
 	DIAGNOSTICS_RELAY_E_UNKNOWN_ERROR   = -256
 } diagnostics_relay_error_t;
 
-#define DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT (1 << 1)
-#define DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS        (1 << 2)
-#define DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL        (1 << 3)
+typedef enum {
+    DIAGNOSTICS_RELAY_ACTION_FLAG_WAIT_FOR_DISCONNECT = 1 << 1,
+    DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_PASS = 1 << 2,
+    DIAGNOSTICS_RELAY_ACTION_FLAG_DISPLAY_FAIL = 1 << 3
+} diagnostics_relay_action_t;
 
 #define DIAGNOSTICS_RELAY_REQUEST_TYPE_ALL                "All"
 #define DIAGNOSTICS_RELAY_REQUEST_TYPE_WIFI               "WiFi"
@@ -136,7 +138,7 @@ diagnostics_relay_error_t diagnostics_relay_sleep(diagnostics_relay_client_t cli
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, int flags);
+diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t client, diagnostics_relay_action_t flags);
 
 /**
  * Shutdown of the device and optionally show a user notification.
@@ -153,7 +155,7 @@ diagnostics_relay_error_t diagnostics_relay_restart(diagnostics_relay_client_t c
  *  DIAGNOSTICS_RELAY_E_PLIST_ERROR if the device did not acknowledge the
  *  request
  */
-diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, int flags);
+diagnostics_relay_error_t diagnostics_relay_shutdown(diagnostics_relay_client_t client, diagnostics_relay_action_t flags);
 
 /**
  * Shutdown of the device and optionally show a user notification.
@@ -174,7 +176,7 @@ diagnostics_relay_error_t diagnostics_relay_request_diagnostics(diagnostics_rela
 
 diagnostics_relay_error_t diagnostics_relay_query_mobilegestalt(diagnostics_relay_client_t client, plist_t keys, plist_t* result);
 
-diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* name, const char* class, plist_t* result);
+diagnostics_relay_error_t diagnostics_relay_query_ioregistry_entry(diagnostics_relay_client_t client, const char* entry_name, const char* entry_class, plist_t* result);
 
 diagnostics_relay_error_t diagnostics_relay_query_ioregistry_plane(diagnostics_relay_client_t client, const char* plane, plist_t* result);
 
