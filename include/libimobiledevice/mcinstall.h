@@ -4,8 +4,7 @@
  * \internal
  *
  *  Copyright (c) 2020 Ethan Carlson All Rights Reserved.
- * Copyright (c) 2013-2014 Martin Szulecki All Rights Reserved.
- * Copyright (c) 2012 Nikias Bassen All Rights Reserved.
+ * Uses base code from mcinstall.h Copyright Nikias Bassen and Martin Szulecki
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

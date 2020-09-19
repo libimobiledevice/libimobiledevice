@@ -4,7 +4,7 @@
  *   to/from idevices
  *
  * Copyright (c) 2020 Ethan Carlson, All Rights Reserved.
- * Copyright (c) 2012-2016 Nikias Bassen, All Rights Reserved.
+ * Uses base code from ideviceprovision.c Copyright Nikias Bassen
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,13 +58,13 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("Where COMMAND is one of:\n");
 	printf("  install FILE\t\tInstalls the mobileconfig profile specified by FILE.\n");
-	printf("              \t\tA valid .mobileconfig file is expected.\n");
-	printf("  list\t\tGet a list of all mobileconfig profiles on the device.\n");
-    printf("  remove ID\t\tDump all mobileconfig profiles from the device.\n");
-    printf("           \t\tWhere ID is the profile ID of the profile to be removed\n");
-    printf("           \t\tUse list option to get the ID of the profile.\n");
-	printf("  installDEP FILE\t\tInstalls DEP Configuration specified by FILE.\n");
-	printf("           \t\tA valid .CloudConfig file is expected.\n");
+	printf("              \t\t\tA valid .mobileconfig file is expected.\n");
+	printf("  list\t\t\tGet a list of all mobileconfig profiles on the device.\n");
+    printf("  remove ID\t\tRemove configuration profile specified by ID.\n");
+    printf("           \t\t\tWhere ID is the profile ID of the profile to be removed\n");
+    printf("           \t\t\t(Use list option to get the ID of the profile.)\n");
+	printf("  installDEP FILE\tInstalls DEP Configuration specified by FILE.\n");
+	printf("           \t\t\tA valid .plist file is expected.\n");
 	printf("  dumpDEP\t\tPrints the DEP Configuration present on the device.\n");
     printf("  download\t\tDownloads DEP Enrollment profile to device.\n");
 	printf("\n");

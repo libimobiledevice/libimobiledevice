@@ -3,6 +3,7 @@
  * com.apple.mobile.MCInstall service implementation.
  *
  * Copyright (c) 2020 Ethan Carlson, All Rights Reserved.
+ * Uses base code from misagent.c Copyright Nikias Bassen
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
