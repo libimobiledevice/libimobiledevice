@@ -1307,6 +1307,7 @@ static lockdownd_error_t lockdownd_do_start_service(lockdownd_client_t client, c
 			*service = (lockdownd_service_descriptor_t)malloc(sizeof(struct lockdownd_service_descriptor));
 		(*service)->port = 0;
 		(*service)->ssl_enabled = 0;
+		(*service)->identifier = strdup(identifier);
 
 		/* read service port number */
 		plist_t node = plist_dict_get_item(dict, "Port");
@@ -1511,8 +1512,10 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_data_classes_free(char **classe
 
 LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor_t service)
 {
-	if (service)
+	if (service) {
+		free(service->identifier);
 		free(service);
+	}
 
 	return LOCKDOWN_E_SUCCESS;
 }

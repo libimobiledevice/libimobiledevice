@@ -96,6 +96,7 @@ typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
 struct lockdownd_service_descriptor {
 	uint16_t port;
 	uint8_t ssl_enabled;
+	char* identifier;
 };
 typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
 
