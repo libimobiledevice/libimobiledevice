@@ -128,7 +128,6 @@ int main(int argc, char *argv[])
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int simple = 0;
-    int modifyFlag = 0;
 	int format = FORMAT_KEY_VALUE;
 	const char* udid = NULL;
 	int use_network = 0;
@@ -137,7 +136,6 @@ int main(int argc, char *argv[])
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
-    char *setValue = NULL;
 
 	int c = 0;
 	const struct option longopts[] = {
@@ -150,7 +148,6 @@ int main(int argc, char *argv[])
 		{ "simple", no_argument, NULL, 's' },
 		{ "xml", no_argument, NULL, 'x' },
 		{ "version", no_argument, NULL, 'v' },
-        { "modify", required_argument, NULL, 'm'},
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -158,7 +155,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxvm:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -202,22 +199,6 @@ int main(int argc, char *argv[])
 		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
-        case 'm':
-            if (!*optarg) {
-                fprintf(stderr, "ERROR: 'm' must not be empty!\n");
-                return 2;
-            }
-            else if (!strcmp(optarg, "true")) {
-                modifyFlag = 3;
-            }
-            else if (!strcmp(optarg, "false")) {
-                modifyFlag = 2;
-            }
-            else {
-                modifyFlag = 1;
-                setValue = optarg;
-            }
-            break;
 		default:
 			print_usage(argc, argv, 1);
 			return 2;
@@ -250,25 +231,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* run query and output information */
-    if(modifyFlag == 1){
-        printf("Attempting Opperation\n");
-        if(lockdownd_set_value(client, domain, key, plist_new_string(setValue)) == LOCKDOWN_E_SUCCESS) {
-                printf("Success\n");
-        }
-    }
-    else if(modifyFlag == 2){
-        printf("Attempting Opperation\n");
-        if(lockdownd_set_value(client, domain, key, plist_new_bool(0)) == LOCKDOWN_E_SUCCESS) {
-            printf("Success\n");
-        }
-    }
-    else if(modifyFlag == 3){
-        printf("Attempting Opperation\n");
-        if(lockdownd_set_value(client, domain, key, plist_new_bool(1)) == LOCKDOWN_E_SUCCESS) {
-            printf("Success\n");
-        }
-    }
-	else if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
+	if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
 		if (node) {
 			switch (format) {
 			case FORMAT_XML:
