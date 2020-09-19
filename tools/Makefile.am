@@ -30,6 +30,7 @@ bin_PROGRAMS = \
 	idevicedate \
 	idevicebackup \
 	idevicebackup2 \
+	ideviceprofile \
 	ideviceprovision \
 	idevicedebugserverproxy \
 	idevicediagnostics \
@@ -92,6 +93,11 @@ idevicedate_SOURCES = idevicedate.c
 idevicedate_CFLAGS = $(AM_CFLAGS)
 idevicedate_LDFLAGS = $(AM_LDFLAGS)
 idevicedate_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
+
+ideviceprofile_SOURCES = ideviceprofile.c
+ideviceprofile_CFLAGS = $(AM_CFLAGS)
+ideviceprofile_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+ideviceprofile_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceprovision_SOURCES = ideviceprovision.c
 ideviceprovision_CFLAGS = $(AM_CFLAGS)

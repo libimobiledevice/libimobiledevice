@@ -1428,6 +1428,8 @@ static void print_usage(int argc, char **argv)
 	printf("  changepw [OLD NEW]  change backup password on target device\n");
 	printf("    NOTE: passwords will be requested in interactive mode if omitted\n");
 	printf("  cloud on|off\tenable or disable cloud use (requires iCloud account)\n");
+	printf("  erase\ttErase device using mobile obliteration.\n");
+	printf("        \t\t(This is the same process used by erase all content and settings)\n");
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
