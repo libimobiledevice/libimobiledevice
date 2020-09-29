@@ -548,9 +548,11 @@ static int write_restore_applications(plist_t info_plist, afc_client_t afc)
 	uint32_t applications_plist_xml_length = 0;
 
 	plist_t applications_plist = plist_dict_get_item(info_plist, "Applications");
-	if (applications_plist) {
-		plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
+	if (!applications_plist) {
+		printf("No Applications in Info.plist, skipping creation of RestoreApplications.plist\n");
+		return 0;
 	}
+	plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
 	if (!applications_plist_xml) {
 		printf("Error preparing RestoreApplications.plist\n");
 		goto leave;
