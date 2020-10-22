@@ -197,7 +197,7 @@ static void print_usage(int argc, char **argv)
 	printf("The following OPTIONS are accepted:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -n, --network\t\tconnect to network device\n");
-	printf("      --disconnect\tOnce the app is running disconnect andlet the app alive.\n");
+	printf("      --disconnect\tOnce the app is running, disconnect and let the app live\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
