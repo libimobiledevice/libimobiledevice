@@ -527,7 +527,10 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_send((int)(long)connection->data, data, len, sent_bytes);
+		int res;
+		do {
+			res = usbmuxd_send((int)(long)connection->data, data, len, sent_bytes);
+		} while (res == -EAGAIN);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
