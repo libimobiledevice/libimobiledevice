@@ -56,6 +56,9 @@
 #include <windows.h>
 #include <conio.h>
 #define sleep(x) Sleep(x*1000)
+#ifndef ELOOP
+#define ELOOP 114
+#endif
 #else
 #include <termios.h>
 #include <sys/statvfs.h>
@@ -742,8 +745,18 @@ static int errno_to_device_error(int errno_value)
 			return -6;
 		case EEXIST:
 			return -7;
+		case ENOTDIR:
+			return -8;
+		case EISDIR:
+			return -9;
+		case ELOOP:
+			return -10;
+		case EIO:
+			return -11;
+		case ENOSPC:
+			return -15;
 		default:
-			return -errno_value;
+			return -1;
 	}
 }
 
