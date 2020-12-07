@@ -197,7 +197,7 @@ static void print_usage(int argc, char **argv)
 	printf("The following OPTIONS are accepted:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
 	printf("  -n, --network\t\tconnect to network device\n");
-	printf("      --disconnect\tOnce the app is running, disconnect and let the app live\n");
+	printf("      --detach\t\tdetach from app after launch, keeping it running\n");
 	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
 	printf("  -d, --debug\t\tenable communication debugging\n");
 	printf("  -h, --help\t\tprints usage information\n");
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 	int cmd = CMD_NONE;
 	const char* udid = NULL;
 	int use_network = 0;
-	int disconnect_after_start = 0;
+	int detach_after_start = 0;
 	const char* bundle_identifier = NULL;
 	char* path = NULL;
 	char* working_directory = NULL;
@@ -256,8 +256,8 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
-		} else if (!strcmp(argv[i], "--disconnect")) {
-			disconnect_after_start = 1;
+		} else if (!strcmp(argv[i], "--detach")) {
+			detach_after_start = 1;
 			continue;
 		} else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
 			i++;
@@ -452,8 +452,8 @@ int main(int argc, char *argv[])
 				response = NULL;
 			}
 
-			if (disconnect_after_start) {
-				log_debug("Disconnecting from app");
+			if (detach_after_start) {
+				log_debug("Detaching from app");
 				debugserver_command_new("D", 0, NULL, &command);
 				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
