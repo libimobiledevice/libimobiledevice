@@ -2252,6 +2252,11 @@ checkpoint:
 					plist_t freespace_item = plist_new_uint(freespace);
 					mobilebackup2_send_status_response(mobilebackup2, res, NULL, freespace_item);
 					plist_free(freespace_item);
+				} else if (!strcmp(dlmsg, "DLMessagePurgeDiskSpace")) {
+					/* device wants to purge disk space on the host - not supported */
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, -1, "Operation not supported", empty_dict);
+					plist_free(empty_dict);
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
 					mb2_handle_list_directory(mobilebackup2, message, backup_directory);
