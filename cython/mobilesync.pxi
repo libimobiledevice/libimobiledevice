@@ -62,7 +62,7 @@ cdef class MobileSyncError(BaseError):
             MOBILESYNC_E_INVALID_ARG: "Invalid argument",
             MOBILESYNC_E_PLIST_ERROR: "Property list error",
             MOBILESYNC_E_MUX_ERROR: "MUX error",
-            MOBILESYNC_E_SSL_ERROR: "SSL eror",
+            MOBILESYNC_E_SSL_ERROR: "SSL error",
             MOBILESYNC_E_RECEIVE_TIMEOUT: "Receive timeout",
             MOBILESYNC_E_BAD_VERSION: "Bad version",
             MOBILESYNC_E_SYNC_REFUSED: "Sync refused",
