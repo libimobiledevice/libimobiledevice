@@ -472,7 +472,7 @@ static void plist_node_print_to_stream(plist_t node, int* indent_level, FILE* st
 	case PLIST_DATE:
 		plist_get_date_val(node, (int32_t*)&tv.tv_sec, (int32_t*)&tv.tv_usec);
 		{
-			time_t ti = (time_t)tv.tv_sec;
+			time_t ti = (time_t)tv.tv_sec + MAC_EPOCH;
 			struct tm *btime = localtime(&ti);
 			if (btime) {
 				s = (char*)malloc(24);
