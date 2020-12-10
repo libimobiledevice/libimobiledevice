@@ -29,7 +29,7 @@ to:
 * Backup and restore the device in a native way compatible with iTunes
 * Manage app icons arrangement on the device
 * Install, remove, list and basically manage apps
-* Activate a device using official serviers
+* Activate a device using official servers
 * Manage contacts, calendars, notes and bookmarks
 * Retrieve and remove crashreports
 * Retrieve various diagnostics information
