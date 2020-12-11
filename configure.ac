@@ -62,6 +62,9 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
   fi
 fi
 
+# idevicescreenshot uses floor
+AC_CHECK_LIB([m],[floor])
+
 # Check for operating system
 AC_MSG_CHECKING([for platform-specific build settings])
 case ${host_os} in

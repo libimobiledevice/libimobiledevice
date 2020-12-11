@@ -80,7 +80,7 @@ ideviceimagemounter_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicescreenshot_SOURCES = idevicescreenshot.c
 idevicescreenshot_CFLAGS = $(AM_CFLAGS)
-idevicescreenshot_LDFLAGS = $(AM_LDFLAGS)
+idevicescreenshot_LDFLAGS = $(AM_LDFLAGS) -lm
 idevicescreenshot_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceenterrecovery_SOURCES = ideviceenterrecovery.c
