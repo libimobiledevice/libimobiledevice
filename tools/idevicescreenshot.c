@@ -29,7 +29,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <math.h>
 #include <time.h>
 #include <unistd.h>
 #ifndef WIN32
@@ -121,17 +120,21 @@ int main(int argc, char **argv)
 			uint64_t imgsize = 0;
 			if (screenshotr_take_screenshot(shotr, &imgdata, &imgsize) == SCREENSHOTR_E_SUCCESS) {
 				get_image_filename(imgdata, &filename);
-				FILE *f = fopen(filename, "wb");
-				if (f) {
-					if (fwrite(imgdata, 1, (size_t)imgsize, f) == (size_t)imgsize) {
-						printf("Screenshot saved to %s\n", filename);
-						result = 0;
-					} else {
-						printf("Could not save screenshot to file %s!\n", filename);
-					}
-					fclose(f);
+				if (!filename) {
+					printf("FATAL: Could not find a unique filename!\n");
 				} else {
-					printf("Could not open %s for writing: %s\n", filename, strerror(errno));
+					FILE *f = fopen(filename, "wb");
+					if (f) {
+						if (fwrite(imgdata, 1, (size_t)imgsize, f) == (size_t)imgsize) {
+							printf("Screenshot saved to %s\n", filename);
+							result = 0;
+						} else {
+							printf("Could not save screenshot to file %s!\n", filename);
+						}
+						fclose(f);
+					} else {
+						printf("Could not open %s for writing: %s\n", filename, strerror(errno));
+					}
 				}
 			} else {
 				printf("Could not get screenshot!\n");
@@ -179,6 +182,7 @@ void get_image_filename(char *imgdata, char **filename)
 		basename = (char*)malloc(strlen(*filename) + 1);
 		strcpy(basename, *filename);
 		free(*filename);
+		*filename = NULL;
 	} else {
 		time_t now = time(NULL);
 		basename = (char*)malloc(32);
@@ -186,15 +190,19 @@ void get_image_filename(char *imgdata, char **filename)
 	}
 
 	// Ensure the filename is unique on disk.
-	char *unique_filename = (char*)malloc(strlen(basename) + strlen(fileext) + 1);
+	char *unique_filename = (char*)malloc(strlen(basename) + strlen(fileext) + 7);
 	sprintf(unique_filename, "%s%s", basename, fileext);
 	int i;
-	for (i = 2; access(unique_filename, F_OK) != -1; i++) {
-		free(unique_filename);
-		unique_filename = (char*)malloc(strlen(basename) + strlen(fileext) + floor(log10(i)) + 3);
+	for (i = 2; i < (1 << 16); i++) {
+		if (access(unique_filename, F_OK) == -1) {
+			*filename = unique_filename;
+			break;
+		}
 		sprintf(unique_filename, "%s-%d%s", basename, i, fileext);
 	}
-	*filename = unique_filename;
+	if (!*filename) {
+		free(unique_filename);
+	}
 	free(basename);
 }
 
