@@ -127,6 +127,14 @@ static void TEXT_COLOR(WORD attr)
 #define TEXT_COLOR(x) if (use_colors) { fwrite(x, 1, sizeof(x)-1, stdout); }
 #endif
 
+// Enum to identify the type of line depending on date format
+typedef enum 
+{
+  NO_DATA_LINE,
+  SHORT_DATE_LINE,
+  LONG_DATE_LINE
+} LineType; 
+
 static void add_filter(const char* filterstr)
 {
 	int filter_len = strlen(filterstr);
@@ -181,6 +189,21 @@ static int find_char(char c, char** p, char* end)
 
 static void stop_logging(void);
 
+static LineType get_line_type(char* input)
+{
+	LineType type = NO_DATA_LINE; // Default value
+
+        if(!input) return type;
+
+	if (line[3] == ' ' && line[6] == ' ') 
+	{
+        	if(line[15] == ' ')       type = SHORT_DATE_LINE;
+                else if(line[19] == ' ')  type = LONG_DATE_LINE;
+	}
+
+	return type;
+}
+
 static void syslog_callback(char c, void *user_data)
 {
 	if (lp >= line_buffer_size-1) {
@@ -194,6 +217,7 @@ static void syslog_callback(char c, void *user_data)
 	}
 	line[lp++] = c;
 	if (c == '\0') {
+		LineType lineType = NO_DATA_LINE;
 		int shall_print = 0;
 		int trigger_off = 0;
 		lp--;
@@ -203,9 +227,19 @@ static void syslog_callback(char c, void *user_data)
 				shall_print = 1;
 				TEXT_COLOR(COLOR_WHITE);
 				break;
-			} else if (line[3] == ' ' && line[6] == ' ' && line[15] == ' ') {
+			  //} else if (line[3] == ' ' && line[6] == ' ' && line[15] == ' ') {
+			} else if ((lineType=get_line_type(line)) != NO_DATA_LINE) {
 				char* end = &line[lp];
-				char* p = &line[16];
+				int start_data_pos = 16;
+
+				// Depending on the line type we define the start position
+				// Default = 16 for SHORT_DATE_LINE -> When LONG_DATE_LINE modify default
+				// HH:MM:SS -> HH:MM:SS:mmm -> 20
+				if(lineType == LONG_DATE_LINE)
+					start_data_pos = 20;
+
+				// Define data start
+				char* p = &line[start_data_pos];
 
 				/* device name */
 				char* device_name_start = p;
@@ -354,7 +388,9 @@ static void syslog_callback(char c, void *user_data)
 
 				/* write date and time */
 				TEXT_COLOR(COLOR_DARK_WHITE);
-				fwrite(line, 1, 16, stdout);
+				//fwrite(line, 1, 16, stdout);
+				// Use now the suitable position depending on input format
+				fwrite(line, 1, start_data_pos, stdout);
 
 				if (show_device_name) {
 					/* write device name */
