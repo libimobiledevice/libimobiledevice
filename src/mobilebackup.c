@@ -34,7 +34,7 @@
 #define MBACKUP_VERSION_INT1 100
 #define MBACKUP_VERSION_INT2 0
 
-#define IS_FLAG_SET(x, y) ((x & y) == y)
+#define IS_FLAG_SET(x, y) (((x) & (y)) == (y))
 
 /**
  * Convert an device_link_service_error_t value to an mobilebackup_error_t value.
