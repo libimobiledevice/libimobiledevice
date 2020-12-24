@@ -1154,9 +1154,8 @@ int main(int argc, char *argv[])
 				if ((!is_manifest)) {
 					if (hunk_index == 0 && file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) {
 							print_progress(100);
-					} else {
-						if (file_size > 0)
-							print_progress((double)((file_size_current*100)/file_size));
+					} else if (file_size > 0) {
+							print_progress((double)(file_size_current*100)/file_size);
 					}
 				}
 
