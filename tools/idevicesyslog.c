@@ -119,7 +119,7 @@ static void add_filter(const char* filterstr)
 	}
 }
 
-static int find_char(char c, char** p, char* end)
+static int find_char(char c, char** p, const char* end)
 {
 	while ((**p != c) && (*p < end)) {
 		(*p)++;
