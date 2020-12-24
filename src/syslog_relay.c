@@ -154,16 +154,15 @@ void *syslog_relay_worker(void *arg)
 		ret = syslog_relay_receive_with_timeout(srwt->client, &c, 1, &bytes, 100);
 		if (ret == SYSLOG_RELAY_E_TIMEOUT || ret == SYSLOG_RELAY_E_NOT_ENOUGH_DATA || ((bytes == 0) && (ret == SYSLOG_RELAY_E_SUCCESS))) {
 			continue;
-		} else if (ret < 0) {
+		}
+		if (ret < 0) {
 			debug_info("Connection to syslog relay interrupted");
 			break;
 		}
 		if (srwt->is_raw) {
 			srwt->cbfunc(c, srwt->user_data);
-		} else {
-			if (c != 0) {
-				srwt->cbfunc(c, srwt->user_data);
-			}
+		} else if (c != 0) {
+			srwt->cbfunc(c, srwt->user_data);
 		}
 	}
 

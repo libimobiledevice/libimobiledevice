@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -321,11 +321,11 @@ int main(int argc, char *argv[])
 			udid = argv[i];
 			continue;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "install")) {
+		if (!strcmp(argv[i], "install")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 			op = OP_INSTALL;
 			continue;
 		}
-		else if (!strcmp(argv[i], "list")) {
+		if (!strcmp(argv[i], "list")) {
 			op = OP_LIST;
 		}
 		else if (!strcmp(argv[i], "copy")) {
@@ -434,7 +434,9 @@ int main(int argc, char *argv[])
 		plist_free(pl);
 
 		return res;
-	} else if (op == OP_COPY) {
+	}
+
+	if (op == OP_COPY) {
 		struct stat st;
 		const char *checkdir = (param2) ? param2 : param;
 		if ((stat(checkdir, &st) < 0) || !S_ISDIR(st.st_mode)) {

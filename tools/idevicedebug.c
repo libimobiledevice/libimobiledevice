@@ -244,7 +244,8 @@ int main(int argc, char *argv[])
 			debug_level++;
 			idevice_set_debug_level(debug_level);
 			continue;
-		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		}
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -253,13 +254,16 @@ int main(int argc, char *argv[])
 			}
 			udid = argv[i];
 			continue;
-		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		}
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
-		} else if (!strcmp(argv[i], "--detach")) {
+		}
+		if (!strcmp(argv[i], "--detach")) {
 			detach_after_start = 1;
 			continue;
-		} else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
+		}
+		if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
 			i++;
 			if (!argv[i] || (strlen(argv[i]) <= 1) || strchr(argv[i], '=') == NULL) {
 				print_usage(argc, argv);
@@ -274,15 +278,18 @@ int main(int argc, char *argv[])
 			newlist[environment_count++] = strdup(argv[i]);
 			environment = newlist;
 			continue;
-		} else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		}
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			res = 0;
 			goto cleanup;
-		} else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		}
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			res = 0;
 			goto cleanup;
-		} else if (!strcmp(argv[i], "run")) {
+		}
+		if (!strcmp(argv[i], "run")) {
 			cmd = CMD_RUN;
 
 			i++;
@@ -296,11 +303,11 @@ int main(int argc, char *argv[])
 			/*  read bundle identifier */
 			bundle_identifier = argv[i];
 			break;
-		} else {
-			print_usage(argc, argv);
-			res = 0;
-			goto cleanup;
 		}
+
+		print_usage(argc, argv);
+		res = 0;
+		goto cleanup;
 	}
 
 	if (environment) {

@@ -203,7 +203,9 @@ static void syslog_callback(char c, void *user_data)
 				shall_print = 1;
 				TEXT_COLOR(COLOR_WHITE);
 				break;
-			} else if (line[3] == ' ' && line[6] == ' ' && line[15] == ' ') {
+			}
+
+			if (line[3] == ' ' && line[6] == ' ' && line[15] == ' ') {
 				char* end = &line[lp];
 				char* p = &line[16];
 
@@ -242,10 +244,10 @@ static void syslog_callback(char c, void *user_data)
 					if (!found) {
 						shall_print = 0;
 						break;
-					} else {
-						triggered = 1;
-						shall_print = 1;
 					}
+
+					triggered = 1;
+					shall_print = 1;
 				} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
 					shall_print = 0;
 					quit_flag++;
@@ -265,9 +267,9 @@ static void syslog_callback(char c, void *user_data)
 					if (!found) {
 						shall_print = 0;
 						break;
-					} else {
-						shall_print = 1;
 					}
+
+					shall_print = 1;
 				}
 
 				/* process name */
@@ -486,7 +488,8 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 {
 	if (use_network && event->conn_type != CONNECTION_NETWORK) {
 		return;
-	} else if (!use_network && event->conn_type != CONNECTION_USBMUXD) {
+	}
+	if (!use_network && event->conn_type != CONNECTION_USBMUXD) {
 		return;
 	}
 	if (event->event == IDEVICE_DEVICE_ADD) {
@@ -721,7 +724,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "ERROR: -p and -e/-q cannot be used together.\n");
 		print_usage(argc, argv, 1);
 		return 2;
-	} else if (include_filter > 0 && exclude_kernel > 0) {
+	}
+	if (include_filter > 0 && exclude_kernel > 0) {
 		fprintf(stderr, "ERROR: -p and -K cannot be used together.\n");
 		print_usage(argc, argv, 1);
 		return 2;
@@ -768,9 +772,9 @@ int main(int argc, char *argv[])
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
 			return -1;
-		} else {
-			fprintf(stderr, "Waiting for device with UDID %s to become available...\n", udid);
 		}
+
+		fprintf(stderr, "Waiting for device with UDID %s to become available...\n", udid);
 	}
 
 	line_buffer_size = 1024;

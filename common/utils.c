@@ -236,9 +236,8 @@ char *generate_uuid()
 		if (i == 8 || i == 13 || i == 18 || i == 23) {
 			uuid[i] = '-';
 			continue;
-		} else {
-			uuid[i] = chars[get_rand(0, 16)];
 		}
+		uuid[i] = chars[get_rand(0, 16)];
 	}
 
 	/* make it a real string */
