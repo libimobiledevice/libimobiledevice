@@ -1456,7 +1456,7 @@ static void print_usage(int argc, char **argv)
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
-#define DEVICE_VERSION(maj, min, patch) (((maj & 0xFF) << 16) | ((min & 0xFF) << 8) | (patch & 0xFF))
+#define DEVICE_VERSION(maj, min, patch) ((((maj) & 0xFF) << 16) | (((min) & 0xFF) << 8) | ((patch) & 0xFF))
 
 int main(int argc, char *argv[])
 {

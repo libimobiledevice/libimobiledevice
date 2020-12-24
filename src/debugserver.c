@@ -231,10 +231,10 @@ static char debugserver_int2hex(int x)
 	return hexchars[x];
 }
 
-#define DEBUGSERVER_HEX_ENCODE_FIRST_BYTE(byte) debugserver_int2hex((byte >> 0x4) & 0xf)
-#define DEBUGSERVER_HEX_ENCODE_SECOND_BYTE(byte) debugserver_int2hex(byte & 0xf)
-#define DEBUGSERVER_HEX_DECODE_FIRST_BYTE(byte) ((byte >> 0x4) & 0xf)
-#define DEBUGSERVER_HEX_DECODE_SECOND_BYTE(byte) (byte & 0xf)
+#define DEBUGSERVER_HEX_ENCODE_FIRST_BYTE(byte) debugserver_int2hex(((byte) >> 0x4) & 0xf)
+#define DEBUGSERVER_HEX_ENCODE_SECOND_BYTE(byte) debugserver_int2hex((byte) & 0xf)
+#define DEBUGSERVER_HEX_DECODE_FIRST_BYTE(byte) (((byte) >> 0x4) & 0xf)
+#define DEBUGSERVER_HEX_DECODE_SECOND_BYTE(byte) ((byte) & 0xf)
 
 static uint32_t debugserver_get_checksum_for_buffer(const char* buffer, uint32_t size)
 {

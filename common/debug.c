@@ -46,7 +46,7 @@ void internal_set_debug_level(int level)
 	debug_level = level;
 }
 
-#define MAX_PRINT_LEN 16*1024
+#define MAX_PRINT_LEN (16*1024)
 
 #ifndef STRIP_DEBUG_CODE
 static void debug_print_line(const char *func, const char *file, int line, const char *buffer)
