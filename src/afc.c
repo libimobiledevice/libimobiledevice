@@ -234,7 +234,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	}
 
 	/* check if it's a valid AFC header */
-	if (strncmp(header.magic, AFC_MAGIC, AFC_MAGIC_LEN)) {
+	if (strncmp(header.magic, AFC_MAGIC, AFC_MAGIC_LEN) != 0) {
 		debug_info("Invalid AFC packet received (magic != " AFC_MAGIC ")!");
 	}
 

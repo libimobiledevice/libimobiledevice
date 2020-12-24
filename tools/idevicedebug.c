@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
 				debugserver_command_free(command);
 				command = NULL;
 				if (response) {
-					if (strncmp(response, "OK", 2)) {
+					if (strncmp(response, "OK", 2) != 0) {
 						debugserver_client_handle_response(debugserver_client, &response, 0);
 						goto cleanup;
 					}
@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != 0) {
 					debugserver_client_handle_response(debugserver_client, &response, 0);
 					goto cleanup;
 				}
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != 0) {
 					debugserver_client_handle_response(debugserver_client, &response, 0);
 					goto cleanup;
 				}
@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != 0) {
 					debugserver_client_handle_response(debugserver_client, &response, 0);
 					goto cleanup;
 				}
@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != 0) {
 					debugserver_client_handle_response(debugserver_client, &response, 0);
 					goto cleanup;
 				}
@@ -508,7 +508,7 @@ int main(int argc, char *argv[])
 			debugserver_command_free(command);
 			command = NULL;
 			if (response) {
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != 0) {
 					debugserver_client_handle_response(debugserver_client, &response, 0);
 					goto cleanup;
 				}

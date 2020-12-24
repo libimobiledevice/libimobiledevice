@@ -548,7 +548,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 	for ( i = 0; i < 20; i++, p += 2 ) {
 		snprintf (p, 3, "%02x", (unsigned char)fnhash[i] );
 	}
-	if (strcmp(fnamehash, hash)) {
+	if (strcmp(fnamehash, hash) != 0) {
 		printf("\r\n");
 		printf("WARNING: filename hash does not match for entry '%s'\n", hash);
 	}
@@ -559,7 +559,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 		plist_get_string_val(node, &auth_version);
 	}
 
-	if (strcmp(auth_version, "1.0")) {
+	if (strcmp(auth_version, "1.0") != 0) {
 		printf("\r\n");
 		printf("WARNING: Unknown AuthVersion '%s', DataHash cannot be verified!\n", auth_version);
 	}
