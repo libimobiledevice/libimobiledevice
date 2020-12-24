@@ -187,7 +187,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
  *         the callback thread could no be created.
  */
-np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
+np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *user_data);
 
 #ifdef __cplusplus
 }
