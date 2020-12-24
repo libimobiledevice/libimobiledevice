@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
 		debugserver_command_free(command);
 		command = NULL;
 		if (response) {
-			if (strncmp(response, "OK", 2)) {
+			if (strncmp(response, "OK", 2) != NULL) {
 				debugserver_client_handle_response(debugserver_client, &response, NULL);
 				goto cleanup;
 			}
@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
 	debugserver_command_free(command);
 	command = NULL;
 	if (response) {
-		if (strncmp(response, "OK", 2)) {
+		if (strncmp(response, "OK", 2) != NULL) {
 			debugserver_client_handle_response(debugserver_client, &response, NULL);
 			goto cleanup;
 		}
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 	debugserver_command_free(command);
 	command = NULL;
 	if (response) {
-		if (strncmp(response, "OK", 2)) {
+		if (strncmp(response, "OK", 2) != NULL) {
 			debugserver_client_handle_response(debugserver_client, &response, NULL);
 			goto cleanup;
 		}
@@ -480,7 +480,7 @@ int main(int argc, char *argv[])
 	debugserver_command_free(command);
 	command = NULL;
 	if (response) {
-		if (strncmp(response, "OK", 2)) {
+		if (strncmp(response, "OK", 2) != NULL) {
 			debugserver_client_handle_response(debugserver_client, &response, NULL);
 			goto cleanup;
 		}
@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
 		debugserver_command_free(command);
 		command = NULL;
 		if (response) {
-			if (strncmp(response, "OK", 2)) {
+			if (strncmp(response, "OK", 2) != NULL) {
 				debugserver_client_handle_response(debugserver_client, &response, NULL);
 				goto cleanup;
 			}
@@ -540,7 +540,7 @@ int main(int argc, char *argv[])
 
 			if (response) {
 				log_debug("response: %s", response);
-				if (strncmp(response, "OK", 2)) {
+				if (strncmp(response, "OK", 2) != NULL) {
 					dres = debugserver_client_handle_response(debugserver_client, &response, &res);
 					if (dres != DEBUGSERVER_E_SUCCESS) {
 						log_debug("failed to process response; error %d; %s", dres, response);
@@ -567,7 +567,7 @@ int main(int argc, char *argv[])
 		debugserver_command_free(command);
 		command = NULL;
 		if (response) {
-			if (strncmp(response, "OK", 2)) {
+			if (strncmp(response, "OK", 2) != NULL) {
 				debugserver_client_handle_response(debugserver_client, &response, NULL);
 			}
 			free(response);
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
 		debugserver_command_free(command);
 		command = NULL;
 		if (response) {
-			if (strncmp(response, "OK", 2)) {
+			if (strncmp(response, "OK", 2) != NULL) {
 				debugserver_client_handle_response(debugserver_client, &response, NULL);
 			}
 			free(response);

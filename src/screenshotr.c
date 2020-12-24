@@ -142,7 +142,7 @@ LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_take_screenshot(screenshotr
 	plist_t node = plist_dict_get_item(dict, "MessageType");
 	char *strval = NULL;
 	plist_get_string_val(node, &strval);
-	if (!strval || strcmp(strval, "ScreenShotReply")) {
+	if (!strval || strcmp(strval, "ScreenShotReply") != 0) {
 		debug_info("invalid screenshot data received!");
 		res = SCREENSHOTR_E_PLIST_ERROR;
 		goto leave;
