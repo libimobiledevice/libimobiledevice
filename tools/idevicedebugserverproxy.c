@@ -107,25 +107,25 @@ static void *thread_device_to_client(void *data)
 			if (recv_len == 0 && res == DEBUGSERVER_E_SUCCESS) {
 				// try again
 				continue;
-			} else {
-				fprintf(stderr, "recv failed: %s\n", strerror(errno));
+			}
+
+			fprintf(stderr, "recv failed: %s\n", strerror(errno));
+			break;
+		}
+
+		/* send to device */
+		debug("%s: sending data to client...\n", __func__);
+		sent = socket_send(socket_info->client_fd, buffer, recv_len);
+		if (sent < recv_len) {
+			if (sent <= 0) {
+				fprintf(stderr, "send failed: %s\n", strerror(errno));
 				break;
 			}
+
+			fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
 		} else {
-			/* send to device */
-			debug("%s: sending data to client...\n", __func__);
-			sent = socket_send(socket_info->client_fd, buffer, recv_len);
-			if (sent < recv_len) {
-				if (sent <= 0) {
-					fprintf(stderr, "send failed: %s\n", strerror(errno));
-					break;
-				} else {
-					fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
-				}
-			} else {
-				// sending succeeded, receive from device
-				debug("%s: pushed %d bytes to client\n", __func__, sent);
-			}
+			// sending succeeded, receive from device
+			debug("%s: pushed %d bytes to client\n", __func__, sent);
 		}
 	}
 
@@ -171,26 +171,25 @@ static void *thread_client_to_device(void *data)
 			if (recv_len == 0) {
 				/* try again */
 				continue;
-			} else {
-				fprintf(stderr, "Receive failed: %s\n", strerror(errno));
+			}
+
+			fprintf(stderr, "Receive failed: %s\n", strerror(errno));
+			break;
+		}
+		/* forward data to device */
+		debug("%s: sending data to device...\n", __func__);
+		res = debugserver_client_send(socket_info->debugserver_client, buffer, recv_len, (uint32_t*)&sent);
+
+		if (sent < recv_len || res != DEBUGSERVER_E_SUCCESS) {
+			if (sent <= 0) {
+				fprintf(stderr, "send failed: %s\n", strerror(errno));
 				break;
 			}
-		} else {
-			/* forward data to device */
-			debug("%s: sending data to device...\n", __func__);
-			res = debugserver_client_send(socket_info->debugserver_client, buffer, recv_len, (uint32_t*)&sent);
 
-			if (sent < recv_len || res != DEBUGSERVER_E_SUCCESS) {
-				if (sent <= 0) {
-					fprintf(stderr, "send failed: %s\n", strerror(errno));
-					break;
-				} else {
-					fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
-				}
-			} else {
-				// sending succeeded, receive from device
-				debug("%s: sent %d bytes to device\n", __func__, sent);
-			}
+			fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
+		} else {
+			// sending succeeded, receive from device
+			debug("%s: sent %d bytes to device\n", __func__, sent);
 		}
 	}
 
@@ -287,7 +286,7 @@ int main(int argc, char *argv[])
 			socket_set_verbose(3);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -296,26 +295,25 @@ int main(int argc, char *argv[])
 			udid = argv[i];
 			continue;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return EXIT_SUCCESS;
 		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return EXIT_SUCCESS;
 		}
-		else if (atoi(argv[i]) > 0) {
+		if (atoi(argv[i]) > 0) {
 			local_port = atoi(argv[i]);
 			continue;
 		}
-		else {
-			print_usage(argc, argv);
-			return EXIT_SUCCESS;
-		}
+
+		print_usage(argc, argv);
+		return EXIT_SUCCESS;
 	}
 
 	/* a PORT is mandatory */

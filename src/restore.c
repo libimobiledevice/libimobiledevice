@@ -268,29 +268,27 @@ LIBIMOBILEDEVICE_API restored_error_t restored_query_value(restored_client_t cli
 
 LIBIMOBILEDEVICE_API restored_error_t restored_get_value(restored_client_t client, const char *key, plist_t *value)
 {
+	plist_t item;
+
 	if (!client || !value || (value && *value))
 		return RESTORE_E_INVALID_ARG;
 
 	if (!client->info)
 		return RESTORE_E_NOT_ENOUGH_DATA;
 
-	restored_error_t ret = RESTORE_E_SUCCESS;
-	plist_t item = NULL;
-
 	if (!key) {
 		*value = plist_copy(client->info);
 		return RESTORE_E_SUCCESS;
-	} else {
-		item = plist_dict_get_item(client->info, key);
 	}
 
-	if (item) {
-		*value = plist_copy(item);
-	} else {
-		ret = RESTORE_E_PLIST_ERROR;
+	item = plist_dict_get_item(client->info, key);
+	if (!item) {
+		return RESTORE_E_PLIST_ERROR;
 	}
 
-	return ret;
+	*value = plist_copy(item);
+	free(item);
+	return RESTORE_E_SUCCESS;
 }
 
 LIBIMOBILEDEVICE_API restored_error_t restored_client_new(idevice_t device, restored_client_t *client, const char *label)

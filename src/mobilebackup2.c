@@ -240,9 +240,8 @@ LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_
 	if (sent > 0) {
 		*bytes = sent;
 		return MOBILEBACKUP2_E_SUCCESS;
-	} else {
-		return MOBILEBACKUP2_E_MUX_ERROR;
 	}
+	return MOBILEBACKUP2_E_MUX_ERROR;
 }
 
 LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
@@ -265,11 +264,11 @@ LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_raw(mobilebacku
 	if (received > 0) {
 		*bytes = received;
 		return MOBILEBACKUP2_E_SUCCESS;
-	} else if (received == 0) {
-		return MOBILEBACKUP2_E_SUCCESS;
-	} else {
-		return MOBILEBACKUP2_E_MUX_ERROR;
 	}
+	if (received == 0) {
+		return MOBILEBACKUP2_E_SUCCESS;
+	}
+	return MOBILEBACKUP2_E_MUX_ERROR;
 }
 
 LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version)

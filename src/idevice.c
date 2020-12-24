@@ -434,7 +434,8 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		new_connection->device = device;
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
-	} else if (device->conn_type == CONNECTION_NETWORK) {
+	}
+	if (device->conn_type == CONNECTION_NETWORK) {
 		struct sockaddr_storage saddr_storage;
 		struct sockaddr* saddr = (struct sockaddr*)&saddr_storage;
 
@@ -442,8 +443,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		if (((char*)device->conn_data)[1] == 0x02) { // AF_INET
 			saddr->sa_family = AF_INET;
 			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 14);
-		}
-		else if (((char*)device->conn_data)[1] == 0x1E) { // AF_INET6 (bsd)
+		} else if (((char*)device->conn_data)[1] == 0x1E) { // AF_INET6 (bsd)
 #ifdef AF_INET6
 			saddr->sa_family = AF_INET6;
 			/* copy the address and the host dependent scope id */
@@ -452,8 +452,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 			debug_info("ERROR: Got an IPv6 address but this system doesn't support IPv6");
 			return IDEVICE_E_UNKNOWN_ERROR;
 #endif
-		}
-		else {
+		} else {
 			debug_info("Unsupported address family 0x%02x", ((char*)device->conn_data)[1]);
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
@@ -482,10 +481,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		*connection = new_connection;
 
 		return IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", device->conn_type);
 	}
 
+	debug_info("Unknown connection type %d", device->conn_type);
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
@@ -536,7 +534,8 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
 		return IDEVICE_E_SUCCESS;
-	} else if (connection->type == CONNECTION_NETWORK) {
+	}
+	if (connection->type == CONNECTION_NETWORK) {
 		int s = socket_send((int)(long)connection->data, (void*)data, len);
 		if (s < 0) {
 			*sent_bytes = 0;
@@ -544,9 +543,9 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 		}
 		*sent_bytes = s;
 		return IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", connection->type);
 	}
+
+	debug_info("Unknown connection type %d", connection->type);
 	return IDEVICE_E_UNKNOWN_ERROR;
 
 }
@@ -564,7 +563,8 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 			int c = socket_check_fd((int)(long)connection->data, FDM_WRITE, 100);
 			if (c == 0 || c == -ETIMEDOUT || c == -EAGAIN) {
 				continue;
-			} else if (c < 0) {
+			}
+			if (c < 0) {
 				break;
 			}
 			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
@@ -590,24 +590,23 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 		}
 		*sent_bytes = sent;
 		return IDEVICE_E_SUCCESS;
-	} else {
-		uint32_t sent = 0;
-		while (sent < len) {
-			uint32_t bytes = 0;
-			int s = internal_connection_send(connection, data+sent, len-sent, &bytes);
-			if (s < 0) {
-				break;
-			}
-			sent += bytes;
-		}
-		debug_info("internal_connection_send %d, sent %d", len, sent);
-		if (sent < len) {
-			*sent_bytes = 0;
-			return IDEVICE_E_NOT_ENOUGH_DATA;
-		}
-		*sent_bytes = sent;
-		return IDEVICE_E_SUCCESS;
 	}
+	uint32_t sent = 0;
+	while (sent < len) {
+		uint32_t bytes = 0;
+		int s = internal_connection_send(connection, data+sent, len-sent, &bytes);
+		if (s < 0) {
+			break;
+		}
+		sent += bytes;
+	}
+	debug_info("internal_connection_send %d, sent %d", len, sent);
+	if (sent < len) {
+		*sent_bytes = 0;
+		return IDEVICE_E_NOT_ENOUGH_DATA;
+	}
+	*sent_bytes = sent;
+	return IDEVICE_E_SUCCESS;
 }
 
 static idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len, uint32_t received)
@@ -646,7 +645,8 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 		}
 
 		return error;
-	} else if (connection->type == CONNECTION_NETWORK) {
+	}
+	if (connection->type == CONNECTION_NETWORK) {
 		int res = socket_receive_timeout((int)(long)connection->data, data, len, 0, timeout);
 		if (res < 0) {
 			debug_info("ERROR: socket_receive_timeout failed: %d (%s)", res, strerror(-res));
@@ -654,9 +654,9 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 		}
 		*recv_bytes = (uint32_t)res;
 		return IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", connection->type);
 	}
+
+	debug_info("Unknown connection type %d", connection->type);
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
@@ -737,7 +737,8 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
 		return IDEVICE_E_SUCCESS;
-	} else if (connection->type == CONNECTION_NETWORK) {
+	}
+	if (connection->type == CONNECTION_NETWORK) {
 		int res = socket_receive((int)(long)connection->data, data, len);
 		if (res < 0) {
 			debug_info("ERROR: socket_receive returned %d (%s)", res, strerror(-res));
@@ -745,9 +746,9 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 		}
 		*recv_bytes = (uint32_t)res;
 		return IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", connection->type);
 	}
+
+	debug_info("Unknown connection type %d", connection->type);
 	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
@@ -780,17 +781,17 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connectio
 		return IDEVICE_E_INVALID_ARG;
 	}
 
-	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
 		*fd = (int)(long)connection->data;
-		result = IDEVICE_E_SUCCESS;
-	} else if (connection->type == CONNECTION_NETWORK) {
-		*fd = (int)(long)connection->data;
-		result = IDEVICE_E_SUCCESS;
-	} else {
-		debug_info("Unknown connection type %d", connection->type);
+		return IDEVICE_E_SUCCESS;
 	}
-	return result;
+	if (connection->type == CONNECTION_NETWORK) {
+		*fd = (int)(long)connection->data;
+		return IDEVICE_E_SUCCESS;
+	}
+
+	debug_info("Unknown connection type %d", connection->type);
+	return IDEVICE_E_UNKNOWN_ERROR;
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle)

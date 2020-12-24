@@ -183,9 +183,8 @@ static int mkdir_with_parents(const char *dir, int mode)
 	if (!dir) return -1;
 	if (__mkdir(dir, mode) == 0) {
 		return 0;
-	} else {
-		if (errno == EEXIST) return 0;
 	}
+	if (errno == EEXIST) return 0;
 	int res;
 	char *parent = strdup(dir);
 	char *parentdir = dirname(parent);
@@ -972,10 +971,12 @@ static int mb2_receive_filename(mobilebackup2_client_t mobilebackup2, char** fil
 		if ((nlen == 0) && (rlen == 4)) {
 			// a zero length means no more files to receive
 			return 0;
-		} else if(rlen == 0) {
+		}
+		if(rlen == 0) {
 			// device needs more time, waiting...
 			continue;
-		} else if (nlen > 4096) {
+		}
+		if (nlen > 4096) {
 			// filename length is too large
 			printf("ERROR: %s: too large filename length (%d)!\n", __func__, nlen);
 			return 0;
@@ -1367,7 +1368,8 @@ static void get_hidden_input(char *buf, int maxlen)
 	while ((c = my_getch())) {
 		if ((c == '\r') || (c == '\n')) {
 			break;
-		} else if (isprint(c)) {
+		}
+		if (isprint(c)) {
 			if (pwlen < maxlen-1)
 				buf[pwlen++] = c;
 			fputc('*', stderr);
@@ -1495,7 +1497,7 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -1504,7 +1506,7 @@ int main(int argc, char *argv[])
 			udid = strdup(argv[i]);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--source")) {
+		if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--source")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -1513,23 +1515,23 @@ int main(int argc, char *argv[])
 			source_udid = strdup(argv[i]);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--interactive")) {
+		if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--interactive")) {
 			interactive_mode = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "backup")) {
+		if (!strcmp(argv[i], "backup")) {
 			cmd = CMD_BACKUP;
 		}
 		else if (!strcmp(argv[i], "restore")) {
@@ -1567,7 +1569,7 @@ int main(int argc, char *argv[])
 			backup_password = strdup(argv[i]);
 			continue;
 		}
-		else if (!strcmp(argv[i], "cloud")) {
+		if (!strcmp(argv[i], "cloud")) {
 			cmd = CMD_CLOUD;
 			i++;
 			if (!argv[i]) {
@@ -1584,7 +1586,7 @@ int main(int argc, char *argv[])
 			}
 			continue;
 		}
-		else if (!strcmp(argv[i], "--full")) {
+		if (!strcmp(argv[i], "--full")) {
 			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
 		}
 		else if (!strcmp(argv[i], "info")) {
@@ -1632,7 +1634,7 @@ int main(int argc, char *argv[])
 			}
 			continue;
 		}
-		else if (!strcmp(argv[i], "changepw")) {
+		if (!strcmp(argv[i], "changepw")) {
 			cmd = CMD_CHANGEPW;
 			cmd_flags |= CMD_FLAG_ENCRYPTION_CHANGEPW;
 			// check if passwords were given on command line
@@ -1657,7 +1659,7 @@ int main(int argc, char *argv[])
 			}
 			continue;
 		}
-		else if (backup_directory == NULL) {
+		if (backup_directory == NULL) {
 			backup_directory = argv[i];
 		}
 		else {
@@ -1905,15 +1907,16 @@ int main(int argc, char *argv[])
 				if (aerr == AFC_E_SUCCESS) {
 					do_post_notification(device, NP_SYNC_DID_START);
 					break;
-				} else if (aerr == AFC_E_OP_WOULD_BLOCK) {
+				}
+				if (aerr == AFC_E_OP_WOULD_BLOCK) {
 					usleep(LOCK_WAIT);
 					continue;
-				} else {
-					fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
-					afc_file_close(afc, lockfile);
-					lockfile = 0;
-					cmd = CMD_LEAVE;
 				}
+
+				fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
+				afc_file_close(afc, lockfile);
+				lockfile = 0;
+				cmd = CMD_LEAVE;
 			}
 			if (i == LOCK_ATTEMPTS) {
 				fprintf(stderr, "ERROR: timeout while locking for sync\n");
@@ -2048,9 +2051,8 @@ checkpoint:
 				if (write_restore_applications(info_plist, afc) < 0) {
 					cmd = CMD_LEAVE;
 					break;
-				} else {
-					PRINT_VERBOSE(1, "Wrote RestoreApplications.plist\n");
 				}
+				PRINT_VERBOSE(1, "Wrote RestoreApplications.plist\n");
 			}
 
 			/* Start restore */

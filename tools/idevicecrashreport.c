@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -352,34 +352,32 @@ int main(int argc, char* argv[])
 			udid = argv[i];
 			continue;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--extract")) {
+		if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--extract")) {
 			extract_raw_crash_reports = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--keep")) {
+		if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--keep")) {
 			keep_crash_reports = 1;
 			continue;
 		}
-		else if (target_directory == NULL) {
+		if (target_directory == NULL) {
 			target_directory = argv[i];
 			continue;
 		}
-		else {
-			print_usage(argc, argv);
-			return 0;
-		}
+		print_usage(argc, argv);
+		return 0;
 	}
 
 	/* ensure a target directory was supplied */
@@ -442,10 +440,10 @@ int main(int argc, char* argv[])
 		if (service_error == SERVICE_E_SUCCESS || service_error == SERVICE_E_TIMEOUT) {
 			attempts++;
 			continue;
-		} else {
-			fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted (%d).\n", service_error);
-			break;
 		}
+
+		fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted (%d).\n", service_error);
+		break;
 	}
 	service_client_free(svcmove);
 	free(ping);

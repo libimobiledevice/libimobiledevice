@@ -398,14 +398,13 @@ static int32_t _sockaddr_in6_scope_id(struct sockaddr_in6* addr)
 			if (addr->sin6_scope_id == addr_in->sin6_scope_id) {
 				res = addr_in->sin6_scope_id;
 				break;
-			} else {
-				if ((addr_in->sin6_scope_id > addr->sin6_scope_id) && (res >= 0)) {
-					// use last valid scope id as we're past the requested scope id
-					break;
-				}
-				res = addr_in->sin6_scope_id;
-				continue;
 			}
+			if ((addr_in->sin6_scope_id > addr->sin6_scope_id) && (res >= 0)) {
+				// use last valid scope id as we're past the requested scope id
+				break;
+			}
+			res = addr_in->sin6_scope_id;
+			continue;
 		}
 
 		/* skip loopback interface if not already matched exactly above */

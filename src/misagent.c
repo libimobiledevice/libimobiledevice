@@ -85,9 +85,8 @@ static misagent_error_t misagent_check_result(plist_t response, int* status_code
 	*status_code = (int)(val & 0xFFFFFFFF);
 	if (*status_code == 0) {
 		return MISAGENT_E_SUCCESS;
-	} else {
-		return MISAGENT_E_REQUEST_FAILED;
 	}
+	return MISAGENT_E_REQUEST_FAILED;
 }
 
 LIBIMOBILEDEVICE_API misagent_error_t misagent_client_new(idevice_t device, lockdownd_service_descriptor_t service, misagent_client_t *client)

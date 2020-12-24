@@ -163,21 +163,21 @@ static lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_m
 
 	if (plist_get_node_type(query_node) != PLIST_STRING) {
 		return ret;
-	} else {
-		char *query_value = NULL;
-
-		plist_get_string_val(query_node, &query_value);
-		if (!query_value) {
-			return ret;
-		}
-
-		if (query_match && (strcmp(query_value, query_match) != 0)) {
-			free(query_value);
-			return ret;
-		}
-
-		free(query_value);
 	}
+
+	char *query_value = NULL;
+
+	plist_get_string_val(query_node, &query_value);
+	if (!query_value) {
+		return ret;
+	}
+
+	if (query_match && (strcmp(query_value, query_match) != 0)) {
+		free(query_value);
+		return ret;
+	}
+
+	free(query_value);
 
 	plist_t result_node = plist_dict_get_item(dict, "Result");
 	if (!result_node) {

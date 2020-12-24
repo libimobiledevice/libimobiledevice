@@ -109,8 +109,6 @@ static plist_t plist_data_from_plist(plist_t plist)
 
 static mobileactivation_error_t mobileactivation_check_result(plist_t dict, const char *command)
 {
-	mobileactivation_error_t ret = MOBILEACTIVATION_E_UNKNOWN_ERROR;
-
 	if (!dict || plist_get_node_type(dict) != PLIST_DICT) {
 		return MOBILEACTIVATION_E_PLIST_ERROR;
 	}
@@ -118,14 +116,13 @@ static mobileactivation_error_t mobileactivation_check_result(plist_t dict, cons
 	plist_t err_node = plist_dict_get_item(dict, "Error");
 	if (!err_node) {
 		return MOBILEACTIVATION_E_SUCCESS;
-	} else {
-		char *errmsg = NULL;
-		plist_get_string_val(err_node, &errmsg);
-		debug_info("ERROR: %s: %s", command, errmsg);
-		ret = MOBILEACTIVATION_E_REQUEST_FAILED;
-		free(errmsg);
 	}
-	return ret;
+
+	char *errmsg = NULL;
+	plist_get_string_val(err_node, &errmsg);
+	debug_info("ERROR: %s: %s", command, errmsg);
+	free(errmsg);
+	return MOBILEACTIVATION_E_REQUEST_FAILED;
 }
 
 static mobileactivation_error_t mobileactivation_send_command_plist(mobileactivation_client_t client, plist_t command, plist_t *result)

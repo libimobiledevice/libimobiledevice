@@ -228,7 +228,9 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	if (*bytes_recv == 0) {
 		debug_info("Just didn't get enough.");
 		return AFC_E_MUX_ERROR;
-	} else if (*bytes_recv < sizeof(AFCPacket)) {
+	}
+
+	if (*bytes_recv < sizeof(AFCPacket)) {
 		debug_info("Did not even get the AFCPacket header");
 		return AFC_E_MUX_ERROR;
 	}
@@ -249,15 +251,15 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	if (header.this_length < sizeof(AFCPacket)) {
 		debug_info("Invalid AFCPacket header received!");
 		return AFC_E_OP_HEADER_INVALID;
-	} else if ((header.this_length == header.entire_length)
-			&& header.entire_length == sizeof(AFCPacket)) {
+	}
+	if ((header.this_length == header.entire_length)
+		&& header.entire_length == sizeof(AFCPacket)) {
 		debug_info("Empty AFCPacket received!");
 		*bytes_recv = 0;
 		if (header.operation == AFC_OP_DATA) {
 			return AFC_E_SUCCESS;
-		} else {
-			return AFC_E_IO_ERROR;
 		}
+		return AFC_E_IO_ERROR;
 	}
 
 	debug_info("received AFC packet, full len=%lld, this len=%lld, operation=0x%llx", header.entire_length, header.this_length, header.operation);
@@ -272,7 +274,8 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 			free(dump_here);
 			debug_info("Did not get packet contents!");
 			return AFC_E_NOT_ENOUGH_DATA;
-		} else if (*bytes_recv < this_len) {
+		}
+		if (*bytes_recv < this_len) {
 			free(dump_here);
 			debug_info("Could not receive this_len=%d bytes", this_len);
 			return AFC_E_NOT_ENOUGH_DATA;
@@ -748,22 +751,23 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_read(afc_client_t client, uint64_t han
 	if (ret != AFC_E_SUCCESS) {
 		afc_unlock(client);
 		return ret;
-	} else if (bytes_loc == 0) {
+	}
+	if (bytes_loc == 0) {
 		if (input)
 			free(input);
 		afc_unlock(client);
 		*bytes_read = current_count;
 		/* FIXME: check that's actually a success */
 		return ret;
-	} else {
-		if (input) {
-			debug_info("%d", bytes_loc);
-			memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
-			free(input);
-			input = NULL;
-			current_count += (bytes_loc > length) ? length : bytes_loc;
-		}
 	}
+	if (input) {
+		debug_info("%d", bytes_loc);
+		memcpy(data + current_count, input, (bytes_loc > length) ? length : bytes_loc);
+		free(input);
+		input = NULL;
+		current_count += (bytes_loc > length) ? length : bytes_loc;
+	}
+
 	afc_unlock(client);
 	*bytes_read = current_count;
 	return ret;

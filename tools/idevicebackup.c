@@ -722,7 +722,7 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -731,19 +731,19 @@ int main(int argc, char *argv[])
 			udid = strdup(argv[i]);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		}
-		else if (!strcmp(argv[i], "backup")) {
+		if (!strcmp(argv[i], "backup")) {
 			cmd = CMD_BACKUP;
 		}
 		else if (!strcmp(argv[i], "restore")) {
@@ -924,15 +924,16 @@ int main(int argc, char *argv[])
 				if (aerr == AFC_E_SUCCESS) {
 					do_post_notification(NP_SYNC_DID_START);
 					break;
-				} else if (aerr == AFC_E_OP_WOULD_BLOCK) {
+				}
+				if (aerr == AFC_E_OP_WOULD_BLOCK) {
 					usleep(LOCK_WAIT);
 					continue;
-				} else {
-					fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
-					afc_file_close(afc, lockfile);
-					lockfile = 0;
-					cmd = CMD_LEAVE;
 				}
+
+				fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
+				afc_file_close(afc, lockfile);
+				lockfile = 0;
+				cmd = CMD_LEAVE;
 			}
 			if (i == LOCK_ATTEMPTS) {
 				fprintf(stderr, "ERROR: timeout while locking for sync\n");

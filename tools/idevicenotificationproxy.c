@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 			idevice_set_debug_level(1);
 			continue;
 		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
+		if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
@@ -130,21 +130,21 @@ int main(int argc, char *argv[])
 			udid = argv[i];
 			continue;
 		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			result = 0;
 			goto cleanup;
 		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+		if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
 			use_network = 1;
 			continue;
 		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			result = 0;
 			goto cleanup;
 		}
-		else if (!strcmp(argv[i], "post") || !strcmp(argv[i], "observe")) {
+		if (!strcmp(argv[i], "post") || !strcmp(argv[i], "observe")) {
 			cmd = CMD_POST;
 			if (!strcmp(argv[i], "observe")) {
 				cmd = CMD_OBSERVE;
@@ -179,10 +179,9 @@ int main(int argc, char *argv[])
 			nspec = nspectmp;
 			continue;
 		}
-		else {
-			print_usage(argc, argv);
-			return 0;
-		}
+
+		print_usage(argc, argv);
+		return 0;
 	}
 
 	/* verify options */
