@@ -162,7 +162,8 @@ static void* preboard_receive_status_loop_thread(void* arg)
 		preboard_error_t perr = preboard_receive_with_timeout(data->client, &pl, 1000);
 		if (perr == PREBOARD_E_TIMEOUT) {
 			continue;
-		} else if (perr == PREBOARD_E_SUCCESS) {
+		}
+		if (perr == PREBOARD_E_SUCCESS) {
 			data->cbfunc(pl, data->user_data);
 		}
 		plist_free(pl);

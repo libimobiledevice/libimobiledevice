@@ -926,15 +926,16 @@ int main(int argc, char *argv[])
 				if (aerr == AFC_E_SUCCESS) {
 					do_post_notification(NP_SYNC_DID_START);
 					break;
-				} else if (aerr == AFC_E_OP_WOULD_BLOCK) {
+				}
+				if (aerr == AFC_E_OP_WOULD_BLOCK) {
 					usleep(LOCK_WAIT);
 					continue;
-				} else {
-					fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
-					afc_file_close(afc, lockfile);
-					lockfile = 0;
-					cmd = CMD_LEAVE;
 				}
+
+				fprintf(stderr, "ERROR: could not lock file! error code: %d\n", aerr);
+				afc_file_close(afc, lockfile);
+				lockfile = 0;
+				cmd = CMD_LEAVE;
 			}
 			if (i == LOCK_ATTEMPTS) {
 				fprintf(stderr, "ERROR: timeout while locking for sync\n");

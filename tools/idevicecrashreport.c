@@ -475,10 +475,10 @@ int main(int argc, char* argv[])
 		if (service_error == SERVICE_E_SUCCESS || service_error == SERVICE_E_TIMEOUT) {
 			attempts++;
 			continue;
-		} else {
-			fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted (%d).\n", service_error);
-			break;
 		}
+
+		fprintf(stderr, "ERROR: Crash logs could not be moved. Connection interrupted (%d).\n", service_error);
+		break;
 	}
 	service_client_free(svcmove);
 	free(ping);

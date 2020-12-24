@@ -448,7 +448,9 @@ int main(int argc, char *argv[])
 		plist_free(pl);
 
 		return res;
-	} else if (op == OP_COPY) {
+	}
+
+	if (op == OP_COPY) {
 		struct stat st;
 		const char *checkdir = (param2) ? param2 : param;
 		if ((stat(checkdir, &st) < 0) || !S_ISDIR(st.st_mode)) {
