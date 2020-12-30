@@ -45,7 +45,7 @@ typedef enum fd_mode fd_mode;
 int socket_create_unix(const char *filename);
 int socket_connect_unix(const char *filename);
 #endif
-int socket_create(uint16_t port);
+int socket_create(const char *addr, uint16_t port);
 int socket_connect_addr(struct sockaddr *addr, uint16_t port);
 int socket_connect(const char *addr, uint16_t port);
 int socket_check_fd(int fd, fd_mode fdm, unsigned int timeout);
@@ -54,12 +54,12 @@ int socket_accept(int fd, uint16_t port);
 int socket_shutdown(int fd, int how);
 int socket_close(int fd);
 
-int socket_receive(int fd, void *data, size_t size);
-int socket_peek(int fd, void *data, size_t size);
-int socket_receive_timeout(int fd, void *data, size_t size, int flags,
+int socket_receive(int fd, void *data, size_t length);
+int socket_peek(int fd, void *data, size_t length);
+int socket_receive_timeout(int fd, void *data, size_t length, int flags,
 					 unsigned int timeout);
 
-int socket_send(int fd, void *data, size_t size);
+int socket_send(int fd, void *data, size_t length);
 
 void socket_set_verbose(int level);
 

@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* create local socket */
-	server_fd = socket_create(local_port);
+	server_fd = socket_create("127.0.0.1", local_port);
 	if (server_fd < 0) {
 		fprintf(stderr, "Could not create socket\n");
 		result = EXIT_FAILURE;
