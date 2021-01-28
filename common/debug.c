@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+# define __timespec_defined 1
 
 #include "debug.h"
 #include "libimobiledevice/libimobiledevice.h"
@@ -53,15 +54,16 @@ static void debug_print_line(const char *func, const char *file, int line, const
 {
 	char *str_time = NULL;
 	char *header = NULL;
-	time_t the_time;
-
-	time(&the_time);
 	str_time = (char*)malloc(255);
-	strftime(str_time, 254, "%H:%M:%S", localtime (&the_time));
+	struct timespec t;
+	timespec_get(&t, 1);
+	strftime(str_time, 254, "%H:%M:%S", localtime (&t.tv_sec));
+	sprintf(str_time, "%s.%03ld", str_time, t.tv_nsec/1000000);
 
 	/* generate header text */
 	(void)asprintf(&header, "%s %s:%d %s()", str_time, file, line, func);
 	free (str_time);
+
 
 	/* trim ending newlines */
 
