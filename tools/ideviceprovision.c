@@ -106,7 +106,7 @@ static void asn1_next_item(unsigned char** p)
 	}
 }
 
-static size_t asn1_item_get_size(unsigned char* p)
+static size_t asn1_item_get_size(const unsigned char* p)
 {
 	size_t res = 0;
 	char bsize = *(p+1);

@@ -354,7 +354,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 /**
  * Returns counts of null characters within a string.
  */
-static uint32_t count_nullspaces(char *string, uint32_t number)
+static uint32_t count_nullspaces(const char *string, uint32_t number)
 {
 	uint32_t i = 0, nulls = 0;
 
