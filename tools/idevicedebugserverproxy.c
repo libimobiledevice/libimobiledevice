@@ -2,6 +2,7 @@
  * idevicedebugserverproxy.c
  * Proxy a debugserver connection from device for remote debugging
  *
+ * Copyright (c) 2021 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2012 Martin Szulecki All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -30,6 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/select.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/debugserver.h>
@@ -47,12 +49,11 @@ typedef struct {
 	int client_fd;
 	idevice_t device;
 	debugserver_client_t debugserver_client;
-	volatile int stop_ctod;
-	volatile int stop_dtoc;
 } socket_info_t;
 
 struct thread_info {
 	THREAD_T th;
+	int client_fd;
 	struct thread_info *next;
 };
 
@@ -85,153 +86,75 @@ static void print_usage(int argc, char **argv)
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
-static void *thread_device_to_client(void *data)
-{
-	socket_info_t* socket_info = (socket_info_t*)data;
-	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
-
-	int recv_len;
-	int sent;
-	char buffer[131072];
-
-	debug("%s: started thread...\n", __func__);
-
-	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
-
-	while (!quit_flag && !socket_info->stop_dtoc && socket_info->client_fd > 0) {
-		debug("%s: receiving data from device...\n", __func__);
-
-		res = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buffer, sizeof(buffer), (uint32_t*)&recv_len, 5000);
-
-		if (recv_len <= 0) {
-			if (recv_len == 0 && res == DEBUGSERVER_E_SUCCESS) {
-				// try again
-				continue;
-			} else {
-				fprintf(stderr, "recv failed: %s\n", strerror(errno));
-				break;
-			}
-		} else {
-			/* send to device */
-			debug("%s: sending data to client...\n", __func__);
-			sent = socket_send(socket_info->client_fd, buffer, recv_len);
-			if (sent < recv_len) {
-				if (sent <= 0) {
-					fprintf(stderr, "send failed: %s\n", strerror(errno));
-					break;
-				} else {
-					fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
-				}
-			} else {
-				// sending succeeded, receive from device
-				debug("%s: pushed %d bytes to client\n", __func__, sent);
-			}
-		}
-	}
-
-	debug("%s: shutting down...\n", __func__);
-
-	socket_shutdown(socket_info->client_fd, SHUT_RDWR);
-	socket_close(socket_info->client_fd);
-
-	socket_info->client_fd = -1;
-	socket_info->stop_ctod = 1;
-
-	return NULL;
-}
-
-static void *thread_client_to_device(void *data)
-{
-	socket_info_t* socket_info = (socket_info_t*)data;
-	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
-
-	int recv_len;
-	int sent;
-	char buffer[131072];
-	THREAD_T dtoc;
-
-	debug("%s: started thread...\n", __func__);
-
-	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
-
-	/* spawn server to client thread */
-	socket_info->stop_dtoc = 0;
-	if (thread_new(&dtoc, thread_device_to_client, data) != 0) {
-		fprintf(stderr, "Failed to start device to client thread...\n");
-	}
-
-	while (!quit_flag && !socket_info->stop_ctod && socket_info->client_fd > 0) {
-		debug("%s: receiving data from client...\n", __func__);
-
-		/* attempt to read incoming data from client */
-		recv_len = socket_receive_timeout(socket_info->client_fd, buffer, sizeof(buffer), 0, 5000);
-
-		/* any data received? */
-		if (recv_len <= 0) {
-			if (recv_len == 0) {
-				/* try again */
-				continue;
-			} else {
-				fprintf(stderr, "Receive failed: %s\n", strerror(errno));
-				break;
-			}
-		} else {
-			/* forward data to device */
-			debug("%s: sending data to device...\n", __func__);
-			res = debugserver_client_send(socket_info->debugserver_client, buffer, recv_len, (uint32_t*)&sent);
-
-			if (sent < recv_len || res != DEBUGSERVER_E_SUCCESS) {
-				if (sent <= 0) {
-					fprintf(stderr, "send failed: %s\n", strerror(errno));
-					break;
-				} else {
-					fprintf(stderr, "only sent %d from %d bytes\n", sent, recv_len);
-				}
-			} else {
-				// sending succeeded, receive from device
-				debug("%s: sent %d bytes to device\n", __func__, sent);
-			}
-		}
-	}
-
-	debug("%s: shutting down...\n", __func__);
-
-	socket_shutdown(socket_info->client_fd, SHUT_RDWR);
-	socket_close(socket_info->client_fd);
-
-	socket_info->client_fd = -1;
-	socket_info->stop_dtoc = 1;
-
-	/* join other thread to allow it to stop */
-	thread_join(dtoc);
-	thread_free(dtoc);
-
-	return NULL;
-}
+struct service_client_private {
+	idevice_connection_t connection;
+};
+struct debugserver_client_private {
+	struct service_client_private* parent;
+	int noack_mode;
+};
 
 static void* connection_handler(void* data)
 {
 	debugserver_error_t derr = DEBUGSERVER_E_SUCCESS;
 	socket_info_t* socket_info = (socket_info_t*)data;
-	THREAD_T ctod;
+	char buf[4096];
 
-	debug("%s: client_fd = %d\n", __func__, socket_info->client_fd);
+	int client_fd = socket_info->client_fd;
+
+	debug("%s: client_fd = %d\n", __func__, client_fd);
 
 	derr = debugserver_client_start_service(socket_info->device, &socket_info->debugserver_client, TOOL_NAME);
 	if (derr != DEBUGSERVER_E_SUCCESS) {
 		fprintf(stderr, "Could not start debugserver on device!\nPlease make sure to mount a developer disk image first.\n");
 		return NULL;
 	}
-
-	/* spawn client to device thread */
-	socket_info->stop_ctod = 0;
-	if (thread_new(&ctod, thread_client_to_device, data) != 0) {
-		fprintf(stderr, "Failed to start client to device thread...\n");
+	int dbgsvr_fd = -1;
+	idevice_connection_get_fd(socket_info->debugserver_client->parent->connection, &dbgsvr_fd);
+	if (dbgsvr_fd == -1) {
+		fprintf(stderr, "Could not get debugserver connection fd.\n");
+		return NULL;
 	}
 
-	/* join the fun */
-	thread_join(ctod);
-	thread_free(ctod);
+	fd_set fds;
+	int maxfd = 0;
+	FD_ZERO(&fds);
+	FD_SET(client_fd, &fds);
+	if (client_fd > maxfd) maxfd = client_fd;
+	FD_SET(dbgsvr_fd, &fds);
+	if (dbgsvr_fd > maxfd) maxfd = dbgsvr_fd;
+
+	while (!quit_flag) {
+		fd_set read_fds = fds;
+		int ret_sel = select(maxfd+1, &read_fds, NULL, NULL, NULL);
+		if (ret_sel < 0) {
+			perror("select");
+			break;
+		}
+		if (FD_ISSET(client_fd, &read_fds)) {
+			ssize_t n = socket_receive(client_fd, buf, sizeof(buf));
+			if (n < 0) {
+				fprintf(stderr, "Failed to read from client fd: %s\n", strerror(-n));
+				break;
+			} else if (n == 0) {
+				fprintf(stderr, "connection closed\n");
+				break;
+			}
+
+			uint32_t sent = 0;
+			debugserver_client_send(socket_info->debugserver_client, buf, n, &sent);
+		}
+		if (FD_ISSET(dbgsvr_fd, &read_fds)) {
+			uint32_t r = 0;
+			derr = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buf, sizeof(buf), &r, 1);
+			if (r > 0) {
+				socket_send(client_fd, buf, r);
+			} else if (derr != DEBUGSERVER_E_TIMEOUT) {
+				fprintf(stderr, "Failed to read from debugserver (%d)\n", derr);
+				break;
+			}
+		}
+	}
 
 	debug("%s: shutting down...\n", __func__);
 
@@ -361,6 +284,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Out of memory\n");
 			exit(EXIT_FAILURE);
 		}
+		el->client_fd = client_fd;
 		el->next = NULL;
 
 		if (thread_list) {
@@ -390,6 +314,8 @@ int main(int argc, char *argv[])
 	/* join and clean up threads */
 	while (thread_list) {
 		thread_info_t *el = thread_list;
+		socket_shutdown(el->client_fd, SHUT_RDWR);
+		socket_close(el->client_fd);
 		thread_join(el->th);
 		thread_free(el->th);
 		thread_list = el->next;
