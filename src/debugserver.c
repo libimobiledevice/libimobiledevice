@@ -156,7 +156,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 		*received = (uint32_t)bytes;
 	}
 
-	return res;
+	return (bytes > 0) ? DEBUGSERVER_E_SUCCESS : res;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
