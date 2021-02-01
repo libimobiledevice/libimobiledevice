@@ -610,7 +610,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 	}
 }
 
-static idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len, uint32_t received)
+static inline idevice_error_t socket_recv_to_idevice_error(int conn_error, uint32_t len, uint32_t received)
 {
 	if (conn_error < 0) {
 		switch (conn_error) {
@@ -669,6 +669,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 	if (connection->ssl_data) {
 		uint32_t received = 0;
 		int do_select = 1;
+		idevice_error_t error = IDEVICE_E_SSL_ERROR;
 
 		while (received < len) {
 #ifdef HAVE_OPENSSL
@@ -676,10 +677,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 #endif
 			if (do_select) {
 				int conn_error = socket_check_fd((int)(long)connection->data, FDM_READ, timeout);
-				idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, received);
-
+				error = socket_recv_to_idevice_error(conn_error, len, received);
 				switch (error) {
 					case IDEVICE_E_SUCCESS:
+					case IDEVICE_E_TIMEOUT:
 						break;
 					case IDEVICE_E_UNKNOWN_ERROR:
 					default:
@@ -687,7 +688,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 						return error;
 				}
 			}
-
+			if (error == IDEVICE_E_TIMEOUT) {
+				break;
+			}
 #ifdef HAVE_OPENSSL
 			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
 			if (r > 0) {
@@ -711,8 +714,8 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 
 		debug_info("SSL_read %d, received %d", len, received);
 		if (received < len) {
-			*recv_bytes = 0;
-			return IDEVICE_E_SSL_ERROR;
+			*recv_bytes = received;
+			return error;
 		}
 
 		*recv_bytes = received;
