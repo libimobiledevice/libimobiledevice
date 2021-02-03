@@ -91,19 +91,12 @@ static void print_usage(int argc, char **argv)
 	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }
 
-struct service_client_private {
-	idevice_connection_t connection;
-};
-struct debugserver_client_private {
-	struct service_client_private* parent;
-	int noack_mode;
-};
-
 static void* connection_handler(void* data)
 {
 	debugserver_error_t derr = DEBUGSERVER_E_SUCCESS;
 	socket_info_t* socket_info = (socket_info_t*)data;
-	char buf[4096];
+	const int bufsize = 65536;
+	char* buf;
 
 	int client_fd = socket_info->client_fd;
 
@@ -114,30 +107,29 @@ static void* connection_handler(void* data)
 		fprintf(stderr, "Could not start debugserver on device!\nPlease make sure to mount a developer disk image first.\n");
 		return NULL;
 	}
-	int dbgsvr_fd = -1;
-	idevice_connection_get_fd(socket_info->debugserver_client->parent->connection, &dbgsvr_fd);
-	if (dbgsvr_fd == -1) {
-		fprintf(stderr, "Could not get debugserver connection fd.\n");
+
+	buf = malloc(bufsize);
+	if (!buf) {
+		fprintf(stderr, "Failed to allocate buffer\n");
 		return NULL;
 	}
 
 	fd_set fds;
-	int maxfd = 0;
 	FD_ZERO(&fds);
 	FD_SET(client_fd, &fds);
-	if (client_fd > maxfd) maxfd = client_fd;
-	FD_SET(dbgsvr_fd, &fds);
-	if (dbgsvr_fd > maxfd) maxfd = dbgsvr_fd;
+
+	int dtimeout = 1;
 
 	while (!quit_flag) {
 		fd_set read_fds = fds;
-		int ret_sel = select(maxfd+1, &read_fds, NULL, NULL, NULL);
+		struct timeval tv = { 0, 1000 };
+		int ret_sel = select(client_fd+1, &read_fds, NULL, NULL, &tv);
 		if (ret_sel < 0) {
 			perror("select");
 			break;
 		}
 		if (FD_ISSET(client_fd, &read_fds)) {
-			ssize_t n = socket_receive(client_fd, buf, sizeof(buf));
+			ssize_t n = socket_receive(client_fd, buf, bufsize);
 			if (n < 0) {
 				fprintf(stderr, "Failed to read from client fd: %s\n", strerror(-n));
 				break;
@@ -149,17 +141,25 @@ static void* connection_handler(void* data)
 			uint32_t sent = 0;
 			debugserver_client_send(socket_info->debugserver_client, buf, n, &sent);
 		}
-		if (FD_ISSET(dbgsvr_fd, &read_fds)) {
+		do {
 			uint32_t r = 0;
-			derr = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buf, sizeof(buf), &r, 1);
+			derr = debugserver_client_receive_with_timeout(socket_info->debugserver_client, buf, bufsize, &r, dtimeout);
 			if (r > 0) {
 				socket_send(client_fd, buf, r);
-			} else if (derr != DEBUGSERVER_E_TIMEOUT) {
-				fprintf(stderr, "Failed to read from debugserver (%d)\n", derr);
+				dtimeout = 1;
+			} else if (derr == DEBUGSERVER_E_TIMEOUT) {
+				dtimeout = 5;
+				break;
+			} else {
+				fprintf(stderr, "debugserver connection closed\n");
 				break;
 			}
+		} while (derr == DEBUGSERVER_E_SUCCESS);
+		if (derr != DEBUGSERVER_E_TIMEOUT && derr != DEBUGSERVER_E_SUCCESS) {
+			break;
 		}
 	}
+	free(buf);
 
 	debug("%s: shutting down...\n", __func__);
 
