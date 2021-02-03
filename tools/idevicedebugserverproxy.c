@@ -31,7 +31,12 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#ifdef WIN32
+#include <windows.h>
+#include <winsock2.h>
+#else
 #include <sys/select.h>
+#endif
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/debugserver.h>
