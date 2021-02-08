@@ -128,7 +128,7 @@ The library bundles the following command-line utilities in the tools directory:
 | `idevicenotificationproxy` | Post or observe notifications on a device                          |
 | `idevicepair`              | Manage host pairings with devices and usbmuxd                      |
 | `ideviceprovision`         | Manage provisioning profiles on a device                           |
-| `ideviceprepare`           | Manage configuration profiles on a device                           |
+| `ideviceprofile`           | Manage configuration profiles on a device                           |
 | `idevicescreenshot`        | Gets a screenshot from the connected device                        |
 | `idevicesetlocation`       | Simulate location on device                                        |
 | `idevicesyslog`            | Relay syslog of a connected device                                 |
