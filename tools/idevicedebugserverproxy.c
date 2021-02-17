@@ -121,15 +121,8 @@ static void* connection_handler(void* data)
 	int dtimeout = 1;
 
 	while (!quit_flag) {
-		fd_set read_fds = fds;
-		struct timeval tv = { 0, 1000 };
-		int ret_sel = select(client_fd+1, &read_fds, NULL, NULL, &tv);
-		if (ret_sel < 0) {
-			perror("select");
-			break;
-		}
-		if (FD_ISSET(client_fd, &read_fds)) {
-			ssize_t n = socket_receive(client_fd, buf, bufsize);
+		ssize_t n = socket_receive_timeout(client_fd, buf, bufsize, 0, 1);
+		if (n != -ETIMEDOUT) {
 			if (n < 0) {
 				fprintf(stderr, "Failed to read from client fd: %s\n", strerror(-n));
 				break;
