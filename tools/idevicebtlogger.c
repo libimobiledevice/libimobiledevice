@@ -43,9 +43,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/bt_packet_logger.h>
-#include <pcap.h>// todo windows???
-
-#define BT_MAX_PACKET_SIZE 65535
+#include <pcap.h>
 
 static int quit_flag = 0;
 static int exit_on_disconnect = 0;
@@ -57,12 +55,6 @@ static int use_network = 0;
 static char* out_filename = NULL;
 static pcap_dumper_t * dump;
 
-typedef struct {
-	uint32_t length;
-	uint32_t ts_secs;
-	uint32_t ts_usecs;
-} PacketHeaderType;
-
 typedef enum {
 	HCI_COMMAND = 0x00,
 	HCI_EVENT = 0x01,
@@ -72,12 +64,12 @@ typedef enum {
 
 static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_data)
 {
-	PacketHeaderType * header = (PacketHeaderType *)data;
-	uint16_t offset = sizeof(PacketHeaderType);
+	bt_packet_logger_header_t * header = (bt_packet_logger_header_t *)data;
+	uint16_t offset = sizeof(bt_packet_logger_header_t);
 
 	struct pcap_pkthdr pcap_header;
 	pcap_header.caplen = ntohl(header->length);
-	pcap_header.len = len - sizeof(PacketHeaderType);
+	pcap_header.len = len - sizeof(bt_packet_logger_header_t);
 	pcap_header.ts.tv_sec = ntohl(header->ts_secs);
 	pcap_header.ts.tv_usec = ntohl(header->ts_usecs);
 
