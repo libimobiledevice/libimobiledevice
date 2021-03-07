@@ -45,6 +45,10 @@
 #include <libimobiledevice/bt_packet_logger.h>
 #include <pcap.h>
 
+#define DLT_BLUETOOTH_HCI_H4_WITH_PHDR 201
+#define LIBPCAP_BT_PHDR_SENT    0x00000000
+#define LIBPCAP_BT_PHDR_RECV    htonl(0x00000001)
+
 static int quit_flag = 0;
 static int exit_on_disconnect = 0;
 
@@ -67,9 +71,10 @@ static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_d
 	bt_packet_logger_header_t * header = (bt_packet_logger_header_t *)data;
 	uint16_t offset = sizeof(bt_packet_logger_header_t);
 
+	// size + sizeof(uint32_t) to account for the direction pseudo header
 	struct pcap_pkthdr pcap_header;
-	pcap_header.caplen = ntohl(header->length);
-	pcap_header.len = len - sizeof(bt_packet_logger_header_t);
+	pcap_header.caplen = ntohl(header->length) + sizeof(uint32_t);
+	pcap_header.len = len - sizeof(bt_packet_logger_header_t) + sizeof(uint32_t);
 	pcap_header.ts.tv_sec = ntohl(header->ts_secs);
 	pcap_header.ts.tv_usec = ntohl(header->ts_usecs);
 
@@ -81,31 +86,43 @@ static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_d
 
 	uint8_t packet_type = data[offset];
 	uint8_t hci_h4_type = 0xff;
+	uint32_t direction;
 
 	switch(packet_type) {
 		case HCI_EVENT:
 			hci_h4_type = 0x04;
+			direction = LIBPCAP_BT_PHDR_RECV;
 			break;
 
 		case HCI_COMMAND:
 			hci_h4_type = 0x01;
+			direction = LIBPCAP_BT_PHDR_SENT;
 			break;
 
 		case SENT_ACL_DATA:
 			hci_h4_type = 0x02;
+			direction = LIBPCAP_BT_PHDR_SENT;
 			break;
 
 		case RECV_ACL_DATA:
 			hci_h4_type = 0x02;
+			direction = LIBPCAP_BT_PHDR_RECV;
 			break;
 
 		default:
 			// unknown packet logger type, just pass it on
 			hci_h4_type = packet_type;
+			direction = LIBPCAP_BT_PHDR_RECV;
 			break;
 	}
 	if(hci_h4_type != 0xff) {
 		data[offset] = hci_h4_type;
+		// we know we are sizeof(bt_packet_logger_header_t) into the buffer passed in to
+		// this function.  We need to add the uint32_t pseudo header to the front of the packet
+		// so adjust the offset back by sizeof(uint32_t) and write it to the buffer.  This avoids
+		// having to memcpy things around.
+		offset -= sizeof(uint32_t);
+		*(uint32_t*)&data[offset] = direction;
 		pcap_dump((unsigned char*)dump, &pcap_header, &data[offset]);
 		pcap_dump_flush(dump);
 	}
@@ -328,7 +345,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	dump = pcap_dump_open(pcap_open_dead(187, BT_MAX_PACKET_SIZE), out_filename);
+	dump = pcap_dump_open(pcap_open_dead(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, BT_MAX_PACKET_SIZE), out_filename);
 	idevice_event_subscribe(device_event_cb, NULL);
 
 	while (!quit_flag) {
