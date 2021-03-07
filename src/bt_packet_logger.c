@@ -1,6 +1,6 @@
 /*
  * bt_packet_logger.c
- * com.apple.bt_packet_logger service implementation.
+ * com.apple.bluetooth.BTPacketLogger service implementation.
  *
  * Copyright (c) 2021 Geoffrey Kruse, All Rights Reserved.
  *
@@ -28,12 +28,15 @@
 #include "bt_packet_logger.h"
 #include "lockdown.h"
 #include "common/debug.h"
-
 struct bt_packet_logger_worker_thread {
 	bt_packet_logger_client_t client;
 	bt_packet_logger_receive_cb_t cbfunc;
 	void *user_data;
+	uint8_t rxbuff[BT_MAX_PACKET_SIZE];
 };
+
+#define SZ_READ_TIMEOUT 100
+#define PAYLOAD_READ_TIMEOUT 500
 
 /**
  * Convert a service_error_t value to a bt_packet_logger_error_t value.
@@ -67,8 +70,6 @@ static bt_packet_logger_error_t bt_packet_logger_error(service_error_t err)
 
 LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd_service_descriptor_t service, bt_packet_logger_client_t * client)
 {
-	*client = NULL;
-
 	if (!device || !service || service->port == 0 || !client || *client) {
 		debug_info("Incorrect parameter passed to bt_packet_logger_client_new.");
 		return BT_PACKET_LOGGER_E_INVALID_ARG;
@@ -111,11 +112,6 @@ LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_free(bt_pa
 	return err;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_receive(bt_packet_logger_client_t client, char* data, uint32_t size, uint32_t *received)
-{
-	return bt_packet_logger_receive_with_timeout(client, data, size, received, 1000);
-}
-
 LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	bt_packet_logger_error_t res = BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
@@ -141,8 +137,9 @@ void *bt_packet_logger_worker(void *arg)
 	bt_packet_logger_error_t ret = BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
 	struct bt_packet_logger_worker_thread *btwt = (struct bt_packet_logger_worker_thread*)arg;
 
-	if (!btwt)
+	if (!btwt) {
 		return NULL;
+	}
 
 	debug_info("Running");
 
@@ -150,7 +147,7 @@ void *bt_packet_logger_worker(void *arg)
 		uint32_t bytes = 0;
 		uint16_t len;
 
-		ret = bt_packet_logger_receive_with_timeout(btwt->client, &len, 2, &bytes, 100);
+		ret = bt_packet_logger_receive_with_timeout(btwt->client, (char*)&len, 2, &bytes, SZ_READ_TIMEOUT);
 
 		if (ret == BT_PACKET_LOGGER_E_TIMEOUT || ret == BT_PACKET_LOGGER_E_NOT_ENOUGH_DATA || ((bytes == 0) && (ret == BT_PACKET_LOGGER_E_SUCCESS))) {
 			continue;
@@ -159,11 +156,10 @@ void *bt_packet_logger_worker(void *arg)
 			break;
 		}
 
-		// todo remove magic and move "c" off stack
-		if(bytes > 0 && len > 12) {
-			char c[65535];
+		// sanity check received length
+		if(bytes > 0 && len > sizeof(bt_packet_logger_header_t)) {
 			debug_info("Reading %u bytes\n", len);
-			ret = bt_packet_logger_receive_with_timeout(btwt->client, c, len, &bytes, 500);
+			ret = bt_packet_logger_receive_with_timeout(btwt->client, (char *)btwt->rxbuff, len, &bytes, PAYLOAD_READ_TIMEOUT);
 
 			if(len != bytes) {
 				debug_info("Failed Read Expected %u, Received %u\n", len, bytes);
@@ -177,13 +173,12 @@ void *bt_packet_logger_worker(void *arg)
 				break;
 			}
 
-			btwt->cbfunc(c, len, btwt->user_data);
+			btwt->cbfunc(btwt->rxbuff, len, btwt->user_data);
 		}
 	}
 
-	if (btwt) {
-		free(btwt);
-	}
+	// null check performed above
+	free(btwt);
 
 	debug_info("Exiting");
 
