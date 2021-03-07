@@ -161,41 +161,10 @@ static int start_logging(void)
 	}
 
 	/* start bt_packet_logger service */
-	lockdownd_service_descriptor_t svc = NULL;
-	lerr = lockdownd_start_service(lockdown, BT_PACKETLOGGER_SERVICE_NAME, &svc);
-	if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
-		fprintf(stderr, "*** Device is passcode protected, enter passcode on the device to continue ***\n");
-		while (!quit_flag) {
-			lerr = lockdownd_start_service(lockdown, BT_PACKETLOGGER_SERVICE_NAME, &svc);
-			if (lerr != LOCKDOWN_E_PASSWORD_PROTECTED) {
-				break;
-			}
-			sleep(1);
-		}
-	}
-	if (lerr != LOCKDOWN_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Could not connect to lockdownd: %d\n", lerr);
-		fprintf(stderr, "Please ensure the target device has a valid Bluetooth logging profile installed\n");
-		idevice_free(device);
-		device = NULL;
-		return -1;
-	}
-	lockdownd_client_free(lockdown);
-
-	/* connect to bt_packet_logger service */
-	bt_packet_logger_error_t serr = BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
-	serr = bt_packet_logger_client_new(device, svc, &bt_packet_logger);
-	lockdownd_service_descriptor_free(svc);
-	if (serr != BT_PACKET_LOGGER_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Could not start service %s.\n", BT_PACKETLOGGER_SERVICE_NAME);
-		fprintf(stderr, "Please ensure the target device has a valid Bluetooth logging profile installed\n");
-		idevice_free(device);
-		device = NULL;
-		return -1;
-	}
+	bt_packet_logger_client_start_service(device, &bt_packet_logger, TOOL_NAME);
 
 	/* start capturing bt_packet_logger */
-	serr = bt_packet_logger_start_capture(bt_packet_logger, bt_packet_logger_callback, NULL);
+	bt_packet_logger_error_t serr = bt_packet_logger_start_capture(bt_packet_logger, bt_packet_logger_callback, NULL);
 	if (serr != BT_PACKET_LOGGER_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Unable to start capturing bt_packet_logger.\n");
 		bt_packet_logger_client_free(bt_packet_logger);
