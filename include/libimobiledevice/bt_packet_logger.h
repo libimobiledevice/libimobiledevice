@@ -53,7 +53,7 @@ typedef struct {
 typedef struct bt_packet_logger_client_private bt_packet_logger_client_private;
 typedef bt_packet_logger_client_private *bt_packet_logger_client_t; /**< The client handle. */
 
-/** Receives each character received from the device. */
+/** Receives each hci packet received from the device. */
 typedef void (*bt_packet_logger_receive_cb_t)(uint8_t * data, uint16_t len, void *user_data);
 
 /* Interface */
@@ -100,32 +100,32 @@ bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t 
 
 
 /**
- * Starts capturing the syslog of the device using a callback.
+ * Starts capturing the hci interface from the device using a callback.
  *
- * Use bt_packet_logger_stop_capture() to stop receiving the syslog.
+ * Use bt_packet_logger_stop_capture() to stop receiving hci data.
  *
  * @param client The bt_packet_logger client to use
- * @param callback Callback to receive each character from the syslog.
+ * @param callback Callback to receive each packet from the hci interface.
  * @param user_data Custom pointer passed to the callback function.
  *
  * @return BT_PACKET_LOGGER_E_SUCCESS on success,
  *      BT_PACKET_LOGGER_E_INVALID_ARG when one or more parameters are
  *      invalid or BT_PACKET_LOGGER_E_UNKNOWN_ERROR when an unspecified
- *      error occurs or a syslog capture has already been started.
+ *      error occurs or an hci capture has already been started.
  */
 bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_t client, bt_packet_logger_receive_cb_t callback, void* user_data);
 
 /**
- * Stops capturing the syslog of the device.
+ * Stops capturing the hci interface from the device.
  *
- * Use bt_packet_logger_start_capture() to start receiving the syslog.
+ * Use bt_packet_logger_start_capture() to start receiving the hci data.
  *
  * @param client The bt_packet_logger client to use
  *
  * @return BT_PACKET_LOGGER_E_SUCCESS on success,
  *      BT_PACKET_LOGGER_E_INVALID_ARG when one or more parameters are
  *      invalid or BT_PACKET_LOGGER_E_UNKNOWN_ERROR when an unspecified
- *      error occurs or a syslog capture has already been started.
+ *      error occurs or an hci capture has already been started.
  */
 bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t client);
 
