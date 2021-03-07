@@ -11,6 +11,7 @@ AM_LDFLAGS = \
 	$(libplist_LIBS)
 
 bin_PROGRAMS = \
+	idevicebtlogger\
 	idevice_id \
 	ideviceinfo \
 	idevicename \
@@ -29,6 +30,11 @@ bin_PROGRAMS = \
 	idevicenotificationproxy \
 	idevicecrashreport \
 	idevicesetlocation
+
+idevicebtlogger_SOURCES = idevicebtlogger.c
+iidevicebtlogger_CFLAGS = $(AM_CFLAGS)
+idevicebtlogger_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS) -lpcap
+idevicebtlogger_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceinfo_SOURCES = ideviceinfo.c
 ideviceinfo_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
