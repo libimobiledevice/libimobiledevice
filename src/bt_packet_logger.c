@@ -28,6 +28,7 @@
 #include "bt_packet_logger.h"
 #include "lockdown.h"
 #include "common/debug.h"
+
 struct bt_packet_logger_worker_thread {
 	bt_packet_logger_client_t client;
 	bt_packet_logger_receive_cb_t cbfunc;

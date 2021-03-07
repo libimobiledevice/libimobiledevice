@@ -66,6 +66,9 @@ typedef enum {
 	RECV_ACL_DATA = 0x03
 } PacketLoggerPacketType;
 
+/**
+ * Callback from the packet logger service to handle packets and log to pcap
+ */
 static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_data)
 {
 	bt_packet_logger_header_t * header = (bt_packet_logger_header_t *)data;
@@ -128,6 +131,9 @@ static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_d
 	}
 }
 
+/**
+ * Disable HCI log capture
+ */
 static void stop_logging(void)
 {
 	fflush(NULL);
@@ -143,6 +149,9 @@ static void stop_logging(void)
 	}
 }
 
+/**
+ * Enable HCI log capture
+ */
 static int start_logging(void)
 {
 	idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
@@ -180,6 +189,9 @@ static int start_logging(void)
 	return 0;
 }
 
+/**
+ * Callback for device events
+ */
 static void device_event_cb(const idevice_event_t* event, void* userdata)
 {
 	if (use_network && event->conn_type != CONNECTION_NETWORK) {
@@ -218,6 +230,9 @@ static void clean_exit(int sig)
 	quit_flag++;
 }
 
+/**
+ * print usage information
+ */
 static void print_usage(int argc, char **argv, int is_error)
 {
 	char *name = NULL;
@@ -240,6 +255,9 @@ static void print_usage(int argc, char **argv, int is_error)
 	);
 }
 
+/**
+ * Program entry
+ */
 int main(int argc, char *argv[])
 {
 	int c = 0;
