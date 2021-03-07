@@ -109,14 +109,6 @@ static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_d
 		pcap_dump((unsigned char*)dump, &pcap_header, &data[offset]);
 		pcap_dump_flush(dump);
 	}
-
-	// for(; offset < len; offset++) {
-	// 	if( (offset - sizeof(PacketHeaderType)) % 16 == 0) {
-	// 		printf("\n");
-	// 	}
-	// 	printf("0x%02x, ", 0xff&data[offset]);
-	// }
-	// printf("\n------------------------------------------------------------------------------------------------\n");
 }
 
 static void stop_logging(void)
