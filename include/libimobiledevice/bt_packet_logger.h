@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 #define BT_PACKETLOGGER_SERVICE_NAME "com.apple.bluetooth.BTPacketLogger"
+#define BT_MAX_PACKET_SIZE 65535
 
 /** Error Codes */
 typedef enum {
@@ -42,6 +43,12 @@ typedef enum {
 	BT_PACKET_LOGGER_E_TIMEOUT         = -5,
 	BT_PACKET_LOGGER_E_UNKNOWN_ERROR   = -256
 } bt_packet_logger_error_t;
+
+typedef struct {
+	uint32_t length;
+	uint32_t ts_secs;
+	uint32_t ts_usecs;
+} bt_packet_logger_header_t;
 
 typedef struct bt_packet_logger_client_private bt_packet_logger_client_private;
 typedef bt_packet_logger_client_private *bt_packet_logger_client_t; /**< The client handle. */
@@ -141,19 +148,6 @@ bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t
  */
 bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
 
-/**
- * Receives data from the service.
- *
- * @param client The bt_packet_logger client
- * @param data Buffer that will be filled with the data received
- * @param size Number of bytes to receive
- * @param received Number of bytes received (can be NULL to ignore)
- * @param timeout Maximum time in milliseconds to wait for data.
- *
- * @return BT_PACKET_LOGGER_E_SUCCESS on success,
- *  BT_PACKET_LOGGER_E_INVALID_ARG when client or plist is NULL
- */
-bt_packet_logger_error_t bt_packet_logger_receive(bt_packet_logger_client_t client, char *data, uint32_t size, uint32_t *received);
 
 #ifdef __cplusplus
 }

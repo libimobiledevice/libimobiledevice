@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _SYSLOG_RELAY_H
-#define _SYSLOG_RELAY_H
+#ifndef _BR_PACKET_LOGGER_H
+#define _BR_PACKET_LOGGER_H
 
 #include "libimobiledevice/bt_packet_logger.h"
 #include "service.h"
