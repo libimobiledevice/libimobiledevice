@@ -1,6 +1,6 @@
 /*
  * bt_packet_logger.h
- * com.apple.bt_packet_logger service header file.
+ * com.apple.bluetooth.BTPacketLogger service header file.
  *
  * Copyright (c) 2021 Geoffrey Kruse, All Rights Reserved.
  *
