@@ -1,6 +1,7 @@
 man_MANS = \
 	idevice_id.1 \
 	ideviceinfo.1 \
+	idevicebtlogger.1 \
 	idevicesyslog.1 \
 	idevicebackup.1 \
 	idevicebackup2.1 \
