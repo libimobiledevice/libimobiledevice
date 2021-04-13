@@ -8,12 +8,17 @@ AM_CFLAGS = \
 	$(libplist_CFLAGS) \
 	$(libgnutls_CFLAGS) \
 	$(libtasn1_CFLAGS) \
+	$(libgcrypt_CFLAGS) \
 	$(openssl_CFLAGS) \
 	$(LFS_CFLAGS)
 
 AM_LDFLAGS = \
 	$(libusbmuxd_LIBS) \
 	$(libplist_LIBS) \
+	$(libgnutls_LIBS) \
+	$(libtasn1_LIBS) \
+	$(libgcrypt_LIBS) \
+	$(openssl_LIBS) \
 	${libpthread_LIBS}
 
 noinst_LTLIBRARIES = libinternalcommon.la
