@@ -30,6 +30,8 @@
 struct debugserver_client_private {
 	service_client_t parent;
 	int noack_mode;
+	int (*cancel_receive)();
+	int receive_loop_timeout;
 };
 
 struct debugserver_command_private {
