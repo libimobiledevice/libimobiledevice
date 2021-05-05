@@ -40,6 +40,7 @@
 #endif
 
 #include "idevice.h"
+#include "lockdown.h"
 #include "common/userpref.h"
 #include "common/socket.h"
 #include "common/thread.h"
@@ -810,7 +811,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **u
 	if (!device || !udid)
 		return IDEVICE_E_INVALID_ARG;
 
-	*udid = strdup(device->udid);
+	if (device->udid) {
+		*udid = strdup(device->udid);
+	}
 	return IDEVICE_E_SUCCESS;
 }
 

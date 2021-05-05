@@ -1,0 +1,62 @@
+Licensing
+---------
+
+SRP is royalty-free worldwide for commercial and non-commercial use.
+The SRP library has been carefully written not to depend on any
+encumbered algorithms, and it is distributed under a standard
+BSD-style Open Source license which is shown below.  This license
+covers implementations based on the SRP library as well as
+independent implementations based on RFC 2945.
+
+The SRP distribution itself contains algorithms and code from
+various freeware packages; these parts fall under both the SRP
+Open Source license and the packages' own licenses.  Care has
+been taken to ensure that these licenses are compatible with
+Open Source distribution, but it is the responsibility of the
+licensee to comply with the terms of these licenses.  This
+disclaimer also applies to third-party libraries that may be
+linked into the distribution, since they may contain patented
+intellectual property.  The file "Copyrights" contains a list
+of the copyrights incorporated by portions of the software.
+
+Broader use of the SRP authentication technology, such as variants
+incorporating the use of an explicit server secret (SRP-Z), may
+require a license; please contact the Stanford Office of Technology
+Licensing (http://otl.stanford.edu/) for more information about
+terms and conditions.
+
+This software is covered under the following copyright:
+
+/*
+ * Copyright (c) 1997-2007  The Stanford SRP Authentication Project
+ * All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND, 
+ * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY 
+ * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  
+ *
+ * IN NO EVENT SHALL STANFORD BE LIABLE FOR ANY SPECIAL, INCIDENTAL,
+ * INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND, OR ANY DAMAGES WHATSOEVER
+ * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER OR NOT ADVISED OF
+ * THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF LIABILITY, ARISING OUT
+ * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Redistributions in source or binary form must retain an intact copy
+ * of this copyright notice.
+ */
+
+Address all questions regarding this license to:
+
+  Tom Wu
+  tjw@cs.Stanford.EDU

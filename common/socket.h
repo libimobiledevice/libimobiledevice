@@ -65,4 +65,6 @@ void socket_set_verbose(int level);
 
 const char *socket_addr_to_string(struct sockaddr *addr, char *addr_out, size_t addr_out_size);
 
+int get_primary_mac_address(unsigned char mac_addr_buf[6]);
+
 #endif	/* SOCKET_SOCKET_H */

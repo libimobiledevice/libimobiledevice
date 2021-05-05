@@ -37,7 +37,7 @@ PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([stdint.h stdlib.h string.h gcrypt.h])
+AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h gcrypt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -72,6 +72,7 @@ case ${host_os} in
     ;;
   darwin*)
     AC_MSG_RESULT([${host_os}])
+    darwin=true
     ;;
   *)
     AC_MSG_RESULT([${host_os}])
@@ -80,6 +81,7 @@ case ${host_os} in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+AM_CONDITIONAL(DARWIN, test x$darwin = xtrue)
 
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
@@ -161,11 +163,26 @@ else
   pkg_req_libtasn1="libtasn1 >= 1.1"
   PKG_CHECK_MODULES(libgnutls, $pkg_req_gnutls)
   AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice with GnuTLS])])
+  AC_DEFINE(HAVE_GCRYPT, 1, [Define if you have libgcrypt support])
   PKG_CHECK_MODULES(libtasn1, $pkg_req_libtasn1)
   ssl_provider="GnuTLS"
   ssl_requires="$pkg_req_gnutls $pkg_req_libtasn1"
   AC_SUBST(ssl_requires)
 fi
+AM_CONDITIONAL(HAVE_OPENSSL, test x$enable_openssl = xyes)
+AM_CONDITIONAL(HAVE_GCRYPT, test -n $libgcrypt_LIBS)
+
+THIRD_PARTY_FILES=""
+AC_ARG_ENABLE([wireless-pairing],
+            [AS_HELP_STRING([--disable-wireless-pairing],
+            [build with wirless pairing support (default is yes)])],
+            [wireless_pairing=$enableval],
+            [wireless_pairing=yes])
+if test "$wireless_pairing" = "yes"; then
+  AC_DEFINE(HAVE_WIRELESS_PAIRING,1,[Define if building with wireless pairing support])
+  THIRD_PARTY_FILES+="3rd_party/ed25519/Makefile 3rd_party/libsrp6a-sha512/Makefile"
+fi
+AM_CONDITIONAL(HAVE_WIRELESS_PAIRING, test x$wireless_pairing = xyes)
 
 AC_ARG_ENABLE([debug],
             [AS_HELP_STRING([--enable-debug],
@@ -194,6 +211,8 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_OUTPUT([
 Makefile
+3rd_party/Makefile
+$THIRD_PARTY_FILES
 common/Makefile
 src/Makefile
 src/libimobiledevice-1.0.pc

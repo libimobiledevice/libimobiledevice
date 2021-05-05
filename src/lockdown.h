@@ -35,6 +35,11 @@ struct lockdownd_client_private {
 	char *udid;
 	char *label;
 	uint32_t mux_id;
+	idevice_t device;
+	unsigned char* cu_key;
+	unsigned int cu_key_len;
 };
+
+lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_match);
 
 #endif

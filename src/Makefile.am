@@ -1,5 +1,7 @@
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/libsrp6a-sha512-client \
+	-I$(top_srcdir)/ed25519/src \
 	-I$(top_srcdir)
 
 AM_CFLAGS = \
@@ -23,13 +25,18 @@ AM_LDFLAGS = \
 
 lib_LTLIBRARIES = libimobiledevice-1.0.la
 libimobiledevice_1_0_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
+libimobiledevice_1_0_la_LIBADD += $(top_builddir)/3rd_party/ed25519/libed25519.la $(top_builddir)/3rd_party/libsrp6a-sha512/libsrp6a-sha512.la
 libimobiledevice_1_0_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
+if DARWIN
+libimobiledevice_1_0_la_LDFLAGS += -framework CoreFoundation -framework SystemConfiguration
+endif
 libimobiledevice_1_0_la_SOURCES = \
 	idevice.c idevice.h \
 	service.c service.h \
 	property_list_service.c property_list_service.h \
 	device_link_service.c device_link_service.h \
 	lockdown.c lockdown.h \
+	lockdown-cu.c \
 	afc.c afc.h \
 	file_relay.c file_relay.h \
 	notification_proxy.c notification_proxy.h \

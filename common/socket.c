@@ -55,6 +55,12 @@ static int wsa_init = 0;
 #ifdef AF_INET6
 #include <net/if.h>
 #include <ifaddrs.h>
+#ifdef __APPLE__
+#include <net/if_dl.h>
+#endif
+#ifdef __linux__
+#include <netpacket/packet.h>
+#endif
 #endif
 #endif
 #include "socket.h"
@@ -416,6 +422,7 @@ static void freeifaddrs(struct ifaddrs *ifa)
 	free(ifa->ifa_addr);
 	free(ifa->ifa_netmask);
 	free(ifa->ifa_dstaddr);
+	free(ifa->ifa_data);
 	freeifaddrs(ifa->ifa_next);
 	free(ifa);
 }
@@ -500,6 +507,7 @@ static int getifaddrs(struct ifaddrs** ifap)
 				ifa = ifanew;
 				ifa->ifa_next = NULL;
 			}
+			ifa->ifa_data = NULL;
 
 			/* name */
 			ifa->ifa_name = strdup(adapter->AdapterName);
@@ -520,6 +528,12 @@ static int getifaddrs(struct ifaddrs** ifap)
 			/* netmask */
 			ifa->ifa_netmask = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
 			memset(ifa->ifa_netmask, 0, sizeof(struct sockaddr_storage));
+
+			/* store mac address */
+			if (adapter->PhysicalAddressLength == 6) {
+				ifa->ifa_data = malloc(6);
+				memcpy(ifa->ifa_data, adapter->PhysicalAddress, 6);
+			}
 
 /* pre-Vista must hunt for matching prefix in linked list, otherwise use
  * OnLinkPrefixLength from IP_ADAPTER_UNICAST_ADDRESS structure.
@@ -683,6 +697,54 @@ static int getifaddrs(struct ifaddrs** ifap)
 #error No reference implementation for getifaddrs available for this platform.
 #endif
 #endif
+
+int get_primary_mac_address(unsigned char mac_addr_buf[6])
+{
+	int result = -1;
+	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
+	if (getifaddrs(&ifaddr) != -1) {
+		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+			if (ifa->ifa_addr == NULL) {
+				continue;
+			}
+			if ((ifa->ifa_flags & IFF_UP) == 0) {
+				continue;
+			}
+			if (ifa->ifa_flags & IFF_LOOPBACK) {
+				continue;
+			}
+#if defined(__APPLE__)
+			if (ifa->ifa_addr->sa_family != AF_LINK) {
+				continue;
+			}
+			if (!strcmp(ifa->ifa_name, "en0")) {
+				memcpy(mac_addr_buf, (unsigned char *)LLADDR((struct sockaddr_dl *)(ifa)->ifa_addr), 6);
+				result = 0;
+				break;
+			}
+#elif defined (__linux__)
+			if (ifa->ifa_addr->sa_family != AF_PACKET) {
+				continue;
+			}
+			if (strcmp(ifa->ifa_name, "lo") != 0) {
+				memcpy(mac_addr_buf, ((struct sockaddr_ll*)ifa->ifa_addr)->sll_addr, 6);
+				result = 0;
+				break;
+			}
+#elif defined (WIN32)
+			if (ifa->ifa_data) {
+				memcpy(mac_addr_buf, ifa->ifa_data, 6);
+				result = 0;
+				break;
+			}
+#else
+#error get_primary_mac_address is not supported on this platform.
+#endif
+		}
+		freeifaddrs(ifaddr);
+	}
+	return result;
+}
 
 static int32_t _sockaddr_in6_scope_id(struct sockaddr_in6* addr)
 {
