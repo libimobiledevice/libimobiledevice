@@ -232,7 +232,7 @@ static instproxy_error_t instproxy_error(property_list_service_error_t err)
 	return INSTPROXY_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client)
+instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, instproxy_client_t *client)
 {
 	property_list_service_client_t plistclient = NULL;
 	instproxy_error_t err = instproxy_error(property_list_service_client_new(device, service, &plistclient));
@@ -249,14 +249,14 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_new(idevice_t device, lo
 	return INSTPROXY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
+instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
 {
 	instproxy_error_t err = INSTPROXY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, INSTPROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(instproxy_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_free(instproxy_client_t client)
+instproxy_error_t instproxy_client_free(instproxy_client_t client)
 {
 	if (!client)
 		return INSTPROXY_E_INVALID_ARG;
@@ -531,7 +531,7 @@ static instproxy_error_t instproxy_perform_command(instproxy_client_t client, pl
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_browse_with_callback(instproxy_client_t client, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	if (!client || !client->parent || !status_cb)
 		return INSTPROXY_E_INVALID_ARG;
@@ -572,7 +572,7 @@ static void instproxy_append_current_list_to_result_cb(plist_t command, plist_t 
 		plist_free(current_list);
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result)
+instproxy_error_t instproxy_browse(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	if (!client || !client->parent || !result)
 		return INSTPROXY_E_INVALID_ARG;
@@ -609,7 +609,7 @@ static void instproxy_copy_lookup_result_cb(plist_t command, plist_t status, voi
 	}
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appids, plist_t client_options, plist_t *result)
+instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appids, plist_t client_options, plist_t *result)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 	int i = 0;
@@ -656,7 +656,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup(instproxy_client_t clien
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -673,7 +673,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_install(instproxy_client_t clie
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -690,7 +690,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_upgrade(instproxy_client_t clie
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -707,7 +707,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_uninstall(instproxy_client_t cl
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result)
+instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t client_options, plist_t *result)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -723,7 +723,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_lookup_archives(instproxy_clien
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -740,7 +740,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_archive(instproxy_client_t clie
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -757,7 +757,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_restore(instproxy_client_t clie
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
+instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -774,7 +774,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_remove_archive(instproxy_client
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result)
+instproxy_error_t instproxy_check_capabilities_match(instproxy_client_t client, const char** capabilities, plist_t client_options, plist_t *result)
 {
 	if (!client || !capabilities || !result)
 		return INSTPROXY_E_INVALID_ARG;
@@ -811,7 +811,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_check_capabilities_match(instpr
 	return res;
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_status_get_error(plist_t status, char **name, char** description, uint64_t* code)
+instproxy_error_t instproxy_status_get_error(plist_t status, char **name, char** description, uint64_t* code)
 {
 	instproxy_error_t res = INSTPROXY_E_UNKNOWN_ERROR;
 
@@ -849,7 +849,7 @@ LIBIMOBILEDEVICE_API instproxy_error_t instproxy_status_get_error(plist_t status
 	return res;
 }
 
-LIBIMOBILEDEVICE_API void instproxy_status_get_name(plist_t status, char **name)
+void instproxy_status_get_name(plist_t status, char **name)
 {
 	if (name) {
 		plist_t node = plist_dict_get_item(status, "Status");
@@ -861,7 +861,7 @@ LIBIMOBILEDEVICE_API void instproxy_status_get_name(plist_t status, char **name)
 	}
 }
 
-LIBIMOBILEDEVICE_API void instproxy_status_get_percent_complete(plist_t status, int *percent)
+void instproxy_status_get_percent_complete(plist_t status, int *percent)
 {
 	uint64_t val = 0;
 	if (percent) {
@@ -873,7 +873,7 @@ LIBIMOBILEDEVICE_API void instproxy_status_get_percent_complete(plist_t status, 
 	}
 }
 
-LIBIMOBILEDEVICE_API void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t* current_index, uint64_t* current_amount, plist_t* list)
+void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t* current_index, uint64_t* current_amount, plist_t* list)
 {
 	plist_t node = NULL;
 
@@ -910,7 +910,7 @@ LIBIMOBILEDEVICE_API void instproxy_status_get_current_list(plist_t status, uint
 	}
 }
 
-LIBIMOBILEDEVICE_API void instproxy_command_get_name(plist_t command, char** name)
+void instproxy_command_get_name(plist_t command, char** name)
 {
 	if (name) {
 		plist_t node = plist_dict_get_item(command, "Command");
@@ -922,12 +922,12 @@ LIBIMOBILEDEVICE_API void instproxy_command_get_name(plist_t command, char** nam
 	}
 }
 
-LIBIMOBILEDEVICE_API plist_t instproxy_client_options_new(void)
+plist_t instproxy_client_options_new(void)
 {
 	return plist_new_dict();
 }
 
-LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, ...)
+void instproxy_client_options_add(plist_t client_options, ...)
 {
 	if (!client_options)
 		return;
@@ -961,7 +961,7 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_add(plist_t client_options, .
 	va_end(args);
 }
 
-LIBIMOBILEDEVICE_API void instproxy_client_options_set_return_attributes(plist_t client_options, ...)
+void instproxy_client_options_set_return_attributes(plist_t client_options, ...)
 {
 	if (!client_options)
 		return;
@@ -982,14 +982,14 @@ LIBIMOBILEDEVICE_API void instproxy_client_options_set_return_attributes(plist_t
 	plist_dict_set_item(client_options, "ReturnAttributes", return_attributes);
 }
 
-LIBIMOBILEDEVICE_API void instproxy_client_options_free(plist_t client_options)
+void instproxy_client_options_free(plist_t client_options)
 {
 	if (client_options) {
 		plist_free(client_options);
 	}
 }
 
-LIBIMOBILEDEVICE_API instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* appid, char** path)
+instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* appid, char** path)
 {
 	if (!client || !client->parent || !appid)
 		return INSTPROXY_E_INVALID_ARG;

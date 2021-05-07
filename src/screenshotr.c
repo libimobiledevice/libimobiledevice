@@ -65,7 +65,7 @@ static screenshotr_error_t screenshotr_error(device_link_service_error_t err)
 	return SCREENSHOTR_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service,
+screenshotr_error_t screenshotr_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 					   screenshotr_client_t * client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
@@ -93,14 +93,14 @@ LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_new(idevice_t device
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_start_service(idevice_t device, screenshotr_client_t * client, const char* label)
+screenshotr_error_t screenshotr_client_start_service(idevice_t device, screenshotr_client_t * client, const char* label)
 {
 	screenshotr_error_t err = SCREENSHOTR_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, SCREENSHOTR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(screenshotr_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
+screenshotr_error_t screenshotr_client_free(screenshotr_client_t client)
 {
 	if (!client)
 		return SCREENSHOTR_E_INVALID_ARG;
@@ -110,7 +110,7 @@ LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_client_free(screenshotr_cli
 	return err;
 }
 
-LIBIMOBILEDEVICE_API screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize)
+screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize)
 {
 	if (!client || !client->parent || !imgdata)
 		return SCREENSHOTR_E_INVALID_ARG;
