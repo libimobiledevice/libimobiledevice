@@ -31,7 +31,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 #define DEBUGSERVER_SERVICE_NAME "com.apple.debugserver"
-#define DEBUGSERVER_SECURE_SERVICE_NAME DEBUGSERVER_SERVICE_NAME ".DVTSecureSocketProxy"
+#define DEBUGSERVER_SECURE_SERVICE_NAME "com.apple.debugserver.DVTSecureSocketProxy"
 
 /** Error Codes */
 typedef enum {
