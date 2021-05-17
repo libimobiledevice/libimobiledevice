@@ -1,7 +1,7 @@
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/libsrp6a-sha512-client \
-	-I$(top_srcdir)/ed25519/src \
+	-I$(top_srcdir)/3rd_party/libsrp6a-sha512 \
+	-I$(top_srcdir)/3rd_party/ed25519 \
 	-I$(top_srcdir)
 
 AM_CFLAGS = \
