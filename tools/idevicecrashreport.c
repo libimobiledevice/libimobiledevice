@@ -149,7 +149,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 
 		/* assemble absolute target filename */
 #ifdef WIN32
-		// replace every ':' with '-' since ':' is an illegal character for file names in windows
+		/* replace every ':' with '-' since ':' is an illegal character for file names in windows */
 		char* current_pos = strchr(list[k], ':');
 		while (current_pos) {
 			*current_pos = '-';
