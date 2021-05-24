@@ -2444,7 +2444,7 @@ checkpoint:
 
 				/* print status */
 				if ((overall_progress > 0) && !progress_finished) {
-					if (overall_progress >= 100.0f) {
+					if (overall_progress >= 100.0F) {
 						progress_finished = 1;
 					}
 					print_progress_real(overall_progress, 0);

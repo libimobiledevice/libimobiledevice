@@ -191,16 +191,16 @@ char *string_format_size(uint64_t size)
 	char buf[80];
 	double sz;
 	if (size >= 1000000000000LL) {
-		sz = ((double)size / 1000000000000.0f);
+		sz = ((double)size / 1000000000000.0F);
 		sprintf(buf, "%0.1f TB", sz);
 	} else if (size >= 1000000000LL) {
-		sz = ((double)size / 1000000000.0f);
+		sz = ((double)size / 1000000000.0F);
 		sprintf(buf, "%0.1f GB", sz);
 	} else if (size >= 1000000LL) {
-		sz = ((double)size / 1000000.0f);
+		sz = ((double)size / 1000000.0F);
 		sprintf(buf, "%0.1f MB", sz);
 	} else if (size >= 1000LL) {
-		sz = ((double)size / 1000.0f);
+		sz = ((double)size / 1000.0F);
 		sprintf(buf, "%0.1f KB", sz);
 	} else {
 		sprintf(buf, "%d Bytes", (int)size);
