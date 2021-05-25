@@ -110,7 +110,7 @@ static void pairing_cb(lockdownd_cu_pairing_cb_type_t cb_type, void *user_data, 
 			free(xml);
 		}
 	} else if (cb_type == LOCKDOWN_CU_PAIRING_ERROR) {
-		printf("ERROR: %s\n", (data_ptr) ? data_ptr : "(unknown)");
+		printf("ERROR: %s\n", (data_ptr) ? (char*)data_ptr : "(unknown)");
 	}
 }
 
