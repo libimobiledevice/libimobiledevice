@@ -172,17 +172,13 @@ fi
 AM_CONDITIONAL(HAVE_OPENSSL, test x$enable_openssl = xyes)
 AM_CONDITIONAL(HAVE_GCRYPT, test -n $libgcrypt_LIBS)
 
-THIRD_PARTY_FILES=""
 AC_ARG_ENABLE([wireless-pairing],
             [AS_HELP_STRING([--disable-wireless-pairing],
-            [build with wirless pairing support (default is yes)])],
-            [wireless_pairing=$enableval],
-            [wireless_pairing=yes])
-if test "$wireless_pairing" = "yes"; then
+            [Do not build with wirless pairing support (default is yes)])])
+if test "$enable_wireless_pairing" != "no"; then
   AC_DEFINE(HAVE_WIRELESS_PAIRING,1,[Define if building with wireless pairing support])
-  THIRD_PARTY_FILES+="3rd_party/ed25519/Makefile 3rd_party/libsrp6a-sha512/Makefile"
 fi
-AM_CONDITIONAL(HAVE_WIRELESS_PAIRING, test x$wireless_pairing = xyes)
+AM_CONDITIONAL(HAVE_WIRELESS_PAIRING, test "$enable_wireless_pairing" != "no")
 
 AC_ARG_ENABLE([debug],
             [AS_HELP_STRING([--enable-debug],
@@ -212,7 +208,8 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_OUTPUT([
 Makefile
 3rd_party/Makefile
-$THIRD_PARTY_FILES
+3rd_party/ed25519/Makefile
+3rd_party/libsrp6a-sha512/Makefile
 common/Makefile
 src/Makefile
 src/libimobiledevice-1.0.pc

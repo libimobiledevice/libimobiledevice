@@ -25,7 +25,9 @@ AM_LDFLAGS = \
 
 lib_LTLIBRARIES = libimobiledevice-1.0.la
 libimobiledevice_1_0_la_LIBADD = $(top_builddir)/common/libinternalcommon.la
+if HAVE_WIRELESS_PAIRING
 libimobiledevice_1_0_la_LIBADD += $(top_builddir)/3rd_party/ed25519/libed25519.la $(top_builddir)/3rd_party/libsrp6a-sha512/libsrp6a-sha512.la
+endif
 libimobiledevice_1_0_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBIMOBILEDEVICE_SO_VERSION) -no-undefined
 if DARWIN
 libimobiledevice_1_0_la_LDFLAGS += -framework CoreFoundation -framework SystemConfiguration
