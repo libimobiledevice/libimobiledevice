@@ -148,6 +148,14 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		strcpy(((char*)source_filename) + device_directory_length, list[k]);
 
 		/* assemble absolute target filename */
+#ifdef WIN32
+		/* replace every ':' with '-' since ':' is an illegal character for file names in windows */
+		char* current_pos = strchr(list[k], ':');
+		while (current_pos) {
+			*current_pos = '-';
+			current_pos = strchr(current_pos, ':');
+		}
+#endif
 		char* p = strrchr(list[k], '.');
 		if (p != NULL && !strncmp(p, ".synced", 7)) {
 			/* make sure to strip ".synced" extension as seen on iOS 5 */
