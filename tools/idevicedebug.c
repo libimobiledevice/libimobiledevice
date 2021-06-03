@@ -50,7 +50,8 @@ static int debug_level = 0;
 
 enum cmd_mode {
 	CMD_NONE = 0,
-	CMD_RUN
+	CMD_RUN,
+	CMD_KILL
 };
 
 static int quit_flag = 0;
@@ -193,6 +194,7 @@ static void print_usage(int argc, char **argv)
 	printf("\n");
 	printf("Where COMMAND is one of:\n");
 	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
+	printf("  kill BUNDLEID [ARGS...]\tkill app with BUNDLEID and optional ARGS on device.\n");
 	printf("\n");
 	printf("The following OPTIONS are accepted:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
@@ -296,6 +298,20 @@ int main(int argc, char *argv[])
 			/*  read bundle identifier */
 			bundle_identifier = argv[i];
 			break;
+		} else if (!strcmp(argv[i], "kill")) {
+			cmd = CMD_KILL;
+
+			i++;
+			if (!argv[i]) {
+				/* make sure at least the bundle identifier was provided */
+				printf("Please supply the bundle identifier of the app to kill.\n");
+				print_usage(argc, argv);
+				res = 0;
+				goto cleanup;
+			}
+			/*  read bundle identifier */
+			bundle_identifier = argv[i];
+			break;
 		} else {
 			print_usage(argc, argv);
 			res = 0;
@@ -327,6 +343,8 @@ int main(int argc, char *argv[])
 	}
 
 	switch (cmd) {
+		case CMD_KILL:
+			quit_flag++;
 		case CMD_RUN:
 		default:
 			/* get the path to the app and it's working directory */
