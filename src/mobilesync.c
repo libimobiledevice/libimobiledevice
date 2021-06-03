@@ -473,7 +473,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_clear_all_records_on_device(m
 		goto out;
 	}
 
-	if (strcmp(response_type, "SDMessageDeviceWillClearAllRecords")) {
+	if (strcmp(response_type, "SDMessageDeviceWillClearAllRecords") != 0) {
 		err = MOBILESYNC_E_PLIST_ERROR;
 	}
 

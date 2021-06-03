@@ -678,7 +678,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	ret = lockdownd_query_type(client_loc, &type);
 	if (LOCKDOWN_E_SUCCESS != ret) {
 		debug_info("QueryType failed in the lockdownd client.");
-	} else if (strcmp("com.apple.mobile.lockdown", type)) {
+	} else if (strcmp("com.apple.mobile.lockdown", type) != 0) {
 		debug_info("Warning QueryType request returned \"%s\".", type);
 	}
 	free(type);

@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 		result = EXIT_FAILURE;
 		goto leave;
 	} else {
-		if (strcmp("com.apple.mobile.lockdown", type)) {
+		if (strcmp("com.apple.mobile.lockdown", type) != 0) {
 			printf("WARNING: QueryType request returned '%s'\n", type);
 		}
 		free(type);

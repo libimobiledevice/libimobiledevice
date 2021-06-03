@@ -143,7 +143,7 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_request_sources_timeout(file_
 		goto leave;
 	}
 
-	if (strcmp(ack, "Acknowledged")) {
+	if (strcmp(ack, "Acknowledged") != 0) {
 		debug_info("ERROR: Did not receive 'Acknowledged' but '%s'", ack);
 		goto leave;
 	}
