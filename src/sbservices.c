@@ -291,3 +291,9 @@ leave_unlock:
 	sbservices_unlock(client);
 	return res;
 }
+
+LIBIMOBILEDEVICE_API void sbservices_free_screen_wallpaper_image_data(char* pngdata){
+	if(pngdata){
+		free(pngdata);
+	}
+}

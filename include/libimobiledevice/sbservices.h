@@ -169,6 +169,17 @@ sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t clie
  */
 sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
+
+/*
+ * Release the memory data returned by sbservices_get_home_screen_wallpaper_pngdata()
+ *
+ * @param pngdata The image memory address returned by sbservices_get_home_screen_wallpaper_pngdata().
+ *
+ * @return none.
+ * */
+void sbservices_free_screen_wallpaper_image_data(char* pngdata);
+
+
 #ifdef __cplusplus
 }
 #endif
