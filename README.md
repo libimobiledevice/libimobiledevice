@@ -65,6 +65,11 @@ sudo apt-get install \
 	libssl-dev \
 	usbmuxd
 ```
+### Arch Linux
+```shell
+sudo pacman -S --noconfirm base-devel git usbmuxd
+```
+
 
 If you want to optionally build the documentation or Python bindings use:
 ```shell
