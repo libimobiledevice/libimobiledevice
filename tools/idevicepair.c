@@ -41,6 +41,7 @@
 #endif
 
 #include "common/userpref.h"
+#include "common/utils.h"
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -102,13 +103,7 @@ static void pairing_cb(lockdownd_cu_pairing_cb_type_t cb_type, void *user_data, 
 		printf("\n");
 	} else if (cb_type == LOCKDOWN_CU_PAIRING_DEVICE_INFO) {
 		printf("Device info:\n");
-		char* xml = NULL;
-		uint32_t xlen = 0;
-		plist_to_xml((plist_t)data_ptr, &xml, &xlen);
-		if (xml) {
-			printf("%s\n", xml);
-			free(xml);
-		}
+		plist_print_to_stream_with_indentation((plist_t)data_ptr, stdout, 2);
 	} else if (cb_type == LOCKDOWN_CU_PAIRING_ERROR) {
 		printf("ERROR: %s\n", (data_ptr) ? (char*)data_ptr : "(unknown)");
 	}
