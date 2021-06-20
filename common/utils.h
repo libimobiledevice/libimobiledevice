@@ -59,6 +59,7 @@ enum plist_format_t {
 int plist_read_from_filename(plist_t *plist, const char *filename);
 int plist_write_to_filename(plist_t plist, const char *filename, enum plist_format_t format);
 
+void plist_print_to_stream_with_indentation(plist_t plist, FILE* stream, unsigned int indentation);
 void plist_print_to_stream(plist_t plist, FILE* stream);
 
 #endif
