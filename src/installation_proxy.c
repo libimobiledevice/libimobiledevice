@@ -367,17 +367,14 @@ static instproxy_error_t instproxy_receive_status_loop(instproxy_client_t client
 			/* check status from response */
 			instproxy_status_get_name(node, &status_name);
 			if (!status_name) {
-				debug_info("failed to retrieve name from status response with error %d.", res);
-				complete = 1;
-			}
-
-			if (status_name) {
+				debug_info("ignoring message without Status key:");
+				debug_plist(node);
+			} else {
 				if (!strcmp(status_name, "Complete")) {
 					complete = 1;
 				} else {
 					res = INSTPROXY_E_OP_IN_PROGRESS;
 				}
-
 #ifndef STRIP_DEBUG_CODE
 				percent_complete = -1;
 				instproxy_status_get_percent_complete(node, &percent_complete);
