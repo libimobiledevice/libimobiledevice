@@ -110,6 +110,16 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);
  */
 screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize);
 
+
+/*
+ * Release the memory data returned by screenshotr_take_screenshot()
+ *
+ * @param imgdata The image memory address returned by screenshotr_take_screenshot().
+ *
+ * @return none.
+ * */
+void screenshotr_free_screenshot_image_data(char* imgdata);
+
 #ifdef __cplusplus
 }
 #endif

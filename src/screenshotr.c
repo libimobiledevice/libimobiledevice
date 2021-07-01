@@ -163,3 +163,9 @@ leave:
 
 	return res;
 }
+
+LIBIMOBILEDEVICE_API void screenshotr_free_screenshot_image_data(char* imgdata){
+	if(imgdata){
+		free(imgdata);
+	}
+}
