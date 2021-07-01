@@ -33,6 +33,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
+#define __timespec_defined 1
 
 #ifdef WIN32
 #include <windows.h>
@@ -354,7 +356,14 @@ static void syslog_callback(char c, void *user_data)
 
 				/* write date and time */
 				TEXT_COLOR(COLOR_DARK_WHITE);
-				fwrite(line, 1, 16, stdout);
+				char* str_time = (char*)malloc(15);
+				struct timespec t;
+				timespec_get(&t, 1);
+				strftime(str_time, 254, " %H:%M:%S", localtime (&t.tv_sec));
+				sprintf(str_time, "%s.%03ld ", str_time, t.tv_nsec/1000000);
+				fwrite(line, 1, 6, stdout);
+				fwrite(str_time, 1, 14, stdout);
+				free (str_time);
 
 				if (show_device_name) {
 					/* write device name */
