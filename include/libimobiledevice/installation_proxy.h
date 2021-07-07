@@ -495,7 +495,7 @@ void instproxy_client_options_free(plist_t client_options);
  *         the path could not be determined or an INSTPROXY_E_* error
  *         value if an error occurred.
  */
-instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* bundle_id, char** path);
+instproxy_error_t instproxy_client_get_path_for_bundle_identifier(instproxy_client_t client, const char* appid, char** path);
 
 #ifdef __cplusplus
 }
