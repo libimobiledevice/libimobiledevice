@@ -37,7 +37,7 @@ extern "C" {
 #define MOBILESYNC_SERVICE_NAME "com.apple.mobilesync"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MOBILESYNC_E_SUCCESS         =  0,
 	MOBILESYNC_E_INVALID_ARG     = -1,
 	MOBILESYNC_E_PLIST_ERROR     = -2,
@@ -53,7 +53,7 @@ typedef enum {
 } mobilesync_error_t;
 
 /** The sync type of the current sync session. */
-typedef enum {
+typedef enum : uint32_t {
 	MOBILESYNC_SYNC_TYPE_FAST, /**< Fast-sync requires that only the changes made since the last synchronization should be reported by the computer. */
 	MOBILESYNC_SYNC_TYPE_SLOW, /**< Slow-sync requires that all data from the computer needs to be synchronized/sent. */
 	MOBILESYNC_SYNC_TYPE_RESET /**< Reset-sync signals that the computer should send all data again. */

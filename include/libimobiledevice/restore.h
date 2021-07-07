@@ -32,7 +32,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	RESTORE_E_SUCCESS              =  0,
 	RESTORE_E_INVALID_ARG          = -1,
 	RESTORE_E_PLIST_ERROR          = -2,

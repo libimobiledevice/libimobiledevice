@@ -35,7 +35,7 @@ extern "C" {
 #define SCREENSHOTR_SERVICE_NAME "com.apple.mobile.screenshotr"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	SCREENSHOTR_E_SUCCESS         =  0,
 	SCREENSHOTR_E_INVALID_ARG     = -1,
 	SCREENSHOTR_E_PLIST_ERROR     = -2,

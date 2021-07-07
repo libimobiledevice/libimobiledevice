@@ -35,7 +35,7 @@ extern "C" {
 #define HOUSE_ARREST_SERVICE_NAME "com.apple.mobile.house_arrest"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	HOUSE_ARREST_E_SUCCESS       =  0,
 	HOUSE_ARREST_E_INVALID_ARG   = -1,
 	HOUSE_ARREST_E_PLIST_ERROR   = -2,

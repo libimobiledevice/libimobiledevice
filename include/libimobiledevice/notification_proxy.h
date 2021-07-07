@@ -34,7 +34,7 @@ extern "C" {
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	NP_E_SUCCESS       =  0,
 	NP_E_INVALID_ARG   = -1,
 	NP_E_PLIST_ERROR   = -2,

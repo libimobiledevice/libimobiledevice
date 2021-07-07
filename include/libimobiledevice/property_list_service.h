@@ -31,7 +31,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 /* Error Codes */
-typedef enum {
+typedef enum :int32_t {
 	PROPERTY_LIST_SERVICE_E_SUCCESS         =  0,
 	PROPERTY_LIST_SERVICE_E_INVALID_ARG     = -1,
 	PROPERTY_LIST_SERVICE_E_PLIST_ERROR     = -2,

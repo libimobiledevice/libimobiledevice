@@ -33,7 +33,7 @@ extern "C" {
 #define COMPANION_PROXY_SERVICE_NAME "com.apple.companion_proxy"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	COMPANION_PROXY_E_SUCCESS         =  0,
 	COMPANION_PROXY_E_INVALID_ARG     = -1,
 	COMPANION_PROXY_E_PLIST_ERROR     = -2,

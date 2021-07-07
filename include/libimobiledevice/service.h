@@ -31,7 +31,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	SERVICE_E_SUCCESS             =  0,
 	SERVICE_E_INVALID_ARG         = -1,
 	SERVICE_E_MUX_ERROR           = -3,

@@ -33,7 +33,7 @@ extern "C" {
 #define HEARTBEAT_SERVICE_NAME "com.apple.mobile.heartbeat"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	HEARTBEAT_E_SUCCESS         =  0,
 	HEARTBEAT_E_INVALID_ARG     = -1,
 	HEARTBEAT_E_PLIST_ERROR     = -2,

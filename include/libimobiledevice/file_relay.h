@@ -35,7 +35,7 @@ extern "C" {
 #define FILE_RELAY_SERVICE_NAME "com.apple.mobile.file_relay"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	FILE_RELAY_E_SUCCESS           =  0,
 	FILE_RELAY_E_INVALID_ARG       = -1,
 	FILE_RELAY_E_PLIST_ERROR       = -2,

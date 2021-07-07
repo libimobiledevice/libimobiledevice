@@ -33,7 +33,7 @@ extern "C" {
 #define MOBILEACTIVATION_SERVICE_NAME "com.apple.mobileactivationd"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	MOBILEACTIVATION_E_SUCCESS         =  0,
 	MOBILEACTIVATION_E_INVALID_ARG     = -1,
 	MOBILEACTIVATION_E_PLIST_ERROR     = -2,

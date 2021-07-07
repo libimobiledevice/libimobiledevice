@@ -1029,7 +1029,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_make_link(afc_client_t client, afc_link_typ
 	debug_info("linkname: %s, length:%d", linkname, link_len);
 
 	/* Send command */
-	*(uint64_t*)(AFC_PACKET_DATA_PTR) = htole64(linktype);
+	*(uint64_t*)(AFC_PACKET_DATA_PTR) = type;
 	memcpy(AFC_PACKET_DATA_PTR + 8, target, target_len + 1);
 	memcpy(AFC_PACKET_DATA_PTR + 8 + target_len + 1, linkname, link_len + 1);
 	ret = afc_dispatch_packet(client, AFC_OP_MAKE_LINK, data_len, NULL, 0, &bytes);

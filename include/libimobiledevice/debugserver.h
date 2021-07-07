@@ -34,7 +34,7 @@ extern "C" {
 #define DEBUGSERVER_SECURE_SERVICE_NAME DEBUGSERVER_SERVICE_NAME ".DVTSecureSocketProxy"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	DEBUGSERVER_E_SUCCESS        =  0,
 	DEBUGSERVER_E_INVALID_ARG    = -1,
 	DEBUGSERVER_E_MUX_ERROR      = -2,

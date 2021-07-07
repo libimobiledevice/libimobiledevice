@@ -36,7 +36,7 @@ extern "C" {
 #include <plist/plist.h>
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	IDEVICE_E_SUCCESS         =  0,
 	IDEVICE_E_INVALID_ARG     = -1,
 	IDEVICE_E_UNKNOWN_ERROR   = -2,
@@ -53,14 +53,14 @@ typedef struct idevice_connection_private idevice_connection_private;
 typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
 /** Options for idevice_new_with_options() */
-enum idevice_options {
+enum idevice_options : uint32_t {
 	IDEVICE_LOOKUP_USBMUX = 1 << 1,  /**< include USBMUX devices during lookup */
 	IDEVICE_LOOKUP_NETWORK = 1 << 2, /**< include network devices during lookup */
 	IDEVICE_LOOKUP_PREFER_NETWORK = 1 << 3 /**< prefer network connection if device is available via USBMUX *and* network */
 };
 
 /** Type of connection a device is available on */
-enum idevice_connection_type {
+enum idevice_connection_type : uint32_t {
 	CONNECTION_USBMUXD = 1,
 	CONNECTION_NETWORK
 };
@@ -74,7 +74,7 @@ typedef struct idevice_info* idevice_info_t;
 
 /* discovery (events/asynchronous) */
 /** The event type for device add or removal */
-enum idevice_event_type {
+enum idevice_event_type : uint32_t {
 	IDEVICE_DEVICE_ADD = 1,
 	IDEVICE_DEVICE_REMOVE,
 	IDEVICE_DEVICE_PAIRED

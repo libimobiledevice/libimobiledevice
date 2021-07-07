@@ -34,7 +34,7 @@ extern "C" {
 #define WEBINSPECTOR_SERVICE_NAME "com.apple.webinspector"
 
 /** Error Codes */
-typedef enum {
+typedef enum : int32_t {
 	WEBINSPECTOR_E_SUCCESS         =  0,
 	WEBINSPECTOR_E_INVALID_ARG     = -1,
 	WEBINSPECTOR_E_PLIST_ERROR     = -2,
