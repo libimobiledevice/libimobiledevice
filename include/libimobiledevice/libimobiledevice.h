@@ -35,6 +35,16 @@ extern "C" {
 #include <sys/stat.h>
 #include <plist/plist.h>
 
+#ifdef WIN32
+#define LIBIMOBILEDEVICE_API __declspec( dllexport )
+#else
+#ifdef HAVE_FVISIBILITY
+#define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
+#else
+#define LIBIMOBILEDEVICE_API
+#endif
+#endif
+
 /** Error Codes */
 typedef enum {
 	IDEVICE_E_SUCCESS         =  0,
@@ -99,7 +109,7 @@ typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_dat
  *
  * @param level Set to 0 for no debug output or 1 to enable debug output.
  */
-void idevice_set_debug_level(int level);
+LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level);
 
 /**
  * Register a callback function that will be called when device add/remove
@@ -111,7 +121,7 @@ void idevice_set_debug_level(int level);
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
 
 /**
  * Release the event callback function that has been registered with
@@ -119,7 +129,7 @@ idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_event_unsubscribe(void);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void);
 
 /* discovery (synchronous) */
 
@@ -136,7 +146,7 @@ idevice_error_t idevice_event_unsubscribe(void);
  *   network devices in the list, use idevice_get_device_list_extended().
  * @see idevice_get_device_list_extended
  */
-idevice_error_t idevice_get_device_list(char ***devices, int *count);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list(char ***devices, int *count);
 
 /**
  * Free a list of device UDIDs.
@@ -145,7 +155,7 @@ idevice_error_t idevice_get_device_list(char ***devices, int *count);
  *
  * @return Always returnes IDEVICE_E_SUCCESS.
  */
-idevice_error_t idevice_device_list_free(char **devices);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices);
 
 /**
  * Get a list of currently available devices
@@ -156,7 +166,7 @@ idevice_error_t idevice_device_list_free(char **devices);
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count);
 
 /**
  * Free an extended device list retrieved through idevice_get_device_list_extended().
@@ -165,7 +175,7 @@ idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_device_list_extended_free(idevice_info_t *devices);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_extended_free(idevice_info_t *devices);
 
 /* device structure creation and destruction */
 
@@ -186,7 +196,7 @@ idevice_error_t idevice_device_list_extended_free(idevice_info_t *devices);
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_new(idevice_t *device, const char *udid);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_new(idevice_t *device, const char *udid);
 
 /**
  * Creates an idevice_t structure for the device specified by UDID,
@@ -209,14 +219,14 @@ idevice_error_t idevice_new(idevice_t *device, const char *udid);
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_new_with_options(idevice_t *device, const char *udid, enum idevice_options options);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_new_with_options(idevice_t *device, const char *udid, enum idevice_options options);
 
 /**
  * Cleans up an idevice structure, then frees the structure itself.
  *
  * @param device idevice_t to free.
  */
-idevice_error_t idevice_free(idevice_t device);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_free(idevice_t device);
 
 /* connection/disconnection */
 
@@ -230,7 +240,7 @@ idevice_error_t idevice_free(idevice_t device);
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connection_t *connection);
 
 /**
  * Disconnect from the device and clean up the connection structure.
@@ -239,7 +249,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_disconnect(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_disconnect(idevice_connection_t connection);
 
 /* communication */
 
@@ -254,7 +264,7 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection);
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes);
 
 /**
  * Receive data from a device via the given connection.
@@ -271,7 +281,7 @@ idevice_error_t idevice_connection_send(idevice_connection_t connection, const c
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout);
 
 /**
  * Receive data from a device via the given connection.
@@ -286,7 +296,7 @@ idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connecti
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes);
 
 /**
  * Enables SSL for the given connection.
@@ -297,7 +307,7 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
  *     is NULL or connection->ssl_data is non-NULL, or IDEVICE_E_SSL_ERROR when
  *     SSL initialization, setup, or handshake fails.
  */
-idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
 
 /**
  * Disable SSL for the given connection.
@@ -308,7 +318,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
  *     is NULL. This function also returns IDEVICE_E_SUCCESS when SSL is not
  *     enabled and does no further error checking on cleanup.
  */
-idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 /**
  * Disable bypass SSL for the given connection without sending out terminate messages.
@@ -321,7 +331,7 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
  *     is NULL. This function also returns IDEVICE_E_SUCCESS when SSL is not
  *     enabled and does no further error checking on cleanup.
  */
-idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass);
 
 
 /**
@@ -332,19 +342,19 @@ idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t conne
  *
  * @return IDEVICE_E_SUCCESS if ok, otherwise an error code.
  */
-idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd);
 
 /* misc */
 
 /**
  * Gets the handle or (usbmux device id) of the device.
  */
-idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
 
 /**
  * Gets the unique id for the device.
  */
-idevice_error_t idevice_get_udid(idevice_t device, char **udid);
+LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
 #ifdef __cplusplus
 }

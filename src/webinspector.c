@@ -62,7 +62,7 @@ static webinspector_error_t webinspector_error(property_list_service_error_t err
 	return WEBINSPECTOR_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client)
+webinspector_error_t webinspector_client_new(idevice_t device, lockdownd_service_descriptor_t service, webinspector_client_t * client)
 {
 	*client = NULL;
 
@@ -89,14 +89,14 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_new(idevice_t devi
 	return 0;
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
+webinspector_error_t webinspector_client_start_service(idevice_t device, webinspector_client_t * client, const char* label)
 {
 	webinspector_error_t err = WEBINSPECTOR_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, WEBINSPECTOR_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(webinspector_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_free(webinspector_client_t client)
+webinspector_error_t webinspector_client_free(webinspector_client_t client)
 {
 	if (!client)
 		return WEBINSPECTOR_E_INVALID_ARG;
@@ -107,7 +107,7 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_client_free(webinspector_
 	return err;
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_send(webinspector_client_t client, plist_t plist)
+webinspector_error_t webinspector_send(webinspector_client_t client, plist_t plist)
 {
 	webinspector_error_t res = WEBINSPECTOR_E_UNKNOWN_ERROR;
 
@@ -164,12 +164,12 @@ LIBIMOBILEDEVICE_API webinspector_error_t webinspector_send(webinspector_client_
 	return res;
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t * plist)
+webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t * plist)
 {
 	return webinspector_receive_with_timeout(client, plist, 5000);
 }
 
-LIBIMOBILEDEVICE_API webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t client, plist_t * plist, uint32_t timeout_ms)
+webinspector_error_t webinspector_receive_with_timeout(webinspector_client_t client, plist_t * plist, uint32_t timeout_ms)
 {
 	webinspector_error_t res = WEBINSPECTOR_E_UNKNOWN_ERROR;
 	plist_t message = NULL;

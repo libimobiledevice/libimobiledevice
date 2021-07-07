@@ -71,7 +71,7 @@ static mobilesync_error_t mobilesync_error(device_link_service_error_t err)
 	return MOBILESYNC_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service,
+mobilesync_error_t mobilesync_client_new(idevice_t device, lockdownd_service_descriptor_t service,
 						   mobilesync_client_t * client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
@@ -101,14 +101,14 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_new(idevice_t device, 
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t * client, const char* label)
+mobilesync_error_t mobilesync_client_start_service(idevice_t device, mobilesync_client_t * client, const char* label)
 {
 	mobilesync_error_t err = MOBILESYNC_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, MOBILESYNC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilesync_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
+mobilesync_error_t mobilesync_client_free(mobilesync_client_t client)
 {
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
@@ -118,7 +118,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_client_free(mobilesync_client
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plist)
+mobilesync_error_t mobilesync_receive(mobilesync_client_t client, plist_t * plist)
 {
 	if (!client)
 		return MOBILESYNC_E_INVALID_ARG;
@@ -126,14 +126,14 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive(mobilesync_client_t c
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
+mobilesync_error_t mobilesync_send(mobilesync_client_t client, plist_t plist)
 {
 	if (!client || !plist)
 		return MOBILESYNC_E_INVALID_ARG;
 	return mobilesync_error(device_link_service_send(client->parent, plist));
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description)
+mobilesync_error_t mobilesync_start(mobilesync_client_t client, const char *data_class, mobilesync_anchors_t anchors, uint64_t computer_data_class_version, mobilesync_sync_type_t *sync_type, uint64_t *device_data_class_version, char** error_description)
 {
 	if (!client || client->data_class || !data_class ||
 		!anchors || !anchors->computer_anchor) {
@@ -259,7 +259,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_start(mobilesync_client_t cli
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_finish(mobilesync_client_t client)
+mobilesync_error_t mobilesync_finish(mobilesync_client_t client)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -344,17 +344,17 @@ static mobilesync_error_t mobilesync_get_records(mobilesync_client_t client, con
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client)
+mobilesync_error_t mobilesync_get_all_records_from_device(mobilesync_client_t client)
 {
 	return mobilesync_get_records(client, "SDMessageGetAllRecordsFromDevice");
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client)
+mobilesync_error_t mobilesync_get_changes_from_device(mobilesync_client_t client)
 {
 	return mobilesync_get_records(client, "SDMessageGetChangesFromDevice");
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions)
+mobilesync_error_t mobilesync_receive_changes(mobilesync_client_t client, plist_t *entities, uint8_t *is_last_record, plist_t *actions)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -421,7 +421,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_receive_changes(mobilesync_cl
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client)
+mobilesync_error_t mobilesync_clear_all_records_on_device(mobilesync_client_t client)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -490,7 +490,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_clear_all_records_on_device(m
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client)
+mobilesync_error_t mobilesync_acknowledge_changes_from_device(mobilesync_client_t client)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -524,7 +524,7 @@ static plist_t create_process_changes_message(const char *data_class, plist_t en
 	return msg;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client)
+mobilesync_error_t mobilesync_ready_to_send_changes_from_computer(mobilesync_client_t client)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -591,7 +591,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_ready_to_send_changes_from_co
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_send_changes(mobilesync_client_t client, plist_t entities, uint8_t is_last_record, plist_t actions)
+mobilesync_error_t mobilesync_send_changes(mobilesync_client_t client, plist_t entities, uint8_t is_last_record, plist_t actions)
 {
 	if (!client || !client->data_class || !entities) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -619,7 +619,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_send_changes(mobilesync_clien
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plist_t *mapping)
+mobilesync_error_t mobilesync_remap_identifiers(mobilesync_client_t client, plist_t *mapping)
 {
 	if (!client || !client->data_class) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -688,7 +688,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_remap_identifiers(mobilesync_
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason)
+mobilesync_error_t mobilesync_cancel(mobilesync_client_t client, const char* reason)
 {
 	if (!client || !client->data_class || !reason) {
 		return MOBILESYNC_E_INVALID_ARG;
@@ -714,7 +714,7 @@ LIBIMOBILEDEVICE_API mobilesync_error_t mobilesync_cancel(mobilesync_client_t cl
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor)
+mobilesync_anchors_t mobilesync_anchors_new(const char *device_anchor, const char *computer_anchor)
 {
 	mobilesync_anchors_t anchors = (mobilesync_anchors_t) malloc(sizeof(mobilesync_anchors));
 	if (device_anchor != NULL) {
@@ -731,7 +731,7 @@ LIBIMOBILEDEVICE_API mobilesync_anchors_t mobilesync_anchors_new(const char *dev
 	return anchors;
 }
 
-LIBIMOBILEDEVICE_API void mobilesync_anchors_free(mobilesync_anchors_t anchors)
+void mobilesync_anchors_free(mobilesync_anchors_t anchors)
 {
 	if (anchors->device_anchor != NULL) {
 		free(anchors->device_anchor);
@@ -745,12 +745,12 @@ LIBIMOBILEDEVICE_API void mobilesync_anchors_free(mobilesync_anchors_t anchors)
 	anchors = NULL;
 }
 
-LIBIMOBILEDEVICE_API plist_t mobilesync_actions_new(void)
+plist_t mobilesync_actions_new(void)
 {
 	return plist_new_dict();
 }
 
-LIBIMOBILEDEVICE_API void mobilesync_actions_add(plist_t actions, ...)
+void mobilesync_actions_add(plist_t actions, ...)
 {
 	if (!actions)
 		return;
@@ -782,7 +782,7 @@ LIBIMOBILEDEVICE_API void mobilesync_actions_add(plist_t actions, ...)
 	va_end(args);
 }
 
-LIBIMOBILEDEVICE_API void mobilesync_actions_free(plist_t actions)
+void mobilesync_actions_free(plist_t actions)
 {
 	if (actions) {
 		plist_free(actions);
