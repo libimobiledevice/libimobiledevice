@@ -115,6 +115,7 @@ The library bundles the following command-line utilities in the tools directory:
 | `idevice_id`               | List attached devices or print device name of given device         |
 | `idevicebackup`            | Create or restore backup for devices (legacy)                      |
 | `idevicebackup2`           | Create or restore backups for devices running iOS 4 or later       |
+| `idevicebtlogger`          | Capture Bluetooth HCI traffic from a device (requires log profile) |
 | `idevicecrashreport`       | Retrieve crash reports from a device                               |
 | `idevicedate`              | Display the current date or set it on a device                     |
 | `idevicedebug`             | Interact with the debugserver service of a device                  |

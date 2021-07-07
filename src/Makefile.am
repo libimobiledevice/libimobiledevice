@@ -50,7 +50,8 @@ libimobiledevice_1_0_la_SOURCES = \
 	mobileactivation.c mobileactivation.h \
 	preboard.c preboard.h  \
 	companion_proxy.c companion_proxy.h \
-	syslog_relay.c syslog_relay.h
+	syslog_relay.c syslog_relay.h \
+	bt_packet_logger.c bt_packet_logger.h
 
 if WIN32
 libimobiledevice_1_0_la_LDFLAGS += -avoid-version -static-libgcc

@@ -1,0 +1,47 @@
+.TH "idevicebtlogger" 1
+.SH NAME
+idevicebtlogger \- Capture HCI traffic of a connected device.
+.SH SYNOPSIS
+.B idevicebtlogger
+[OPTIONS]
+<FILE>
+
+.SH DESCRIPTION
+
+Capture HCI traffic of a connected device.  Requires Bluetooth logging profile to be installed on device.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by UDID
+.TP
+.B \-n, \-\-network
+connect to network device
+.TP
+.B \-x, \-\-exit
+exit when device disconnects
+.TP
+.B \-d, \-\-debug
+enable communication debugging
+.TP
+.B \-h, \-\-help
+prints usage information
+.TP
+.B \-v, \-\-version
+prints version information.
+
+.SH EXAMPLES
+.TP
+.B idevicebtlogger \-u 00008030\-0000111ABC000DEF
+Capture HCI traffic of device with UDID 00008030-0000111ABC000DEF.
+.TP
+.B idevicebtlogger \-x
+Capture HCI traffic of device and exit when the device is unplugged.
+
+.SH AUTHORS
+Geoffrey Kruse
+
+.SH ON THE WEB
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice
