@@ -243,6 +243,7 @@ int main(int argc, char *argv[])
 		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			debug_level++;
 			idevice_set_debug_level(debug_level);
+			internal_set_debug_level(debug_level);
 			continue;
 		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
 			i++;
@@ -363,8 +364,8 @@ int main(int argc, char *argv[])
 
 			/* enable logging for the session in debug mode */
 			if (debug_level) {
-				log_debug("Setting logging bitmask...");
-				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS", 0, NULL, &command);
+				debug_info("Setting logging bitmask...");
+				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS;", 0, NULL, &command);
 				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
 				command = NULL;
