@@ -32,5 +32,5 @@ libinternalcommon_la_SOURCES = \
 	utils.c utils.h
 
 if WIN32
-libinternalcommon_la_LIBADD += -lole32 -lws2_32
+libinternalcommon_la_LIBADD += -lole32 -lws2_32 -liphlpapi
 endif
