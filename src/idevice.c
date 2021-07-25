@@ -615,7 +615,11 @@ static inline idevice_error_t socket_recv_to_idevice_error(int conn_error, uint3
 	if (conn_error < 0) {
 		switch (conn_error) {
 			case -EAGAIN:
-				debug_info("ERROR: received partial data %d/%d (%s)", received, len, strerror(-conn_error));
+				if (len) {
+					debug_info("ERROR: received partial data %d/%d (%s)", received, len, strerror(-conn_error));
+				} else {
+					debug_info("ERROR: received partial data (%s)", strerror(-conn_error));
+				}
 				return IDEVICE_E_NOT_ENOUGH_DATA;
 			case -ETIMEDOUT:
 				return IDEVICE_E_TIMEOUT;
@@ -623,7 +627,6 @@ static inline idevice_error_t socket_recv_to_idevice_error(int conn_error, uint3
 				return IDEVICE_E_UNKNOWN_ERROR;
 		}
 	}
-
 	return IDEVICE_E_SUCCESS;
 }
 
@@ -640,20 +643,19 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	if (connection->type == CONNECTION_USBMUXD) {
 		int conn_error = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
 		idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, *recv_bytes);
-
 		if (error == IDEVICE_E_UNKNOWN_ERROR) {
 			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", conn_error, strerror(-conn_error));
 		}
-
 		return error;
 	} else if (connection->type == CONNECTION_NETWORK) {
 		int res = socket_receive_timeout((int)(long)connection->data, data, len, 0, timeout);
-		if (res < 0) {
-			debug_info("ERROR: socket_receive_timeout failed: %d (%s)", res, strerror(-res));
-			return (res == -EAGAIN ? IDEVICE_E_NOT_ENOUGH_DATA : IDEVICE_E_UNKNOWN_ERROR);
+		idevice_error_t error = socket_recv_to_idevice_error(res, 0, 0);
+		if (error == IDEVICE_E_SUCCESS) {
+			*recv_bytes = (uint32_t)res;
+		} else if (error == IDEVICE_E_UNKNOWN_ERROR) {
+			debug_info("ERROR: socket_receive_timeout returned %d (%s)", res, strerror(-res));
 		}
-		*recv_bytes = (uint32_t)res;
-		return IDEVICE_E_SUCCESS;
+		return error;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
