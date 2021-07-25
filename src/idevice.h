@@ -68,6 +68,8 @@ struct idevice_connection_private {
 	enum idevice_connection_type type;
 	void *data;
 	ssl_data_t ssl_data;
+	unsigned int ssl_recv_timeout;
+	idevice_error_t status;
 };
 
 struct idevice_private {
