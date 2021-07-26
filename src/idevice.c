@@ -811,24 +811,19 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **u
  */
 static ssize_t internal_ssl_read(idevice_connection_t connection, char *buffer, size_t length)
 {
-	int bytes = 0, pos_start_fill = 0;
-	size_t tbytes = 0;
-	int this_len = length;
+	uint32_t bytes = 0;
+	uint32_t pos = 0;
 	idevice_error_t res;
-	char *recv_buffer;
-
-	debug_info("pre-read client wants %zi bytes", length);
-
-	recv_buffer = (char *)malloc(sizeof(char) * this_len);
-
 	unsigned int timeout = connection->ssl_recv_timeout;
+
+	debug_info("pre-read length = %zi bytes", length);
 
 	/* repeat until we have the full data or an error occurs */
 	do {
 		if (timeout == (unsigned int)-1) {
-			res = internal_connection_receive(connection, recv_buffer, this_len, (uint32_t*)&bytes);
+			res = internal_connection_receive(connection, buffer + pos, (uint32_t)length - pos, &bytes);
 		} else {
-			res = internal_connection_receive_timeout(connection, recv_buffer, this_len, (uint32_t*)&bytes, (unsigned int)timeout);
+			res = internal_connection_receive_timeout(connection, buffer + pos, (uint32_t)length - pos, &bytes, (unsigned int)timeout);
 		}
 		if (res != IDEVICE_E_SUCCESS) {
 			if (res != IDEVICE_E_TIMEOUT) {
@@ -837,27 +832,18 @@ static ssize_t internal_ssl_read(idevice_connection_t connection, char *buffer, 
 			connection->status = res;
 			return -1;
 		}
-		debug_info("post-read we got %i bytes", bytes);
+		debug_info("read %i bytes", bytes);
 
 		/* increase read count */
-		tbytes += bytes;
-
-		/* fill the buffer with what we got right now */
-		memcpy(buffer + pos_start_fill, recv_buffer, bytes);
-		pos_start_fill += bytes;
-
-		if (tbytes >= length) {
-			break;
+		pos += bytes;
+		if (pos < (uint32_t)length) {
+			debug_info("re-read trying to read missing %i bytes", (uint32_t)length - pos);
 		}
+	} while (pos < (uint32_t)length);
 
-		this_len = length - tbytes;
-		debug_info("re-read trying to read missing %i bytes", this_len);
-	} while (tbytes < length);
+	debug_info("post-read received %i bytes", bytes);
 
-	if (recv_buffer) {
-		free(recv_buffer);
-	}
-	return tbytes;
+	return pos;
 }
 
 /**
@@ -867,7 +853,7 @@ static ssize_t internal_ssl_write(idevice_connection_t connection, const char *b
 {
 	uint32_t bytes = 0;
 	idevice_error_t res;
-	debug_info("pre-send length = %zi", length);
+	debug_info("pre-send length = %zi bytes", length);
 	if ((res = internal_connection_send(connection, buffer, length, &bytes)) != IDEVICE_E_SUCCESS) {
 		debug_info("ERROR: internal_connection_send returned %d", res);
 		connection->status = res;
@@ -1220,7 +1206,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevi
 				if ((ssl_error = SSL_get_error(connection->ssl_data->session, 0)) == SSL_ERROR_NONE) {
 					SSL_shutdown(connection->ssl_data->session);
 				} else  {
-					debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i\n", ssl_error);
+					debug_info("Skipping bidirectional SSL shutdown. SSL error code: %i", ssl_error);
 				}
 			}
 		}
