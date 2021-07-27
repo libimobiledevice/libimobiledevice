@@ -94,10 +94,19 @@ make
 sudo make install
 ```
 
-By default, OpenSSL will be used. If you prefer GnuTLS, configure with
-`--disable-openssl` like this:
+By default, OpenSSL will be used as TLS/SSL library. If you prefer GnuTLS,
+configure with `--with-gnutls` like this:
 ```bash
-./autogen.sh --disable-openssl
+./autogen.sh --with-gnutls
+```
+
+MbedTLS is also supported and can be enabled by passing `--with-mbedtls` to
+configure. If mbedTLS is not installed in a default location, you need to set
+the environment variables `mbedtls_INCLUDES` to the path that contains the
+MbedTLS headers and `mbedtls_LIBDIR` to set the library path. Optionally,
+`mbedtls_LIBS` can be used to set the library names directly. Example:
+```bash
+./autogen.sh --with-mbedtls mbedtls_INCLUDES=/opt/local/include mbedtls_LIBDIR=/opt/local/lib
 ```
 
 ## Usage
@@ -179,4 +188,4 @@ iPadOS, tvOS, watchOS, and macOS are trademarks of Apple Inc.
 This project is an independent software and has not been authorized, sponsored,
 or otherwise approved by Apple Inc.
 
-README Updated on: 2020-06-12
+README Updated on: 2021-07-27

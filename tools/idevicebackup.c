@@ -31,10 +31,20 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 #include <openssl/sha.h>
-#else
+#elif defined(HAVE_GNUTLS)
 #include <gcrypt.h>
+#elif defined(HAVE_MBEDTLS)
+#include <mbedtls/sha1.h>
+#if MBEDTLS_VERSION_NUMBER < 0x03000000
+#define mbedtls_sha1         mbedtls_sha1_ret
+#define mbedtls_sha1_starts  mbedtls_sha1_starts_ret
+#define mbedtls_sha1_update  mbedtls_sha1_update_ret
+#define mbedtls_sha1_finish  mbedtls_sha1_finish_ret
+#endif
+#else
+#error No supported crypto library enabled
 #endif
 #include <unistd.h>
 #include <ctype.h>
@@ -78,10 +88,12 @@ enum device_link_file_status_t {
 
 static void sha1_of_data(const char *input, uint32_t size, unsigned char *hash_out)
 {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 	SHA1((const unsigned char*)input, size, hash_out);
-#else
+#elif defined(HAVE_GNUTLS)
 	gcry_md_hash_buffer(GCRY_MD_SHA1, hash_out, input, size);
+#elif defined(HAVE_MBEDTLS)
+	mbedtls_sha1((unsigned char*)input, size, hash_out);
 #endif
 }
 
@@ -96,12 +108,24 @@ static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, 
 	return 1;
 }
 
+static void _sha1_update(void* context, const char* data, size_t len)
+{
+#if defined(HAVE_OPENSSL)
+	SHA1_Update(context, data, len);
+#elif defined(HAVE_GNUTLS)
+	gcry_md_write(context, data, len);
+#elif defined(HAVE_MBEDTLS)
+	mbedtls_sha1_update(context, (const unsigned char*)data, len);
+#endif
+}
+
 static void compute_datahash(const char *path, const char *destpath, uint8_t greylist, const char *domain, const char *appid, const char *version, unsigned char *hash_out)
 {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 	SHA_CTX sha1;
 	SHA1_Init(&sha1);
-#else
+	void* psha1 = &sha1;
+#elif defined(HAVE_GNUTLS)
 	gcry_md_hd_t hd = NULL;
 	gcry_md_open(&hd, GCRY_MD_SHA1, 0);
 	if (!hd) {
@@ -109,102 +133,63 @@ static void compute_datahash(const char *path, const char *destpath, uint8_t gre
 		return;
 	}
 	gcry_md_reset(hd);
+	void* psha1 = hd;
+#elif defined(HAVE_MBEDTLS)
+	mbedtls_sha1_context sha1;
+	mbedtls_sha1_init(&sha1);
+	mbedtls_sha1_starts(&sha1);
+	void* psha1 = &sha1;
 #endif
 	FILE *f = fopen(path, "rb");
 	if (f) {
 		unsigned char buf[16384];
 		size_t len;
 		while ((len = fread(buf, 1, 16384, f)) > 0) {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, buf, len);
-#else
-			gcry_md_write(hd, buf, len);
-#endif
+			_sha1_update(psha1, (const char*)buf, len);
 		}
 		fclose(f);
-#ifdef HAVE_OPENSSL
-		SHA1_Update(&sha1, destpath, strlen(destpath));
-		SHA1_Update(&sha1, ";", 1);
-#else
-		gcry_md_write(hd, destpath, strlen(destpath));
-		gcry_md_write(hd, ";", 1);
-#endif
+		_sha1_update(psha1, destpath, strlen(destpath));
+		_sha1_update(psha1, ";", 1);
+
 		if (greylist == 1) {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, "true", 4);
-#else
-			gcry_md_write(hd, "true", 4);
-#endif
+			_sha1_update(psha1, "true", 4);
 		} else {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, "false", 5);
-#else
-			gcry_md_write(hd, "false", 5);
-#endif
+			_sha1_update(psha1, "false", 5);
 		}
-#ifdef HAVE_OPENSSL
-		SHA1_Update(&sha1, ";", 1);
-#else
-		gcry_md_write(hd, ";", 1);
-#endif
+		_sha1_update(psha1, ";", 1);
+
 		if (domain) {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, domain, strlen(domain));
-#else
-			gcry_md_write(hd, domain, strlen(domain));
-#endif
+			_sha1_update(psha1, domain, strlen(domain));
 		} else {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, "(null)", 6);
-#else
-			gcry_md_write(hd, "(null)", 6);
-#endif
+			_sha1_update(psha1, "(null)", 6);
 		}
-#ifdef HAVE_OPENSSL
-		SHA1_Update(&sha1, ";", 1);
-#else
-		gcry_md_write(hd, ";", 1);
-#endif
+		_sha1_update(psha1, ";", 1);
+
 		if (appid) {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, appid, strlen(appid));
-#else
-			gcry_md_write(hd, appid, strlen(appid));
-#endif
+			_sha1_update(psha1, appid, strlen(appid));
 		} else {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, "(null)", 6);
-#else
-			gcry_md_write(hd, "(null)", 6);
-#endif
+			_sha1_update(psha1, "(null)", 6);
 		}
-#ifdef HAVE_OPENSSL
-		SHA1_Update(&sha1, ";", 1);
-#else
-		gcry_md_write(hd, ";", 1);
-#endif
+		_sha1_update(psha1, ";", 1);
+
 		if (version) {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, version, strlen(version));
-#else
-			gcry_md_write(hd, version, strlen(version));
-#endif
+			_sha1_update(psha1, version, strlen(version));
 		} else {
-#ifdef HAVE_OPENSSL
-			SHA1_Update(&sha1, "(null)", 6);
-#else
-			gcry_md_write(hd, "(null)", 6);
-#endif
+			_sha1_update(psha1, "(null)", 6);
 		}
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 		SHA1_Final(hash_out, &sha1);
-#else
+#elif defined(HAVE_GNUTLS)
 		unsigned char *newhash = gcry_md_read(hd, GCRY_MD_SHA1);
 		memcpy(hash_out, newhash, 20);
+#elif defined(HAVE_MBEDTLS)
+		mbedtls_sha1_finish(&sha1, hash_out);
 #endif
 	}
-#ifndef HAVE_OPENSSL
+#if defined(HAVE_GNUTLS)
 	gcry_md_close(hd);
+#elif defined(HAVE_MBEDTLS)
+	mbedtls_sha1_free(&sha1);
 #endif
 }
 

@@ -2,7 +2,7 @@
  * idevice.c
  * Device discovery and communication interface.
  *
- * Copyright (c) 2009-2019 Nikias Bassen. All Rights Reserved.
+ * Copyright (c) 2009-2021 Nikias Bassen. All Rights Reserved.
  * Copyright (c) 2014 Martin Szulecki All Rights Reserved.
  * Copyright (c) 2008 Zach C. All Rights Reserved.
  *
@@ -31,12 +31,21 @@
 #include <time.h>
 
 #include <usbmuxd.h>
-#ifdef HAVE_OPENSSL
+
+#if defined(HAVE_OPENSSL)
 #include <openssl/err.h>
 #include <openssl/rsa.h>
 #include <openssl/ssl.h>
-#else
+#elif defined(HAVE_GNUTLS)
 #include <gnutls/gnutls.h>
+#elif defined(HAVE_MBEDTLS)
+#include <mbedtls/rsa.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/debug.h>
+#else
+#error No supported TLS/SSL library enabled
 #endif
 
 #include "idevice.h"
@@ -106,7 +115,7 @@ static void id_function(CRYPTO_THREADID *thread)
 
 static void internal_idevice_init(void)
 {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 	int i;
 	SSL_library_init();
@@ -124,14 +133,16 @@ static void internal_idevice_init(void)
 #endif
 	CRYPTO_set_locking_callback(locking_function);
 #endif
-#else
+#elif defined(HAVE_GNUTLS)
 	gnutls_global_init();
+#elif defined(HAVE_MBEDTLS)
+	// NO-OP
 #endif
 }
 
 static void internal_idevice_deinit(void)
 {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 	int i;
 	if (mutex_buf) {
@@ -152,8 +163,10 @@ static void internal_idevice_deinit(void)
 	SSL_COMP_free_compression_methods();
 	openssl_remove_thread_state();
 #endif
-#else
+#elif defined(HAVE_GNUTLS)
 	gnutls_global_deinit();
+#elif defined(HAVE_MBEDTLS)
+	// NO-OP
 #endif
 }
 
@@ -556,7 +569,11 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
-	if (!connection || !data || (connection->ssl_data && !connection->ssl_data->session)) {
+	if (!connection || !data
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+		|| (connection->ssl_data && !connection->ssl_data->session)
+#endif
+	) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
@@ -564,7 +581,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 		connection->status = IDEVICE_E_SUCCESS;
 		uint32_t sent = 0;
 		while (sent < len) {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 			int s = SSL_write(connection->ssl_data->session, (const void*)(data+sent), (int)(len-sent));
 			if (s <= 0) {
 				int sslerr = SSL_get_error(connection->ssl_data->session, s);
@@ -573,8 +590,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 				}
 				break;
 			}
-#else
+#elif defined(HAVE_GNUTLS)
 			ssize_t s = gnutls_record_send(connection->ssl_data->session, (void*)(data+sent), (size_t)(len-sent));
+#elif defined(HAVE_MBEDTLS)
+			int s = mbedtls_ssl_write(&connection->ssl_data->ctx, (const unsigned char*)(data+sent), (size_t)(len-sent));
 #endif
 			if (s < 0) {
 				break;
@@ -662,7 +681,12 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
-	if (!connection || (connection->ssl_data && !connection->ssl_data->session) || len == 0) {
+	if (!connection
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+		|| (connection->ssl_data && !connection->ssl_data->session)
+#endif
+		|| len == 0
+	) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
@@ -678,7 +702,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 		connection->ssl_recv_timeout = timeout;
 		connection->status = IDEVICE_E_SUCCESS;
 		while (received < len) {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 			int r = SSL_read(connection->ssl_data->session, (void*)((char*)(data+received)), (int)len-received);
 			if (r > 0) {
 				received += r;
@@ -689,8 +713,15 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 				}
 				break;
 			}
-#else
+#elif defined(HAVE_GNUTLS)
 			ssize_t r = gnutls_record_recv(connection->ssl_data->session, (void*)(data+received), (size_t)len-received);
+			if (r > 0) {
+				received += r;
+			} else {
+				break;
+			}
+#elif defined(HAVE_MBEDTLS)
+			int r = mbedtls_ssl_read(&connection->ssl_data->ctx, (void*)(data+received), (size_t)len-received);
 			if (r > 0) {
 				received += r;
 			} else {
@@ -744,7 +775,11 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
-	if (!connection || (connection->ssl_data && !connection->ssl_data->session)) {
+	if (!connection
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+		|| (connection->ssl_data && !connection->ssl_data->session)
+#endif
+	) {
 		return IDEVICE_E_INVALID_ARG;
 	}
 
@@ -753,11 +788,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive(idevice_connecti
 			debug_info("WARNING: ssl_recv_timeout was not properly reset in idevice_connection_receive_timeout");
 			connection->ssl_recv_timeout = (unsigned int)-1;
 		}
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 		int received = SSL_read(connection->ssl_data->session, (void*)data, (int)len);
 		debug_info("SSL_read %d, received %d", len, received);
-#else
+#elif defined(HAVE_GNUTLS)
 		ssize_t received = gnutls_record_recv(connection->ssl_data->session, (void*)data, (size_t)len);
+#elif defined(HAVE_MBEDTLS)
+		int received = mbedtls_ssl_read(&connection->ssl_data->ctx, (unsigned char*)data, (size_t)len);
 #endif
 		if (received > 0) {
 			*recv_bytes = received;
@@ -806,10 +843,16 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **u
 	return IDEVICE_E_SUCCESS;
 }
 
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+typedef ssize_t ssl_cb_ret_type_t;
+#elif defined(HAVE_MBEDTLS)
+typedef int ssl_cb_ret_type_t;
+#endif
+
 /**
  * Internally used SSL callback function for receiving encrypted data.
  */
-static ssize_t internal_ssl_read(idevice_connection_t connection, char *buffer, size_t length)
+static ssl_cb_ret_type_t internal_ssl_read(idevice_connection_t connection, char *buffer, size_t length)
 {
 	uint32_t bytes = 0;
 	uint32_t pos = 0;
@@ -849,7 +892,7 @@ static ssize_t internal_ssl_read(idevice_connection_t connection, char *buffer, 
 /**
  * Internally used SSL callback function for sending encrypted data.
  */
-static ssize_t internal_ssl_write(idevice_connection_t connection, const char *buffer, size_t length)
+static ssl_cb_ret_type_t internal_ssl_write(idevice_connection_t connection, const char *buffer, size_t length)
 {
 	uint32_t bytes = 0;
 	idevice_error_t res;
@@ -871,14 +914,14 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (!ssl_data)
 		return;
 
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 	if (ssl_data->session) {
 		SSL_free(ssl_data->session);
 	}
 	if (ssl_data->ctx) {
 		SSL_CTX_free(ssl_data->ctx);
 	}
-#else
+#elif defined(HAVE_GNUTLS)
 	if (ssl_data->session) {
 		gnutls_deinit(ssl_data->session);
 	}
@@ -897,6 +940,13 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 	if (ssl_data->host_privkey) {
 		gnutls_x509_privkey_deinit(ssl_data->host_privkey);
 	}
+#elif defined(HAVE_MBEDTLS)
+	mbedtls_pk_free(&ssl_data->root_privkey);
+	mbedtls_x509_crt_free(&ssl_data->certificate);
+	mbedtls_entropy_free(&ssl_data->entropy);
+	mbedtls_ctr_drbg_free(&ssl_data->ctr_drbg);
+	mbedtls_ssl_config_free(&ssl_data->config);
+	mbedtls_ssl_free(&ssl_data->ctx);
 #endif
 }
 
@@ -961,7 +1011,7 @@ static const char *ssl_error_to_string(int e)
 #endif
 #endif
 
-#ifndef HAVE_OPENSSL
+#if defined(HAVE_GNUTLS)
 /**
  * Internally used gnutls callback function that gets called during handshake.
  */
@@ -992,6 +1042,23 @@ static int internal_cert_callback(gnutls_session_t session, const gnutls_datum_t
 	}
 	return res;
 }
+#elif defined(HAVE_MBEDTLS)
+static void _mbedtls_log_cb(void* ctx, int level, const char* filename, int line, const char* message)
+{
+	fprintf(stderr, "[mbedtls][%d] %s:%d => %s", level, filename, line, message);
+}
+
+static int cert_verify_cb(void* ctx, mbedtls_x509_crt* cert, int depth, uint32_t *flags)
+{
+	*flags = 0;
+	return 0;
+}
+
+static int _mbedtls_f_rng(void* p_rng, unsigned char* buf, size_t len)
+{
+	memset(buf, 4, len);
+	return 0;
+}
 #endif
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
@@ -1008,7 +1075,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		return ret;
 	}
 
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 	key_data_t root_cert = { NULL, 0 };
 	key_data_t root_privkey = { NULL, 0 };
 
@@ -1118,7 +1185,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	}
 	/* required for proper multi-thread clean up to prevent leaks */
 	openssl_remove_thread_state();
-#else
+#elif defined(HAVE_GNUTLS)
 	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
 
 	/* Set up GnuTLS... */
@@ -1176,6 +1243,82 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		ret = IDEVICE_E_SUCCESS;
 		debug_info("SSL mode enabled");
 	}
+#elif defined(HAVE_MBEDTLS)
+	key_data_t root_cert = { NULL, 0 };
+	key_data_t root_privkey = { NULL, 0 };
+
+	pair_record_import_crt_with_name(pair_record, USERPREF_ROOT_CERTIFICATE_KEY, &root_cert);
+	pair_record_import_key_with_name(pair_record, USERPREF_ROOT_PRIVATE_KEY_KEY, &root_privkey);
+
+	plist_free(pair_record);
+
+	ssl_data_t ssl_data_loc = (ssl_data_t)malloc(sizeof(struct ssl_data_private));
+
+	mbedtls_ssl_init(&ssl_data_loc->ctx);
+	mbedtls_ssl_config_init(&ssl_data_loc->config);
+	mbedtls_entropy_init(&ssl_data_loc->entropy);
+	mbedtls_ctr_drbg_init(&ssl_data_loc->ctr_drbg);
+
+	int r = mbedtls_ctr_drbg_seed(&ssl_data_loc->ctr_drbg, mbedtls_entropy_func, &ssl_data_loc->entropy, NULL, 0);
+	if (r != 0) {
+		debug_info("ERROR: [mbedtls] mbedtls_ctr_drbg_seed failed: %d", r);
+		return ret;
+	}
+
+	if (mbedtls_ssl_config_defaults(&ssl_data_loc->config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT) != 0) {
+		debug_info("ERROR: [mbedtls] Failed to set config defaults");
+		return ret;
+	}
+
+	mbedtls_ssl_conf_rng(&ssl_data_loc->config, mbedtls_ctr_drbg_random, &ssl_data_loc->ctr_drbg);
+
+	mbedtls_ssl_conf_dbg(&ssl_data_loc->config, _mbedtls_log_cb, NULL);
+
+	mbedtls_ssl_conf_verify(&ssl_data_loc->config, cert_verify_cb, NULL);
+
+	mbedtls_ssl_setup(&ssl_data_loc->ctx, &ssl_data_loc->config);
+
+	mbedtls_ssl_set_bio(&ssl_data_loc->ctx, connection, (mbedtls_ssl_send_t*)&internal_ssl_write, (mbedtls_ssl_recv_t*)&internal_ssl_read, NULL);
+
+	mbedtls_x509_crt_init(&ssl_data_loc->certificate);
+
+	int crterr = mbedtls_x509_crt_parse(&ssl_data_loc->certificate, root_cert.data, root_cert.size);
+	if (crterr < 0) {
+		debug_info("ERROR: [mbedtls] parsing root cert failed: %d", crterr);
+		return ret;
+	}
+
+	mbedtls_ssl_conf_ca_chain(&ssl_data_loc->config, &ssl_data_loc->certificate, NULL);
+
+	mbedtls_pk_init(&ssl_data_loc->root_privkey);
+
+#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+	int pkerr = mbedtls_pk_parse_key(&ssl_data_loc->root_privkey, root_privkey.data, root_privkey.size, NULL, 0, &_mbedtls_f_rng, NULL);
+#else
+	int pkerr = mbedtls_pk_parse_key(&ssl_data_loc->root_privkey, root_privkey.data, root_privkey.size, NULL, 0);
+#endif
+	if (pkerr < 0) {
+		debug_info("ERROR: [mbedtls] parsing private key failed: %d (size=%d)", pkerr, root_privkey.size);
+		return ret;
+	}
+
+	mbedtls_ssl_conf_own_cert(&ssl_data_loc->config, &ssl_data_loc->certificate, &ssl_data_loc->root_privkey);
+
+	int return_me = 0;
+	do {
+		return_me = mbedtls_ssl_handshake(&ssl_data_loc->ctx);
+	} while (return_me == MBEDTLS_ERR_SSL_WANT_READ || return_me == MBEDTLS_ERR_SSL_WANT_WRITE);
+
+	if (return_me != 0) {
+		debug_info("ERROR during SSL handshake: %d", return_me);
+		internal_ssl_cleanup(ssl_data_loc);
+		free(ssl_data_loc);
+	} else {
+		connection->ssl_data = ssl_data_loc;
+		ret = IDEVICE_E_SUCCESS;
+		debug_info("SSL mode enabled, %s, cipher: %s", mbedtls_ssl_get_version(&ssl_data_loc->ctx), mbedtls_ssl_get_ciphersuite(&ssl_data_loc->ctx));
+		debug_info("SSL mode enabled");
+	}
 #endif
 	return ret;
 }
@@ -1197,7 +1340,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevi
 	// some services require plain text communication after SSL handshake
 	// sending out SSL_shutdown will cause bytes
 	if (!sslBypass) {
-#ifdef HAVE_OPENSSL
+#if defined(HAVE_OPENSSL)
 		if (connection->ssl_data->session) {
 			/* see: https://www.openssl.org/docs/ssl/SSL_shutdown.html#RETURN_VALUES */
 			if (SSL_shutdown(connection->ssl_data->session) == 0) {
@@ -1210,10 +1353,12 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevi
 				}
 			}
 		}
-#else
+#elif defined(HAVE_GNUTLS)
 		if (connection->ssl_data->session) {
 			gnutls_bye(connection->ssl_data->session, GNUTLS_SHUT_RDWR);
 		}
+#elif defined(HAVE_MBEDTLS)
+		mbedtls_ssl_close_notify(&connection->ssl_data->ctx);
 #endif
 	}
 

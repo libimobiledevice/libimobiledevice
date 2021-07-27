@@ -5,20 +5,15 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
 	$(libusbmuxd_CFLAGS) \
-	$(libgnutls_CFLAGS) \
-	$(libtasn1_CFLAGS) \
 	$(libplist_CFLAGS) \
+	$(ssl_lib_CFLAGS) \
 	$(LFS_CFLAGS) \
-	$(openssl_CFLAGS) \
 	$(PTHREAD_CFLAGS)
 
 AM_LDFLAGS = \
-	$(libgnutls_LIBS) \
-	$(libtasn1_LIBS) \
-	$(libplist_LIBS) \
 	$(libusbmuxd_LIBS) \
-	$(libgcrypt_LIBS) \
-	$(openssl_LIBS) \
+	$(libplist_LIBS) \
+	$(ssl_lib_LIBS) \
 	$(PTHREAD_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice-1.0.la
