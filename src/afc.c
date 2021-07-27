@@ -1009,7 +1009,6 @@ LIBIMOBILEDEVICE_API afc_error_t afc_make_link(afc_client_t client, afc_link_typ
 		return AFC_E_INVALID_ARG;
 
 	uint32_t bytes = 0;
-	uint64_t type = htole64(linktype);
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
 
 	size_t target_len = strlen(target);
@@ -1024,7 +1023,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_make_link(afc_client_t client, afc_link_typ
 		return AFC_E_NO_MEM;
 	}
 
-	debug_info("link type: %lld", type);
+	debug_info("link type: %lld", htole64(linktype));
 	debug_info("target: %s, length:%d", target, target_len);
 	debug_info("linkname: %s, length:%d", linkname, link_len);
 
