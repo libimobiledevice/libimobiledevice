@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.64)
-AC_INIT([libimobiledevice], [1.3.1], [https://github.com/libimobiledevice/libimobiledevice/issues],, [https://libimobiledevice.org])
+AC_PREREQ([2.68])
+AC_INIT([libimobiledevice], [1.3.1], [https://github.com/libimobiledevice/libimobiledevice/issues], [], [https://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -29,14 +29,13 @@ AC_SUBST(LIBPLIST_VERSION)
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
-AC_PROG_LIBTOOL
+LT_INIT
 
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd-2.0 >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h gcrypt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -241,7 +240,7 @@ AC_SYS_LARGEFILE
 
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 common/Makefile
 src/Makefile
@@ -252,6 +251,7 @@ cython/Makefile
 docs/Makefile
 doxygen.cfg
 ])
+AC_OUTPUT
 
 echo "
 Configuration for $PACKAGE $VERSION:
