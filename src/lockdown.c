@@ -697,7 +697,12 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 		plist_free(p_version);
 	}
 
-	userpref_read_pair_record(client_loc->udid, &pair_record);
+	userpref_error_t uerr = userpref_read_pair_record(client_loc->udid, &pair_record);
+	if (uerr == USERPREF_E_READ_ERROR) {
+		debug_info("ERROR: Failed to retrieve pair record for %s", client_loc->udid);
+		lockdownd_client_free(client_loc);
+		return LOCKDOWN_E_RECEIVE_TIMEOUT;
+	}
 	if (pair_record) {
 		pair_record_get_host_id(pair_record, &host_id);
 	}
@@ -707,6 +712,8 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 
 	if (LOCKDOWN_E_SUCCESS == ret && !pair_record) {
 		/* attempt pairing */
+		free(host_id);
+		host_id = NULL;
 		ret = lockdownd_pair(client_loc, NULL);
 	}
 
@@ -730,7 +737,17 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 
 	if (LOCKDOWN_E_SUCCESS == ret) {
 		if (!host_id) {
-			userpref_read_pair_record(client_loc->udid, &pair_record);
+			uerr = userpref_read_pair_record(client_loc->udid, &pair_record);
+			if (uerr == USERPREF_E_READ_ERROR) {
+				debug_info("ERROR: Failed to retrieve pair record for %s", client_loc->udid);
+				return LOCKDOWN_E_RECEIVE_TIMEOUT;
+			} else if (uerr == USERPREF_E_NOENT) {
+				debug_info("ERROR: No pair record for %s", client_loc->udid);
+				return LOCKDOWN_E_INVALID_CONF;
+			} else if (uerr != USERPREF_E_SUCCESS) {
+				debug_info("ERROR: Failed to retrieve or parse pair record for %s", client_loc->udid);
+				return LOCKDOWN_E_INVALID_CONF;
+			}
 			if (pair_record) {
 				pair_record_get_host_id(pair_record, &host_id);
 				plist_free(pair_record);
@@ -894,9 +911,16 @@ static lockdownd_error_t lockdownd_do_pair(lockdownd_client_t client, lockdownd_
 			lockdownd_get_value(client, NULL, "WiFiAddress", &wifi_node);
 		} else {
 			/* use existing pair record */
-			userpref_read_pair_record(client->udid, &pair_record_plist);
-			if (!pair_record_plist) {
-				return LOCKDOWN_E_INVALID_HOST_ID;
+			userpref_error_t uerr = userpref_read_pair_record(client->udid, &pair_record_plist);
+			if (uerr == USERPREF_E_READ_ERROR) {
+				debug_info("ERROR: Failed to retrieve pair record for %s", client->udid);
+				return LOCKDOWN_E_RECEIVE_TIMEOUT;
+			} else if (uerr == USERPREF_E_NOENT) {
+				debug_info("ERROR: No pair record for %s", client->udid);
+				return LOCKDOWN_E_INVALID_CONF;
+			} else if (uerr != USERPREF_E_SUCCESS) {
+				debug_info("ERROR: Failed to retrieve or parse pair record for %s", client->udid);
+				return LOCKDOWN_E_INVALID_CONF;
 			}
 		}
 	}
@@ -1226,9 +1250,17 @@ static lockdownd_error_t lockdownd_build_start_service_request(lockdownd_client_
 	if (send_escrow_bag) {
 		/* get the pairing record */
 		plist_t pair_record = NULL;
-		userpref_read_pair_record(client->udid, &pair_record);
-		if (!pair_record) {
-			debug_info("ERROR: failed to read pair record for device: %s", client->udid);
+		userpref_error_t uerr = userpref_read_pair_record(client->udid, &pair_record);
+		if (uerr == USERPREF_E_READ_ERROR) {
+			debug_info("ERROR: Failed to retrieve pair record for %s", client->udid);
+			plist_free(dict);
+			return LOCKDOWN_E_RECEIVE_TIMEOUT;
+		} else if (uerr == USERPREF_E_NOENT) {
+			debug_info("ERROR: No pair record for %s", client->udid);
+			plist_free(dict);
+			return LOCKDOWN_E_INVALID_CONF;
+		} else if (uerr != USERPREF_E_SUCCESS) {
+			debug_info("ERROR: Failed to retrieve or parse pair record for %s", client->udid);
 			plist_free(dict);
 			return LOCKDOWN_E_INVALID_CONF;
 		}

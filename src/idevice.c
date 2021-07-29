@@ -1069,9 +1069,9 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	idevice_error_t ret = IDEVICE_E_SSL_ERROR;
 	plist_t pair_record = NULL;
 
-	userpref_read_pair_record(connection->device->udid, &pair_record);
-	if (!pair_record) {
-		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s.", connection->device->udid);
+	userpref_error_t uerr = userpref_read_pair_record(connection->device->udid, &pair_record);
+	if (uerr != USERPREF_E_SUCCESS) {
+		debug_info("ERROR: Failed enabling SSL. Unable to read pair record for udid %s (%d)", connection->device->udid, uerr);
 		return ret;
 	}
 
