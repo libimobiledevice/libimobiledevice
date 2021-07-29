@@ -696,6 +696,30 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 		}
 		plist_free(p_version);
 	}
+	if (device->device_class == 0) {
+		plist_t p_device_class = NULL;
+		if (lockdownd_get_value(client_loc, NULL, "DeviceClass", &p_device_class) == LOCKDOWN_E_SUCCESS) {
+			char* s_device_class = NULL;
+			plist_get_string_val(p_device_class, &s_device_class);
+			if (s_device_class != NULL) {
+				if (!strcmp(s_device_class, "iPhone")) {
+					device->device_class = DEVICE_CLASS_IPHONE;
+				} else if (!strcmp(s_device_class, "iPad")) {
+					device->device_class = DEVICE_CLASS_IPAD;
+				} else if (!strcmp(s_device_class, "iPod")) {
+					device->device_class = DEVICE_CLASS_IPOD;
+				} else if (!strcmp(s_device_class, "Watch")) {
+					device->device_class = DEVICE_CLASS_WATCH;
+				} else if (!strcmp(s_device_class, "AppleTV")) {
+					device->device_class = DEVICE_CLASS_APPLETV;
+				} else {
+					device->device_class = DEVICE_CLASS_UNKNOWN;
+				}
+				free(s_device_class);
+			}
+		}
+		plist_free(p_device_class);
+	}
 
 	userpref_error_t uerr = userpref_read_pair_record(client_loc->udid, &pair_record);
 	if (uerr == USERPREF_E_READ_ERROR) {
@@ -720,7 +744,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 	plist_free(pair_record);
 	pair_record = NULL;
 
-	if (device->version < DEVICE_VERSION(7,0,0)) {
+	if (device->version < DEVICE_VERSION(7,0,0) && device->device_class != DEVICE_CLASS_WATCH) {
 		/* for older devices, we need to validate pairing to receive trusted host status */
 		ret = lockdownd_validate_pair(client_loc, NULL);
 

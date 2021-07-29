@@ -363,6 +363,7 @@ static idevice_t idevice_from_mux_device(usbmuxd_device_info_t *muxdev)
 	device->udid = strdup(muxdev->udid);
 	device->mux_id = muxdev->handle;
 	device->version = 0;
+	device->device_class = 0;
 	switch (muxdev->conn_type) {
 	case CONNECTION_TYPE_USB:
 		device->conn_type = CONNECTION_USBMUXD;

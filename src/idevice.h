@@ -52,6 +52,13 @@
 
 #define DEVICE_VERSION(maj, min, patch) (((maj & 0xFF) << 16) | ((min & 0xFF) << 8) | (patch & 0xFF))
 
+#define DEVICE_CLASS_IPHONE  1
+#define DEVICE_CLASS_IPAD    2
+#define DEVICE_CLASS_IPOD    3
+#define DEVICE_CLASS_APPLETV 4
+#define DEVICE_CLASS_WATCH   5
+#define DEVICE_CLASS_UNKNOWN 255
+
 struct ssl_data_private {
 #if defined(HAVE_OPENSSL)
 	SSL *session;
@@ -89,6 +96,7 @@ struct idevice_private {
 	enum idevice_connection_type conn_type;
 	void *conn_data;
 	int version;
+	int device_class;
 };
 
 #endif
