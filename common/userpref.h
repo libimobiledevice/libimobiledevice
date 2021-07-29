@@ -54,10 +54,11 @@ typedef gnutls_datum_t key_data_t;
 typedef enum {
 	USERPREF_E_SUCCESS       =  0,
 	USERPREF_E_INVALID_ARG   = -1,
-	USERPREF_E_INVALID_CONF  = -2,
-	USERPREF_E_SSL_ERROR     = -3,
-	USERPREF_E_READ_ERROR    = -4,
-	USERPREF_E_WRITE_ERROR   = -5,
+	USERPREF_E_NOENT         = -2,
+	USERPREF_E_INVALID_CONF  = -3,
+	USERPREF_E_SSL_ERROR     = -4,
+	USERPREF_E_READ_ERROR    = -5,
+	USERPREF_E_WRITE_ERROR   = -6,
 	USERPREF_E_UNKNOWN_ERROR = -256
 } userpref_error_t;
 

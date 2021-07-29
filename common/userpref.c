@@ -309,8 +309,10 @@ userpref_error_t userpref_save_pair_record(const char *udid, uint32_t device_id,
  * @param udid The device UDID as given by the device
  * @param pair_record The pair record to read
  *
- * @return 1 on success and 0 if no device record is given or if it has already
- *         been saved previously.
+ * @return USERPREF_E_SUCCESS on success,
+ *     USERPREF_E_NOENT if no pairing record was found,
+ *     USERPREF_E_READ_ERROR if retrieving the pairing record from usbmuxd failed,
+ *     or USERPREF_E_INVALID_CONF otherwise.
  */
 userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_record)
 {
@@ -318,24 +320,27 @@ userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_recor
 	uint32_t record_size = 0;
 
 	int res = usbmuxd_read_pair_record(udid, &record_data, &record_size);
-
 	if (res < 0) {
-		if (record_data)
-			free(record_data);
-
-		return USERPREF_E_INVALID_CONF;
+		free(record_data);
+		switch (-res) {
+		case ENOENT:
+			return USERPREF_E_NOENT;
+		case ETIMEDOUT:
+			return USERPREF_E_READ_ERROR;
+		default:
+			return USERPREF_E_INVALID_CONF;
+		}
 	}
 
 	*pair_record = NULL;
-	if (memcmp(record_data, "bplist00", 8) == 0) {
-		plist_from_bin(record_data, record_size, pair_record);
-	} else {
-		plist_from_xml(record_data, record_size, pair_record);
-	}
-
+	plist_from_memory(record_data, record_size, pair_record);
 	free(record_data);
 
-	return res == 0 ? USERPREF_E_SUCCESS: USERPREF_E_UNKNOWN_ERROR;
+	if (!*pair_record) {
+		debug_info("Failed to parse pairing record");
+		return USERPREF_E_INVALID_CONF;
+	}
+	return USERPREF_E_SUCCESS;
 }
 
 /**
