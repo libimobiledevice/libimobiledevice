@@ -864,6 +864,7 @@ static ssl_cb_ret_type_t internal_ssl_read(idevice_connection_t connection, char
 
 	/* repeat until we have the full data or an error occurs */
 	do {
+		bytes = 0;
 		if (timeout == (unsigned int)-1) {
 			res = internal_connection_receive(connection, buffer + pos, (uint32_t)length - pos, &bytes);
 		} else {
@@ -885,7 +886,7 @@ static ssl_cb_ret_type_t internal_ssl_read(idevice_connection_t connection, char
 		}
 	} while (pos < (uint32_t)length);
 
-	debug_info("post-read received %i bytes", bytes);
+	debug_info("post-read received %i bytes", pos);
 
 	return pos;
 }
