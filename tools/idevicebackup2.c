@@ -638,7 +638,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 		return;
 	}
 
-	lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
+	lockdownd_error_t ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
 	if (service && service->port) {
 		np_client_new(device, service, &np);
 		if (np) {
@@ -646,7 +646,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 			np_client_free(np);
 		}
 	} else {
-		printf("Could not start %s\n", NP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
 	}
 
 	if (service) {
@@ -1822,17 +1822,25 @@ int main(int argc, char *argv[])
 		};
 		np_observe_notifications(np, noties);
 	} else {
-		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
+		cmd = CMD_LEAVE;
+		goto checkpoint;
+	}
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
 	afc_client_t afc = NULL;
 	if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 		/* start AFC, we need this for the lock file */
-		service->port = 0;
-		service->ssl_enabled = 0;
 		ldret = lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service);
 		if ((ldret == LOCKDOWN_E_SUCCESS) && service->port) {
 			afc_client_new(device, service, &afc);
+		} else {
+			printf("ERROR: Could not start service %s: %s\n", AFC_SERVICE_NAME, lockdownd_strerror(ldret));
+			cmd = CMD_LEAVE;
+			goto checkpoint;
 		}
 	}
 
@@ -2568,7 +2576,7 @@ files_out:
 				do_post_notification(device, NP_SYNC_DID_FINISH);
 		}
 	} else {
-		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP2_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", MOBILEBACKUP2_SERVICE_NAME, lockdownd_strerror(ldret));
 		lockdownd_client_free(lockdown);
 		lockdown = NULL;
 	}
