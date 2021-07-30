@@ -1479,7 +1479,14 @@ int main(int argc, char *argv[])
 	plist_t node_tmp = NULL;
 	plist_t info_plist = NULL;
 	plist_t opts = NULL;
+
+	idevice_t device = NULL;
+	afc_client_t afc = NULL;
+	np_client_t np = NULL;
+	lockdownd_client_t lockdown = NULL;
+	mobilebackup2_client_t mobilebackup2 = NULL;
 	mobilebackup2_error_t err;
+	uint64_t lockfile = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -1689,7 +1696,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	idevice_t device = NULL;
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
@@ -1770,7 +1776,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	lockdownd_client_t lockdown = NULL;
 	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
@@ -1808,7 +1813,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* start notification_proxy */
-	np_client_t np = NULL;
 	ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
 	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		np_client_new(device, service, &np);
@@ -1831,7 +1835,6 @@ int main(int argc, char *argv[])
 		service = NULL;
 	}
 
-	afc_client_t afc = NULL;
 	if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 		/* start AFC, we need this for the lock file */
 		ldret = lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service);
@@ -1850,7 +1853,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* start mobilebackup service and retrieve port */
-	mobilebackup2_client_t mobilebackup2 = NULL;
 	ldret = lockdownd_start_service_with_escrow_bag(lockdown, MOBILEBACKUP2_SERVICE_NAME, &service);
 	lockdownd_client_free(lockdown);
 	lockdown = NULL;
@@ -1900,7 +1902,6 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		uint64_t lockfile = 0;
 		if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 			do_post_notification(device, NP_SYNC_WILL_START);
 			afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
