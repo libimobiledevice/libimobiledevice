@@ -766,12 +766,15 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new_with_handshake(idevi
 			uerr = userpref_read_pair_record(client_loc->device->udid, &pair_record);
 			if (uerr == USERPREF_E_READ_ERROR) {
 				debug_info("ERROR: Failed to retrieve pair record for %s", client_loc->device->udid);
+				lockdownd_client_free(client_loc);
 				return LOCKDOWN_E_RECEIVE_TIMEOUT;
 			} else if (uerr == USERPREF_E_NOENT) {
 				debug_info("ERROR: No pair record for %s", client_loc->device->udid);
+				lockdownd_client_free(client_loc);
 				return LOCKDOWN_E_INVALID_CONF;
 			} else if (uerr != USERPREF_E_SUCCESS) {
 				debug_info("ERROR: Failed to retrieve or parse pair record for %s", client_loc->device->udid);
+				lockdownd_client_free(client_loc);
 				return LOCKDOWN_E_INVALID_CONF;
 			}
 			if (pair_record) {
