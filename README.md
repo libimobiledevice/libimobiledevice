@@ -62,6 +62,7 @@ sudo apt-get install \
 	libtool-bin \
 	libplist-dev \
 	libusbmuxd-dev \
+	libimobiledevice-glue-dev \
 	libssl-dev \
 	usbmuxd
 ```
@@ -188,4 +189,4 @@ iPadOS, tvOS, watchOS, and macOS are trademarks of Apple Inc.
 This project is an independent software and has not been authorized, sponsored,
 or otherwise approved by Apple Inc.
 
-README Updated on: 2021-07-27
+README Updated on: 2021-08-30

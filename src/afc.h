@@ -28,7 +28,7 @@
 #include "libimobiledevice/afc.h"
 #include "service.h"
 #include "endianness.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/thread.h>
 
 #define AFC_MAGIC "CFA6LPAA"
 #define AFC_MAGIC_LEN (8)

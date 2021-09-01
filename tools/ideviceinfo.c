@@ -37,7 +37,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 #define FORMAT_KEY_VALUE 1
 #define FORMAT_XML 2

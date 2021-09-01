@@ -48,10 +48,11 @@
 #error No supported TLS/SSL library enabled
 #endif
 
+#include <libimobiledevice-glue/socket.h>
+#include <libimobiledevice-glue/thread.h>
+
 #include "idevice.h"
 #include "common/userpref.h"
-#include "common/socket.h"
-#include "common/thread.h"
 #include "common/debug.h"
 
 #ifdef WIN32

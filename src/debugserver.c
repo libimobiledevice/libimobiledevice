@@ -29,10 +29,11 @@
 #define __USE_GNU 1
 #include <stdio.h>
 
+#include <libimobiledevice-glue/utils.h>
+
 #include "debugserver.h"
 #include "lockdown.h"
 #include "common/debug.h"
-#include "common/utils.h"
 #include "asprintf.h"
 
 /**

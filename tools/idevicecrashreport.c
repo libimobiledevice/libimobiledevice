@@ -33,7 +33,7 @@
 #ifndef WIN32
 #include <signal.h>
 #endif
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>

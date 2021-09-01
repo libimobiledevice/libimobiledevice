@@ -45,7 +45,7 @@
 #include <libimobiledevice/installation_proxy.h>
 #include <libimobiledevice/sbservices.h>
 #include <libimobiledevice/diagnostics_relay.h>
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 #include <endianness.h>
 

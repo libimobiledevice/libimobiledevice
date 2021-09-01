@@ -44,7 +44,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/misagent.h>
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 static void print_usage(int argc, char **argv)
 {

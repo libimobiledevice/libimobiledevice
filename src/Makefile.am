@@ -6,6 +6,7 @@ AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
 	$(libusbmuxd_CFLAGS) \
 	$(libplist_CFLAGS) \
+	$(limd_glue_CFLAGS) \
 	$(ssl_lib_CFLAGS) \
 	$(LFS_CFLAGS) \
 	$(PTHREAD_CFLAGS)
@@ -13,6 +14,7 @@ AM_CFLAGS = \
 AM_LDFLAGS = \
 	$(libusbmuxd_LIBS) \
 	$(libplist_LIBS) \
+	$(limd_glue_LIBS) \
 	$(ssl_lib_LIBS) \
 	$(PTHREAD_LIBS)
 

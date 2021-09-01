@@ -29,7 +29,6 @@
 #include "companion_proxy.h"
 #include "lockdown.h"
 #include "common/debug.h"
-#include "common/thread.h"
 
 /**
  * Convert a property_list_service_error_t value to a companion_proxy_error_t value.

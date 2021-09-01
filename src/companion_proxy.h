@@ -24,7 +24,7 @@
 
 #include "libimobiledevice/companion_proxy.h"
 #include "property_list_service.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/thread.h>
 
 struct companion_proxy_client_private {
 	property_list_service_client_t parent;

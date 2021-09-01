@@ -41,8 +41,8 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/debugserver.h>
 
-#include "common/socket.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/socket.h>
+#include <libimobiledevice-glue/thread.h>
 
 #define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)

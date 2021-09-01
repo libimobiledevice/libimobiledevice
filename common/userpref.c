@@ -73,9 +73,10 @@
 #include <shlobj.h>
 #endif
 
+#include <libimobiledevice-glue/utils.h>
+
 #include "userpref.h"
 #include "debug.h"
-#include "utils.h"
 
 #if defined(HAVE_GNUTLS)
 const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {

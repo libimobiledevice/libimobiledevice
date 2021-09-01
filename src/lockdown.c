@@ -34,13 +34,13 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <plist/plist.h>
+#include <libimobiledevice-glue/utils.h>
 
 #include "property_list_service.h"
 #include "lockdown.h"
 #include "idevice.h"
 #include "common/debug.h"
 #include "common/userpref.h"
-#include "common/utils.h"
 #include "asprintf.h"
 
 #ifdef WIN32

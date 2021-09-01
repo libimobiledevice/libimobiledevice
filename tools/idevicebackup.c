@@ -55,7 +55,7 @@
 #include <libimobiledevice/mobilebackup.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"

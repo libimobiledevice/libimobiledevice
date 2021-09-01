@@ -24,7 +24,7 @@
 
 #include "libimobiledevice/syslog_relay.h"
 #include "service.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/thread.h>
 
 struct syslog_relay_client_private {
 	service_client_t parent;
