@@ -45,7 +45,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: autogen
-      run: ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LDFLAGS="-Wl,-rpath=/usr/local/lib"
+      run: ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LDFLAGS="-Wl,-rpath=/usr/local/lib" --enable-debug
     - name: make
       run: make
     - name: make install
@@ -197,7 +197,7 @@ jobs:
           cp -r extract/* /
     - uses: actions/checkout@v2
     - name: autogen
-      run: ./autogen.sh CC=gcc CXX=g++
+      run: ./autogen.sh CC=gcc CXX=g++ --enable-debug
     - name: make
       run: make
     - name: make install
