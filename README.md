@@ -2,6 +2,8 @@
 
 *A library to communicate with services on iOS devices using native protocols.*
 
+![](https://github.com/libimobiledevice/libimobiledevice/actions/workflows/build.yml/badge.svg)
+
 ## Features
 
 libimobiledevice is a cross-platform software library that talks the protocols
