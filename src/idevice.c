@@ -174,7 +174,23 @@ static void internal_idevice_deinit(void)
 static thread_once_t init_once = THREAD_ONCE_INIT;
 static thread_once_t deinit_once = THREAD_ONCE_INIT;
 
-#ifdef WIN32
+#ifndef HAVE_ATTRIBUTE_CONSTRUCTOR
+  #if defined(__llvm__) || defined(__GNUC__)
+    #define HAVE_ATTRIBUTE_CONSTRUCTOR
+  #endif
+#endif
+
+#ifdef HAVE_ATTRIBUTE_CONSTRUCTOR
+static void __attribute__((constructor)) libimobiledevice_initialize(void)
+{
+	thread_once(&init_once, internal_idevice_init);
+}
+
+static void __attribute__((destructor)) libimobiledevice_deinitialize(void)
+{
+	thread_once(&deinit_once, internal_idevice_deinit);
+}
+#elif defined(WIN32)
 BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 {
 	switch (dwReason) {
@@ -190,15 +206,7 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 	return 1;
 }
 #else
-static void __attribute__((constructor)) libimobiledevice_initialize(void)
-{
-	thread_once(&init_once, internal_idevice_init);
-}
-
-static void __attribute__((destructor)) libimobiledevice_deinitialize(void)
-{
-	thread_once(&deinit_once, internal_idevice_deinit);
-}
+#warning No compiler support for constructor/destructor attributes, some features might not be available.
 #endif
 
 static idevice_event_cb_t event_cb = NULL;
