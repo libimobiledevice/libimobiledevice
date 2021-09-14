@@ -32,6 +32,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -52,8 +53,10 @@
 #define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)
 
+static int support_lldb = 0;
 static int debug_mode = 0;
 static int quit_flag = 0;
+static uint16_t local_port = 0;
 
 typedef struct {
 	int client_fd;
@@ -90,12 +93,33 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -u, --udid UDID       target specific device by UDID\n"
 		"  -n, --network         connect to network device\n"
 		"  -d, --debug           enable communication debugging\n"
+		"  -l, --lldb            enable lldb support\n"
 		"  -h, --help            prints usage information\n"
 		"  -v, --version         prints version information\n"
 		"\n"
 		"Homepage:    <" PACKAGE_URL ">\n"
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
 	);
+}
+
+static bool intercept_packet(char *packet, ssize_t *packet_len) {
+	static const char kReqLaunchServer[] = "$qLaunchGDBServer;#4b";
+
+	char buffer[64] = {0};
+	if (*packet_len == (ssize_t)(sizeof(kReqLaunchServer) - 1)
+		&& memcmp(packet, kReqLaunchServer, sizeof(kReqLaunchServer) - 1) == 0) {
+		sprintf(buffer, "port:%d;", local_port);
+	} else {
+		return false;
+	}
+	int sum = 0;
+	for (size_t i = 0; i < strlen(buffer); i++) {
+		sum += buffer[i];
+	}
+	sum = sum & 255;
+	sprintf(packet, "$%s#%02x", buffer, sum);
+	*packet_len = strlen(packet);
+	return true;
 }
 
 static void* connection_handler(void* data)
@@ -137,7 +161,10 @@ static void* connection_handler(void* data)
 				fprintf(stderr, "connection closed\n");
 				break;
 			}
-
+			if (support_lldb && intercept_packet(buf, &n)) {
+				socket_send(client_fd, buf, n);
+				continue;
+			}
 			uint32_t sent = 0;
 			debugserver_client_send(socket_info->debugserver_client, buf, n, &sent);
 		}
@@ -180,7 +207,6 @@ int main(int argc, char *argv[])
 	thread_info_t *thread_list = NULL;
 	const char* udid = NULL;
 	int use_network = 0;
-	uint16_t local_port = 0;
 	int server_fd;
 	int result = EXIT_SUCCESS;
 	int c = 0;
@@ -189,6 +215,7 @@ int main(int argc, char *argv[])
 		{ "help", no_argument, NULL, 'h' },
 		{ "udid", required_argument, NULL, 'u' },
 		{ "network", no_argument, NULL, 'n' },
+		{ "lldb", no_argument, NULL, 'l' },
 		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
@@ -233,6 +260,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			use_network = 1;
+			break;
+		case 'l':
+			support_lldb = 1;
 			break;
 		case 'h':
 			print_usage(argc, argv, 0);
