@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([libimobiledevice], [1.3.1], [https://github.com/libimobiledevice/libimobiledevice/issues], [], [https://libimobiledevice.org])
+AC_INIT([libimobiledevice], [m4_esyscmd([./git-version-gen .tarball-version])], [https://github.com/libimobiledevice/libimobiledevice/issues], [], [https://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])

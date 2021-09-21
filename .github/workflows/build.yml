@@ -8,6 +8,7 @@ jobs:
     steps:
     - name: install dependencies
       run: |
+          sudo apt-get update
           sudo apt-get install cython
     - name: prepare environment
       run: |
