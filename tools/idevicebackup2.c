@@ -45,7 +45,7 @@
 #include <libimobiledevice/installation_proxy.h>
 #include <libimobiledevice/sbservices.h>
 #include <libimobiledevice/diagnostics_relay.h>
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 #include <endianness.h>
 
@@ -56,6 +56,9 @@
 #include <windows.h>
 #include <conio.h>
 #define sleep(x) Sleep(x*1000)
+#ifndef ELOOP
+#define ELOOP 114
+#endif
 #else
 #include <termios.h>
 #include <sys/statvfs.h>
@@ -549,9 +552,11 @@ static int write_restore_applications(plist_t info_plist, afc_client_t afc)
 	uint32_t applications_plist_xml_length = 0;
 
 	plist_t applications_plist = plist_dict_get_item(info_plist, "Applications");
-	if (applications_plist) {
-		plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
+	if (!applications_plist) {
+		printf("No Applications in Info.plist, skipping creation of RestoreApplications.plist\n");
+		return 0;
 	}
+	plist_to_xml(applications_plist, &applications_plist_xml, &applications_plist_xml_length);
 	if (!applications_plist_xml) {
 		printf("Error preparing RestoreApplications.plist\n");
 		goto leave;
@@ -634,7 +639,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 		return;
 	}
 
-	lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
+	lockdownd_error_t ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
 	if (service && service->port) {
 		np_client_new(device, service, &np);
 		if (np) {
@@ -642,7 +647,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 			np_client_free(np);
 		}
 	} else {
-		printf("Could not start %s\n", NP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
 	}
 
 	if (service) {
@@ -741,8 +746,18 @@ static int errno_to_device_error(int errno_value)
 			return -6;
 		case EEXIST:
 			return -7;
+		case ENOTDIR:
+			return -8;
+		case EISDIR:
+			return -9;
+		case ELOOP:
+			return -10;
+		case EIO:
+			return -11;
+		case ENOSPC:
+			return -15;
 		default:
-			return -errno_value;
+			return -1;
 	}
 }
 
@@ -1467,7 +1482,14 @@ int main(int argc, char *argv[])
 	plist_t node_tmp = NULL;
 	plist_t info_plist = NULL;
 	plist_t opts = NULL;
+
+	idevice_t device = NULL;
+	afc_client_t afc = NULL;
+	np_client_t np = NULL;
+	lockdownd_client_t lockdown = NULL;
+	mobilebackup2_client_t mobilebackup2 = NULL;
 	mobilebackup2_error_t err;
+	uint64_t lockfile = 0;
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -1680,7 +1702,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	idevice_t device = NULL;
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
@@ -1761,7 +1782,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	lockdownd_client_t lockdown = NULL;
 	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
@@ -1799,7 +1819,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* start notification_proxy */
-	np_client_t np = NULL;
 	ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
 	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		np_client_new(device, service, &np);
@@ -1813,17 +1832,24 @@ int main(int argc, char *argv[])
 		};
 		np_observe_notifications(np, noties);
 	} else {
-		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
+		cmd = CMD_LEAVE;
+		goto checkpoint;
+	}
+	if (service) {
+		lockdownd_service_descriptor_free(service);
+		service = NULL;
 	}
 
-	afc_client_t afc = NULL;
 	if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 		/* start AFC, we need this for the lock file */
-		service->port = 0;
-		service->ssl_enabled = 0;
 		ldret = lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service);
 		if ((ldret == LOCKDOWN_E_SUCCESS) && service->port) {
 			afc_client_new(device, service, &afc);
+		} else {
+			printf("ERROR: Could not start service %s: %s\n", AFC_SERVICE_NAME, lockdownd_strerror(ldret));
+			cmd = CMD_LEAVE;
+			goto checkpoint;
 		}
 	}
 
@@ -1833,7 +1859,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* start mobilebackup service and retrieve port */
-	mobilebackup2_client_t mobilebackup2 = NULL;
 	ldret = lockdownd_start_service_with_escrow_bag(lockdown, MOBILEBACKUP2_SERVICE_NAME, &service);
 	lockdownd_client_free(lockdown);
 	lockdown = NULL;
@@ -1883,7 +1908,6 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		uint64_t lockfile = 0;
 		if (cmd == CMD_BACKUP || cmd == CMD_RESTORE) {
 			do_post_notification(device, NP_SYNC_WILL_START);
 			afc_file_open(afc, "/com.apple.itunes.lock_sync", AFC_FOPEN_RW, &lockfile);
@@ -2249,6 +2273,11 @@ checkpoint:
 					plist_t freespace_item = plist_new_uint(freespace);
 					mobilebackup2_send_status_response(mobilebackup2, res, NULL, freespace_item);
 					plist_free(freespace_item);
+				} else if (!strcmp(dlmsg, "DLMessagePurgeDiskSpace")) {
+					/* device wants to purge disk space on the host - not supported */
+					plist_t empty_dict = plist_new_dict();
+					err = mobilebackup2_send_status_response(mobilebackup2, -1, "Operation not supported", empty_dict);
+					plist_free(empty_dict);
 				} else if (!strcmp(dlmsg, "DLContentsOfDirectory")) {
 					/* list directory contents */
 					mb2_handle_list_directory(mobilebackup2, message, backup_directory);
@@ -2560,7 +2589,7 @@ files_out:
 				do_post_notification(device, NP_SYNC_DID_FINISH);
 		}
 	} else {
-		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP2_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", MOBILEBACKUP2_SERVICE_NAME, lockdownd_strerror(ldret));
 		lockdownd_client_free(lockdown);
 		lockdown = NULL;
 	}

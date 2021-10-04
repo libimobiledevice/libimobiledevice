@@ -41,10 +41,10 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/syslog_relay.h>
+#include <libimobiledevice-glue/termcolors.h>
 
 static int quit_flag = 0;
 static int exit_on_disconnect = 0;
-static int use_colors = 0;
 static int show_device_name = 0;
 
 static char* udid = NULL;
@@ -74,58 +74,6 @@ static int use_network = 0;
 static char *line = NULL;
 static int line_buffer_size = 0;
 static int lp = 0;
-
-#ifdef WIN32
-static WORD COLOR_RESET = 0;
-static HANDLE h_stdout = INVALID_HANDLE_VALUE;
-
-#define COLOR_NORMAL        COLOR_RESET
-#define COLOR_DARK          FOREGROUND_INTENSITY
-#define COLOR_RED           FOREGROUND_RED |FOREGROUND_INTENSITY
-#define COLOR_DARK_RED      FOREGROUND_RED
-#define COLOR_GREEN         FOREGROUND_GREEN | FOREGROUND_INTENSITY
-#define COLOR_DARK_GREEN    FOREGROUND_GREEN
-#define COLOR_YELLOW        FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY
-#define COLOR_DARK_YELLOW   FOREGROUND_GREEN | FOREGROUND_RED
-#define COLOR_BLUE          FOREGROUND_BLUE | FOREGROUND_INTENSITY
-#define COLOR_DARK_BLUE     FOREGROUND_BLUE
-#define COLOR_MAGENTA       FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_INTENSITY
-#define COLOR_DARK_MAGENTA  FOREGROUND_BLUE | FOREGROUND_RED
-#define COLOR_CYAN          FOREGROUND_BLUE | FOREGROUND_GREEN
-#define COLOR_BRIGHT_CYAN   FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY
-#define COLOR_DARK_CYAN     FOREGROUND_BLUE | FOREGROUND_GREEN
-#define COLOR_WHITE         FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
-#define COLOR_DARK_WHITE    FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
-
-static void TEXT_COLOR(WORD attr)
-{
-	if (use_colors) {
-		SetConsoleTextAttribute(h_stdout, attr);
-	}
-}
-#else
-
-#define COLOR_RESET         "\e[m"
-#define COLOR_NORMAL        "\e[0m"
-#define COLOR_DARK          "\e[2m"
-#define COLOR_RED           "\e[0;31m"
-#define COLOR_DARK_RED      "\e[2;31m"
-#define COLOR_GREEN         "\e[0;32m"
-#define COLOR_DARK_GREEN    "\e[2;32m"
-#define COLOR_YELLOW        "\e[0;33m"
-#define COLOR_DARK_YELLOW   "\e[2;33m"
-#define COLOR_BLUE          "\e[0;34m"
-#define COLOR_DARK_BLUE     "\e[2;34m"
-#define COLOR_MAGENTA       "\e[0;35m"
-#define COLOR_DARK_MAGENTA  "\e[2;35m"
-#define COLOR_CYAN          "\e[0;36m"
-#define COLOR_BRIGHT_CYAN   "\e[1;36m"
-#define COLOR_DARK_CYAN     "\e[2;36m"
-#define COLOR_WHITE         "\e[1;37m"
-#define COLOR_DARK_WHITE    "\e[0;37m"
-
-#define TEXT_COLOR(x) if (use_colors) { fwrite(x, 1, sizeof(x)-1, stdout); }
-#endif
 
 static void add_filter(const char* filterstr)
 {
@@ -201,7 +149,7 @@ static void syslog_callback(char c, void *user_data)
 		do {
 			if (lp < 16) {
 				shall_print = 1;
-				TEXT_COLOR(COLOR_WHITE);
+				cprintf(COLOR_WHITE);
 				break;
 			} else if (line[3] == ' ' && line[6] == ' ' && line[15] == ' ') {
 				char* end = &line[lp];
@@ -331,11 +279,7 @@ static void syslog_callback(char c, void *user_data)
 				/* log level */
 				char* level_start = p;
 				char* level_end = p;
-#ifdef WIN32
-				WORD level_color = COLOR_NORMAL;
-#else
 				const char* level_color = NULL;
-#endif
 				if (!strncmp(p, "<Notice>:", 9)) {
 					level_end += 9;
 					level_color = COLOR_GREEN;
@@ -353,24 +297,24 @@ static void syslog_callback(char c, void *user_data)
 				}
 
 				/* write date and time */
-				TEXT_COLOR(COLOR_DARK_WHITE);
+				cprintf(COLOR_LIGHT_GRAY);
 				fwrite(line, 1, 16, stdout);
 
 				if (show_device_name) {
 					/* write device name */
-					TEXT_COLOR(COLOR_DARK_YELLOW);
+					cprintf(COLOR_DARK_YELLOW);
 					fwrite(device_name_start, 1, device_name_end-device_name_start+1, stdout);
-					TEXT_COLOR(COLOR_RESET);
+					cprintf(COLOR_RESET);
 				}
 
 				/* write process name */
-				TEXT_COLOR(COLOR_BRIGHT_CYAN);
+				cprintf(COLOR_BRIGHT_CYAN);
 				fwrite(process_name_start, 1, process_name_end-process_name_start, stdout);
-				TEXT_COLOR(COLOR_CYAN);
+				cprintf(COLOR_CYAN);
 				fwrite(process_name_end, 1, proc_name_end-process_name_end+1, stdout);
 
 				/* write log level */
-				TEXT_COLOR(level_color);
+				cprintf(level_color);
 				if (level_end > level_start) {
 					fwrite(level_start, 1, level_end-level_start, stdout);
 					p = level_end;
@@ -379,17 +323,17 @@ static void syslog_callback(char c, void *user_data)
 				lp -= p - linep;
 				linep = p;
 
-				TEXT_COLOR(COLOR_WHITE);
+				cprintf(COLOR_WHITE);
 
 			} else {
 				shall_print = 1;
-				TEXT_COLOR(COLOR_WHITE);
+				cprintf(COLOR_WHITE);
 			}
 		} while (0);
 
 		if ((num_msg_filters == 0 && num_proc_filters == 0 && num_pid_filters == 0 && num_trigger_filters == 0 && num_untrigger_filters == 0) || shall_print) {
 			fwrite(linep, 1, lp, stdout);
-			TEXT_COLOR(COLOR_RESET);
+			cprintf(COLOR_RESET);
 			fflush(stdout);
 			if (trigger_off) {
 				triggered = 0;
@@ -560,14 +504,6 @@ static void print_usage(int argc, char **argv, int is_error)
 
 int main(int argc, char *argv[])
 {
-#ifdef WIN32
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (GetConsoleScreenBufferInfo(h_stdout, &csbi)) {
-		COLOR_RESET = csbi.wAttributes;
-	}
-#endif
-	int no_colors = 0;
 	int include_filter = 0;
 	int exclude_filter = 0;
 	int include_kernel = 0;
@@ -700,7 +636,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		case 2:
-			no_colors = 1;
+			term_colors_set_enabled(0);
 			break;
 		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
@@ -755,10 +691,6 @@ int main(int argc, char *argv[])
 
 	argc -= optind;
 	argv += optind;
-
-	if (!no_colors && isatty(1)) {
-		use_colors = 1;
-	}
 
 	int num = 0;
 	idevice_info_t *devices = NULL;

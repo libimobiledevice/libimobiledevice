@@ -24,7 +24,7 @@
 
 #include "libimobiledevice/mobile_image_mounter.h"
 #include "property_list_service.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/thread.h>
 
 struct mobile_image_mounter_client_private {
 	property_list_service_client_t parent;

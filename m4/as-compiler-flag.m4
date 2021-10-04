@@ -18,7 +18,7 @@ AC_DEFUN([AS_COMPILER_FLAG],
   save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $1"
 
-  AC_TRY_COMPILE([ ], [], [flag_ok=yes], [flag_ok=no])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])], [flag_ok=yes], [flag_ok=no])
   CFLAGS="$save_CFLAGS"
 
   if test "X$flag_ok" = Xyes ; then
@@ -44,7 +44,7 @@ AC_DEFUN([AS_COMPILER_FLAGS],
   do
     save_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $each"
-    AC_TRY_COMPILE([ ], [], [flag_ok=yes], [flag_ok=no])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])], [flag_ok=yes], [flag_ok=no])
     CFLAGS="$save_CFLAGS"
 
     if test "X$flag_ok" = Xyes ; then

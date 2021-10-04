@@ -52,6 +52,7 @@ cdef extern from "libimobiledevice/afc.h":
     afc_error_t afc_read_directory(afc_client_t client, char *dir, char ***list)
     afc_error_t afc_get_file_info(afc_client_t client, char *filename, char ***infolist)
     afc_error_t afc_remove_path(afc_client_t client, char *path)
+    afc_error_t afc_remove_path_and_contents(afc_client_t client, char *path)
     afc_error_t afc_rename_path(afc_client_t client, char *f, char *to)
     afc_error_t afc_make_directory(afc_client_t client, char *dir)
     afc_error_t afc_truncate(afc_client_t client, char *path, uint64_t newsize)
@@ -235,17 +236,17 @@ cdef class AfcClient(BaseService):
             afc_file_mode_t c_mode
             uint64_t handle
             AfcFile f
-        if mode == <bytes>'r':
+        if mode == b'r':
             c_mode = AFC_FOPEN_RDONLY
-        elif mode == <bytes>'r+':
+        elif mode == b'r+':
             c_mode = AFC_FOPEN_RW
-        elif mode == <bytes>'w':
+        elif mode == b'w':
             c_mode = AFC_FOPEN_WRONLY
-        elif mode == <bytes>'w+':
+        elif mode == b'w+':
             c_mode = AFC_FOPEN_WR
-        elif mode == <bytes>'a':
+        elif mode == b'a':
             c_mode = AFC_FOPEN_APPEND
-        elif mode == <bytes>'a+':
+        elif mode == b'a+':
             c_mode = AFC_FOPEN_RDAPPEND
         else:
             raise ValueError("mode string must be 'r', 'r+', 'w', 'w+', 'a', or 'a+'")
@@ -282,6 +283,9 @@ cdef class AfcClient(BaseService):
     cpdef remove_path(self, bytes path):
         self.handle_error(afc_remove_path(self._c_client, path))
 
+    cpdef remove_path_and_contents(self, bytes path):
+        self.handle_error(afc_remove_path_and_contents(self._c_client, path))
+
     cpdef rename_path(self, bytes f, bytes t):
         self.handle_error(afc_rename_path(self._c_client, f, t))
 
@@ -308,17 +312,17 @@ cdef class Afc2Client(AfcClient):
             afc_file_mode_t c_mode
             uint64_t handle
             AfcFile f
-        if mode == <bytes>'r':
+        if mode == b'r':
             c_mode = AFC_FOPEN_RDONLY
-        elif mode == <bytes>'r+':
+        elif mode == b'r+':
             c_mode = AFC_FOPEN_RW
-        elif mode == <bytes>'w':
+        elif mode == b'w':
             c_mode = AFC_FOPEN_WRONLY
-        elif mode == <bytes>'w+':
+        elif mode == b'w+':
             c_mode = AFC_FOPEN_WR
-        elif mode == <bytes>'a':
+        elif mode == b'a':
             c_mode = AFC_FOPEN_APPEND
-        elif mode == <bytes>'a+':
+        elif mode == b'a+':
             c_mode = AFC_FOPEN_RDAPPEND
         else:
             raise ValueError("mode string must be 'r', 'r+', 'w', 'w+', 'a', or 'a+'")

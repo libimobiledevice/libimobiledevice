@@ -4,18 +4,10 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
-	$(libgnutls_CFLAGS) \
-	$(libtasn1_CFLAGS) \
-	$(libgcrypt_CFLAGS) \
-	$(openssl_CFLAGS) \
 	$(libplist_CFLAGS) \
 	$(LFS_CFLAGS)
 
 AM_LDFLAGS = \
-	$(libgnutls_LIBS) \
-	$(libtasn1_LIBS) \
-	$(libgcrypt_LIBS) \
-	$(openssl_LIBS) \
 	$(libplist_LIBS)
 
 bin_PROGRAMS = \
@@ -40,8 +32,8 @@ bin_PROGRAMS = \
 	idevicesetlocation
 
 ideviceinfo_SOURCES = ideviceinfo.c
-ideviceinfo_CFLAGS = $(AM_CFLAGS)
-ideviceinfo_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+ideviceinfo_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+ideviceinfo_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 ideviceinfo_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicename_SOURCES = idevicename.c
@@ -50,13 +42,13 @@ idevicename_LDFLAGS = $(AM_LDFLAGS)
 idevicename_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicepair_SOURCES = idevicepair.c
-idevicepair_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
-idevicepair_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS) $(libusbmuxd_LIBS)
-idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
+idevicepair_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS)
+idevicepair_LDFLAGS = $(AM_LDFLAGS) $(libusbmuxd_LIBS) $(ssl_lib_LIBS)
+idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la $(limd_glue_LIBS)
 
 idevicesyslog_SOURCES = idevicesyslog.c
-idevicesyslog_CFLAGS = $(AM_CFLAGS)
-idevicesyslog_LDFLAGS = $(AM_LDFLAGS)
+idevicesyslog_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicesyslog_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicesyslog_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevice_id_SOURCES = idevice_id.c
@@ -65,18 +57,18 @@ idevice_id_LDFLAGS = $(AM_LDFLAGS)
 idevice_id_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicebackup_SOURCES = idevicebackup.c
-idevicebackup_CFLAGS = $(AM_CFLAGS)
-idevicebackup_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicebackup_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS) $(limd_glue_CFLAGS)
+idevicebackup_LDFLAGS = $(AM_LDFLAGS) $(ssl_lib_LIBS) $(limd_glue_LIBS)
 idevicebackup_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicebackup2_SOURCES = idevicebackup2.c
-idevicebackup2_CFLAGS = $(AM_CFLAGS)
-idevicebackup2_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicebackup2_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicebackup2_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicebackup2_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
-ideviceimagemounter_CFLAGS = $(AM_CFLAGS)
-ideviceimagemounter_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+ideviceimagemounter_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 ideviceimagemounter_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicescreenshot_SOURCES = idevicescreenshot.c
@@ -100,13 +92,13 @@ ideviceprofile_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAG
 ideviceprofile_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceprovision_SOURCES = ideviceprovision.c
-ideviceprovision_CFLAGS = $(AM_CFLAGS)
-ideviceprovision_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+ideviceprovision_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+ideviceprovision_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 ideviceprovision_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicedebugserverproxy_SOURCES = idevicedebugserverproxy.c
-idevicedebugserverproxy_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
-idevicedebugserverproxy_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicedebugserverproxy_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicedebugserverproxy_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicedebugserverproxy_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicediagnostics_SOURCES = idevicediagnostics.c
@@ -115,9 +107,9 @@ idevicediagnostics_LDFLAGS = $(AM_LDFLAGS)
 idevicediagnostics_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicedebug_SOURCES = idevicedebug.c
-idevicedebug_CFLAGS = $(AM_CFLAGS)
-idevicedebug_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
-idevicedebug_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
+idevicedebug_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicedebug_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
+idevicedebug_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la
 
 idevicenotificationproxy_SOURCES = idevicenotificationproxy.c
 idevicenotificationproxy_CFLAGS = $(AM_CFLAGS)
@@ -125,11 +117,11 @@ idevicenotificationproxy_LDFLAGS = $(AM_LDFLAGS)
 idevicenotificationproxy_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicecrashreport_SOURCES = idevicecrashreport.c
-idevicecrashreport_CFLAGS = -I$(top_srcdir) $(AM_CFLAGS)
-idevicecrashreport_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicecrashreport_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicecrashreport_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicecrashreport_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicesetlocation_SOURCES = idevicesetlocation.c
 idevicesetlocation_CFLAGS = $(AM_CFLAGS)
-idevicesetlocation_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
+idevicesetlocation_LDFLAGS = $(AM_LDFLAGS)
 idevicesetlocation_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la

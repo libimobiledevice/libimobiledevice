@@ -2,6 +2,8 @@
 
 *A library to communicate with services on iOS devices using native protocols.*
 
+![](https://github.com/libimobiledevice/libimobiledevice/actions/workflows/build.yml/badge.svg)
+
 ## Features
 
 libimobiledevice is a cross-platform software library that talks the protocols
@@ -29,7 +31,7 @@ to:
 * Backup and restore the device in a native way compatible with iTunes
 * Manage app icons arrangement on the device
 * Install, remove, list and basically manage apps
-* Activate a device using official serviers
+* Activate a device using official servers
 * Manage contacts, calendars, notes and bookmarks
 * Retrieve and remove crashreports
 * Retrieve various diagnostics information
@@ -63,6 +65,7 @@ sudo apt-get install \
 	libtool-bin \
 	libplist-dev \
 	libusbmuxd-dev \
+	libimobiledevice-glue-dev \
 	libssl-dev \
 	usbmuxd
 ```
@@ -95,10 +98,19 @@ make
 sudo make install
 ```
 
-By default, OpenSSL will be used. If you prefer GnuTLS, configure with
-`--disable-openssl` like this:
+By default, OpenSSL will be used as TLS/SSL library. If you prefer GnuTLS,
+configure with `--with-gnutls` like this:
 ```bash
-./autogen.sh --disable-openssl
+./autogen.sh --with-gnutls
+```
+
+MbedTLS is also supported and can be enabled by passing `--with-mbedtls` to
+configure. If mbedTLS is not installed in a default location, you need to set
+the environment variables `mbedtls_INCLUDES` to the path that contains the
+MbedTLS headers and `mbedtls_LIBDIR` to set the library path. Optionally,
+`mbedtls_LIBS` can be used to set the library names directly. Example:
+```bash
+./autogen.sh --with-mbedtls mbedtls_INCLUDES=/opt/local/include mbedtls_LIBDIR=/opt/local/lib
 ```
 
 ## Usage
@@ -153,7 +165,7 @@ ticket first to discuss the idea upfront to ensure less effort for everyone.
 
 Please make sure your contribution adheres to:
 * Try to follow the code style of the project
-* Commit messages should describe the change well without being to short
+* Commit messages should describe the change well without being too short
 * Try to split larger changes into individual commits of a common domain
 * Use your real name and a valid email address for your commits
 
@@ -181,4 +193,4 @@ iPadOS, tvOS, watchOS, and macOS are trademarks of Apple Inc.
 This project is an independent software and has not been authorized, sponsored,
 or otherwise approved by Apple Inc.
 
-README Updated on: 2020-06-12
+README Updated on: 2021-08-30

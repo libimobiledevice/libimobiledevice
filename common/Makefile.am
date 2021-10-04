@@ -8,23 +8,25 @@ AM_CFLAGS = \
 	$(libplist_CFLAGS) \
 	$(libgnutls_CFLAGS) \
 	$(libtasn1_CFLAGS) \
+	$(libgcrypt_CFLAGS) \
 	$(openssl_CFLAGS) \
 	$(LFS_CFLAGS)
 
 AM_LDFLAGS = \
 	$(libusbmuxd_LIBS) \
 	$(libplist_LIBS) \
+	$(libgnutls_LIBS) \
+	$(libtasn1_LIBS) \
+	$(libgcrypt_LIBS) \
+	$(openssl_LIBS) \
 	${libpthread_LIBS}
 
 noinst_LTLIBRARIES = libinternalcommon.la
 libinternalcommon_la_LIBADD = 
 libinternalcommon_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined
 libinternalcommon_la_SOURCES = \
-	socket.c socket.h \
-	thread.c thread.h \
 	debug.c debug.h \
-	userpref.c userpref.h \
-	utils.c utils.h
+	userpref.c userpref.h
 
 if WIN32
 libinternalcommon_la_LIBADD += -lole32 -lws2_32

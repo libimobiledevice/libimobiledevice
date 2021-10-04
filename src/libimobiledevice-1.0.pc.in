@@ -9,4 +9,4 @@ Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -limobiledevice-1.0
 Cflags: -I${includedir}
 Requires: libplist-2.0 >= @LIBPLIST_VERSION@
-Requires.private: libusbmuxd-2.0 >= @LIBUSBMUXD_VERSION@ @ssl_requires@
+Requires.private: libusbmuxd-2.0 >= @LIBUSBMUXD_VERSION@ libimobiledevice-glue-1.0 >= @LIMD_GLUE_VERSION@ @ssl_requires@

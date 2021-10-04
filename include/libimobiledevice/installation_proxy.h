@@ -228,7 +228,7 @@ instproxy_error_t instproxy_lookup(instproxy_client_t client, const char** appid
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
@@ -256,7 +256,7 @@ instproxy_error_t instproxy_install(instproxy_client_t client, const char *pkg_p
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_path, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
@@ -277,7 +277,7 @@ instproxy_error_t instproxy_upgrade(instproxy_client_t client, const char *pkg_p
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_uninstall(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
@@ -319,7 +319,7 @@ instproxy_error_t instproxy_lookup_archives(instproxy_client_t client, plist_t c
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
@@ -343,7 +343,7 @@ instproxy_error_t instproxy_archive(instproxy_client_t client, const char *appid
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
@@ -366,7 +366,7 @@ instproxy_error_t instproxy_restore(instproxy_client_t client, const char *appid
  *
  * @note If a callback function is given (async mode), this function returns
  *       INSTPROXY_E_SUCCESS immediately if the status updater thread has been
- *       created successfully; any error occuring during the command has to be
+ *       created successfully; any error occurring during the command has to be
  *       handled inside the specified callback function.
  */
 instproxy_error_t instproxy_remove_archive(instproxy_client_t client, const char *appid, plist_t client_options, instproxy_status_cb_t status_cb, void *user_data);
