@@ -342,15 +342,26 @@ int main(int argc, char *argv[])
                     plist_t profileMetadata = plist_dict_get_item(profiles, "ProfileMetadata");
 					uint32_t num_profiles = plist_array_get_size(profileIdentifiers);
 					if (op == OP_LIST) {
-						printf("Device has %d configuration %s installed:\n", num_profiles, (num_profiles == 1) ? "profile" : "profiles");
-                        uint32_t j;
-                        for (j = 0; !found_match && j < num_profiles; j++) {
-                            char* p_name = NULL;
-                            plist_t profileName = plist_array_get_item(profileIdentifiers, j);
-                            plist_get_string_val(profileName, &p_name);
-                            printf("%s\n", (p_name) ? p_name : "(no name)");
-                            free(p_name);
-                            plist_free(profileName);
+                        if (output_xml) {
+                            char* xml = NULL;
+                            uint32_t xlen = 0;
+                            plist_to_xml(profiles, &xml, &xlen);
+                            if (xml) {
+                                printf("%s\n", xml);
+                                free(xml);
+                            }
+                        } else {
+                            printf("Device has %d configuration %s installed:\n", num_profiles,
+                                   (num_profiles == 1) ? "profile" : "profiles");
+                            uint32_t j;
+                            for (j = 0; !found_match && j < num_profiles; j++) {
+                                char *p_name = NULL;
+                                plist_t profileName = plist_array_get_item(profileIdentifiers, j);
+                                plist_get_string_val(profileName, &p_name);
+                                printf("%s\n", (p_name) ? p_name : "(no name)");
+                                free(p_name);
+                                plist_free(profileName);
+                            }
                         }
 					} else {
                         plist_t profile = plist_dict_get_item(profileMetadata, param);
