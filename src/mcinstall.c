@@ -32,7 +32,7 @@
 #include "mcinstall.h"
 #include "property_list_service.h"
 #include "common/debug.h"
-#include "common/utils.h"
+#include <libimobiledevice-glue/utils.h>
 
 /**
  * Convert a property_list_service_error_t value to a mcinstall_error_t
