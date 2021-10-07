@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i] || !*argv[i]) {
 				print_usage(argc, argv);
-				return 0;
+				return 2;
 			}
 			udid = argv[i];
 			continue;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
-				return 0;
+				return 2;
 			}
 			param = argv[i];
 			op = OP_INSTALL;
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
             i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
-				return 0;
+				return 2;
 			}
 			param = argv[i];
 			op = OP_REMOVE;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 			i++;
 			if (!argv[i] || (strlen(argv[i]) < 1)) {
 				print_usage(argc, argv);
-				return 0;
+				return 2;
 			}
 			param = argv[i];
 			op = OP_SET_CLOUD_CONFIG;
@@ -228,13 +228,13 @@ int main(int argc, char *argv[])
 		}
 		else {
 			print_usage(argc, argv);
-			return 0;
+            return 2;
 		}
 	}
 
 	if ((op == -1) || (op >= NUM_OPS)) {
 		print_usage(argc, argv);
-		return 0;
+        return 2;
 	}
 
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
@@ -283,7 +283,9 @@ int main(int argc, char *argv[])
 				unsigned char* profile_data = NULL;
 				unsigned int profile_size = 0;
 				if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
-						break;
+                    fprintf(stderr, "Could not read profile '%s'\n", param);
+                    res = -1;
+                    break;
 				}
 
 				uint64_t psize = profile_size;
@@ -295,6 +297,7 @@ int main(int argc, char *argv[])
 				} else {
 						int sc = mcinstall_get_status_code(mis);
 						fprintf(stderr, "Could not install profile '%s', status code: 0x%x\n", param, sc);
+                        res = -1;
 				}
                 plist_free(pdata);
 		}
@@ -304,7 +307,9 @@ int main(int argc, char *argv[])
 				unsigned char* profile_data = NULL;
 				unsigned int profile_size = 0;
 				if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
-						break;
+                    fprintf(stderr, "Could not read profile '%s'\n", param);
+                    res = -1;
+                    break;
 				}
 
 				uint64_t psize = profile_size;
@@ -377,6 +382,7 @@ int main(int argc, char *argv[])
                             }
                         } else {
                             fprintf(stderr, "Profile %s not found on device.\n", param);
+                            res = -1;
                         }
                     }
 					plist_free(profileMetadata);
