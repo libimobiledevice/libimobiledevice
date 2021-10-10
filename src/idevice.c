@@ -447,7 +447,15 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 	if (device->conn_type == CONNECTION_USBMUXD) {
 		int sfd = usbmuxd_connect(device->mux_id, port);
 		if (sfd < 0) {
-			debug_info("ERROR: Connecting to usbmuxd failed: %d (%s)", sfd, strerror(-sfd));
+			debug_info("ERROR: Connecting to usbmux device failed: %d (%s)", sfd, strerror(-sfd));
+			switch (-sfd) {
+			case ECONNREFUSED:
+				return IDEVICE_E_CONNREFUSED;
+			case ENODEV:
+				return IDEVICE_E_NO_DEVICE;
+			default:
+				break;
+			}
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
@@ -494,7 +502,14 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 
 		int sfd = socket_connect_addr(saddr, port);
 		if (sfd < 0) {
-			debug_info("ERROR: Connecting to network device failed: %d (%s)", errno, strerror(errno));
+			int result = errno;
+			debug_info("ERROR: Connecting to network device failed: %d (%s)", result, strerror(result));
+			switch (result) {
+			case ECONNREFUSED:
+				return IDEVICE_E_CONNREFUSED;
+			default:
+				break;
+			}
 			return IDEVICE_E_NO_DEVICE;
 		}
 
