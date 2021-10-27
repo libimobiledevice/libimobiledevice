@@ -291,3 +291,8 @@ leave_unlock:
 	sbservices_unlock(client);
 	return res;
 }
+
+void sbservices_get_home_screen_wallpaper_pngdata_free(char *pngdata)
+{
+    free(pngdata);
+}

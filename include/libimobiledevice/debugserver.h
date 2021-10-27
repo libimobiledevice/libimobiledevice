@@ -234,6 +234,14 @@ debugserver_error_t debugserver_command_free(debugserver_command_t command);
  */
 void debugserver_encode_string(const char* buffer, char** encoded_buffer, uint32_t* encoded_length);
 
+
+/**
+ * Release the encode string created by debugserver_encode_string
+ *
+ * @param ncoded_buffer Encoding string of debugserver_encode_string request
+ */
+void debugserver_encode_string_free(char* encoded_buffer);
+
 /**
  * Decodes a hex encoded string.
  *
@@ -242,6 +250,14 @@ void debugserver_encode_string(const char* buffer, char** encoded_buffer, uint32
  * @param buffer Decoded string to be freed by the caller
  */
 void debugserver_decode_string(const char *encoded_buffer, size_t encoded_length, char** buffer);
+
+
+/**
+ * Release the decode string created by debugserver_decode_string
+ *
+ * @param buffer Decoding string of debugserver_decode_string request
+ */
+void debugserver_decode_string_free(char* buffer);
 
 #ifdef __cplusplus
 }

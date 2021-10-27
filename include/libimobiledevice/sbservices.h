@@ -159,7 +159,7 @@ sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t clie
  * @param client The connected sbservices client to use.
  * @param pngdata Pointer that will point to a newly allocated buffer
  *     containing the PNG data upon successful return. It is up to the caller
- *     to free the memory.
+ *     to sbservices_get_home_screen_wallpaper_pngdata_free the memory.
  * @param pngsize Pointer to a uint64_t that will be set to the size of the
  *     buffer pngdata points to upon successful return.
  *
@@ -168,6 +168,13 @@ sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t clie
  *     code otherwise.
  */
 sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
+
+/**
+ * Release screen wallpaper data requested by sbservices_get_home_screen_wallpaper_pngdata
+ *
+ * @param pngdata Pointer to screen wallpaper PNG data
+ */
+void sbservices_get_home_screen_wallpaper_pngdata_free(char *pngdata);
 
 #ifdef __cplusplus
 }

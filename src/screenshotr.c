@@ -163,3 +163,8 @@ leave:
 
 	return res;
 }
+
+void screenshotr_take_screenshot_free(char *imgdata)
+{
+    free(imgdata);
+}

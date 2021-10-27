@@ -100,7 +100,7 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);
  * @param client The connection screenshotr service client.
  * @param imgdata Pointer that will point to a newly allocated buffer
  *     containing TIFF image data upon successful return. It is up to the
- *     caller to free the memory.
+ *     caller to screenshotr_take_screenshot_free the memory.
  * @param imgsize Pointer to a uint64_t that will be set to the size of the
  *     buffer imgdata points to upon successful return.
  *
@@ -109,6 +109,13 @@ screenshotr_error_t screenshotr_client_free(screenshotr_client_t client);
  *     error occurred.
  */
 screenshotr_error_t screenshotr_take_screenshot(screenshotr_client_t client, char **imgdata, uint64_t *imgsize);
+
+/**
+ * Release screenshot data requested by screenshotr_take_screenshot
+ *
+ * @param imgdata Pointer to TIFF image data
+ */
+void screenshotr_take_screenshot_free(char *imgdata);
 
 #ifdef __cplusplus
 }

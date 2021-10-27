@@ -284,6 +284,11 @@ LIBIMOBILEDEVICE_API void debugserver_encode_string(const char* buffer, char** e
 	}
 }
 
+void debugserver_encode_string_free(char* encoded_buffer)
+{
+    free(encoded_buffer);
+}
+
 LIBIMOBILEDEVICE_API void debugserver_decode_string(const char *encoded_buffer, size_t encoded_length, char** buffer)
 {
 	*buffer = malloc(sizeof(char) * ((encoded_length / 2)+1));
@@ -295,6 +300,11 @@ LIBIMOBILEDEVICE_API void debugserver_decode_string(const char *encoded_buffer, 
 		f += 2;
 	}
 	*t = '\0';
+}
+
+void debugserver_decode_string_free(char* buffer)
+{
+    free(buffer);
 }
 
 static void debugserver_format_command(const char* prefix, const char* command, const char* arguments, int calculate_checksum, char** buffer, uint32_t* size)
