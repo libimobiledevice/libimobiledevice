@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
 			/* enable logging for the session in debug mode */
 			if (debug_level) {
 				log_debug("Setting logging bitmask...");
-				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS", 0, NULL, &command);
+				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS;", 0, NULL, &command);
 				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 				debugserver_command_free(command);
 				command = NULL;
