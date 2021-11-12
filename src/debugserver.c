@@ -89,6 +89,8 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_new(idevice_t device
 	debugserver_client_t client_loc = (debugserver_client_t) malloc(sizeof(struct debugserver_client_private));
 	client_loc->parent = parent;
 	client_loc->noack_mode = 0;
+	client_loc->cancel_receive = NULL;
+	client_loc->receive_loop_timeout = 1000;
 
 	*client = client_loc;
 
@@ -150,7 +152,7 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 	}
 
 	res = debugserver_error(service_receive_with_timeout(client->parent, data, size, (uint32_t*)&bytes, timeout));
-	if (bytes <= 0) {
+	if (bytes <= 0 && res != DEBUGSERVER_E_TIMEOUT) {
 		debug_info("Could not read data, error %d", res);
 	}
 	if (received) {
@@ -162,7 +164,12 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_with_timeout
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive(debugserver_client_t client, char* data, uint32_t size, uint32_t *received)
 {
-	return debugserver_client_receive_with_timeout(client, data, size, received, 1000);
+	debugserver_error_t res = DEBUGSERVER_E_UNKNOWN_ERROR;
+	do {
+		/* Is this allowed to return DEBUGSERVER_E_TIMEOUT and also set data and received? */
+		res = debugserver_client_receive_with_timeout(client, data, size, received, client->receive_loop_timeout);
+	} while (res == DEBUGSERVER_E_TIMEOUT && client->cancel_receive != NULL && !client->cancel_receive());
+	return res;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_command_new(const char* name, int argc, char* argv[], debugserver_command_t* command)
@@ -355,139 +362,143 @@ LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_ack_mode(debugse
 	return DEBUGSERVER_E_SUCCESS;
 }
 
-static int debugserver_client_receive_internal_check(debugserver_client_t client, char* received_char)
+LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_set_receive_params(debugserver_client_t client, int (*cancel_receive)(), int receive_loop_timeout)
+{
+	if (!client)
+		return DEBUGSERVER_E_INVALID_ARG;
+
+	client->cancel_receive = cancel_receive;
+	client->receive_loop_timeout = receive_loop_timeout;
+
+	debug_info("receive params: cancel_receive %s, receive_loop_timeout %dms", (client->cancel_receive == NULL ? "unset": "set"), client->receive_loop_timeout);
+
+	return DEBUGSERVER_E_SUCCESS;
+}
+
+static debugserver_error_t debugserver_client_receive_internal_char(debugserver_client_t client, char* received_char)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
-	int did_receive_char = 0;
-	char buffer = 0;
 	uint32_t bytes = 0;
 
 	/* we loop here as we expect an answer */
-	res = debugserver_client_receive_with_timeout(client, &buffer, sizeof(char), &bytes, 1000);
-	if (res == DEBUGSERVER_E_SUCCESS && received_char[0] != 0) {
-		if (memcmp(&buffer, received_char, sizeof(char)) == 0) {
-			did_receive_char = 1;
-		}
-	} else {
-		did_receive_char = 0;
+	res = debugserver_client_receive(client, received_char, sizeof(char), &bytes);
+	if (res != DEBUGSERVER_E_SUCCESS) {
+		return res;
 	}
-
-	if (!did_receive_char) {
-		memcpy(received_char, &buffer, sizeof(char));
+	if (bytes != 1) {
+		debug_info("received %d bytes when asking for %d!", bytes, sizeof(char));
+		return DEBUGSERVER_E_UNKNOWN_ERROR;
 	}
-
-	return did_receive_char;
+	return res;
 }
 
 LIBIMOBILEDEVICE_API debugserver_error_t debugserver_client_receive_response(debugserver_client_t client, char** response, size_t* response_size)
 {
 	debugserver_error_t res = DEBUGSERVER_E_SUCCESS;
 
-	int should_receive = 1;
+	char data = '\0';
 	int skip_prefix = 0;
-	char* command_prefix = strdup("$");
 
-	char* buffer = NULL;
+	char* buffer = malloc(1024);
 	uint32_t buffer_size = 0;
-	uint32_t buffer_capacity = 0;
+	uint32_t buffer_capacity = 1024;
 
 	if (response)
 		*response = NULL;
 
 	if (!client->noack_mode) {
-		char ack[2] = {'+', '\0'};
-		debug_info("attempting to receive ACK %c", *ack);
-		should_receive = debugserver_client_receive_internal_check(client, ack);
-		debug_info("received char: %c", *ack);
-		if (strncmp(ack, command_prefix, sizeof(char)) == 0) {
-			should_receive = 1;
+		debug_info("attempting to receive ACK (+)");
+		res = debugserver_client_receive_internal_char(client, &data);
+		if (res != DEBUGSERVER_E_SUCCESS) {
+			goto cleanup;
+		}
+		if (data == '+') {
+			debug_info("received ACK (+)");
+		} else if (data == '$') {
+			debug_info("received prefix ($)");
+			buffer[0] = '$';
+			buffer_size = 1;
 			skip_prefix = 1;
-			buffer = malloc(1024);
-			buffer_capacity = 1024;
-			strcpy(buffer, command_prefix);
-			buffer_size += sizeof(char);
-			debug_info("received ACK");
-		}
-	}
-
-	debug_info("should_receive: %d, skip_prefix: %d", should_receive, skip_prefix);
-
-	if (should_receive && !skip_prefix) {
-		debug_info("attempting to receive prefix");
-		should_receive = debugserver_client_receive_internal_check(client, command_prefix);
-		debug_info("received command_prefix: %c", *command_prefix);
-		if (should_receive) {
-			if (buffer) {
-				strcpy(buffer, command_prefix);
-			} else {
-				buffer = malloc(1024);
-				buffer_capacity = 1024;
-				strcpy(buffer, command_prefix);
-				buffer_size += sizeof(char);
-			}
-		}
-	}
-
-	debug_info("buffer: %*s, should_receive: %d, skip_prefix: %d", buffer_size, buffer, should_receive, skip_prefix);
-
-	if (should_receive) {
-		uint32_t checksum_length = DEBUGSERVER_CHECKSUM_HASH_LENGTH;
-		int receiving_checksum_response = 0;
-		debug_info("attempting to read up response until checksum");
-
-		while ((checksum_length > 0)) {
-			char data[2] = {'#', '\0'};
-			if (debugserver_client_receive_internal_check(client, data)) {
-				receiving_checksum_response = 1;
-			}
-			if (receiving_checksum_response) {
-				checksum_length--;
-			}
-			if (buffer_size + 1 >= buffer_capacity) {
-				char* newbuffer = realloc(buffer, buffer_capacity+1024);
-				if (!newbuffer) {
-					return DEBUGSERVER_E_UNKNOWN_ERROR;
-				}
-				buffer = newbuffer;
-				buffer[buffer_capacity] = '\0';
-				buffer_capacity += 1024;
-			}
-			strcat(buffer, data);
-			buffer_size += sizeof(char);
-		}
-		debug_info("validating response checksum...");
-		if (client->noack_mode || debugserver_response_is_checksum_valid(buffer, buffer_size)) {
-			if (response) {
-				/* assemble response string */
-				uint32_t resp_size = sizeof(char) * (buffer_size - DEBUGSERVER_CHECKSUM_HASH_LENGTH - 1);
-				*response = (char*)malloc(resp_size + 1);
-				memcpy(*response, buffer + 1, resp_size);
-				(*response)[resp_size] = '\0';
-				if (response_size) *response_size = resp_size;
-			}
-			if (!client->noack_mode) {
-				/* confirm valid command */
-				debugserver_client_send_ack(client);
-			}
 		} else {
-			/* response was invalid */
-			res = DEBUGSERVER_E_RESPONSE_ERROR;
-			if (!client->noack_mode) {
-				/* report invalid command */
-				debugserver_client_send_noack(client);
-			}
+			debug_info("unrecognized response when looking for ACK: %c", data);
+			goto cleanup;
 		}
 	}
 
+	debug_info("skip_prefix: %d", skip_prefix);
+
+	if (!skip_prefix) {
+		debug_info("attempting to receive prefix ($)");
+		res = debugserver_client_receive_internal_char(client, &data);
+		if (res != DEBUGSERVER_E_SUCCESS) {
+			goto cleanup;
+		}
+		if (data == '$') {
+			debug_info("received prefix ($)");
+			buffer[0] = '$';
+			buffer_size = 1;
+		} else {
+			debug_info("unrecognized response when looking for prefix: %c", data);
+			goto cleanup;
+		}
+	}
+
+	uint32_t checksum_length = DEBUGSERVER_CHECKSUM_HASH_LENGTH;
+	int receiving_checksum_response = 0;
+	debug_info("attempting to read up response until checksum");
+
+	while ((checksum_length > 0)) {
+		res = debugserver_client_receive_internal_char(client, &data);
+		if (res != DEBUGSERVER_E_SUCCESS) {
+			goto cleanup;
+		}
+		if (data == '#') {
+			receiving_checksum_response = 1;
+		}
+		if (receiving_checksum_response) {
+			checksum_length--;
+		}
+		if (buffer_size + 1 >= buffer_capacity) {
+			char* newbuffer = realloc(buffer, buffer_capacity+1024);
+			if (!newbuffer) {
+				return DEBUGSERVER_E_UNKNOWN_ERROR;
+			}
+			buffer = newbuffer;
+			buffer_capacity += 1024;
+		}
+		buffer[buffer_size] = data;
+		buffer_size += sizeof(char);
+	}
+	debug_info("validating response checksum...");
+	if (client->noack_mode || debugserver_response_is_checksum_valid(buffer, buffer_size)) {
+		if (response) {
+			/* assemble response string */
+			uint32_t resp_size = sizeof(char) * (buffer_size - DEBUGSERVER_CHECKSUM_HASH_LENGTH - 1);
+			*response = (char*)malloc(resp_size + 1);
+			memcpy(*response, buffer + 1, resp_size);
+			(*response)[resp_size] = '\0';
+			if (response_size) *response_size = resp_size;
+		}
+		if (!client->noack_mode) {
+			/* confirm valid command */
+			debugserver_client_send_ack(client);
+		}
+	} else {
+		/* response was invalid */
+		res = DEBUGSERVER_E_RESPONSE_ERROR;
+		if (!client->noack_mode) {
+			/* report invalid command */
+			debugserver_client_send_noack(client);
+		}
+	}
+
+cleanup:
 	if (response) {
 		debug_info("response: %s", *response);
 	}
 
 	if (buffer)
 		free(buffer);
-
-	if (command_prefix)
-		free(command_prefix);
 
 	return res;
 }
