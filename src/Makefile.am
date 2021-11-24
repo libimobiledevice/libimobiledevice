@@ -47,6 +47,7 @@ libimobiledevice_1_0_la_SOURCES = \
 	mobileactivation.c mobileactivation.h \
 	preboard.c preboard.h  \
 	companion_proxy.c companion_proxy.h \
+	reverse_proxy.c reverse_proxy.h \
 	syslog_relay.c syslog_relay.h
 
 if WIN32

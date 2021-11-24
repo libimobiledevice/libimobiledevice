@@ -31,6 +31,18 @@
 #define htobe16 be16toh
 #endif
 
+#ifndef le16toh
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define le16toh(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#else
+#define le16toh(x) (x)
+#endif
+#endif
+
+#ifndef htole16
+#define htole16 le16toh
+#endif
+
 #ifndef __bswap_32
 #define __bswap_32(x) ((((x) & 0xFF000000) >> 24) \
                     | (((x) & 0x00FF0000) >> 8) \

@@ -26,5 +26,6 @@ nobase_include_HEADERS = \
 	libimobiledevice/mobileactivation.h \
 	libimobiledevice/preboard.h \
 	libimobiledevice/companion_proxy.h \
+	libimobiledevice/reverse_proxy.h \
 	libimobiledevice/property_list_service.h \
 	libimobiledevice/service.h
