@@ -284,7 +284,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_in
 			newlist[newcount]->conn_data = NULL;
 		} else if (dev_list[i].conn_type == CONNECTION_TYPE_NETWORK) {
 			newlist[newcount]->conn_type = CONNECTION_NETWORK;
-			size_t addrlen = dev_list[i].conn_data[0];
+			size_t addrlen = ((uint8_t*)dev_list[i].conn_data)[0];
 			newlist[newcount]->conn_data = malloc(addrlen);
 			memcpy(newlist[newcount]->conn_data, dev_list[i].conn_data, addrlen);
 		}
