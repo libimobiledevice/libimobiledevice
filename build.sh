@@ -216,7 +216,7 @@ function build_target()
     make install
 }
 
-# build_target "ios"
+build_target "ios"
 # build_target "macosx_arm64"
-build_target "macosx_x86_64"
-# build_libimobiledevice $1
+# build_target "macosx_x86_64"
+# build_libimobiledevice "macosx_arm64"
