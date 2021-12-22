@@ -92,7 +92,7 @@ function build_target()
         export CPPFLAGS="-mmacosx-version-min=10.15 -fembed-bitcode"
         export CFLAGS="-mmacosx-version-min=10.15 -fembed-bitcode"
 
-        RELASE_PATH=$BASE_PATH/macosx_x86_64
+        RELASE_PATH=$BASE_PATH/release_macosx
         LIBPILIST_RELEASE_PATH=$RELASE_PATH/libplist
         LIBIMOBILEDEVICE_GLUE_RELEASE_PATH=$RELASE_PATH/libimobiledevice-glue
         LIBUSBMUXD_RELEASE_PATH=$RELASE_PATH/libusbmuxd
@@ -102,7 +102,7 @@ function build_target()
         export PKG_CONFIG_PATH=$LIBPILIST_RELEASE_PATH/lib/pkgconfig:$LIBIMOBILEDEVICE_GLUE_RELEASE_PATH/lib/pkgconfig:$LIBUSBMUXD_RELEASE_PATH/lib/pkgconfig:/usr/local/Cellar/openssl@3/3.0.1/lib/pkgconfig
     elif [[ $1 == "macosx_arm64" ]]; then
         echo "macosx_arm64"
-        RELASE_PATH=$BASE_PATH/macosx_arm64
+        RELASE_PATH=$BASE_PATH/release_macosx
         LIBPILIST_RELEASE_PATH=$RELASE_PATH/libplist
         LIBIMOBILEDEVICE_GLUE_RELEASE_PATH=$RELASE_PATH/libimobiledevice-glue
         LIBUSBMUXD_RELEASE_PATH=$RELASE_PATH/libusbmuxd
