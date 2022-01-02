@@ -209,10 +209,17 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 #warning No compiler support for constructor/destructor attributes, some features might not be available.
 #endif
 
-static idevice_event_cb_t event_cb = NULL;
+struct idevice_event_context {
+	idevice_event_cb_t callback;
+	void *user_data;
+	usbmuxd_subscription_context_t ctx;
+};
+
+static idevice_event_context_t event_ctx = NULL;
 
 static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 {
+	idevice_event_context_t ctx = (idevice_event_context_t)user_data;
 	idevice_event_t ev;
 
 	ev.event = event->event;
@@ -226,32 +233,84 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 		debug_info("Unknown connection type %d", event->device.conn_type);
 	}
 
-	if (event_cb) {
-		event_cb(&ev, user_data);
+	if (ctx->callback) {
+		ctx->callback(&ev, ctx->user_data);
 	}
 }
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_events_subscribe(idevice_event_context_t *context, idevice_event_cb_t callback, void *user_data)
 {
-	event_cb = callback;
-	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
+	if (!context){
+		idevice_events_unsubscribe(NULL);
+		context = &event_ctx;
+	}
+	*context = malloc(sizeof(struct idevice_event_context));
+	if (!*context) {
+		debug_info("ERROR: %s: malloc failed\n", __func__);
+		return IDEVICE_E_UNKNOWN_ERROR;
+	}
+	(*context)->callback = callback;
+	(*context)->user_data = user_data;
+	int res = usbmuxd_events_subscribe(&(*context)->ctx, usbmux_event_cb, *context);
 	if (res != 0) {
-		event_cb = NULL;
+		free(context);
+		/* Don't even leave the possibility open for use-after-free ! */
+		if (context == &event_ctx) event_ctx = NULL;
 		debug_info("ERROR: usbmuxd_subscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
 	return IDEVICE_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_events_unsubscribe(idevice_event_context_t context)
 {
-	event_cb = NULL;
-	int res = usbmuxd_unsubscribe();
+	if (!context){
+		 context = event_ctx;
+		 if (!event_ctx) {
+			 /*
+			 	We are attempting to clear an empty global context. Nothing todo!
+
+				If we don't explicitly check this, we would either leak memory or doublefree on subsequent
+				calls to idevice_events_subscribe!
+			 */
+			 return IDEVICE_E_SUCCESS;
+		 }
+	}
+	int res = usbmuxd_events_unsubscribe(context->ctx);
 	if (res != 0) {
 		debug_info("ERROR: usbmuxd_unsubscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
+	free(context);
+	/* Don't even leave the possibility open for use-after-free ! */
+	if (context == event_ctx) event_ctx = NULL;
 	return IDEVICE_E_SUCCESS;
+}
+
+/*
+	This function servers as binary compatibility layer.
+	New programs compiling against libimobiledevice should not use this, thus it is
+	not exported in public headers!
+*/
+#undef idevice_event_subscribe
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+{
+	printf("WARNING: idevice_event_subscribe IS DEPRECATED AND WILL BE REMOVED IN A FUTURE UPDATE!\n"
+				 "         Use idevice_events_subscribe instead!\n");
+	return idevice_events_subscribe(NULL, callback, user_data);
+}
+
+/*
+	This function servers as binary compatibility layer.
+	New programs compiling against libimobiledevice should not use this, thus it is
+	not exported in public headers!
+*/
+#undef idevice_event_unsubscribe
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
+{
+	printf("WARNING: idevice_event_unsubscribe IS DEPRECATED AND WILL BE REMOVED IN A FUTURE UPDATE!\n"
+				 "         Use idevice_events_unsubscribe instead!\n");
+	return idevice_events_unsubscribe(NULL);
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count)

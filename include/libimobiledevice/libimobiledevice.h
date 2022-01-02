@@ -89,6 +89,11 @@ typedef struct {
 	enum idevice_connection_type conn_type; /**< The connection type. */
 } idevice_event_t;
 
+/**
+ * Events context type.
+ */
+typedef struct idevice_event_context* idevice_event_context_t;
+
 /* event callback function prototype */
 /** Callback to notifiy if a device was added or removed. */
 typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_data);
@@ -106,21 +111,28 @@ void idevice_set_debug_level(int level);
  * Register a callback function that will be called when device add/remove
  * events occur.
  *
+ * @param context A pointer to a idevice_event_context_t that will be
+ *    set upon creation of the subscription. The returned context must be
+ *    passed to idevice_events_unsubscribe() to unsubscribe the callback.
+ *		Pass NULL to use global context.
  * @param callback Callback function to call.
  * @param user_data Application-specific data passed as parameter
  *   to the registered callback function.
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
+idevice_error_t idevice_events_subscribe(idevice_event_context_t *context, idevice_event_cb_t callback, void *user_data);
 
 /**
  * Release the event callback function that has been registered with
- *  idevice_event_subscribe().
+ *  idevice_events_subscribe().
+ *
+ * @param context A valid context as returned from usbmuxd_events_subscribe().
+ *		Pass NULL to use global context.
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */
-idevice_error_t idevice_event_unsubscribe(void);
+idevice_error_t idevice_events_unsubscribe(idevice_event_context_t context);
 
 /* discovery (synchronous) */
 
@@ -352,4 +364,3 @@ idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 #endif
 
 #endif
-
