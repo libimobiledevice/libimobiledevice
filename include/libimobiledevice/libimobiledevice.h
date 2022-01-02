@@ -127,7 +127,7 @@ idevice_error_t idevice_events_subscribe(idevice_event_context_t *context, idevi
  * Release the event callback function that has been registered with
  *  idevice_events_subscribe().
  *
- * @param context A valid context as returned from usbmuxd_events_subscribe().
+ * @param context A valid context as returned from idevice_events_subscribe().
  *		Pass NULL to use global context.
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
