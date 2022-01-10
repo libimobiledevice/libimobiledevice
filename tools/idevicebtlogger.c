@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <assert.h>
+#include <fcntl.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -57,7 +59,14 @@ static idevice_t device = NULL;
 static bt_packet_logger_client_t bt_packet_logger = NULL;
 static int use_network = 0;
 static char* out_filename = NULL;
-static pcap_dumper_t * dump;
+static char* log_format_string = NULL;
+static pcap_dumper_t * pcap_dumper = NULL;
+static int packetlogger_fd = -1;
+
+static enum {
+	LOG_FORMAT_PACKETLOGGER,
+	LOG_FORMAT_PCAP
+} log_format = LOG_FORMAT_PACKETLOGGER;
 
 typedef enum {
 	HCI_COMMAND = 0x00,
@@ -67,9 +76,17 @@ typedef enum {
 } PacketLoggerPacketType;
 
 /**
+ * Callback from the packet logger service to handle packets and log to PacketLoggger format
+ */
+static void bt_packet_logger_callback_packetlogger(uint8_t * data, uint16_t len, void *user_data)
+{
+	write(packetlogger_fd, data, len);
+}
+
+/**
  * Callback from the packet logger service to handle packets and log to pcap
  */
-static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_data)
+static void bt_packet_logger_callback_pcap(uint8_t * data, uint16_t len, void *user_data)
 {
 	bt_packet_logger_header_t * header = (bt_packet_logger_header_t *)data;
 	uint16_t offset = sizeof(bt_packet_logger_header_t);
@@ -126,8 +143,8 @@ static void bt_packet_logger_callback(uint8_t * data, uint16_t len, void *user_d
 		// having to memcpy things around.
 		offset -= sizeof(uint32_t);
 		*(uint32_t*)&data[offset] = direction;
-		pcap_dump((unsigned char*)dump, &pcap_header, &data[offset]);
-		pcap_dump_flush(dump);
+		pcap_dump((unsigned char*)pcap_dumper, &pcap_header, &data[offset]);
+		pcap_dump_flush(pcap_dumper);
 	}
 }
 
@@ -173,7 +190,19 @@ static int start_logging(void)
 	bt_packet_logger_client_start_service(device, &bt_packet_logger, TOOL_NAME);
 
 	/* start capturing bt_packet_logger */
-	bt_packet_logger_error_t serr = bt_packet_logger_start_capture(bt_packet_logger, bt_packet_logger_callback, NULL);
+	void (*callback)(uint8_t * data, uint16_t len, void *user_data);
+	switch (log_format){
+		case LOG_FORMAT_PCAP:
+			callback = bt_packet_logger_callback_pcap;
+			break;
+		case LOG_FORMAT_PACKETLOGGER:
+			callback = bt_packet_logger_callback_packetlogger;
+			break;
+		default:
+			assert(0);
+			return 0;
+	}
+	bt_packet_logger_error_t serr = bt_packet_logger_start_capture(bt_packet_logger, callback, NULL);
 	if (serr != BT_PACKET_LOGGER_E_SUCCESS) {
 		fprintf(stderr, "ERROR: Unable to start capturing bt_packet_logger.\n");
 		bt_packet_logger_client_free(bt_packet_logger);
@@ -243,12 +272,13 @@ static void print_usage(int argc, char **argv, int is_error)
 		"Capture HCI packets from a connected device.\n" \
 		"\n" \
 		"OPTIONS:\n" \
-		"  -u, --udid UDID  target specific device by UDID\n" \
-		"  -n, --network    connect to network device\n" \
-		"  -x, --exit       exit when device disconnects\n" \
-		"  -h, --help       prints usage information\n" \
-		"  -d, --debug      enable communication debugging\n" \
-		"  -v, --version    prints version information\n" \
+		"  -u, --udid UDID     target specific device by UDID\n" \
+		"  -n, --network       connect to network device\n" \
+		"  -f, --format FORMAT logging format: packetlogger (default) or pcap\n" \
+		"  -x, --exit          exit when device disconnects\n" \
+		"  -h, --help          prints usage information\n" \
+		"  -d, --debug         enable communication debugging\n" \
+		"  -v, --version       prints version information\n" \
 		"\n" \
 		"Homepage:    <" PACKAGE_URL ">\n"
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
@@ -265,6 +295,7 @@ int main(int argc, char *argv[])
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "udid", required_argument, NULL, 'u' },
+		{ "format", required_argument, NULL, 'f' },
 		{ "network", no_argument, NULL, 'n' },
 		{ "exit", no_argument, NULL, 'x' },
 		{ "version", no_argument, NULL, 'v' },
@@ -278,7 +309,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:f:nxv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -291,6 +322,15 @@ int main(int argc, char *argv[])
 			}
 			free(udid);
 			udid = strdup(optarg);
+			break;
+		case 'f':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: FORMAT must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			}
+			free(log_format_string);
+			log_format_string = strdup(optarg);
 			break;
 		case 'n':
 			use_network = 1;
@@ -319,10 +359,23 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
+	if (log_format_string != NULL){
+		if (strcmp("packetlogger", log_format_string) == 0){
+			log_format = LOG_FORMAT_PACKETLOGGER;
+		} else if (strcmp("pcap", log_format_string) == 0){
+			log_format = LOG_FORMAT_PCAP;
+		} else {
+			printf("Unknown logging format: '%s'\n", log_format_string);
+			print_usage(argc, argv, 1);
+			return 2;
+		}
+	}
+
 	int num = 0;
 	idevice_info_t *devices = NULL;
 	idevice_get_device_list_extended(&devices, &num);
 	idevice_device_list_extended_free(devices);
+	int oflags;
 	if (num == 0) {
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
@@ -332,7 +385,27 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	dump = pcap_dump_open(pcap_open_dead(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, BT_MAX_PACKET_SIZE), out_filename);
+	switch (log_format){
+		case LOG_FORMAT_PCAP:
+			printf("Output Format: PCAP\n");
+			pcap_dumper = pcap_dump_open(pcap_open_dead(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, BT_MAX_PACKET_SIZE), out_filename);
+			break;
+		case LOG_FORMAT_PACKETLOGGER:
+			printf("Output Format: PacketLogger\n");
+		    oflags = O_WRONLY | O_CREAT | O_TRUNC;
+#ifdef WIN32
+		    default_oflags |= O_BINARY;
+#endif
+		    packetlogger_fd = open(out_filename, oflags);
+		    if (packetlogger_fd < 0){
+		        fprintf(stderr, "Failed to open file %s, errno = %d\n", out_filename, errno);
+		        return -2;
+		    }		
+	    	break;
+		default:
+			assert(0);
+			return -2;
+	}
 	idevice_event_subscribe(device_event_cb, NULL);
 
 	while (!quit_flag) {
@@ -341,6 +414,13 @@ int main(int argc, char *argv[])
 
 	idevice_event_unsubscribe();
 	stop_logging();
+
+	if (pcap_dumper) {
+		pcap_dump_close(pcap_dumper);
+	}
+	if (packetlogger_fd >= 0){
+		close(packetlogger_fd);
+	}
 
 	free(udid);
 

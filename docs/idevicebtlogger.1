@@ -8,7 +8,9 @@ idevicebtlogger \- Capture HCI traffic of a connected device.
 
 .SH DESCRIPTION
 
-Capture HCI traffic of a connected device.  Requires Bluetooth logging profile to be installed on device.
+Capture HCI traffic of a connected device.  Requires Bluetooth logging profile to be installed on device with iOS 13 or higher. See https://www.bluetooth.com/blog/a-new-way-to-debug-iosbluetooth-applications/ for iOS device configuration.
+
+The HCI traffic can be stored in Apple's native PacketLogger format or converted into PCAP format for live feedback in Wireshark. 
 
 .SH OPTIONS
 .TP
@@ -17,6 +19,9 @@ target specific device by UDID
 .TP
 .B \-n, \-\-network
 connect to network device
+.TP
+.B \-f, \-\-format FORMAT
+set log format: PacketLoggger (default), or pcap
 .TP
 .B \-x, \-\-exit
 exit when device disconnects
@@ -37,9 +42,16 @@ Capture HCI traffic of device with UDID 00008030-0000111ABC000DEF.
 .TP
 .B idevicebtlogger \-x
 Capture HCI traffic of device and exit when the device is unplugged.
+.TP
+.B idevicebtlogger \-f pcap
+Capture HCI traffic of device in PCAP format. 
+.TP
+.B idevicebtlogger -f pcap - | wireshark -k -i -
+Capture HCI traffic and pipe it into Wireshark for live feedback.
 
 .SH AUTHORS
 Geoffrey Kruse
+Matthias Ringwald
 
 .SH ON THE WEB
 https://libimobiledevice.org
