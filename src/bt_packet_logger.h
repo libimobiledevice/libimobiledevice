@@ -24,7 +24,7 @@
 
 #include "libimobiledevice/bt_packet_logger.h"
 #include "service.h"
-#include "common/thread.h"
+#include <libimobiledevice-glue/thread.h>
 
 struct bt_packet_logger_client_private {
 	service_client_t parent;
