@@ -735,6 +735,10 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_receive_timeout(idevice_
 				int sslerr = SSL_get_error(connection->ssl_data->session, r);
 				if (sslerr == SSL_ERROR_WANT_READ) {
 					continue;
+				} else if (sslerr == SSL_ERROR_ZERO_RETURN) {
+					if (connection->status == IDEVICE_E_TIMEOUT) {
+						SSL_set_shutdown(connection->ssl_data->session, 0);
+					}
 				}
 				break;
 			}
@@ -1149,6 +1153,14 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
 		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
 	}
+#endif
+#if (OPENSSL_VERSION_MAJOR >= 3) && defined(SSL_OP_IGNORE_UNEXPECTED_EOF)
+	/*
+	 * For OpenSSL 3 and later, mark close_notify alerts as optional.
+	 * For prior versions of OpenSSL we check for SSL_ERROR_SYSCALL when
+	 * reading instead (this error changes to SSL_ERROR_SSL in OpenSSL 3).
+	 */
+	SSL_CTX_set_options(ssl_ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
 #endif
 
 	BIO* membp;
