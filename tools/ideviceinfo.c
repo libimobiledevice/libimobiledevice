@@ -74,6 +74,8 @@ static const char *domains[] = {
 	"com.apple.iTunes",
 	"com.apple.mobile.iTunes.store",
 	"com.apple.mobile.iTunes",
+	"com.apple.fmip",
+	"com.apple.Accessibility",
 	NULL
 };
 
