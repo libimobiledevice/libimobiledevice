@@ -2041,9 +2041,8 @@ checkpoint:
 			PRINT_VERBOSE(1, "Don't copy backup: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_COPY_BACKUP) == 0 ? "Yes":"No"));
 			plist_dict_set_item(opts, "RestorePreserveSettings", plist_new_bool((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0));
 			PRINT_VERBOSE(1, "Preserve settings of device: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_SETTINGS) == 0 ? "Yes":"No"));
-			if (cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS)
-				plist_dict_set_item(opts, "RemoveItemsNotRestored", plist_new_bool(1));
-				PRINT_VERBOSE(1, "Remove items that are not restored: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS) ? "Yes":"No"));
+			plist_dict_set_item(opts, "RemoveItemsNotRestored", plist_new_bool(cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS));
+			PRINT_VERBOSE(1, "Remove items that are not restored: %s\n", ((cmd_flags & CMD_FLAG_RESTORE_REMOVE_ITEMS) ? "Yes":"No"));
 			if (backup_password != NULL) {
 				plist_dict_set_item(opts, "Password", plist_new_string(backup_password));
 			}
