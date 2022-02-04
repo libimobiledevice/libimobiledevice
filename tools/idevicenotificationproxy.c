@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	} else {
-		printf("Could not start notification_proxy service on device.\n");
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ret));
 	}
 
 	if (service) {

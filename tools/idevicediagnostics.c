@@ -213,12 +213,17 @@ int main(int argc, char **argv)
 
 	/*  attempt to use newer diagnostics service available on iOS 5 and later */
 	ret = lockdownd_start_service(lockdown_client, "com.apple.mobile.diagnostics_relay", &service);
-	if (ret != LOCKDOWN_E_SUCCESS) {
+	if (ret == LOCKDOWN_E_INVALID_SERVICE) {
 		/*  attempt to use older diagnostics service */
 		ret = lockdownd_start_service(lockdown_client, "com.apple.iosdiagnostics.relay", &service);
 	}
-
 	lockdownd_client_free(lockdown_client);
+
+	if (ret != LOCKDOWN_E_SUCCESS) {
+		idevice_free(device);
+		printf("ERROR: Could not start diagnostics relay service: %s\n", lockdownd_strerror(ret));
+		goto cleanup;
+	}
 
 	result = EXIT_FAILURE;
 

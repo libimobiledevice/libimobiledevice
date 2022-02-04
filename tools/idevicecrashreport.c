@@ -47,6 +47,9 @@
 #define S_IFSOCK S_IFREG
 #endif
 
+#define CRASH_REPORT_MOVER_SERVICE "com.apple.crashreportmover"
+#define CRASH_REPORT_COPY_MOBILE_SERVICE "com.apple.crashreportcopymobile"
+
 const char* target_directory = NULL;
 static int extract_raw_crash_reports = 0;
 static int keep_crash_reports = 0;
@@ -422,8 +425,9 @@ int main(int argc, char* argv[])
 
 	/* start crash log mover service */
 	lockdownd_service_descriptor_t service = NULL;
-	lockdownd_error = lockdownd_start_service(lockdownd, "com.apple.crashreportmover", &service);
+	lockdownd_error = lockdownd_start_service(lockdownd, CRASH_REPORT_MOVER_SERVICE, &service);
 	if (lockdownd_error != LOCKDOWN_E_SUCCESS) {
+		fprintf(stderr, "ERROR: Could not start service %s: %s\n", CRASH_REPORT_MOVER_SERVICE, lockdownd_strerror(lockdownd_error));
 		lockdownd_client_free(lockdownd);
 		idevice_free(device);
 		return -1;
@@ -465,8 +469,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	lockdownd_error = lockdownd_start_service(lockdownd, "com.apple.crashreportcopymobile", &service);
+	lockdownd_error = lockdownd_start_service(lockdownd, CRASH_REPORT_COPY_MOBILE_SERVICE, &service);
 	if (lockdownd_error != LOCKDOWN_E_SUCCESS) {
+		fprintf(stderr, "ERROR: Could not start service %s: %s\n", CRASH_REPORT_COPY_MOBILE_SERVICE, lockdownd_strerror(lockdownd_error));
 		lockdownd_client_free(lockdownd);
 		idevice_free(device);
 		return -1;

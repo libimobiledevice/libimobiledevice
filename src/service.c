@@ -91,11 +91,11 @@ LIBIMOBILEDEVICE_API service_error_t service_client_factory_start_service(idevic
 	}
 
 	lockdownd_service_descriptor_t service = NULL;
-	lockdownd_start_service(lckd, service_name, &service);
+	lockdownd_error_t lerr = lockdownd_start_service(lckd, service_name, &service);
 	lockdownd_client_free(lckd);
 
 	if (!service || service->port == 0) {
-		debug_info("Could not start service %s!", service_name);
+		debug_info("Could not start service %s: %s", service_name, lockdownd_strerror(lerr));
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
 

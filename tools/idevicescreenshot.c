@@ -110,9 +110,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	lockdownd_start_service(lckd, "com.apple.mobile.screenshotr", &service);
+	lockdownd_error_t lerr = lockdownd_start_service(lckd, SCREENSHOTR_SERVICE_NAME, &service);
 	lockdownd_client_free(lckd);
-	if (service && service->port > 0) {
+	if (lerr == LOCKDOWN_E_SUCCESS) {
 		if (screenshotr_client_new(device, service, &shotr) != SCREENSHOTR_E_SUCCESS) {
 			printf("Could not connect to screenshotr!\n");
 		} else {
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 			screenshotr_client_free(shotr);
 		}
 	} else {
-		printf("Could not start screenshotr service! Remember that you have to mount the Developer disk image on your device if you want to use the screenshotr service.\n");
+		printf("Could not start screenshotr service: %s\nRemember that you have to mount the Developer disk image on your device if you want to use the screenshotr service.\n", lockdownd_strerror(lerr));
 	}
 
 	if (service)

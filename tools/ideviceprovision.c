@@ -481,8 +481,9 @@ int main(int argc, char *argv[])
 	}
 	int product_version = ((product_version_major & 0xFF) << 16) | ((product_version_minor & 0xFF) << 8) | (product_version_patch & 0xFF);
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_start_service(client, "com.apple.misagent", &service)) {
-		fprintf(stderr, "Could not start service \"com.apple.misagent\"\n");
+	lockdownd_error_t lerr = lockdownd_start_service(client, MISAGENT_SERVICE_NAME, &service);
+	if (lerr != LOCKDOWN_E_SUCCESS) {
+		fprintf(stderr, "Could not start service %s: %s\n", MISAGENT_SERVICE_NAME, lockdownd_strerror(lerr));
 		lockdownd_client_free(client);
 		idevice_free(device);
 		return -1;
@@ -492,7 +493,7 @@ int main(int argc, char *argv[])
 
 	misagent_client_t mis = NULL;
 	if (misagent_client_new(device, service, &mis) != MISAGENT_E_SUCCESS) {
-		fprintf(stderr, "Could not connect to \"com.apple.misagent\" on device\n");
+		fprintf(stderr, "Could not connect to %s on device\n", MISAGENT_SERVICE_NAME);
 		if (service)
 			lockdownd_service_descriptor_free(service);
 		lockdownd_client_free(client);

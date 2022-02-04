@@ -141,10 +141,11 @@ int main(int argc, char **argv)
 	lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
 
 	lockdownd_service_descriptor_t svc = NULL;
-	if (lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc) != LOCKDOWN_E_SUCCESS) {
+	lockdownd_error_t lerr = lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc);
+	if (lerr != LOCKDOWN_E_SUCCESS) {
 		lockdownd_client_free(lockdown);
 		idevice_free(device);
-		printf("ERROR: Could not start the simulatelocation service. Make sure a developer disk image is mounted!\n");
+		printf("ERROR: Could not start the simulatelocation service: %s\nMake sure a developer disk image is mounted!\n", lockdownd_strerror(lerr));
 		return -1;
 	}
 	lockdownd_client_free(lockdown);

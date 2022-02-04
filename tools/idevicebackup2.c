@@ -639,7 +639,7 @@ static void do_post_notification(idevice_t device, const char *notification)
 	}
 
 	lockdownd_error_t ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
-	if (service && service->port) {
+	if (ldret == LOCKDOWN_E_SUCCESS) {
 		np_client_new(device, service, &np);
 		if (np) {
 			np_post_notification(np, notification);

@@ -598,15 +598,15 @@ static void do_post_notification(const char *notification)
 		}
 	}
 
-	lockdownd_start_service(client, NP_SERVICE_NAME, &service);
-	if (service && service->port) {
+	lockdownd_error_t ldret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
+	if (ldret == LOCKDOWN_E_SUCCESS) {
 		np_client_new(device, service, &np);
 		if (np) {
 			np_post_notification(np, notification);
 			np_client_free(np);
 		}
 	} else {
-		printf("Could not start %s\n", NP_SERVICE_NAME);
+		printf("Could not start %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
 	}
 
 	if (service) {
@@ -826,7 +826,7 @@ int main(int argc, char *argv[])
 		};
 		np_observe_notifications(np, noties);
 	} else {
-		printf("ERROR: Could not start service %s.\n", NP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", NP_SERVICE_NAME, lockdownd_strerror(ldret));
 	}
 
 	afc_client_t afc = NULL;
@@ -834,9 +834,11 @@ int main(int argc, char *argv[])
 		/* start AFC, we need this for the lock file */
 		service->port = 0;
 		service->ssl_enabled = 0;
-		ldret = lockdownd_start_service(client, "com.apple.afc", &service);
+		ldret = lockdownd_start_service(client, AFC_SERVICE_NAME, &service);
 		if ((ldret == LOCKDOWN_E_SUCCESS) && service->port) {
 			afc_client_new(device, service, &afc);
+		} else {
+			printf("ERROR: Could not start service %s: %s\n", AFC_SERVICE_NAME, lockdownd_strerror(ldret));
 		}
 	}
 
@@ -1588,7 +1590,7 @@ files_out:
 		if (manifest_path)
 			free(manifest_path);
 	} else {
-		printf("ERROR: Could not start service %s.\n", MOBILEBACKUP_SERVICE_NAME);
+		printf("ERROR: Could not start service %s: %s\n", MOBILEBACKUP_SERVICE_NAME, lockdownd_strerror(ldret));
 		lockdownd_client_free(client);
 		client = NULL;
 	}
