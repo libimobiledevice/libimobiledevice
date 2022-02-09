@@ -206,8 +206,8 @@ debugserver_error_t debugserver_client_set_environment_hex_encoded(debugserver_c
  * Creates and initializes a new command object.
  *
  * @param name The name of the command which is sent in plain text
- * @param argv Array of tokens for the command ment to be encoded
  * @param argc Number of items in the token array
+ * @param argv Array of tokens for the command meant to be encoded
  * @param command New command object
  *
  * @return DEBUGSERVER_E_SUCCESS on success,
