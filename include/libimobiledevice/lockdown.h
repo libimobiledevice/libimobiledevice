@@ -100,6 +100,19 @@ struct lockdownd_service_descriptor {
 };
 typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
 
+
+typedef enum {
+	LOCKDOWN_CU_PAIRING_PIN_REQUESTED, /**< PIN requested: data_ptr is a char* buffer, and data_size points to the size of this buffer that must not be exceeded and has to be updated to the actual number of characters filled into the buffer. */
+	LOCKDOWN_CU_PAIRING_DEVICE_INFO, /**< device information available: data_ptr is a plist_t, and data_size is ignored. The plist_t has to be copied if required, since it is freed when the callback function returns. */
+	LOCKDOWN_CU_PAIRING_ERROR /**< pairing error message available: data_ptr is a NULL-terminated char* buffer containing the error message, and data_size is ignored. Buffer needs to be copied if it shall persist outside the callback. */
+} lockdownd_cu_pairing_cb_type_t;
+
+/* CU pairing callback function prototype */
+/** Callback used to supply the pairing PIN during a CU pairing session,
+ *  and to report device information and pairing error messages. */
+typedef void (*lockdownd_cu_pairing_cb_t) (lockdownd_cu_pairing_cb_type_t cb_type, void *user_data, void* data_ptr, unsigned int* data_size);
+
+
 /* Interface */
 
 /**
@@ -398,6 +411,89 @@ lockdownd_error_t lockdownd_enter_recovery(lockdownd_client_t client);
  *  request
  */
 lockdownd_error_t lockdownd_goodbye(lockdownd_client_t client);
+
+/**
+ * Creates a CU pairing session for the current lockdown client.
+ * This is required to allow lockdownd_cu_send_request_and_get_reply(),
+ * lockdownd_get_value_cu() and lockdonwd_pair_cu() requests, and eventually
+ * allows to perform an actual wireless pairing.
+ *
+ * Through the callback function, the PIN displayed on the device has to be
+ * supplied during the process. Currently, only AppleTV devices have this
+ * capability.
+ *
+ * @param client  The lockdown client to perform the CU pairing for
+ * @param pairing_callback  Callback function that is used to supply the PIN
+ *   for the pairing process, but also to receive device information or
+ *   pairing error messages.
+ * @param cb_user_data  User data that will be passed as additional argument
+ *   to the callback function.
+ * @param host_info  (Optional) A dictionary containing host information to
+ *   send to the device when finalizing the CU pairing. The supplied
+ *   values will override the default values gathered for the current host.
+ * @param acl  (Optional) A dictionary containing ACL information. Currently
+ *   only com.apple.ScreenCapture:true and com.apple.developer:true are known
+ *   valid ACL values, which are used as default when NULL is passed.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if one of the
+ *   parameters is invalid, LOCKDOWN_E_PAIRING_FAILED if the pairing failed,
+ *   or a LOCKDOWN_E_* error code otherwise.
+ */
+lockdownd_error_t lockdownd_cu_pairing_create(lockdownd_client_t client, lockdownd_cu_pairing_cb_t pairing_callback, void* cb_user_data, plist_t host_info, plist_t acl);
+
+/**
+ * Sends a request via lockdown client with established CU pairing session
+ * and attempts to retrieve a reply. This function is used internally
+ * by lockdownd_get_value_cu() and lockdownd_pair_cu(), but exposed here to
+ * allow custom requests being sent and their replies being received.
+ *
+ * @param client  A lockdown client with an established CU pairing.
+ * @param request  The request to perform.
+ * @param request_payload  The payload for the request.
+ * @param reply  (Optional) If not NULL, the plist_t will be set to the reply
+ *   dictionary that has been received. Consumer is responsible to free it
+ *   using plist_free() when no longer required.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if one of the
+ *   parameters is invalid, LOCKDOWN_E_NO_RUNNING_SESSION if the current
+ *   lockdown client does not have an established CU pairing session,
+ *   or a LOCKDOWN_E_* error code otherwise.
+ */
+lockdownd_error_t lockdownd_cu_send_request_and_get_reply(lockdownd_client_t client, const char* request, plist_t request_payload, plist_t* reply);
+
+/**
+ * Retrieves a value using an optional domain and/or key name from a lockdown
+ * client with established CU pairing session.
+ *
+ * This is used to retrieve values that are only accessible after a CU pairing
+ * has been established, and would otherwise only be accessible with a valid
+ * device pairing.
+ *
+ * @param client  A lockdown client with an established CU pairing.
+ * @param domain  The domain to query on or NULL for global domain
+ * @param key  The key name to request or NULL to query for all keys
+ * @param value  A plist node representing the result value node
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG if one of the
+ *   parameters is invalid, LOCKDOWN_E_NO_RUNNING_SESSION if the current
+ *   lockdown client does not have an established CU pairing session,
+ *   or a LOCKDOWN_E_* error code otherwise.
+ */
+lockdownd_error_t lockdownd_get_value_cu(lockdownd_client_t client, const char* domain, const char* key, plist_t* value);
+
+/**
+ * Perform a device pairing with a lockdown client that has an established
+ * CU pairing session.
+ *
+ * @param client A lockdown client with an established CU pairing.
+ *
+ * @return LOCKDOWN_E_SUCCESS on success, LOCKDOWN_E_INVALID_ARG when client
+ *   is NULL, LOCKDOWN_E_NO_RUNNING_SESSION if the current lockdown client
+ *   does not have an established CU pairing session, or a LOCKDOWN_E_* error
+ *   code otherwise.
+ */
+lockdownd_error_t lockdownd_pair_cu(lockdownd_client_t client);
+
 
 /* Helper */
 

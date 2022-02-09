@@ -152,7 +152,7 @@ static lockdownd_error_t lockdownd_error(property_list_service_error_t err)
  *         LOCKDOWN_E_UNKNOWN_ERROR when the result is 'Failure',
  *         or a specific error code if derieved from the result.
  */
-static lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_match)
+lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_match)
 {
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 
@@ -313,6 +313,10 @@ static lockdownd_error_t lockdownd_client_free_simple(lockdownd_client_t client)
 	}
 	if (client->label) {
 		free(client->label);
+	}
+	if (client->cu_key) {
+		free(client->cu_key);
+		client->cu_key = NULL;
 	}
 
 	free(client);
@@ -641,8 +645,12 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_client_new(idevice_t device, lo
 	client_loc->ssl_enabled = 0;
 	client_loc->session_id = NULL;
 	client_loc->device = device;
+	client_loc->cu_key = NULL;
+	client_loc->cu_key_len = 0;
 
-	debug_info("device udid: %s", device->udid);
+	if (device->udid) {
+		debug_info("device udid: %s", device->udid);
+	}
 
 	client_loc->label = label ? strdup(label) : NULL;
 

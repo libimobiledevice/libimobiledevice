@@ -13,7 +13,13 @@ Manage host pairings with devices and usbmuxd.
 .TP
 .B \-u, \-\-udid UDID
 target specific device by UDID.
-.TP 
+.TP
+.B \-w, \-\-wireless
+perform wireless pairing (\f[B]see NOTE\f[]).
+.TP
+.B \-n, \-\-network
+connect to network device (\f[B]see NOTE\f[]).
+.TP
 .B \-d, \-\-debug
 enable communication debugging.
 .TP
@@ -42,6 +48,24 @@ unpair device with this host.
 .TP
 .B list
 list devices paired with this host.
+
+.SH NOTE
+Pairing over network (wireless pairing) is only supported by Apple TV
+devices. To perform a wireless pairing, you need to use the \f[B]\-w\f[]
+command line switch.
+
+Make sure to put the device into pairing mode first by opening
+Settings > Remotes and Devices > Remote App and Devices.
+
+The pairable device will become visible with a special UDID, and then you
+can run idevicepair like this:
+
+.B idevicepair -u fffc8:ab:cd:12:34:56fff -w pair
+
+idevicepair will then ask for the PIN that the device is displaying and
+continues with the pairing once entered.
+
+Please note that wireless pairing is currently not supported on Linux.
 
 .SH AUTHORS
 Nikias Bassen

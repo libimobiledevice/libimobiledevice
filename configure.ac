@@ -39,7 +39,7 @@ PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 PKG_CHECK_MODULES(limd_glue, libimobiledevice-glue-1.0 >= $LIMD_GLUE_VERSION)
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h stdlib.h string.h gcrypt.h])
+AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -64,6 +64,8 @@ if test "x$ac_cv_have_endian_h" = "xno"; then
   fi
 fi
 
+AC_CHECK_DECL([plist_from_json], [AC_DEFINE([HAVE_PLIST_JSON], [1], [Define if libplist has JSON support])], [], [[#include <plist/plist.h>]])
+
 # Check for operating system
 AC_MSG_CHECKING([for platform-specific build settings])
 case ${host_os} in
@@ -74,6 +76,7 @@ case ${host_os} in
     ;;
   darwin*)
     AC_MSG_RESULT([${host_os}])
+    darwin=true
     ;;
   *)
     AC_MSG_RESULT([${host_os}])
@@ -82,6 +85,7 @@ case ${host_os} in
     ;;
 esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
+AM_CONDITIONAL(DARWIN, test x$darwin = xtrue)
 
 # Check if the C compiler supports __attribute__((constructor))
 AC_CACHE_CHECK([wether the C compiler supports constructor/destructor attributes],
@@ -219,9 +223,10 @@ else
       pkg_req_gnutls="gnutls >= 2.2.0"
       pkg_req_libtasn1="libtasn1 >= 1.1"
       PKG_CHECK_MODULES(libgnutls, $pkg_req_gnutls)
+      AC_CHECK_HEADERS([gcrypt.h])
       AC_CHECK_LIB(gcrypt, gcry_control, [AC_SUBST(libgcrypt_LIBS,[-lgcrypt])], [AC_MSG_ERROR([libgcrypt is required to build libimobiledevice with GnuTLS])])
       PKG_CHECK_MODULES(libtasn1, $pkg_req_libtasn1)
-
+      AC_DEFINE(HAVE_GCRYPT, 1, [Define if you have libgcrypt support])
       AC_DEFINE(HAVE_GNUTLS, 1, [Define if you have GnuTLS support])
       ssl_lib_CFLAGS="$libgnutls_CFLAGS $libtasn1_CFLAGS $libgcrypt_CFLAGS"
       ssl_lib_LIBS="$libgnutls_LIBS $libtasn1_LIBS $libgcrypt_LIBS"
@@ -235,6 +240,17 @@ else
     fi
   fi
 fi
+AM_CONDITIONAL(HAVE_MBEDTLS, test "x$use_mbedtls" == "xyes")
+AM_CONDITIONAL(HAVE_OPENSSL, test "x$use_openssl" == "xyes")
+AM_CONDITIONAL(HAVE_GCRYPT, test "x$use_gnutls" == "xyes")
+
+AC_ARG_ENABLE([wireless-pairing],
+            [AS_HELP_STRING([--disable-wireless-pairing],
+            [Do not build with wirless pairing support (default is yes)])])
+if test "$enable_wireless_pairing" != "no"; then
+  AC_DEFINE(HAVE_WIRELESS_PAIRING,1,[Define if building with wireless pairing support])
+fi
+AM_CONDITIONAL(HAVE_WIRELESS_PAIRING, test "$enable_wireless_pairing" != "no")
 
 AC_ARG_ENABLE([debug],
             [AS_HELP_STRING([--enable-debug],
@@ -263,6 +279,9 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_CONFIG_FILES([
 Makefile
+3rd_party/Makefile
+3rd_party/ed25519/Makefile
+3rd_party/libsrp6a-sha512/Makefile
 common/Makefile
 src/Makefile
 src/libimobiledevice-1.0.pc
