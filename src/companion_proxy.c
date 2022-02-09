@@ -325,7 +325,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_start_forwarding_se
 	plist_dict_set_item(dict, "IsServiceLowPriority", plist_new_bool(0));
 	plist_dict_set_item(dict, "PreferWifi", plist_new_bool(0));
 	if (options) {
-		plist_dict_merge(dict, options);
+		plist_dict_merge(&dict, options);
 	}
 
 	companion_proxy_error_t res = companion_proxy_send(client, dict);
