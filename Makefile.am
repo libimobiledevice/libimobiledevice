@@ -4,7 +4,11 @@ SUBDIRS = 3rd_party common src include $(CYTHON_SUB) tools docs
 
 EXTRA_DIST = \
 	docs \
-	README.md
+	README.md \
+	git-version-gen
+
+dist-hook:
+	echo $(VERSION) > $(distdir)/.tarball-version
 
 docs/html: $(top_builddir)/doxygen.cfg $(top_srcdir)/src/*.c $(top_srcdir)/src/*.h $(top_srcdir)/include/libimobiledevice/*.h
 	rm -rf docs/html

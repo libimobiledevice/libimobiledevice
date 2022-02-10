@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([libimobiledevice], [1.3.1], [https://github.com/libimobiledevice/libimobiledevice/issues], [], [https://libimobiledevice.org])
+AC_INIT([libimobiledevice], [m4_esyscmd(./git-version-gen $RELEASE_VERSION)], [https://github.com/libimobiledevice/libimobiledevice/issues], [], [https://libimobiledevice.org])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([src/])
@@ -17,12 +17,18 @@ dnl libtool versioning
 # CURRENT : REVISION : AGE
 LIBIMOBILEDEVICE_SO_VERSION=6:0:0
 
+AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
+
+# Check if we have a version defined
+if test -z $PACKAGE_VERSION; then
+  AC_MSG_ERROR([PACKAGE_VERSION is not defined. Make sure to configure a source tree checked out from git or that .tarball-version is present.])
+fi
+
 dnl Minimum package versions
 LIBUSBMUXD_VERSION=2.0.2
 LIBPLIST_VERSION=2.2.0
 LIMD_GLUE_VERSION=1.0.0
 
-AC_SUBST(LIBIMOBILEDEVICE_SO_VERSION)
 AC_SUBST(LIBUSBMUXD_VERSION)
 AC_SUBST(LIBPLIST_VERSION)
 AC_SUBST(LIMD_GLUE_VERSION)
