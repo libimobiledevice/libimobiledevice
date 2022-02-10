@@ -178,6 +178,7 @@ jobs:
           dest=`echo ${{ matrix.msystem }} |tr [:upper:] [:lower:]`
           echo "dest=$dest" >> $GITHUB_ENV
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
+          git config --global core.autocrlf false
     - name: fetch libplist
       uses: dawidd6/action-download-artifact@v2
       with:
