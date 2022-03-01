@@ -299,6 +299,9 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_request_diagnos
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		return ret;
+	}
 
 	ret = diagnostics_relay_receive(client, &dict);
 	if (!dict) {
@@ -341,6 +344,9 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_mobileges
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		return ret;
+	}
 
 	ret = diagnostics_relay_receive(client, &dict);
 	if (!dict) {
@@ -386,6 +392,9 @@ LIBIMOBILEDEVICE_API diagnostics_relay_error_t diagnostics_relay_query_ioregistr
 	ret = diagnostics_relay_send(client, dict);
 	plist_free(dict);
 	dict = NULL;
+	if (ret != DIAGNOSTICS_RELAY_E_SUCCESS) {
+		return ret;
+	}
 
 	ret = diagnostics_relay_receive(client, &dict);
 	if (!dict) {
