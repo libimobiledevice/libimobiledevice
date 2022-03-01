@@ -148,7 +148,7 @@ jobs:
         name: libimobiledevice-latest_macOS
         path: libimobiledevice.tar
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     defaults:
       run:
         shell: msys2 {0}
