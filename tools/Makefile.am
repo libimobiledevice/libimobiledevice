@@ -33,7 +33,7 @@ bin_PROGRAMS = \
 
 idevicebtlogger_SOURCES = idevicebtlogger.c
 iidevicebtlogger_CFLAGS = $(AM_CFLAGS)
-idevicebtlogger_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS) -lpcap
+idevicebtlogger_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicebtlogger_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceinfo_SOURCES = ideviceinfo.c
