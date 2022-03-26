@@ -1,8 +1,9 @@
 /*
  * idevicebt_packet_logger.c
- * Capture bt HCI packet log to pcap
+ * Capture Bluetooth HCI traffic to native PKLG or PCAP
  *
  * Copyright (c) 2021 Geoffrey Kruse, All Rights Reserved.
+ * Copyright (c) 2022 Matthias Ringwald, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,11 +46,15 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/bt_packet_logger.h>
-#include <pcap.h>
 
-#define DLT_BLUETOOTH_HCI_H4_WITH_PHDR 201
-#define LIBPCAP_BT_PHDR_SENT    0x00000000
-#define LIBPCAP_BT_PHDR_RECV    htonl(0x00000001)
+typedef enum {
+	HCI_COMMAND = 0x00,
+	HCI_EVENT = 0x01,
+	SENT_ACL_DATA = 0x02,
+	RECV_ACL_DATA = 0x03,
+	SENT_SCO_DATA = 0x08,
+	RECV_SCO_DATA = 0x09,
+} PacketLoggerPacketType;
 
 static int quit_flag = 0;
 static int exit_on_disconnect = 0;
@@ -60,27 +65,46 @@ static bt_packet_logger_client_t bt_packet_logger = NULL;
 static int use_network = 0;
 static char* out_filename = NULL;
 static char* log_format_string = NULL;
-static pcap_dumper_t * pcap_dumper = NULL;
-static int packetlogger_fd = -1;
+static FILE * packetlogger_file = NULL;
 
 static enum {
 	LOG_FORMAT_PACKETLOGGER,
 	LOG_FORMAT_PCAP
 } log_format = LOG_FORMAT_PACKETLOGGER;
 
-typedef enum {
-	HCI_COMMAND = 0x00,
-	HCI_EVENT = 0x01,
-	SENT_ACL_DATA = 0x02,
-	RECV_ACL_DATA = 0x03
-} PacketLoggerPacketType;
+const uint8_t pcap_file_header[] = {
+	// Magic Number
+	0xA1, 0xB2, 0xC3, 0xD4,
+	// Major / Minor Version
+	0x00, 0x02, 0x00, 0x04,
+	// Reserved1
+	0x00, 0x00, 0x00, 0x00,
+	// Reserved2
+	0x00, 0x00, 0x00, 0x00,
+	// Snaplen == max packet size - use 2kB (larger than any ACL)
+	0x00, 0x00, 0x08, 0x00,
+	// LinkType: DLT_BLUETOOTH_HCI_H4_WITH_PHDR
+	0x00, 0x00, 0x00, 201,
+};
+
+static uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
+    return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
+}
+
+static void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value){
+    uint16_t pos = position;
+    buffer[pos++] = (uint8_t)(value >> 24);
+    buffer[pos++] = (uint8_t)(value >> 16);
+    buffer[pos++] = (uint8_t)(value >> 8);
+    buffer[pos++] = (uint8_t)(value);
+}
 
 /**
  * Callback from the packet logger service to handle packets and log to PacketLoggger format
  */
 static void bt_packet_logger_callback_packetlogger(uint8_t * data, uint16_t len, void *user_data)
 {
-	write(packetlogger_fd, data, len);
+	(void) fwrite(data, 1, len, packetlogger_file);
 }
 
 /**
@@ -88,64 +112,68 @@ static void bt_packet_logger_callback_packetlogger(uint8_t * data, uint16_t len,
  */
 static void bt_packet_logger_callback_pcap(uint8_t * data, uint16_t len, void *user_data)
 {
-	bt_packet_logger_header_t * header = (bt_packet_logger_header_t *)data;
-	uint16_t offset = sizeof(bt_packet_logger_header_t);
-
-	// size + sizeof(uint32_t) to account for the direction pseudo header
-	struct pcap_pkthdr pcap_header;
-	pcap_header.caplen = ntohl(header->length) + sizeof(uint32_t);
-	pcap_header.len = len - sizeof(bt_packet_logger_header_t) + sizeof(uint32_t);
-	pcap_header.ts.tv_sec = ntohl(header->ts_secs);
-	pcap_header.ts.tv_usec = ntohl(header->ts_usecs);
-
-	// Sanity check incoming data and drop packet if its unreasonable.
-	if(pcap_header.len > BT_MAX_PACKET_SIZE || pcap_header.caplen > BT_MAX_PACKET_SIZE) {
-		fprintf(stderr, "WARNING: Packet length exceeded max size, corruption likely.\n ");
+	// check len
+	if (len < 13) {
 		return;
 	}
 
-	uint8_t packet_type = data[offset];
-	uint8_t hci_h4_type = 0xff;
-	uint32_t direction;
+	// parse packet header (ignore len field)
+	uint32_t ts_secs 	= big_endian_read_32(data, 4);
+	uint32_t ts_us   	= big_endian_read_32(data, 8);
+	uint8_t packet_type = data[12];
+	data += 13;
+	len  -= 13;
 
+	// map PacketLogger packet type onto PCAP direction flag and hci_h4_type
+	uint8_t direction_in = 0;
+	uint8_t hci_h4_type  = 0xff;
 	switch(packet_type) {
-		case HCI_EVENT:
-			hci_h4_type = 0x04;
-			direction = LIBPCAP_BT_PHDR_RECV;
-			break;
-
 		case HCI_COMMAND:
 			hci_h4_type = 0x01;
-			direction = LIBPCAP_BT_PHDR_SENT;
+			direction_in = 0;
 			break;
-
 		case SENT_ACL_DATA:
 			hci_h4_type = 0x02;
-			direction = LIBPCAP_BT_PHDR_SENT;
+			direction_in = 0;
 			break;
-
 		case RECV_ACL_DATA:
 			hci_h4_type = 0x02;
-			direction = LIBPCAP_BT_PHDR_RECV;
+			direction_in = 1;
 			break;
-
+		case SENT_SCO_DATA:
+			hci_h4_type = 0x03;
+			direction_in = 0;
+			break;
+		case RECV_SCO_DATA:
+			hci_h4_type = 0x03;
+			direction_in = 1;
+			break;
+		case HCI_EVENT:
+			hci_h4_type = 0x04;
+			direction_in = 1;
+			break;
 		default:
-			// unknown packet logger type, just pass it on
-			hci_h4_type = packet_type;
-			direction = LIBPCAP_BT_PHDR_RECV;
-			break;
+			// unknown packet logger type, drop packet
+			return;
 	}
-	if(hci_h4_type != 0xff) {
-		data[offset] = hci_h4_type;
-		// we know we are sizeof(bt_packet_logger_header_t) into the buffer passed in to
-		// this function.  We need to add the uint32_t pseudo header to the front of the packet
-		// so adjust the offset back by sizeof(uint32_t) and write it to the buffer.  This avoids
-		// having to memcpy things around.
-		offset -= sizeof(uint32_t);
-		*(uint32_t*)&data[offset] = direction;
-		pcap_dump((unsigned char*)pcap_dumper, &pcap_header, &data[offset]);
-		pcap_dump_flush(pcap_dumper);
-	}
+
+	// setup pcap record header, 4 byte direction flag, 1 byte HCI H4 packet type, data
+    uint8_t pcap_record_header[21];
+    big_endian_store_32(pcap_record_header,  0, ts_secs);		// Timestamp seconds
+    big_endian_store_32(pcap_record_header,  4, ts_us);         // Timestamp microseconds
+    big_endian_store_32(pcap_record_header,  8, 4 + 1 + len);	// Captured  Packet Length
+    big_endian_store_32(pcap_record_header, 12, 4 + 1 + len); 	// Original Packet Length
+    big_endian_store_32(pcap_record_header, 16, direction_in);	// Direction: Incoming = 1
+    pcap_record_header[20] = hci_h4_type;
+
+    // write header
+	(void) fwrite(pcap_record_header, 1, sizeof(pcap_record_header), packetlogger_file);
+
+    // write packet
+	(void) fwrite(data, 1, len, packetlogger_file);
+
+	// flush
+	(void) fflush(packetlogger_file);
 }
 
 /**
@@ -212,8 +240,8 @@ static int start_logging(void)
 		return -1;
 	}
 
-	fprintf(stdout, "[connected:%s]\n", udid);
-	fflush(stdout);
+	fprintf(stderr, "[connected:%s]\n", udid);
+	fflush(stderr);
 
 	return 0;
 }
@@ -242,7 +270,7 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 	} else if (event->event == IDEVICE_DEVICE_REMOVE) {
 		if (bt_packet_logger && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
-			fprintf(stdout, "[disconnected:%s]\n", udid);
+			fprintf(stderr, "[disconnected:%s]\n", udid);
 			if (exit_on_disconnect) {
 				quit_flag++;
 			}
@@ -352,7 +380,7 @@ int main(int argc, char *argv[])
 
 	if (optind < argc) {
 		out_filename = argv[optind];
-		printf("Output File: %s\n", out_filename);
+		// printf("Output File: %s\n", out_filename);
 	}
 	else {
 		print_usage(argc, argv, 1);
@@ -375,7 +403,6 @@ int main(int argc, char *argv[])
 	idevice_info_t *devices = NULL;
 	idevice_get_device_list_extended(&devices, &num);
 	idevice_device_list_extended_free(devices);
-	int oflags;
 	if (num == 0) {
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
@@ -385,22 +412,27 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// support streaming to stdout
+	if (strcmp(out_filename, "-") == 0){
+		packetlogger_file = stdout;
+	} else {
+		packetlogger_file = fopen(out_filename, "wb");
+	}
+
+
+    if (packetlogger_file == NULL){
+        fprintf(stderr, "Failed to open file %s, errno = %d\n", out_filename, errno);
+        return -2;
+    }		
+
 	switch (log_format){
 		case LOG_FORMAT_PCAP:
-			printf("Output Format: PCAP\n");
-			pcap_dumper = pcap_dump_open(pcap_open_dead(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, BT_MAX_PACKET_SIZE), out_filename);
+			// printf("Output Format: PCAP\n");
+	        // write PCAP file header
+	        (void) fwrite(&pcap_file_header, 1, sizeof(pcap_file_header), packetlogger_file);
 			break;
 		case LOG_FORMAT_PACKETLOGGER:
 			printf("Output Format: PacketLogger\n");
-		    oflags = O_WRONLY | O_CREAT | O_TRUNC;
-#ifdef WIN32
-		    default_oflags |= O_BINARY;
-#endif
-		    packetlogger_fd = open(out_filename, oflags);
-		    if (packetlogger_fd < 0){
-		        fprintf(stderr, "Failed to open file %s, errno = %d\n", out_filename, errno);
-		        return -2;
-		    }		
 	    	break;
 		default:
 			assert(0);
@@ -415,12 +447,7 @@ int main(int argc, char *argv[])
 	idevice_event_unsubscribe();
 	stop_logging();
 
-	if (pcap_dumper) {
-		pcap_dump_close(pcap_dumper);
-	}
-	if (packetlogger_fd >= 0){
-		close(packetlogger_fd);
-	}
+	fclose(packetlogger_file);
 
 	free(udid);
 
