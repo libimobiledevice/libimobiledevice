@@ -68,7 +68,7 @@ static void afc_unlock(afc_client_t client)
  *  invalid, or AFC_E_NO_MEM if there is a memory allocation problem.
  */
 
-LIBIMOBILEDEVICE_API afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client)
+afc_error_t afc_client_new_with_service_client(service_client_t service_client, afc_client_t *client)
 {
 	if (!service_client)
 		return AFC_E_INVALID_ARG;
@@ -94,7 +94,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_new_with_service_client(service_clie
 	return AFC_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t * client)
+afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t service, afc_client_t * client)
 {
 	if (!device || !service || service->port == 0)
 		return AFC_E_INVALID_ARG;
@@ -113,14 +113,14 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_new(idevice_t device, lockdownd_serv
 	return err;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, const char* label)
+afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, const char* label)
 {
 	afc_error_t err = AFC_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, AFC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(afc_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_client_free(afc_client_t client)
+afc_error_t afc_client_free(afc_client_t client)
 {
 	if (!client || !client->afc_packet)
 		return AFC_E_INVALID_ARG;
@@ -411,7 +411,7 @@ static int _afc_check_packet_buffer(afc_client_t client, uint32_t data_len)
 
 #define AFC_PACKET_DATA_PTR ((char*)client->afc_packet + sizeof(AFCPacket))
 
-LIBIMOBILEDEVICE_API afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***directory_information)
+afc_error_t afc_read_directory(afc_client_t client, const char *path, char ***directory_information)
 {
 	uint32_t bytes = 0;
 	char *data = NULL, **list_loc = NULL;
@@ -455,7 +455,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_read_directory(afc_client_t client, const c
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info(afc_client_t client, char ***device_information)
+afc_error_t afc_get_device_info(afc_client_t client, char ***device_information)
 {
 	uint32_t bytes = 0;
 	char *data = NULL, **list = NULL;
@@ -492,7 +492,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info(afc_client_t client, char *
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value)
+afc_error_t afc_get_device_info_key(afc_client_t client, const char *key, char **value)
 {
 	afc_error_t ret = AFC_E_INTERNAL_ERROR;
 	char **kvps, **ptr;
@@ -519,7 +519,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info_key(afc_client_t client, co
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_remove_path(afc_client_t client, const char *path)
+afc_error_t afc_remove_path(afc_client_t client, const char *path)
 {
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -555,7 +555,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_remove_path(afc_client_t client, const char
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
+afc_error_t afc_rename_path(afc_client_t client, const char *from, const char *to)
 {
 	if (!client || !from || !to || !client->afc_packet || !client->parent)
 		return AFC_E_INVALID_ARG;
@@ -591,7 +591,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_rename_path(afc_client_t client, const char
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_make_directory(afc_client_t client, const char *path)
+afc_error_t afc_make_directory(afc_client_t client, const char *path)
 {
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -623,7 +623,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_make_directory(afc_client_t client, const c
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***file_information)
+afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***file_information)
 {
 	char *received = NULL;
 	uint32_t bytes = 0;
@@ -663,7 +663,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_get_file_info(afc_client_t client, const ch
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_open(afc_client_t client, const char *filename, afc_file_mode_t file_mode, uint64_t *handle)
+afc_error_t afc_file_open(afc_client_t client, const char *filename, afc_file_mode_t file_mode, uint64_t *handle)
 {
 	if (!client || !client->parent || !client->afc_packet)
 		return AFC_E_INVALID_ARG;
@@ -715,7 +715,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_open(afc_client_t client, const char *
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
+afc_error_t afc_file_read(afc_client_t client, uint64_t handle, char *data, uint32_t length, uint32_t *bytes_read)
 {
 	char *input = NULL;
 	uint32_t current_count = 0, bytes_loc = 0;
@@ -770,7 +770,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_read(afc_client_t client, uint64_t han
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
+afc_error_t afc_file_write(afc_client_t client, uint64_t handle, const char *data, uint32_t length, uint32_t *bytes_written)
 {
 	uint32_t current_count = 0;
 	uint32_t bytes_loc = 0;
@@ -805,7 +805,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_write(afc_client_t client, uint64_t ha
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
+afc_error_t afc_file_close(afc_client_t client, uint64_t handle)
 {
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -836,7 +836,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_close(afc_client_t client, uint64_t ha
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation)
+afc_error_t afc_file_lock(afc_client_t client, uint64_t handle, afc_lock_op_t operation)
 {
 	uint32_t bytes = 0;
 	struct lockinfo {
@@ -870,7 +870,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_lock(afc_client_t client, uint64_t han
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, int whence)
+afc_error_t afc_file_seek(afc_client_t client, uint64_t handle, int64_t offset, int whence)
 {
 	uint32_t bytes = 0;
 	struct seekinfo {
@@ -904,7 +904,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_seek(afc_client_t client, uint64_t han
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position)
+afc_error_t afc_file_tell(afc_client_t client, uint64_t handle, uint64_t *position)
 {
 	char *buffer = NULL;
 	uint32_t bytes = 0;
@@ -939,7 +939,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_tell(afc_client_t client, uint64_t han
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize)
+afc_error_t afc_file_truncate(afc_client_t client, uint64_t handle, uint64_t newsize)
 {
 	uint32_t bytes = 0;
 	struct truncinfo {
@@ -971,7 +971,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_file_truncate(afc_client_t client, uint64_t
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
+afc_error_t afc_truncate(afc_client_t client, const char *path, uint64_t newsize)
 {
 	if (!client || !path || !client->afc_packet || !client->parent)
 		return AFC_E_INVALID_ARG;
@@ -1004,7 +1004,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_truncate(afc_client_t client, const char *p
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
+afc_error_t afc_make_link(afc_client_t client, afc_link_type_t linktype, const char *target, const char *linkname)
 {
 	if (!client || !target || !linkname || !client->afc_packet || !client->parent)
 		return AFC_E_INVALID_ARG;
@@ -1045,7 +1045,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_make_link(afc_client_t client, afc_link_typ
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
+afc_error_t afc_set_file_time(afc_client_t client, const char *path, uint64_t mtime)
 {
 	if (!client || !path || !client->afc_packet || !client->parent)
 		return AFC_E_INVALID_ARG;
@@ -1078,7 +1078,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_set_file_time(afc_client_t client, const ch
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_remove_path_and_contents(afc_client_t client, const char *path)
+afc_error_t afc_remove_path_and_contents(afc_client_t client, const char *path)
 {
 	uint32_t bytes = 0;
 	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
@@ -1110,7 +1110,7 @@ LIBIMOBILEDEVICE_API afc_error_t afc_remove_path_and_contents(afc_client_t clien
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API afc_error_t afc_dictionary_free(char **dictionary)
+afc_error_t afc_dictionary_free(char **dictionary)
 {
 	int i = 0;
 

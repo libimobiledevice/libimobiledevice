@@ -28,7 +28,7 @@
 #include "property_list_service.h"
 #include "common/debug.h"
 
-LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, file_relay_client_t *client)
+file_relay_error_t file_relay_client_new(idevice_t device, lockdownd_service_descriptor_t service, file_relay_client_t *client)
 {
 	if (!device || !service || service->port == 0 || !client || *client) {
 		return FILE_RELAY_E_INVALID_ARG;
@@ -48,14 +48,14 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_new(idevice_t device, 
 	return FILE_RELAY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_start_service(idevice_t device, file_relay_client_t * client, const char* label)
+file_relay_error_t file_relay_client_start_service(idevice_t device, file_relay_client_t * client, const char* label)
 {
 	file_relay_error_t err = FILE_RELAY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, FILE_RELAY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(file_relay_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_free(file_relay_client_t client)
+file_relay_error_t file_relay_client_free(file_relay_client_t client)
 {
 	if (!client)
 		return FILE_RELAY_E_INVALID_ARG;
@@ -67,7 +67,7 @@ LIBIMOBILEDEVICE_API file_relay_error_t file_relay_client_free(file_relay_client
 	return FILE_RELAY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API file_relay_error_t file_relay_request_sources_timeout(file_relay_client_t client, const char **sources, idevice_connection_t *connection, unsigned int timeout)
+file_relay_error_t file_relay_request_sources_timeout(file_relay_client_t client, const char **sources, idevice_connection_t *connection, unsigned int timeout)
 {
 	if (!client || !client->parent || !sources || !sources[0]) {
 		return FILE_RELAY_E_INVALID_ARG;
@@ -159,7 +159,7 @@ leave:
 	return err;
 }
 
-LIBIMOBILEDEVICE_API file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection)
+file_relay_error_t file_relay_request_sources(file_relay_client_t client, const char **sources, idevice_connection_t *connection)
 {
 	return file_relay_request_sources_timeout(client, sources, connection, 60000);
 }

@@ -62,7 +62,7 @@ static heartbeat_error_t heartbeat_error(property_list_service_error_t err)
 	return HEARTBEAT_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descriptor_t service, heartbeat_client_t * client)
+heartbeat_error_t heartbeat_client_new(idevice_t device, lockdownd_service_descriptor_t service, heartbeat_client_t * client)
 {
 	*client = NULL;
 
@@ -89,14 +89,14 @@ LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_new(idevice_t device, lo
 	return 0;
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client, const char* label)
+heartbeat_error_t heartbeat_client_start_service(idevice_t device, heartbeat_client_t * client, const char* label)
 {
 	heartbeat_error_t err = HEARTBEAT_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, HEARTBEAT_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(heartbeat_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_free(heartbeat_client_t client)
+heartbeat_error_t heartbeat_client_free(heartbeat_client_t client)
 {
 	if (!client)
 		return HEARTBEAT_E_INVALID_ARG;
@@ -107,7 +107,7 @@ LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_client_free(heartbeat_client_t 
 	return err;
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_send(heartbeat_client_t client, plist_t plist)
+heartbeat_error_t heartbeat_send(heartbeat_client_t client, plist_t plist)
 {
 	heartbeat_error_t res = HEARTBEAT_E_UNKNOWN_ERROR;
 
@@ -122,12 +122,12 @@ LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_send(heartbeat_client_t client,
 	return res;
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist)
+heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist)
 {
 	return heartbeat_receive_with_timeout(client, plist, 1000);
 }
 
-LIBIMOBILEDEVICE_API heartbeat_error_t heartbeat_receive_with_timeout(heartbeat_client_t client, plist_t * plist, uint32_t timeout_ms)
+heartbeat_error_t heartbeat_receive_with_timeout(heartbeat_client_t client, plist_t * plist, uint32_t timeout_ms)
 {
 	heartbeat_error_t res = HEARTBEAT_E_UNKNOWN_ERROR;
 	plist_t outplist = NULL;

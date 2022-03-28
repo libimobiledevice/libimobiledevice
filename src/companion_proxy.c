@@ -62,7 +62,7 @@ static companion_proxy_error_t companion_proxy_error(property_list_service_error
 	return COMPANION_PROXY_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, companion_proxy_client_t * client)
+companion_proxy_error_t companion_proxy_client_new(idevice_t device, lockdownd_service_descriptor_t service, companion_proxy_client_t * client)
 {
 	*client = NULL;
 
@@ -90,14 +90,14 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_client_new(idevice_
 	return COMPANION_PROXY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_client_start_service(idevice_t device, companion_proxy_client_t * client, const char* label)
+companion_proxy_error_t companion_proxy_client_start_service(idevice_t device, companion_proxy_client_t * client, const char* label)
 {
 	companion_proxy_error_t err = COMPANION_PROXY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, COMPANION_PROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(companion_proxy_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_client_free(companion_proxy_client_t client)
+companion_proxy_error_t companion_proxy_client_free(companion_proxy_client_t client)
 {
 	if (!client)
 		return COMPANION_PROXY_E_INVALID_ARG;
@@ -116,7 +116,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_client_free(compani
 	return err;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_send(companion_proxy_client_t client, plist_t plist)
+companion_proxy_error_t companion_proxy_send(companion_proxy_client_t client, plist_t plist)
 {
 	companion_proxy_error_t res = COMPANION_PROXY_E_UNKNOWN_ERROR;
 
@@ -129,7 +129,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_send(companion_prox
 	return res;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_receive(companion_proxy_client_t client, plist_t * plist)
+companion_proxy_error_t companion_proxy_receive(companion_proxy_client_t client, plist_t * plist)
 {
 	companion_proxy_error_t res = COMPANION_PROXY_E_UNKNOWN_ERROR;
 	plist_t outplist = NULL;
@@ -143,7 +143,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_receive(companion_p
 	return res;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_get_device_registry(companion_proxy_client_t client, plist_t* paired_devices)
+companion_proxy_error_t companion_proxy_get_device_registry(companion_proxy_client_t client, plist_t* paired_devices)
 {
 	if (!client || !paired_devices) {
 		return COMPANION_PROXY_E_INVALID_ARG;
@@ -226,7 +226,7 @@ static void* companion_proxy_event_thread(void* arg)
 	return NULL;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_start_listening_for_devices(companion_proxy_client_t client, companion_proxy_device_event_cb_t callback, void* userdata)
+companion_proxy_error_t companion_proxy_start_listening_for_devices(companion_proxy_client_t client, companion_proxy_device_event_cb_t callback, void* userdata)
 {
 	if (!client || !client->parent || !callback) {
 		return COMPANION_PROXY_E_INVALID_ARG;
@@ -252,7 +252,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_start_listening_for
 	return res;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_stop_listening_for_devices(companion_proxy_client_t client)
+companion_proxy_error_t companion_proxy_stop_listening_for_devices(companion_proxy_client_t client)
 {
 	property_list_service_client_t parent = client->parent;
 	client->parent = NULL;
@@ -266,7 +266,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_stop_listening_for_
 	return COMPANION_PROXY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_get_value_from_registry(companion_proxy_client_t client, const char* companion_udid, const char* key, plist_t* value)
+companion_proxy_error_t companion_proxy_get_value_from_registry(companion_proxy_client_t client, const char* companion_udid, const char* key, plist_t* value)
 {
 	if (!client || !companion_udid || !key || !value) {
 		return COMPANION_PROXY_E_INVALID_ARG;
@@ -310,7 +310,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_get_value_from_regi
 	return res;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_start_forwarding_service_port(companion_proxy_client_t client, uint16_t remote_port, const char* service_name, uint16_t* forward_port, plist_t options)
+companion_proxy_error_t companion_proxy_start_forwarding_service_port(companion_proxy_client_t client, uint16_t remote_port, const char* service_name, uint16_t* forward_port, plist_t options)
 {
 	if (!client) {
 		return COMPANION_PROXY_E_INVALID_ARG;
@@ -353,7 +353,7 @@ LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_start_forwarding_se
 	return res;
 }
 
-LIBIMOBILEDEVICE_API companion_proxy_error_t companion_proxy_stop_forwarding_service_port(companion_proxy_client_t client, uint16_t remote_port)
+companion_proxy_error_t companion_proxy_stop_forwarding_service_port(companion_proxy_client_t client, uint16_t remote_port)
 {
 	if (!client) {
 		return COMPANION_PROXY_E_INVALID_ARG;
