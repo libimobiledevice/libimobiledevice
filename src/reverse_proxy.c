@@ -31,11 +31,17 @@
 #include <libimobiledevice-glue/thread.h>
 #include <libimobiledevice-glue/socket.h>
 
-
 #include "reverse_proxy.h"
 #include "lockdown.h"
 #include "common/debug.h"
 #include "endianness.h"
+
+#ifndef ECONNRESET
+#define ECONNRESET 108
+#endif
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
 
 #define CTRL_PORT 1082
 #define CTRLCMD  "BeginCtrl"
