@@ -71,6 +71,7 @@ raw_truerand()
 
 # else /* !CRYPTOLIB && WIN32 */
 
+#include <windows.h>
 #include <wtypes.h>
 #include <winbase.h>
 #include <windef.h>
