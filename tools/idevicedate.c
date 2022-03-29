@@ -42,7 +42,11 @@
 #ifdef _DATE_FMT
 #define DATE_FMT_LANGINFO nl_langinfo (_DATE_FMT)
 #else
+#ifdef WIN32
+#define DATE_FMT_LANGINFO "%a %b %#d %H:%M:%S %Z %Y"
+#else
 #define DATE_FMT_LANGINFO "%a %b %e %H:%M:%S %Z %Y"
+#endif
 #endif
 
 static void print_usage(int argc, char **argv)
