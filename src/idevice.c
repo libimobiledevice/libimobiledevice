@@ -648,7 +648,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_send(idevice_connection_
 			}
 			sent += bytes;
 		}
-		debug_info("internal_connection_send %d, sent %d", len, sent);
+		debug_info("len %d, sent %d", len, sent);
 		if (sent < len) {
 			*sent_bytes = 0;
 			return IDEVICE_E_NOT_ENOUGH_DATA;
