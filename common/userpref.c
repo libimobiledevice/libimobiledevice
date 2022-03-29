@@ -73,6 +73,10 @@
 #include <shlobj.h>
 #endif
 
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
+
 #include <libimobiledevice-glue/utils.h>
 
 #include "userpref.h"
