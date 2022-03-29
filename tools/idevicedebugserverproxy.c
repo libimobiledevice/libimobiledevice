@@ -44,6 +44,10 @@
 #include <libimobiledevice-glue/socket.h>
 #include <libimobiledevice-glue/thread.h>
 
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
+
 #define info(...) fprintf(stdout, __VA_ARGS__); fflush(stdout)
 #define debug(...) if(debug_mode) fprintf(stdout, __VA_ARGS__)
 
@@ -76,9 +80,11 @@ static void print_usage(int argc, char **argv)
 	char *name = NULL;
 
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] <PORT>\n", (name ? name + 1: argv[0]));
+	printf("Usage: %s [OPTIONS] [PORT]\n", (name ? name + 1: argv[0]));
 	printf("\n");
 	printf("Proxy debugserver connection from device to a local socket at PORT.\n");
+	printf("If PORT is omitted, the next available port will be used and printed\n");
+	printf("to stdout.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
@@ -239,13 +245,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* a PORT is mandatory */
-	if (!local_port) {
-		fprintf(stderr, "Please specify a PORT.\n");
-		print_usage(argc, argv);
-		goto leave_cleanup;
-	}
-
 	/* start services and connect to device */
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
@@ -264,6 +263,17 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Could not create socket\n");
 		result = EXIT_FAILURE;
 		goto leave_cleanup;
+	}
+
+	if (local_port == 0) {
+		/* The user asked for any available port. Report the actual port. */
+		uint16_t port;
+		if (0 > socket_get_socket_port(server_fd, &port)) {
+			fprintf(stderr, "Could not determine socket port\n");
+			result = EXIT_FAILURE;
+			goto leave_cleanup;
+		}
+		printf("Listening on port %d\n", port);
 	}
 
 	while (!quit_flag) {

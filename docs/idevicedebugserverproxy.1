@@ -3,7 +3,7 @@
 idevicedebugserverproxy \- Remote debugging proxy.
 .SH SYNOPSIS
 .B idevicedebugserverproxy
-[OPTIONS] PORT
+[OPTIONS] [PORT]
 
 .SH DESCRIPTION
 
@@ -35,6 +35,7 @@ prints version information.
 .TP
 .B PORT
 The port under which the proxy should listen for connections from clients.
+If omitted, the next available port will be used and printed to stdout.
 
 .SH AUTHORS
 Martin Szulecki
