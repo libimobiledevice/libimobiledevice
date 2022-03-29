@@ -154,7 +154,7 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 				*exit_status = o[0] + (r[0] == 'W' ? 0 : 128);
 			}
 		} else {
-			debug_info("Unable to decode exit status from %s", r);
+			log_debug("Unable to decode exit status from %s", r);
 			dres = DEBUGSERVER_E_UNKNOWN_ERROR;
                 }
 	} else if (r && strlen(r) == 0) {
