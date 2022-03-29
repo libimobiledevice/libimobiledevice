@@ -35,6 +35,7 @@
 #include "lockdown.h"
 #include "common/debug.h"
 #include "endianness.h"
+#include "asprintf.h"
 
 #ifndef ECONNRESET
 #define ECONNRESET 108

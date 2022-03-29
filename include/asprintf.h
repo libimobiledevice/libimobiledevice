@@ -5,6 +5,8 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+
 #ifndef HAVE_VASPRINTF
 static inline int vasprintf(char **PTR, const char *TEMPLATE, va_list AP)
 {
