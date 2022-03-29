@@ -60,9 +60,13 @@
 #include <windows.h>
 #endif
 
+#ifndef ECONNREFUSED
+#define ECONNREFUSED 107
+#endif
 #ifndef ETIMEDOUT
 #define ETIMEDOUT 138
 #endif
+
 
 #ifdef HAVE_OPENSSL
 
