@@ -334,9 +334,15 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Could not start installation proxy service.\n");
 				goto cleanup;
 			}
+
+			instproxy_client_get_path_for_bundle_identifier(instproxy_client, bundle_identifier, &path);
+			if (!path) {
+				fprintf(stderr, "Invalid bundle identifier: %s\n", bundle_identifier);
+				goto cleanup;
+			}
+
 			plist_t container = NULL;
 			instproxy_client_get_object_by_key_from_info_dictionary_for_bundle_identifier(instproxy_client, bundle_identifier, "Container", &container);
-			instproxy_client_get_path_for_bundle_identifier(instproxy_client, bundle_identifier, &path);
 			instproxy_client_free(instproxy_client);
 			instproxy_client = NULL;
 
