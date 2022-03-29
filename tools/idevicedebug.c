@@ -32,6 +32,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <getopt.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -173,28 +174,30 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 	return dres;
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
 	char *name = NULL;
 	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Interact with the debugserver service of a device.\n");
-	printf("\n");
-	printf("Where COMMAND is one of:\n");
-	printf("  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n");
-	printf("\n");
-	printf("The following OPTIONS are accepted:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("      --detach\t\tdetach from app after launch, keeping it running\n");
-	printf("  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n" \
+		"Interact with the debugserver service of a device.\n" \
+		"\n" \
+		"Where COMMAND is one of:\n" \
+		"  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n" \
+		"\n" \
+		"The following OPTIONS are accepted:\n" \
+		"  -u, --udid UDID\ttarget specific device by UDID\n" \
+		"  -n, --network\t\tconnect to network device\n" \
+		"      --detach\t\tdetach from app after launch, keeping it running\n" \
+		"  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n" \
+		"  -d, --debug\t\tenable communication debugging\n" \
+		"  -h, --help\t\tprints usage information\n" \
+		"  -v, --version\t\tprints version information\n" \
+		"\n" \
+		"Homepage:    <" PACKAGE_URL ">\n" \
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char *argv[])
@@ -220,6 +223,18 @@ int main(int argc, char *argv[])
 	debugserver_command_t command = NULL;
 	debugserver_error_t dres = DEBUGSERVER_E_UNKNOWN_ERROR;
 
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "detach", no_argument, NULL, 1 },
+		{ "env", required_argument, NULL, 'e' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0 }
+	};
+
 	/* map signals */
 	signal(SIGINT, on_signal);
 	signal(SIGTERM, on_signal);
@@ -228,32 +243,31 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	/* parse command line arguments */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:ne:v", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			debug_level++;
 			idevice_set_debug_level(debug_level);
-			continue;
-		} else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				res = 0;
-				goto cleanup;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = optarg;
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		} else if (!strcmp(argv[i], "--detach")) {
+			break;
+		case 1:
 			detach_after_start = 1;
-			continue;
-		} else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--env")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) <= 1) || strchr(argv[i], '=') == NULL) {
-				print_usage(argc, argv);
-				res = 0;
+			break;
+		case 'e':
+			if (!*optarg || strchr(optarg, '=') == NULL) {
+				fprintf(stderr, "ERROR: environment variables need to be specified as -e KEY=VALUE\n");
+				print_usage(argc, argv, 1);
+				res = 2;
 				goto cleanup;
 			}
 			/* add environment variable */
@@ -261,48 +275,56 @@ int main(int argc, char *argv[])
 				newlist = malloc((environment_count + 1) * sizeof(char*));
 			else
 				newlist = realloc(environment, (environment_count + 1) * sizeof(char*));
-			newlist[environment_count++] = strdup(argv[i]);
+			newlist[environment_count++] = strdup(optarg);
 			environment = newlist;
-			continue;
-		} else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			res = 0;
 			goto cleanup;
-		} else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			break;
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			res = 0;
 			goto cleanup;
-		} else if (!strcmp(argv[i], "run")) {
-			cmd = CMD_RUN;
-
-			i++;
-			if (!argv[i]) {
-				/* make sure at least the bundle identifier was provided */
-				printf("Please supply the bundle identifier of the app to run.\n");
-				print_usage(argc, argv);
-				res = 0;
-				goto cleanup;
-			}
-			/*  read bundle identifier */
-			bundle_identifier = argv[i];
 			break;
-		} else {
-			print_usage(argc, argv);
-			res = 0;
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1) {
+		fprintf(stderr, "ERROR: Missing command.\n");
+		print_usage(argc+optind, argv-optind, 1);
+	}
+
+	if (!strcmp(argv[0], "run")) {
+		cmd = CMD_RUN;
+		if (argc < 2) {
+			/* make sure at least the bundle identifier was provided */
+			fprintf(stderr, "ERROR: Please supply the bundle identifier of the app to run.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			res = 2;
 			goto cleanup;
 		}
+		/*  read bundle identifier */
+		bundle_identifier = argv[1];
+		i = 1;
+	}
+
+	/* verify options */
+	if (cmd == CMD_NONE) {
+		fprintf(stderr, "ERROR: Unsupported command specified.\n");
+		print_usage(argc+optind, argv-optind, 1);
+		res = 2;
+		goto cleanup;
 	}
 
 	if (environment) {
 		newlist = realloc(environment, (environment_count + 1) * sizeof(char*));
 		newlist[environment_count] = NULL;
 		environment = newlist;
-	}
-
-	/* verify options */
-	if (cmd == CMD_NONE) {
-		print_usage(argc, argv);
-		goto cleanup;
 	}
 
 	/* connect to the device */
