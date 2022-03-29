@@ -30,6 +30,11 @@
 #include <errno.h>
 #include <time.h>
 
+#ifdef WIN32
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
 #include <usbmuxd.h>
 
 #if defined(HAVE_OPENSSL)
@@ -55,10 +60,6 @@
 #include "lockdown.h"
 #include "common/userpref.h"
 #include "common/debug.h"
-
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 #ifndef ECONNREFUSED
 #define ECONNREFUSED 107
