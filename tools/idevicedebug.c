@@ -501,7 +501,9 @@ int main(int argc, char *argv[])
 
 				if (response) {
 					log_debug("response: %s", response);
-					dres = debugserver_client_handle_response(debugserver_client, &response, 1);
+					if (strncmp(response, "OK", 2)) {
+						dres = debugserver_client_handle_response(debugserver_client, &response, 1);
+					}
 				}
 
 				sleep(1);
