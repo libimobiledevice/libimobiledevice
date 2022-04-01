@@ -113,8 +113,8 @@
      && !defined(__FLOAT_WORD_ORDER__)) \
  || (defined(__FLOAT_WORD_ORDER__) \
      && __FLOAT_WORD_ORDER__ == __ORDER_BIG_ENDIAN__)
-#define float_bswap64(x) bswap64(x)
-#define float_bswap32(x) bswap32(x)
+#define float_bswap64(x) __bswap_64(x)
+#define float_bswap32(x) __bswap_32(x)
 #else
 #define float_bswap64(x) (x)
 #define float_bswap32(x) (x)
