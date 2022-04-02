@@ -338,226 +338,236 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	switch (cmd) {
-		case CMD_RUN:
-		default:
-			/* get the path to the app and it's working directory */
-			if (instproxy_client_start_service(device, &instproxy_client, TOOL_NAME) != INSTPROXY_E_SUCCESS) {
-				fprintf(stderr, "Could not start installation proxy service.\n");
+	/* get the path to the app and it's working directory */
+	if (instproxy_client_start_service(device, &instproxy_client, TOOL_NAME) != INSTPROXY_E_SUCCESS) {
+		fprintf(stderr, "Could not start installation proxy service.\n");
+		goto cleanup;
+	}
+
+	instproxy_client_get_path_for_bundle_identifier(instproxy_client, bundle_identifier, &path);
+	if (!path) {
+		fprintf(stderr, "Invalid bundle identifier: %s\n", bundle_identifier);
+		goto cleanup;
+	}
+
+	plist_t container = NULL;
+	instproxy_client_get_object_by_key_from_info_dictionary_for_bundle_identifier(instproxy_client, bundle_identifier, "Container", &container);
+	instproxy_client_free(instproxy_client);
+	instproxy_client = NULL;
+
+	if (container && (plist_get_node_type(container) == PLIST_STRING)) {
+		plist_get_string_val(container, &working_directory);
+		log_debug("working_directory: %s\n", working_directory);
+		plist_free(container);
+	} else {
+		plist_free(container);
+		fprintf(stderr, "Could not determine container path for bundle identifier %s.\n", bundle_identifier);
+		goto cleanup;
+	}
+
+	/* start and connect to debugserver */
+	if (debugserver_client_start_service(device, &debugserver_client, TOOL_NAME) != DEBUGSERVER_E_SUCCESS) {
+		fprintf(stderr,
+			"Could not start com.apple.debugserver!\n"
+			"Please make sure to mount the developer disk image first:\n"
+			"  1) Get the iOS version from `ideviceinfo -k ProductVersion`.\n"
+			"  2) Find the matching iPhoneOS DeveloperDiskImage.dmg files.\n"
+			"  3) Run `ideviceimagemounter` with the above path.\n");
+		goto cleanup;
+	}
+
+	/* set receive params */
+	if (debugserver_client_set_receive_params(debugserver_client, cancel_receive, 250) != DEBUGSERVER_E_SUCCESS) {
+		fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
+		goto cleanup;
+	}
+
+	/* enable logging for the session in debug mode */
+	if (debug_level) {
+		log_debug("Setting logging bitmask...");
+		debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS;", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		if (response) {
+			if (strncmp(response, "OK", 2)) {
+				debugserver_client_handle_response(debugserver_client, &response, NULL);
 				goto cleanup;
 			}
+			free(response);
+			response = NULL;
+		}
+	}
 
-			instproxy_client_get_path_for_bundle_identifier(instproxy_client, bundle_identifier, &path);
-			if (!path) {
-				fprintf(stderr, "Invalid bundle identifier: %s\n", bundle_identifier);
-				goto cleanup;
-			}
+	/* set maximum packet size */
+	log_debug("Setting maximum packet size...");
+	char* packet_size[2] = { (char*)"1024", NULL};
+	debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
+	dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+	debugserver_command_free(command);
+	command = NULL;
+	if (response) {
+		if (strncmp(response, "OK", 2)) {
+			debugserver_client_handle_response(debugserver_client, &response, NULL);
+			goto cleanup;
+		}
+		free(response);
+		response = NULL;
+	}
 
-			plist_t container = NULL;
-			instproxy_client_get_object_by_key_from_info_dictionary_for_bundle_identifier(instproxy_client, bundle_identifier, "Container", &container);
-			instproxy_client_free(instproxy_client);
-			instproxy_client = NULL;
+	/* set working directory */
+	log_debug("Setting working directory...");
+	char* working_dir[2] = {working_directory, NULL};
+	debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
+	dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+	debugserver_command_free(command);
+	command = NULL;
+	if (response) {
+		if (strncmp(response, "OK", 2)) {
+			debugserver_client_handle_response(debugserver_client, &response, NULL);
+			goto cleanup;
+		}
+		free(response);
+		response = NULL;
+	}
 
-			if (container && (plist_get_node_type(container) == PLIST_STRING)) {
-				plist_get_string_val(container, &working_directory);
-				log_debug("working_directory: %s\n", working_directory);
-				plist_free(container);
-			} else {
-				plist_free(container);
-				fprintf(stderr, "Could not determine container path for bundle identifier %s.\n", bundle_identifier);
-				goto cleanup;
-			}
+	/* set environment */
+	if (environment) {
+		log_debug("Setting environment...");
+		for (environment_index = 0; environment_index < environment_count; environment_index++) {
+			log_debug("setting environment variable: %s", environment[environment_index]);
+			debugserver_client_set_environment_hex_encoded(debugserver_client, environment[environment_index], NULL);
+		}
+	}
 
-			/* start and connect to debugserver */
-			if (debugserver_client_start_service(device, &debugserver_client, TOOL_NAME) != DEBUGSERVER_E_SUCCESS) {
-				fprintf(stderr,
-					"Could not start com.apple.debugserver!\n"
-					"Please make sure to mount the developer disk image first:\n"
-					"  1) Get the iOS version from `ideviceinfo -k ProductVersion`.\n"
-					"  2) Find the matching iPhoneOS DeveloperDiskImage.dmg files.\n"
-					"  3) Run `ideviceimagemounter` with the above path.\n");
-				goto cleanup;
-			}
+	/* set arguments and run app */
+	log_debug("Setting argv...");
+	i++; /* i is the offset of the bundle identifier, thus skip it */
+	int app_argc = (argc - i + 2);
+	char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
+	app_argv[0] = path;
+	log_debug("app_argv[%d] = %s", 0, app_argv[0]);
+	app_argc = 1;
+	while (i < argc && argv && argv[i]) {
+		log_debug("app_argv[%d] = %s", app_argc, argv[i]);
+		app_argv[app_argc++] = argv[i];
+		i++;
+	}
+	app_argv[app_argc] = NULL;
+	debugserver_client_set_argv(debugserver_client, app_argc, app_argv, NULL);
+	free(app_argv);
 
-			/* set receive params */
-			if (debugserver_client_set_receive_params(debugserver_client, cancel_receive, 250) != DEBUGSERVER_E_SUCCESS) {
-				fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
-				goto cleanup;
-			}
+	/* check if launch succeeded */
+	log_debug("Checking if launch succeeded...");
+	debugserver_command_new("qLaunchSuccess", 0, NULL, &command);
+	dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+	debugserver_command_free(command);
+	command = NULL;
+	if (response) {
+		if (strncmp(response, "OK", 2)) {
+			debugserver_client_handle_response(debugserver_client, &response, NULL);
+			goto cleanup;
+		}
+		free(response);
+		response = NULL;
+	}
 
-			/* enable logging for the session in debug mode */
-			if (debug_level) {
-				log_debug("Setting logging bitmask...");
-				debugserver_command_new("QSetLogging:bitmask=LOG_ALL|LOG_RNB_REMOTE|LOG_RNB_PACKETS;", 0, NULL, &command);
-				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-				debugserver_command_free(command);
-				command = NULL;
-				if (response) {
-					if (strncmp(response, "OK", 2)) {
-						debugserver_client_handle_response(debugserver_client, &response, NULL);
-						goto cleanup;
-					}
-					free(response);
-					response = NULL;
-				}
-			}
-
-			/* set maximum packet size */
-			log_debug("Setting maximum packet size...");
-			char* packet_size[2] = {strdup("1024"), NULL};
-			debugserver_command_new("QSetMaxPacketSize:", 1, packet_size, &command);
-			free(packet_size[0]);
+	if (cmd == CMD_RUN) {
+		if (detach_after_start) {
+			log_debug("Detaching from app");
+			debugserver_command_new("D", 0, NULL, &command);
 			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
 			debugserver_command_free(command);
 			command = NULL;
-			if (response) {
-				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, NULL);
-					goto cleanup;
-				}
-				free(response);
-				response = NULL;
+
+			res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+			goto cleanup;
+		}
+
+		/* set thread */
+		log_debug("Setting thread...");
+		debugserver_command_new("Hc0", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		if (response) {
+			if (strncmp(response, "OK", 2)) {
+				debugserver_client_handle_response(debugserver_client, &response, NULL);
+				goto cleanup;
 			}
+			free(response);
+			response = NULL;
+		}
 
-			/* set working directory */
-			log_debug("Setting working directory...");
-			char* working_dir[2] = {working_directory, NULL};
-			debugserver_command_new("QSetWorkingDir:", 1, working_dir, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-			debugserver_command_free(command);
-			command = NULL;
-			if (response) {
-				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, NULL);
-					goto cleanup;
-				}
-				free(response);
-				response = NULL;
-			}
+		/* continue running process */
+		log_debug("Continue running process...");
+		debugserver_command_new("c", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		log_debug("Continue response: %s", response);
 
-			/* set environment */
-			if (environment) {
-				log_debug("Setting environment...");
-				for (environment_index = 0; environment_index < environment_count; environment_index++) {
-					log_debug("setting environment variable: %s", environment[environment_index]);
-					debugserver_client_set_environment_hex_encoded(debugserver_client, environment[environment_index], NULL);
-				}
-			}
-
-			/* set arguments and run app */
-			log_debug("Setting argv...");
-			i++; /* i is the offset of the bundle identifier, thus skip it */
-			int app_argc = (argc - i + 2);
-			char **app_argv = (char**)malloc(sizeof(char*) * app_argc);
-			app_argv[0] = path;
-			log_debug("app_argv[%d] = %s", 0, app_argv[0]);
-			app_argc = 1;
-			while (i < argc && argv && argv[i]) {
-				log_debug("app_argv[%d] = %s", app_argc, argv[i]);
-				app_argv[app_argc++] = argv[i];
-				i++;
-			}
-			app_argv[app_argc] = NULL;
-			debugserver_client_set_argv(debugserver_client, app_argc, app_argv, NULL);
-			free(app_argv);
-
-			/* check if launch succeeded */
-			log_debug("Checking if launch succeeded...");
-			debugserver_command_new("qLaunchSuccess", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-			debugserver_command_free(command);
-			command = NULL;
-			if (response) {
-				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, NULL);
-					goto cleanup;
-				}
-				free(response);
-				response = NULL;
-			}
-
-			if (detach_after_start) {
-				log_debug("Detaching from app");
-				debugserver_command_new("D", 0, NULL, &command);
-				dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-				debugserver_command_free(command);
-				command = NULL;
-
-				res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+		/* main loop which is parsing/handling packets during the run */
+		log_debug("Entering run loop...");
+		while (!quit_flag) {
+			if (dres != DEBUGSERVER_E_SUCCESS) {
+				log_debug("failed to receive response; error %d", dres);
 				break;
 			}
 
-			/* set thread */
-			log_debug("Setting thread...");
-			debugserver_command_new("Hc0", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-			debugserver_command_free(command);
-			command = NULL;
 			if (response) {
+				log_debug("response: %s", response);
 				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, NULL);
-					goto cleanup;
-				}
-				free(response);
-				response = NULL;
-			}
-
-			/* continue running process */
-			log_debug("Continue running process...");
-			debugserver_command_new("c", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-			debugserver_command_free(command);
-			command = NULL;
-
-			/* main loop which is parsing/handling packets during the run */
-			log_debug("Entering run loop...");
-			while (!quit_flag) {
-				if (dres != DEBUGSERVER_E_SUCCESS) {
-					log_debug("failed to receive response; error %d", dres);
-					break;
-				}
-
-				if (response) {
-					log_debug("response: %s", response);
-					if (strncmp(response, "OK", 2)) {
-						dres = debugserver_client_handle_response(debugserver_client, &response, &res);
-						if (dres != DEBUGSERVER_E_SUCCESS) {
-							log_debug("failed to process response; error %d; %s", dres, response);
-							break;
-						}
+					dres = debugserver_client_handle_response(debugserver_client, &response, &res);
+					if (dres != DEBUGSERVER_E_SUCCESS) {
+						log_debug("failed to process response; error %d; %s", dres, response);
+						break;
 					}
 				}
-				if (res >= 0) {
-					goto cleanup;
-				}
-
-				dres = debugserver_client_receive_response(debugserver_client, &response, NULL);
 			}
-			/* ignore quit_flag after this point */
-			if (debugserver_client_set_receive_params(debugserver_client, NULL, 5000) != DEBUGSERVER_E_SUCCESS) {
-				fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
+			if (res >= 0) {
 				goto cleanup;
 			}
 
-			/* kill process after we finished */
-			log_debug("Killing process...");
-			debugserver_command_new("k", 0, NULL, &command);
-			dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
-			debugserver_command_free(command);
-			command = NULL;
-			if (response) {
-				if (strncmp(response, "OK", 2)) {
-					debugserver_client_handle_response(debugserver_client, &response, NULL);
-					goto cleanup;
-				}
-				free(response);
-				response = NULL;
-			}
+			dres = debugserver_client_receive_response(debugserver_client, &response, NULL);
+		}
 
-			if (res < 0) {
-				res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+		/* ignore quit_flag after this point */
+		if (debugserver_client_set_receive_params(debugserver_client, NULL, 5000) != DEBUGSERVER_E_SUCCESS) {
+			fprintf(stderr, "Error in debugserver_client_set_receive_params\n");
+			goto cleanup;
+		}
+
+		/* interrupt execution */
+		debugserver_command_new("\x03", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		if (response) {
+			if (strncmp(response, "OK", 2)) {
+				debugserver_client_handle_response(debugserver_client, &response, NULL);
 			}
-		break;
+			free(response);
+			response = NULL;
+		}
+
+		/* kill process after we finished */
+		log_debug("Killing process...");
+		debugserver_command_new("k", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		if (response) {
+			if (strncmp(response, "OK", 2)) {
+				debugserver_client_handle_response(debugserver_client, &response, NULL);
+			}
+			free(response);
+			response = NULL;
+		}
+
+		if (res < 0) {
+			res = (dres == DEBUGSERVER_E_SUCCESS) ? 0: -1;
+		}
 	}
 
 cleanup:
