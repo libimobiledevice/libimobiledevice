@@ -51,7 +51,8 @@ static int debug_level = 0;
 
 enum cmd_mode {
 	CMD_NONE = 0,
-	CMD_RUN
+	CMD_RUN,
+	CMD_KILL
 };
 
 static int quit_flag = 0;
@@ -185,6 +186,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"\n" \
 		"Where COMMAND is one of:\n" \
 		"  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n" \
+		"  kill BUNDLEID\tkill app with BUNDLEID\n" \
 		"\n" \
 		"The following OPTIONS are accepted:\n" \
 		"  -u, --udid UDID\ttarget specific device by UDID\n" \
@@ -247,7 +249,9 @@ int main(int argc, char *argv[])
 		switch (c) {
 		case 'd':
 			debug_level++;
-			idevice_set_debug_level(debug_level);
+			if (debug_level > 1) {
+				idevice_set_debug_level(debug_level-1);
+			}
 			break;
 		case 'u':
 			if (!*optarg) {
@@ -301,6 +305,18 @@ int main(int argc, char *argv[])
 
 	if (!strcmp(argv[0], "run")) {
 		cmd = CMD_RUN;
+		if (argc < 2) {
+			/* make sure at least the bundle identifier was provided */
+			fprintf(stderr, "ERROR: Please supply the bundle identifier of the app to run.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			res = 2;
+			goto cleanup;
+		}
+		/*  read bundle identifier */
+		bundle_identifier = argv[1];
+		i = 1;
+	} else if (!strcmp(argv[0], "kill")) {
+		cmd = CMD_KILL;
 		if (argc < 2) {
 			/* make sure at least the bundle identifier was provided */
 			fprintf(stderr, "ERROR: Please supply the bundle identifier of the app to run.\n");
@@ -472,6 +488,13 @@ int main(int argc, char *argv[])
 		response = NULL;
 	}
 
+	if (cmd == CMD_KILL) {
+		debugserver_command_new("k", 0, NULL, &command);
+		dres = debugserver_client_send_command(debugserver_client, command, &response, NULL);
+		debugserver_command_free(command);
+		command = NULL;
+		goto cleanup;
+	} else
 	if (cmd == CMD_RUN) {
 		if (detach_after_start) {
 			log_debug("Detaching from app");
