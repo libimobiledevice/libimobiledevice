@@ -156,7 +156,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
  * @param data Pointer to a buffer that will be filled with the received data.
  * @param length Number of bytes to receive. The data buffer needs to be large
  *     enough to store this amount of data.
- * @paran bytes Number of bytes actually received.
+ * @param bytes Number of bytes actually received.
  *
  * @return MOBILEBACKUP2_E_SUCCESS if any or no data was received,
  *     MOBILEBACKUP2_E_INVALID_ARG if one of the parameters is invalid,
