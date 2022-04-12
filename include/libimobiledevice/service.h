@@ -42,9 +42,10 @@ typedef enum {
 	SERVICE_E_UNKNOWN_ERROR       = -256
 } service_error_t;
 
-typedef struct service_client_private service_client_private;
+typedef struct service_client_private service_client_private; /**< \private */
 typedef service_client_private* service_client_t; /**< The client handle. */
 
+/** service constructor cast */
 #define SERVICE_CONSTRUCTOR(x) (int32_t (*)(idevice_t, lockdownd_service_descriptor_t, void**))(x)
 
 /* Interface */
@@ -74,6 +75,8 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
  *     use.
  * @param label The label to use for communication. Usually the program name.
  *  Pass NULL to disable sending the label in requests to lockdownd.
+ * @param constructor_func Constructor function for the service client to create (e.g. afc_client_new())
+ * @param error_code Pointer to an int32_t that will receive the service start error code.
  *
  * @return SERVICE_E_SUCCESS on success, or a SERVICE_E_* error code
  *     otherwise.
@@ -160,7 +163,7 @@ service_error_t service_enable_ssl(service_client_t client);
 /**
  * Disable SSL for the given service client.
  *
- * @param client The connected service client for that SSL should be disabled.
+ * @param client The connected service client for which SSL should be disabled.
  *
  * @return SERVICE_E_SUCCESS on success,
  *     SERVICE_E_INVALID_ARG if client or client->connection is
@@ -169,9 +172,11 @@ service_error_t service_enable_ssl(service_client_t client);
 service_error_t service_disable_ssl(service_client_t client);
 
 /**
- * Disable SSL for the given service client without sending SSL terminate messages.
+ * Disable SSL for the given service client, optionally without sending SSL terminate messages.
  *
- * @param client The connected service client for that SSL should be disabled.
+ * @param client The connected service client for which SSL should be disabled.
+ * @param sslBypass A boolean value indicating wether to disable SSL with a proper
+ *     SSL shutdown (0), or bypass the shutdown (1).
  *
  * @return SERVICE_E_SUCCESS on success,
  *     SERVICE_E_INVALID_ARG if client or client->connection is

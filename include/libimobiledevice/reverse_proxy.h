@@ -2,6 +2,7 @@
  * @file libimobiledevice/reverse_proxy.h
  * @brief Provide a reverse proxy to allow the device to communicate through,
  *     which is used during firmware restore.
+ * \internal
  *
  * Copyright (c) 2021 Nikias Bassen, All Rights Reserved.
  *
@@ -29,7 +30,7 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 
-#define REVERSE_PROXY_DEFAULT_PORT 1082
+#define REVERSE_PROXY_DEFAULT_PORT 1082 /**< default port the reverse proxy is listening on */
 
 /** Error Codes */
 typedef enum {
@@ -43,14 +44,16 @@ typedef enum {
 	REVERSE_PROXY_E_UNKNOWN_ERROR   = -256
 } reverse_proxy_error_t;
 
-typedef struct reverse_proxy_client_private reverse_proxy_client_private;
+typedef struct reverse_proxy_client_private reverse_proxy_client_private; /**< \private */
 typedef reverse_proxy_client_private *reverse_proxy_client_t; /**< The client handle. */
 
+/** reverse proxy client type */
 typedef enum {
 	RP_TYPE_CTRL = 1, /**< control connection */
 	RP_TYPE_CONN      /**< proxy connection */
 } reverse_proxy_client_type_t;
 
+/** reverse proxy status for reverse_proxy_status_cb_t callback */
 typedef enum {
 	RP_STATUS_READY = 1,    /**< proxy is ready */
 	RP_STATUS_TERMINATE,    /**< proxy terminated */
@@ -60,6 +63,7 @@ typedef enum {
 	RP_STATUS_DISCONNECTED, /**< connection closed (only RP_TYPE_CONN) */
 } reverse_proxy_status_t;
 
+/** reverse proxy data direction passed to reverse_proxy_data_cb_t callback */
 typedef enum {
 	RP_DATA_DIRECTION_OUT = 1, /**< data going out to remote host */
 	RP_DATA_DIRECTION_IN       /**< data coming in from remote host */

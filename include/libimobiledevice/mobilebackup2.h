@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the mobilebackup2 service */
 #define MOBILEBACKUP2_SERVICE_NAME "com.apple.mobilebackup2"
 
 /** Error Codes */
@@ -47,7 +48,7 @@ typedef enum {
 	MOBILEBACKUP2_E_UNKNOWN_ERROR     = -256
 } mobilebackup2_error_t;
 
-typedef struct mobilebackup2_client_private mobilebackup2_client_private;
+typedef struct mobilebackup2_client_private mobilebackup2_client_private; /**< \private */
 typedef mobilebackup2_client_private *mobilebackup2_client_t; /**< The client handle. */
 
 
@@ -156,7 +157,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
  * @param data Pointer to a buffer that will be filled with the received data.
  * @param length Number of bytes to receive. The data buffer needs to be large
  *     enough to store this amount of data.
- * @paran bytes Number of bytes actually received.
+ * @param bytes Number of bytes actually received.
  *
  * @return MOBILEBACKUP2_E_SUCCESS if any or no data was received,
  *     MOBILEBACKUP2_E_INVALID_ARG if one of the parameters is invalid,

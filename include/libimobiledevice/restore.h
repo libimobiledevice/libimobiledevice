@@ -42,7 +42,7 @@ typedef enum {
 	RESTORE_E_UNKNOWN_ERROR        = -256
 } restored_error_t;
 
-typedef struct restored_client_private restored_client_private;
+typedef struct restored_client_private restored_client_private; /**< \private */
 typedef restored_client_private *restored_client_t; /**< The client handle. */
 
 /* Interface */

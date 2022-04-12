@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the syslog relay service */
 #define SYSLOG_RELAY_SERVICE_NAME "com.apple.syslog_relay"
 
 /** Error Codes */
@@ -44,7 +45,7 @@ typedef enum {
 	SYSLOG_RELAY_E_UNKNOWN_ERROR   = -256
 } syslog_relay_error_t;
 
-typedef struct syslog_relay_client_private syslog_relay_client_private;
+typedef struct syslog_relay_client_private syslog_relay_client_private; /**< \private */
 typedef syslog_relay_client_private *syslog_relay_client_t; /**< The client handle. */
 
 /** Receives each character received from the device. */
@@ -170,7 +171,6 @@ syslog_relay_error_t syslog_relay_receive_with_timeout(syslog_relay_client_t cli
  * @param data Buffer that will be filled with the data received
  * @param size Number of bytes to receive
  * @param received Number of bytes received (can be NULL to ignore)
- * @param timeout Maximum time in milliseconds to wait for data.
  *
  * @return SYSLOG_RELAY_E_SUCCESS on success,
  *  SYSLOG_RELAY_E_INVALID_ARG when client or plist is NULL

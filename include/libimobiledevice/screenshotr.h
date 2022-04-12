@@ -32,6 +32,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the screenshotr service */
 #define SCREENSHOTR_SERVICE_NAME "com.apple.mobile.screenshotr"
 
 /** Error Codes */
@@ -46,7 +47,7 @@ typedef enum {
 	SCREENSHOTR_E_UNKNOWN_ERROR   = -256
 } screenshotr_error_t;
 
-typedef struct screenshotr_client_private screenshotr_client_private;
+typedef struct screenshotr_client_private screenshotr_client_private; /**< \private */
 typedef screenshotr_client_private *screenshotr_client_t; /**< The client handle. */
 
 

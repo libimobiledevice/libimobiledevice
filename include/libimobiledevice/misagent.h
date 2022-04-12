@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the misagent service */
 #define MISAGENT_SERVICE_NAME "com.apple.misagent"
 
 /** Error Codes */
@@ -43,7 +44,7 @@ typedef enum {
 	MISAGENT_E_UNKNOWN_ERROR  = -256
 } misagent_error_t;
 
-typedef struct misagent_client_private misagent_client_private;
+typedef struct misagent_client_private misagent_client_private; /**< \private */
 typedef misagent_client_private *misagent_client_t; /**< The client handle. */
 
 /* Interface */

@@ -80,7 +80,7 @@ typedef enum {
 	LOCKDOWN_E_UNKNOWN_ERROR                           = -256
 } lockdownd_error_t;
 
-typedef struct lockdownd_client_private lockdownd_client_private;
+typedef struct lockdownd_client_private lockdownd_client_private; /**< \private */
 typedef lockdownd_client_private *lockdownd_client_t; /**< The client handle. */
 
 struct lockdownd_pair_record {
@@ -88,19 +88,20 @@ struct lockdownd_pair_record {
 	char *host_certificate;   /**< The host certificate */
 	char *root_certificate;   /**< The root certificate */
 	char *host_id;            /**< A unique HostID for the host computer */
-	char *system_buid;          /**< A unique system id */
+	char *system_buid;        /**< A unique system id */
 };
-/** A pair record holding device, host and root certificates along the host_id */
-typedef struct lockdownd_pair_record *lockdownd_pair_record_t;
+/** pair record holding device, host and root certificates along the host_id */
+typedef struct lockdownd_pair_record *lockdownd_pair_record_t; /**< pair record */
 
+/** service descriptor */
 struct lockdownd_service_descriptor {
-	uint16_t port;
-	uint8_t ssl_enabled;
-	char* identifier;
+	uint16_t port; /**< port number the service was started on */
+	uint8_t ssl_enabled; /**< an indicator if the service requires SSL */
+	char* identifier; /**< identifier of the service */
 };
 typedef struct lockdownd_service_descriptor *lockdownd_service_descriptor_t;
 
-
+/** Callback types used in #lockdownd_cu_pairing_cb_t */
 typedef enum {
 	LOCKDOWN_CU_PAIRING_PIN_REQUESTED, /**< PIN requested: data_ptr is a char* buffer, and data_size points to the size of this buffer that must not be exceeded and has to be updated to the actual number of characters filled into the buffer. */
 	LOCKDOWN_CU_PAIRING_DEVICE_INFO, /**< device information available: data_ptr is a plist_t, and data_size is ignored. The plist_t has to be copied if required, since it is freed when the callback function returns. */
@@ -564,7 +565,7 @@ lockdownd_error_t lockdownd_service_descriptor_free(lockdownd_service_descriptor
 /**
  * Gets a readable error string for a given lockdown error code.
  *
- * @params err A lockdownd error code
+ * @param err A lockdownd error code
  *
  * @returns A readable error string
  */

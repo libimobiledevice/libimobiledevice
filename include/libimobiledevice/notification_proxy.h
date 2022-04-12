@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the notification proxy service */
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
 
 /** Error Codes */
@@ -43,22 +44,26 @@ typedef enum {
 } np_error_t;
 
 /**
- * @name Notifications that can be send
+ * @name Notifications that can be sent
  *
  * For use with np_post_notification() (client --> device)
  */
+/**@{*/
+//! @cond
 #define NP_SYNC_WILL_START           "com.apple.itunes-mobdev.syncWillStart"
 #define NP_SYNC_DID_START            "com.apple.itunes-mobdev.syncDidStart"
 #define NP_SYNC_DID_FINISH           "com.apple.itunes-mobdev.syncDidFinish"
 #define NP_SYNC_LOCK_REQUEST         "com.apple.itunes-mobdev.syncLockRequest"
-/*@}*/
+//! @endcond
+/**@}*/
 
 /**
  * @name Notifications that can be received
  *
  * For use with np_observe_notification() (device --> client)
  */
-/*@{*/
+/**@{*/
+//! @cond
 #define NP_SYNC_CANCEL_REQUEST       "com.apple.itunes-client.syncCancelRequest"
 #define NP_SYNC_SUSPEND_REQUEST      "com.apple.itunes-client.syncSuspendRequest"
 #define NP_SYNC_RESUME_REQUEST       "com.apple.itunes-client.syncResumeRequest"
@@ -81,12 +86,13 @@ typedef enum {
 #define NP_ITDBPREP_DID_END          "com.apple.itdbprep.notification.didEnd"
 #define NP_LANGUAGE_CHANGED          "com.apple.language.changed"
 #define NP_ADDRESS_BOOK_PREF_CHANGED "com.apple.AddressBook.PreferenceChanged"
-/*@}*/
+//! @endcond
+/**@}*/
 
-typedef struct np_client_private np_client_private;
+typedef struct np_client_private np_client_private; /**< \private */
 typedef np_client_private *np_client_t; /**< The client handle. */
 
-/** Reports which notification was received. */
+/** Callback function that reports which notification was received. */
 typedef void (*np_notify_cb_t) (const char *notification, void *user_data);
 
 /* Interface */
@@ -177,7 +183,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  * @param client the NP client
  * @param notify_cb pointer to a callback function or NULL to de-register a
  *        previously set callback function.
- * @param user_data Pointer that will be passed to the callback function as
+ * @param userdata Pointer that will be passed to the callback function as
  *        user data. If notify_cb is NULL, this parameter is ignored.
  *
  * @note Only one callback function can be registered at the same time;

@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the springboardservices service */
 #define SBSERVICES_SERVICE_NAME "com.apple.springboardservices"
 
 /** Error Codes */
@@ -42,8 +43,7 @@ typedef enum {
 	SBSERVICES_E_UNKNOWN_ERROR = -256
 } sbservices_error_t;
 
-/** @name Orientation of the user interface on the device */
-/*@{*/
+/** Orientation of the user interface on the device */
 typedef enum {
   SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN                = 0,
   SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT               = 1,
@@ -51,9 +51,8 @@ typedef enum {
   SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_RIGHT        = 3,
   SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_LEFT         = 4
 } sbservices_interface_orientation_t;
-/*@}*/
 
-typedef struct sbservices_client_private sbservices_client_private;
+typedef struct sbservices_client_private sbservices_client_private; /**< \private */
 typedef sbservices_client_private *sbservices_client_t; /**< The client handle. */
 
 /* Interface */

@@ -34,6 +34,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the mobilesync service */
 #define MOBILESYNC_SERVICE_NAME "com.apple.mobilesync"
 
 /** Error Codes */
@@ -59,14 +60,16 @@ typedef enum {
 	MOBILESYNC_SYNC_TYPE_RESET /**< Reset-sync signals that the computer should send all data again. */
 } mobilesync_sync_type_t;
 
-typedef struct mobilesync_client_private mobilesync_client_private;
+typedef struct mobilesync_client_private mobilesync_client_private; /**< \private */
 typedef mobilesync_client_private *mobilesync_client_t; /**< The client handle */
 
+/** Anchors used by the device and computer (structure) */
 typedef struct {
-	char *device_anchor;
-	char *computer_anchor;
+	char *device_anchor; /**< device anchor */
+	char *computer_anchor; /**< computer anchor */
 } mobilesync_anchors;
-typedef mobilesync_anchors *mobilesync_anchors_t; /**< Anchors used by the device and computer. */
+/** Anchors used by the device and computer */
+typedef mobilesync_anchors *mobilesync_anchors_t;
 
 /* Interface */
 

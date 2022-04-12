@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the webinspector service */
 #define WEBINSPECTOR_SERVICE_NAME "com.apple.webinspector"
 
 /** Error Codes */
@@ -45,7 +46,7 @@ typedef enum {
 	WEBINSPECTOR_E_UNKNOWN_ERROR   = -256
 } webinspector_error_t;
 
-typedef struct webinspector_client_private webinspector_client_private;
+typedef struct webinspector_client_private webinspector_client_private; /**< \private */
 typedef webinspector_client_private *webinspector_client_t; /**< The client handle. */
 
 
@@ -118,7 +119,7 @@ webinspector_error_t webinspector_receive(webinspector_client_t client, plist_t 
  * @param client The webinspector client to use for receiving
  * @param plist pointer to a plist_t that will point to the received plist
  *      upon successful return
- * @param timeout Maximum time in milliseconds to wait for data.
+ * @param timeout_ms Maximum time in milliseconds to wait for data.
  *
  * @return WEBINSPECTOR_E_SUCCESS on success,
  *      WEBINSPECTOR_E_INVALID_ARG when client or *plist is NULL,

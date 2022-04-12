@@ -47,10 +47,10 @@ typedef enum {
 	IDEVICE_E_TIMEOUT         = -7
 } idevice_error_t;
 
-typedef struct idevice_private idevice_private;
+typedef struct idevice_private idevice_private; /**< \private */
 typedef idevice_private *idevice_t; /**< The device handle. */
 
-typedef struct idevice_connection_private idevice_connection_private;
+typedef struct idevice_connection_private idevice_connection_private; /**< \private */
 typedef idevice_connection_private *idevice_connection_t; /**< The connection handle. */
 
 /** Options for idevice_new_with_options() */
@@ -62,23 +62,24 @@ enum idevice_options {
 
 /** Type of connection a device is available on */
 enum idevice_connection_type {
-	CONNECTION_USBMUXD = 1,
-	CONNECTION_NETWORK
+	CONNECTION_USBMUXD = 1, /**< device is available via USBMUX */
+	CONNECTION_NETWORK /**< device is available via network */
 };
 
+/** Device information returned by #idevice_get_device_list_extended API */
 struct idevice_info {
-	char *udid;
-	enum idevice_connection_type conn_type;
-	void* conn_data;
+	char *udid; /**< UDID of the device */
+	enum idevice_connection_type conn_type; /**< Type of connection the device is available on */
+	void* conn_data; /**< Connection data, depending on the connection type */
 };
 typedef struct idevice_info* idevice_info_t;
 
 /* discovery (events/asynchronous) */
 /** The event type for device add or removal */
 enum idevice_event_type {
-	IDEVICE_DEVICE_ADD = 1,
-	IDEVICE_DEVICE_REMOVE,
-	IDEVICE_DEVICE_PAIRED
+	IDEVICE_DEVICE_ADD = 1, /**< device was added */
+	IDEVICE_DEVICE_REMOVE, /**< device was removed */
+	IDEVICE_DEVICE_PAIRED /**< device completed pairing process */
 };
 
 /* event data structure */
@@ -338,12 +339,22 @@ idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *
 /* misc */
 
 /**
- * Gets the handle or (usbmux device id) of the device.
+ * Gets the handle or (USBMUX device id) of the device.
+ *
+ * @param device The device to get the USBMUX device id for.
+ * @param handle Pointer to a uint32_t that will be set to the USBMUX handle value.
+ *
+ * @return IDEVICE_E_SUCCESS on success, otherwise an error code.
  */
 idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
 
 /**
- * Gets the unique id for the device.
+ * Gets the Unique Device ID for the device.
+ *
+ * @param device The device to get the Unique Device ID for.
+ * @param udid Pointer that will be set to an allocated buffer with the device UDID. The consumer is responsible for releasing the allocated memory.
+ *
+ * @return IDEVICE_E_SUCCESS on success, otherwise an error code.
  */
 idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 

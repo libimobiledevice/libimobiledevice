@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the mobile image mounter service */
 #define MOBILE_IMAGE_MOUNTER_SERVICE_NAME "com.apple.mobile.mobile_image_mounter"
 
 /** Error Codes */
@@ -44,7 +45,7 @@ typedef enum {
 	MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR  = -256
 } mobile_image_mounter_error_t;
 
-typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_private;
+typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_private; /**< \private */
 typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**< The client handle. */
 
 /** callback for image upload */

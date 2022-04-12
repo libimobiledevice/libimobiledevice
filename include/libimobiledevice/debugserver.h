@@ -30,7 +30,9 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the debugserver service */
 #define DEBUGSERVER_SERVICE_NAME "com.apple.debugserver"
+/** Service identifier passed to lockdownd_start_service() to start the secure debugserver service */
 #define DEBUGSERVER_SECURE_SERVICE_NAME DEBUGSERVER_SERVICE_NAME ".DVTSecureSocketProxy"
 
 /** Error Codes */
@@ -44,10 +46,10 @@ typedef enum {
 	DEBUGSERVER_E_UNKNOWN_ERROR  = -256
 } debugserver_error_t;
 
-typedef struct debugserver_client_private debugserver_client_private;
+typedef struct debugserver_client_private debugserver_client_private; /**< \private */
 typedef debugserver_client_private *debugserver_client_t; /**< The client handle. */
 
-typedef struct debugserver_command_private debugserver_command_private;
+typedef struct debugserver_command_private debugserver_command_private; /**< \private */
 typedef debugserver_command_private *debugserver_command_t; /**< The command handle. */
 
 /* Interface */

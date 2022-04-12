@@ -30,7 +30,7 @@ extern "C" {
 
 #include <libimobiledevice/lockdown.h>
 
-/* Error Codes */
+/** Error Codes */
 typedef enum {
 	PROPERTY_LIST_SERVICE_E_SUCCESS         =  0,
 	PROPERTY_LIST_SERVICE_E_INVALID_ARG     = -1,
@@ -42,7 +42,7 @@ typedef enum {
 	PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR   = -256
 } property_list_service_error_t;
 
-typedef struct property_list_service_client_private property_list_service_private;
+typedef struct property_list_service_client_private property_list_service_private; /**< \private */
 typedef property_list_service_private* property_list_service_client_t; /**< The client handle. */
 
 /* Interface */

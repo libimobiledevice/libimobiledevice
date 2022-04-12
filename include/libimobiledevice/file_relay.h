@@ -32,6 +32,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the file relay service */
 #define FILE_RELAY_SERVICE_NAME "com.apple.mobile.file_relay"
 
 /** Error Codes */
@@ -46,7 +47,7 @@ typedef enum {
 	FILE_RELAY_E_UNKNOWN_ERROR     = -256
 } file_relay_error_t;
 
-typedef struct file_relay_client_private file_relay_client_private;
+typedef struct file_relay_client_private file_relay_client_private; /**< \private */
 typedef file_relay_client_private *file_relay_client_t; /**< The client handle. */
 
 /**
@@ -110,8 +111,7 @@ file_relay_error_t file_relay_client_free(file_relay_client_t client);
  *     data using idevice_connection_receive(). The connection will be closed
  *     automatically by the device, but use file_relay_client_free() to clean
  *     up properly.
- * @param timeout Maximum time in milliseconds to wait for data.
- *
+  *
  * @note WARNING: Don't call this function without reading the data afterwards.
  *     A directory mobile_file_relay.XXXX used for creating the archive will
  *     remain in the /tmp directory otherwise.
@@ -144,6 +144,7 @@ file_relay_error_t file_relay_request_sources(file_relay_client_t client, const 
  *     data using idevice_connection_receive(). The connection will be closed
  *     automatically by the device, but use file_relay_client_free() to clean
  *     up properly.
+ * @param timeout Maximum time in milliseconds to wait for data.
  *
  * @note WARNING: Don't call this function without reading the data afterwards.
  *     A directory mobile_file_relay.XXXX used for creating the archive will

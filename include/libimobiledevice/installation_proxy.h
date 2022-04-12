@@ -33,6 +33,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the installation proxy service */
 #define INSTPROXY_SERVICE_NAME "com.apple.mobile.installation_proxy"
 
 /** Error Codes */
@@ -107,7 +108,7 @@ typedef enum {
 	INSTPROXY_E_UNKNOWN_ERROR                                             = -256
 } instproxy_error_t;
 
-typedef struct instproxy_client_private instproxy_client_private;
+typedef struct instproxy_client_private instproxy_client_private; /**< \private */
 typedef instproxy_client_private *instproxy_client_t; /**< The client handle. */
 
 /** Reports the status response of the given command */
@@ -441,8 +442,8 @@ void instproxy_status_get_current_list(plist_t status, uint64_t* total, uint64_t
  * Gets progress in percentage from a status if available.
  *
  * @param status The dictionary status response to use.
- * @param name Pointer to store the progress in percent (0-100) or -1 if not
- *        progress was found in the status.
+ * @param percent Pointer to an int to store the progress in percent (0-100)
+ *        or -1 if no progress was found in the status.
  */
 void instproxy_status_get_percent_complete(plist_t status, int *percent);
 
@@ -487,7 +488,7 @@ void instproxy_client_options_free(plist_t client_options);
  * Queries the device for the path of an application.
  *
  * @param client The connected installation proxy client.
- * @param appid ApplicationIdentifier of app to retrieve the path for.
+ * @param bundle_id ApplicationIdentifier of app to retrieve the path for.
  * @param path Pointer to store the device path for the application
  *        which is set to NULL if it could not be determined.
  *

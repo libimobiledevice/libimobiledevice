@@ -30,6 +30,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the mobile activation service */
 #define MOBILEACTIVATION_SERVICE_NAME "com.apple.mobileactivationd"
 
 /** Error Codes */
@@ -43,7 +44,7 @@ typedef enum {
 	MOBILEACTIVATION_E_UNKNOWN_ERROR   = -256
 } mobileactivation_error_t;
 
-typedef struct mobileactivation_client_private mobileactivation_client_private;
+typedef struct mobileactivation_client_private mobileactivation_client_private; /**< \private */
 typedef mobileactivation_client_private *mobileactivation_client_t; /**< The client handle. */
 
 /**
@@ -138,7 +139,7 @@ mobileactivation_error_t mobileactivation_create_activation_info(mobileactivatio
  * provided by mobileactivation_create_activation_session_info().
  *
  * @param client The mobileactivation client
- * @aram handshake_response The handshake response returned from drmHandshake
+ * @param handshake_response The handshake response returned from drmHandshake
  * @param info Pointer to a plist_t variable that will be set to the
  *     activation info created by the mobileactivation service. The
  *     consumer is responsible for freeing the returned object using

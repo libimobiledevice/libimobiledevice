@@ -32,6 +32,7 @@ extern "C" {
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/afc.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the house arrest service */
 #define HOUSE_ARREST_SERVICE_NAME "com.apple.mobile.house_arrest"
 
 /** Error Codes */
@@ -44,7 +45,7 @@ typedef enum {
 	HOUSE_ARREST_E_UNKNOWN_ERROR = -256
 } house_arrest_error_t;
 
-typedef struct house_arrest_client_private house_arrest_client_private;
+typedef struct house_arrest_client_private house_arrest_client_private; /**< \private */
 typedef house_arrest_client_private *house_arrest_client_t; /**< The client handle. */
 
 /* Interface */

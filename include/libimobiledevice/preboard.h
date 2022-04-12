@@ -30,6 +30,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the preboard service */
 #define PREBOARD_SERVICE_NAME "com.apple.preboardservice_v2"
 
 /** Error Codes */
@@ -45,7 +46,7 @@ typedef enum {
 	PREBOARD_E_UNKNOWN_ERROR   = -256
 } preboard_error_t;
 
-typedef struct preboard_client_private preboard_client_private;
+typedef struct preboard_client_private preboard_client_private; /**< \private */
 typedef preboard_client_private *preboard_client_t; /**< The client handle. */
 
 /** Reports the status response of the given command */
@@ -121,6 +122,7 @@ preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist);
  *
  * @param client The preboard client
  * @param plist Pointer to a plist_t what will be set to the received plist
+ * @param timeout_ms Timeout in milliseconds
  *
  * @return PREBOARD_E_SUCCESS on success,
  *  PREBOARD_E_INVALID_ARG when client or plist is NULL,
@@ -148,7 +150,7 @@ preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t
  *     { Timeout: true }
  *     followed by { HideDialog: true }
  * If the user aborts the passcode entry, the device sends a dictionary:
- *     { Error: 1, ErrorString: <error string> }
+ *     { Error: 1, ErrorString: \<error string\> }
  *     followed by { HideDialog: true }
  *
  * @return PREBOARD_E_SUCCESS if the command was successfully submitted,
@@ -170,7 +172,7 @@ preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t mani
  * receive a dictionary with:
  *     { StashbagCommitComplete: true }
  * or in case of an error:
- *     { StashbagCommitComplete: 0, Error: 1, <optional> ErrorString: <error string> }
+ *     { StashbagCommitComplete: 0, Error: 1, \<optional\> ErrorString: \<error string\> }
  *
  * @return PREBOARD_E_SUCCESS if the command was successfully submitted,
  *  PREBOARD_E_INVALID_ARG when client is invalid,

@@ -30,6 +30,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the companion proxy service */
 #define COMPANION_PROXY_SERVICE_NAME "com.apple.companion_proxy"
 
 /** Error Codes */
@@ -48,9 +49,10 @@ typedef enum {
 	COMPANION_PROXY_E_UNKNOWN_ERROR   = -256
 } companion_proxy_error_t;
 
-typedef struct companion_proxy_client_private companion_proxy_client_private;
+typedef struct companion_proxy_client_private companion_proxy_client_private; /**< \private */
 typedef companion_proxy_client_private *companion_proxy_client_t; /**< The client handle. */
 
+/** Callback for companion device events */
 typedef void (*companion_proxy_device_event_cb_t) (plist_t event, void* userdata);
 
 /**
@@ -119,7 +121,7 @@ companion_proxy_error_t companion_proxy_receive(companion_proxy_client_t client,
  * Retrieves a list of paired devices.
  *
  * @param client The companion_proxy client
- * @param devices Point that will receive a PLIST_ARRAY with paired device UDIDs
+ * @param paired_devices Point that will receive a PLIST_ARRAY with paired device UDIDs
  *
  * @note The device closes the connection after sending the reply.
  *
@@ -161,6 +163,8 @@ companion_proxy_error_t companion_proxy_stop_listening_for_devices(companion_pro
  * @param client The companion_proxy client
  * @param companion_udid UDID of the (paired) companion device
  * @param key The key to retrieve the value for
+ * @param value A pointer to a plist_t that will receive the value for the given key.
+ *   The consumer is responsible for freeing the value with plist_free() when no longer needed.
  *
  * @note The device closes the connection after sending the reply.
  *

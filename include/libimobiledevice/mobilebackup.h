@@ -31,6 +31,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the mobilebackup service */
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 
 /** Error Codes */
@@ -46,9 +47,10 @@ typedef enum {
 	MOBILEBACKUP_E_UNKNOWN_ERROR   = -256
 } mobilebackup_error_t;
 
-typedef struct mobilebackup_client_private mobilebackup_client_private;
+typedef struct mobilebackup_client_private mobilebackup_client_private; /**< \private */
 typedef mobilebackup_client_private *mobilebackup_client_t; /**< The client handle. */
 
+/** Available flags passed to #mobilebackup_request_restore */
 typedef enum {
 	MB_RESTORE_NOTIFY_SPRINGBOARD = 1 << 0,
 	MB_RESTORE_PRESERVE_SETTINGS = 1 << 1,

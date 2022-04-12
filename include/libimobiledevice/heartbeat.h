@@ -30,6 +30,7 @@ extern "C" {
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
+/** Service identifier passed to lockdownd_start_service() to start the heartbeat service */
 #define HEARTBEAT_SERVICE_NAME "com.apple.mobile.heartbeat"
 
 /** Error Codes */
@@ -44,7 +45,7 @@ typedef enum {
 	HEARTBEAT_E_UNKNOWN_ERROR   = -256
 } heartbeat_error_t;
 
-typedef struct heartbeat_client_private heartbeat_client_private;
+typedef struct heartbeat_client_private heartbeat_client_private; /**< \private */
 typedef heartbeat_client_private *heartbeat_client_t; /**< The client handle. */
 
 /**
@@ -116,7 +117,7 @@ heartbeat_error_t heartbeat_receive(heartbeat_client_t client, plist_t * plist);
  * @param client The heartbeat client to use for receiving
  * @param plist pointer to a plist_t that will point to the received plist
  *      upon successful return
- * @param timeout Maximum time in milliseconds to wait for data.
+ * @param timeout_ms Maximum time in milliseconds to wait for data.
  *
  * @return HEARTBEAT_E_SUCCESS on success,
  *      HEARTBEAT_E_INVALID_ARG when client or *plist is NULL,
