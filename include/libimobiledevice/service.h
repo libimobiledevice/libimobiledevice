@@ -184,6 +184,16 @@ service_error_t service_disable_ssl(service_client_t client);
  */
 service_error_t service_disable_bypass_ssl(service_client_t client, uint8_t sslBypass);
 
+/**
+ * Return a handle to the parent #idevice_connection_t of the given service client.
+ *
+ * @param client The service client
+ * @param connection Pointer to be assigned to the #idevice_connection_t.
+ *
+ * @return SERVICE_E_SUCCESS on success,
+ *     SERVICE_E_INVALID_ARG if one or more of the arguments are invalid.
+ */
+service_error_t service_get_connection(service_client_t client, idevice_connection_t *connection);
 #ifdef __cplusplus
 }
 #endif

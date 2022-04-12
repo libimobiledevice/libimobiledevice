@@ -286,3 +286,10 @@ LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_disable
 	return service_to_property_list_service_error(service_disable_ssl(client->parent));
 }
 
+LIBIMOBILEDEVICE_API property_list_service_error_t property_list_service_get_service_client(property_list_service_client_t client, service_client_t *service_client)
+{
+	if (!client || !client->parent || !service_client)
+		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+	*service_client = client->parent;
+	return PROPERTY_LIST_SERVICE_E_SUCCESS;
+}
