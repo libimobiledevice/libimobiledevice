@@ -2,7 +2,7 @@
  * idevicebackup2.c
  * Command line interface to use the device's backup and restore service
  *
- * Copyright (c) 2010-2019 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2010-2022 Nikias Bassen, All Rights Reserved.
  * Copyright (c) 2009-2010 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -1433,15 +1433,17 @@ static void print_usage(int argc, char **argv)
 	printf("    --settings\t\trestore device settings from the backup.\n");
 	printf("    --remove\t\tremove items which are not being restored\n");
 	printf("    --skip-apps\t\tdo not trigger re-installation of apps after restore\n");
-	printf("    --password PWD\tsupply the password of the source backup\n");
+	printf("    --password PWD\tsupply the password for the encrypted source backup\n");
 	printf("  info\t\tshow details about last completed backup of device\n");
 	printf("  list\t\tlist files of last completed backup in CSV format\n");
 	printf("  unback\tunpack a completed backup in DIRECTORY/_unback_/\n");
 	printf("  encryption on|off [PWD]\tenable or disable backup encryption\n");
-	printf("    NOTE: password will be requested in interactive mode if omitted\n");
 	printf("  changepw [OLD NEW]  change backup password on target device\n");
-	printf("    NOTE: passwords will be requested in interactive mode if omitted\n");
 	printf("  cloud on|off\tenable or disable cloud use (requires iCloud account)\n");
+	printf("\n");
+	printf("NOTE: Passwords will be requested in interactive mode (-i) if omitted, or can\n");
+	printf("be passed via environment variable BACKUP_PASSWORD/BACKUP_PASSWORD_NEW.\n");
+	printf("See man page for further details.\n");
 	printf("\n");
 	printf("OPTIONS:\n");
 	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
@@ -1717,6 +1719,20 @@ int main(int argc, char *argv[])
 	uint8_t is_encrypted = 0;
 	char *info_path = NULL;
 	if (cmd == CMD_CHANGEPW) {
+		if (!interactive_mode) {
+			if (!newpw) {
+				newpw = getenv("BACKUP_PASSWORD_NEW");
+				if (newpw) {
+					newpw = strdup(newpw);
+				}
+			}
+			if (!backup_password) {
+				backup_password = getenv("BACKUP_PASSWORD");
+				if (backup_password) {
+					backup_password = strdup(backup_password);
+				}
+			}
+		}
 		if (!interactive_mode && !backup_password && !newpw) {
 			idevice_free(device);
 			printf("ERROR: Can't get password input in non-interactive mode. Either pass password(s) on the command line, or enable interactive mode with -i or --interactive.\n");
@@ -1757,6 +1773,12 @@ int main(int argc, char *argv[])
 
 	if (cmd != CMD_CLOUD && is_encrypted) {
 		PRINT_VERBOSE(1, "This is an encrypted backup.\n");
+		if (backup_password == NULL) {
+			backup_password = getenv("BACKUP_PASSWORD");
+			if (backup_password) {
+				backup_password = strdup(backup_password);
+			}
+		}
 		if (backup_password == NULL) {
 			if (interactive_mode) {
 				backup_password = ask_for_password("Enter backup password", 0);
@@ -2113,6 +2135,12 @@ checkpoint:
 			if (cmd_flags & CMD_FLAG_ENCRYPTION_ENABLE) {
 				if (!willEncrypt) {
 					if (!newpw) {
+						newpw = getenv("BACKUP_PASSWORD");
+						if (newpw) {
+							newpw = strdup(newpw);
+						}
+					}
+					if (!newpw) {
 						newpw = ask_for_password("Enter new backup password", 1);
 					}
 					if (!newpw) {
@@ -2128,6 +2156,12 @@ checkpoint:
 				}
 			} else if (cmd_flags & CMD_FLAG_ENCRYPTION_DISABLE) {
 				if (willEncrypt) {
+					if (!backup_password) {
+						backup_password = getenv("BACKUP_PASSWORD");
+						if (backup_password) {
+							backup_password = strdup(backup_password);
+						}
+					}
 					if (!backup_password) {
 						backup_password = ask_for_password("Enter current backup password", 0);
 					}

@@ -62,7 +62,9 @@ remove items which are not being restored.
 do not trigger re-installation of apps after restore.
 .TP
 .B \t\-\-password PWD
-supply the password of the source backup.
+supply the password for the encrypted source backup. If omitted, the password
+will be requested in interactive mode (\f[B]\-i\f[]), or it can be passed using
+the environment variable \f[B]BACKUP_PASSWORD\f[].
 .TP
 .B info
 show details about last completed backup of device.
@@ -74,13 +76,23 @@ list files of last completed backup in CSV format.
 unpack a completed backup in DIRECTORY/_unback_/
 .TP
 .B encryption on|off [PWD]
-enable or disable backup encryption.
+enable or disable backup encryption. The password will be requested in
+interactive mode (\f[B]\-i\f[]) if omitted, or it can be passed using the
+environment variable \f[B]BACKUP_PASSWORD\f[].
 .TP
 .B changepw [OLD NEW]
-change backup password on target device.
+change backup password on target device. The passwords will be requested in
+interactive mode (\f[B]\-i\f[]) if omitted, or they can be passed using the
+environment variables \f[B]BACKUP_PASSWORD\f[] (old password) and
+\f[B]BACKUP_PASSWORD_NEW\f[] (new password) respectively.
 .TP
 .B cloud on|off
 enable or disable cloud use (requires iCloud account).
+.SH SECURITY CONSIDERATIONS
+Passing passwords on the command line is not advised, since it might reveal
+the backup password to other users via process list or command line history.
+Use interactive mode (\f[B]\-i\f[]) or pass them via environment variable(s)
+as mentioned in the description of the respective commands above.
 .SH AUTHORS
 Martin Szulecki
 
