@@ -183,7 +183,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  * @param client the NP client
  * @param notify_cb pointer to a callback function or NULL to de-register a
  *        previously set callback function.
- * @param userdata Pointer that will be passed to the callback function as
+ * @param user_data Pointer that will be passed to the callback function as
  *        user data. If notify_cb is NULL, this parameter is ignored.
  *
  * @note Only one callback function can be registered at the same time;
@@ -193,7 +193,7 @@ np_error_t np_observe_notifications(np_client_t client, const char **notificatio
  *         NP_E_INVALID_ARG when client is NULL, or NP_E_UNKNOWN_ERROR when
  *         the callback thread could no be created.
  */
-np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *userdata);
+np_error_t np_set_notify_callback(np_client_t client, np_notify_cb_t notify_cb, void *user_data);
 
 #ifdef __cplusplus
 }
