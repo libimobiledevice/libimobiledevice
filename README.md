@@ -39,6 +39,7 @@ to:
 * Mount filesystem images
 * Forward device notifications
 * Manage device provisioning
+* Manage device configuration profiles
 * Take screenshots from the device screen (requires mounted developer image)
 * Simulate changed geolocation of the device (requires mounted developer image)
 * Relay the syslog of the device
@@ -140,6 +141,7 @@ The library bundles the following command-line utilities in the tools directory:
 | `idevicenotificationproxy` | Post or observe notifications on a device                          |
 | `idevicepair`              | Manage host pairings with devices and usbmuxd                      |
 | `ideviceprovision`         | Manage provisioning profiles on a device                           |
+| `ideviceprofile`           | Manage configuration profiles on a device                           |
 | `idevicescreenshot`        | Gets a screenshot from the connected device                        |
 | `idevicesetlocation`       | Simulate location on device                                        |
 | `idevicesyslog`            | Relay syslog of a connected device                                 |
