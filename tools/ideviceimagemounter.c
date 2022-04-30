@@ -62,27 +62,27 @@ typedef enum {
 	DISK_IMAGE_UPLOAD_TYPE_UPLOAD_IMAGE
 } disk_image_upload_type_t;
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Mounts the specified disk image on the device.\n");
-	printf("\n");
-	printf("OPTIONS:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -l, --list\t\tList mount information\n");
-	printf("  -t, --imagetype\tImage type to use, default is 'Developer'\n");
-	printf("  -x, --xml\t\tUse XML output\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Mounts the specified disk image on the device.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -l, --list            List mount information\n"
+		"  -t, --imagetype TYPE  Image type to use, default is 'Developer'\n"
+		"  -x, --xml             Use XML output\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 static void parse_opts(int argc, char **argv)
@@ -108,12 +108,12 @@ static void parse_opts(int argc, char **argv)
 
 		switch (c) {
 		case 'h':
-			print_usage(argc, argv);
+			print_usage(argc, argv, 0);
 			exit(0);
 		case 'u':
 			if (!*optarg) {
 				fprintf(stderr, "ERROR: UDID must not be empty!\n");
-				print_usage(argc, argv);
+				print_usage(argc, argv, 1);
 				exit(2);
 			}
 			udid = optarg;
@@ -137,7 +137,7 @@ static void parse_opts(int argc, char **argv)
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			exit(0);
 		default:
-			print_usage(argc, argv);
+			print_usage(argc, argv, 1);
 			exit(2);
 		}
 	}

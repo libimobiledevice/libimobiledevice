@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #ifndef WIN32
 #include <signal.h>
 #endif
@@ -313,27 +314,27 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 	return res;
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Move crash reports from device to a local DIRECTORY.\n");
-	printf("\n");
-	printf("OPTIONS:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -e, --extract\t\textract raw crash report into separate '.crash' file\n");
-	printf("  -k, --keep\t\tcopy but do not remove crash reports from device\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -f, --filter NAME\tfilter crash reports by NAME (case sensitive)\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] DIRECTORY\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Move crash reports from device to a local DIRECTORY.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -e, --extract         extract raw crash report into separate '.crash' file\n"
+		"  -k, --keep            copy but do not remove crash reports from device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -f, --filter NAME     filter crash reports by NAME (case sensitive)\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char* argv[])
@@ -346,79 +347,84 @@ int main(int argc, char* argv[])
 	lockdownd_error_t lockdownd_error = LOCKDOWN_E_SUCCESS;
 	afc_error_t afc_error = AFC_E_SUCCESS;
 
-	int i;
 	const char* udid = NULL;
 	int use_network = 0;
 	const char* filename_filter = NULL;
 
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ "filter", required_argument, NULL, 'f' },
+		{ "extract", no_argument, NULL, 'e' },
+		{ "keep", no_argument, NULL, 'k' },
+		{ NULL, 0, NULL, 0}
+	};
+
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
+
 	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:nvf:ek", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = optarg;
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--filter")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			filename_filter = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			return 0;
-		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
-		}
-		else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--extract")) {
+		case 'f':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: filter argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			}
+			filename_filter = optarg;
+			break;
+		case 'e':
 			extract_raw_crash_reports = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-k") || !strcmp(argv[i], "--keep")) {
+			break;
+		case 'k':
 			keep_crash_reports = 1;
-			continue;
-		}
-		else if (target_directory == NULL) {
-			target_directory = argv[i];
-			continue;
-		}
-		else {
-			print_usage(argc, argv);
-			return 0;
+			break;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
 	}
+	argc -= optind;
+	argv += optind;
 
 	/* ensure a target directory was supplied */
-	if (!target_directory) {
-		print_usage(argc, argv);
-		return 0;
+	if (!argv[0]) {
+		fprintf(stderr, "ERROR: missing target directory.\n");
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
+	target_directory = argv[0];
 
 	/* check if target directory exists */
 	if (!file_exists(target_directory)) {
 		fprintf(stderr, "ERROR: Directory '%s' does not exist.\n", target_directory);
-		print_usage(argc, argv);
-		return 0;
+		return 1;
 	}
 
 	device_error = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);

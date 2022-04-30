@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <getopt.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/sha.h>
 #elif defined(HAVE_GNUTLS)
@@ -647,27 +648,28 @@ static void clean_exit(int sig)
 	quit_flag++;
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] CMD [DIRECTORY]\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Create or restore backup from the current or specified directory.\n");
-	printf("\n");
-	printf("CMD:\n");
-	printf("  backup\tSaves a device backup into DIRECTORY\n");
-	printf("  restore\tRestores a device backup from DIRECTORY.\n");
-	printf("\n");
-	printf("OPTIONS:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] CMD DIRECTORY\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Create or restore backup in/from the specified directory.\n"
+		"\n"
+		"CMD:\n"
+		"  backup       Saves a device backup into DIRECTORY\n"
+		"  restore      Restores a device backup from DIRECTORY.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char *argv[])
@@ -691,7 +693,15 @@ int main(int argc, char *argv[])
 	uint64_t length = 0;
 	uint64_t backup_total_size = 0;
 	enum device_link_file_status_t file_status = DEVICE_LINK_FILE_STATUS_NONE;
-	uint64_t c = 0;
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
@@ -702,59 +712,58 @@ int main(int argc, char *argv[])
 #endif
 
 	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = strdup(argv[i]);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = strdup(optarg);
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			return 0;
-		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
-		else if (!strcmp(argv[i], "backup")) {
-			cmd = CMD_BACKUP;
-		}
-		else if (!strcmp(argv[i], "restore")) {
-			cmd = CMD_RESTORE;
-		}
-		else if (backup_directory == NULL) {
-			backup_directory = argv[i];
-		}
-		else {
-			print_usage(argc, argv);
-			return 0;
-		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1) {
+		fprintf(stderr, "ERROR: Missing command.\n");
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
 
-	/* verify options */
-	if (cmd == -1) {
-		printf("No command specified.\n");
-		print_usage(argc, argv);
-		return -1;
+	if (!strcmp(argv[0], "backup")) {
+		cmd = CMD_BACKUP;
+	} else if (!strcmp(argv[0], "restore")) {
+		cmd = CMD_RESTORE;
+	} else {
+		fprintf(stderr, "ERROR: Invalid command '%s'.\n", argv[0]);
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
 
-	if (backup_directory == NULL) {
-		printf("No target backup directory specified.\n");
-		print_usage(argc, argv);
-		return -1;
+	if (argc < 2) {
+		fprintf(stderr, "No target backup directory specified.\n");
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
+	backup_directory = argv[1];
 
 	/* verify if passed backup directory exists */
 	if (stat(backup_directory, &st) != 0) {
@@ -784,9 +793,14 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	if (!udid) {
+		idevice_get_udid(device, &udid);
+	}
+
 	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
 		printf("ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
+		free(udid);
 		return -1;
 	}
 
@@ -806,6 +820,7 @@ int main(int argc, char *argv[])
 				printf("ERROR: This tool is only compatible with iOS 3 or below. For newer iOS versions please use the idevicebackup2 tool.\n");
 				lockdownd_client_free(client);
 				idevice_free(device);
+				free(udid);
 				return -1;
 			}
 		}
@@ -851,7 +866,7 @@ int main(int argc, char *argv[])
 	ldret = lockdownd_start_service(client, MOBILEBACKUP_SERVICE_NAME, &service);
 	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		printf("Started \"%s\" service on port %d.\n", MOBILEBACKUP_SERVICE_NAME, service->port);
-		mobilebackup_client_new(device, service, &mobilebackup);
+		printf("%d\n", mobilebackup_client_new(device, service, &mobilebackup));
 
 		if (service) {
 			lockdownd_service_descriptor_free(service);
@@ -993,7 +1008,7 @@ int main(int argc, char *argv[])
 				} else if (err == MOBILEBACKUP_E_REPLY_NOT_OK) {
 					printf("ERROR: Could not start backup process: device refused to start the backup process.\n");
 				} else {
-					printf("ERROR: Could not start backup process: unspecified error occurred\n");
+					printf("ERROR: Could not start backup process: unspecified error occurred (%d)\n", err);
 				}
 				break;
 			}
@@ -1015,6 +1030,7 @@ int main(int argc, char *argv[])
 			char *format_size = NULL;
 			int is_manifest = 0;
 			uint8_t b = 0;
+			uint64_t u64val = 0;
 
 			/* process series of DLSendFile messages */
 			do {
@@ -1046,8 +1062,8 @@ int main(int argc, char *argv[])
 
 				/* check DLFileStatusKey (codes: 1 = Hunk, 2 = Last Hunk) */
 				node = plist_dict_get_item(node_tmp, "DLFileStatusKey");
-				plist_get_uint_val(node, &c);
-				file_status = c;
+				plist_get_uint_val(node, &u64val);
+				file_status = u64val;
 
 				/* get source filename */
 				node = plist_dict_get_item(node_tmp, "BackupManifestKey");
@@ -1610,9 +1626,7 @@ files_out:
 
 	idevice_free(device);
 
-	if (udid) {
-		free(udid);
-	}
+	free(udid);
 
 	return 0;
 }

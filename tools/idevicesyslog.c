@@ -466,37 +466,36 @@ static void clean_exit(int sig)
 
 static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-	name = strrchr(argv[0], '/');
+	char *name = strrchr(argv[0], '/');
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
-		"\n" \
-		"Relay syslog of a connected device.\n" \
-		"\n" \
-		"OPTIONS:\n" \
-		"  -u, --udid UDID  target specific device by UDID\n" \
-		"  -n, --network    connect to network device\n" \
-		"  -x, --exit       exit when device disconnects\n" \
-		"  -h, --help       prints usage information\n" \
-		"  -d, --debug      enable communication debugging\n" \
-		"  -v, --version    prints version information\n" \
-		" --no-colors       disable colored output\n" \
-		"\n" \
-		"FILTER OPTIONS:\n" \
-		"  -m, --match STRING      only print messages that contain STRING\n" \
-		"  -t, --trigger STRING    start logging when matching STRING\n" \
-		"  -T, --untrigger STRING  stop logging when matching STRING\n" \
-		"  -p, --process PROCESS   only print messages from matching process(es)\n" \
-		"  -e, --exclude PROCESS   print all messages except matching process(es)\n" \
-		"                          PROCESS is a process name or multiple process names\n" \
-		"                          separated by \"|\".\n" \
-		"  -q, --quiet             set a filter to exclude common noisy processes\n" \
-		"  --quiet-list            prints the list of processes for --quiet and exits\n" \
-		"  -k, --kernel            only print kernel messages\n" \
-		"  -K, --no-kernel         suppress kernel messages\n" \
-		"\n" \
-		"For filter examples consult idevicesyslog(1) man page.\n" \
-		"\n" \
+		"\n"
+		"Relay syslog of a connected device.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -x, --exit            exit when device disconnects\n"
+		"  -h, --help            prints usage information\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -v, --version         prints version information\n"
+		" --no-colors            disable colored output\n"
+		"\n"
+		"FILTER OPTIONS:\n"
+		"  -m, --match STRING      only print messages that contain STRING\n"
+		"  -t, --trigger STRING    start logging when matching STRING\n"
+		"  -T, --untrigger STRING  stop logging when matching STRING\n"
+		"  -p, --process PROCESS   only print messages from matching process(es)\n"
+		"  -e, --exclude PROCESS   print all messages except matching process(es)\n"
+		"                          PROCESS is a process name or multiple process names\n"
+		"                          separated by \"|\".\n"
+		"  -q, --quiet             set a filter to exclude common noisy processes\n"
+		"  --quiet-list            prints the list of processes for --quiet and exits\n"
+		"  -k, --kernel            only print kernel messages\n"
+		"  -K, --no-kernel         suppress kernel messages\n"
+		"\n"
+		"For filter examples consult idevicesyslog(1) man page.\n"
+		"\n"
 		"Homepage:    <" PACKAGE_URL ">\n"
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
 	);

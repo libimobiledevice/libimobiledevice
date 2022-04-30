@@ -93,23 +93,22 @@ static int is_domain_known(const char *domain)
 static void print_usage(int argc, char **argv, int is_error)
 {
 	int i = 0;
-	char *name = NULL;
-	name = strrchr(argv[0], '/');
+	char *name = strrchr(argv[0], '/');
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS]\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
-		"\n" \
-		"Show information about a connected device.\n" \
-		"\n" \
-		"OPTIONS:\n" \
-		"  -u, --udid UDID    target specific device by UDID\n" \
-		"  -n, --network      connect to network device\n" \
-		"  -s, --simple       use a simple connection to avoid auto-pairing with the device\n" \
-		"  -q, --domain NAME  set domain of query to NAME. Default: None\n" \
-		"  -k, --key NAME     only query key specified by NAME. Default: All keys.\n" \
-		"  -x, --xml          output information as xml plist instead of key/value pairs\n" \
-		"  -h, --help         prints usage information\n" \
-		"  -d, --debug        enable communication debugging\n" \
-		"  -v, --version      prints version information\n" \
+		"\n"
+		"Show information about a connected device.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -s, --simple          use simple connection to avoid auto-pairing with device\n"
+		"  -q, --domain NAME     set domain of query to NAME. Default: None\n" \
+		"  -k, --key NAME        only query key specified by NAME. Default: All keys.\n" \
+		"  -x, --xml             output information in XML property list format\n" \
+		"  -h, --help            prints usage information\n" \
+		"  -d, --debug           enable communication debugging\n" \
+		"  -v, --version         prints version information\n" \
 		"\n"
 	);
 	fprintf(is_error ? stderr : stdout, "Known domains are:\n\n");

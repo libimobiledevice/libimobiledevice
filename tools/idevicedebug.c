@@ -177,27 +177,26 @@ static debugserver_error_t debugserver_client_handle_response(debugserver_client
 
 static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-	name = strrchr(argv[0], '/');
+	char *name = strrchr(argv[0], '/');
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
 	fprintf(is_error ? stderr : stdout,
-		"\n" \
-		"Interact with the debugserver service of a device.\n" \
-		"\n" \
-		"Where COMMAND is one of:\n" \
-		"  run BUNDLEID [ARGS...]\trun app with BUNDLEID and optional ARGS on device.\n" \
-		"  kill BUNDLEID\tkill app with BUNDLEID\n" \
-		"\n" \
-		"The following OPTIONS are accepted:\n" \
-		"  -u, --udid UDID\ttarget specific device by UDID\n" \
-		"  -n, --network\t\tconnect to network device\n" \
-		"      --detach\t\tdetach from app after launch, keeping it running\n" \
-		"  -e, --env NAME=VALUE\tset environment variable NAME to VALUE\n" \
-		"  -d, --debug\t\tenable communication debugging\n" \
-		"  -h, --help\t\tprints usage information\n" \
-		"  -v, --version\t\tprints version information\n" \
-		"\n" \
-		"Homepage:    <" PACKAGE_URL ">\n" \
+		"\n"
+		"Interact with the debugserver service of a device.\n"
+		"\n"
+		"Where COMMAND is one of:\n"
+		"  run BUNDLEID [ARGS...]  run app with BUNDLEID and optional ARGS on device.\n"
+		"  kill BUNDLEID           kill app with BUNDLEID\n"
+		"\n"
+		"The following OPTIONS are accepted:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"      --detach          detach from app after launch, keeping it running\n"
+		"  -e, --env NAME=VALUE  set environment variable NAME to VALUE\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
 	);
 }
@@ -294,13 +293,13 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-
 	argc -= optind;
 	argv += optind;
 
 	if (argc < 1) {
 		fprintf(stderr, "ERROR: Missing command.\n");
 		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
 
 	if (!strcmp(argv[0], "run")) {

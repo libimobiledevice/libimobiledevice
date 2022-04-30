@@ -144,42 +144,50 @@ static void print_error_message(lockdownd_error_t err)
 	}
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Manage host pairings with devices and usbmuxd.\n");
-	printf("\n");
-	printf("Where COMMAND is one of:\n");
-	printf("  systembuid   print the system buid of the usbmuxd host\n");
-	printf("  hostid       print the host id for target device\n");
-	printf("  pair         pair device with this host\n");
-	printf("  validate     validate if device is paired with this host\n");
-	printf("  unpair       unpair device with this host\n");
-	printf("  list         list devices paired with this host\n");
-	printf("\n");
-	printf("The following OPTIONS are accepted:\n");
-	printf("  -u, --udid UDID  target specific device by UDID\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Manage host pairings with devices and usbmuxd.\n"
+		"\n"
+		"Where COMMAND is one of:\n"
+		"  systembuid   print the system buid of the usbmuxd host\n"
+		"  hostid       print the host id for target device\n"
+		"  pair         pair device with this host\n"
+		"  validate     validate if device is paired with this host\n"
+		"  unpair       unpair device with this host\n"
+		"  list         list devices paired with this host\n"
+		"\n"
+		"The following OPTIONS are accepted:\n"
+		"  -u, --udid UDID  target specific device by UDID\n"
+	);
 #ifdef HAVE_WIRELESS_PAIRING
-	printf("  -w, --wireless   perform wireless pairing (see NOTE)\n");
-	printf("  -n, --network    connect to network device (see NOTE)\n");
+	fprintf(is_error ? stderr : stdout,
+		"  -w, --wireless   perform wireless pairing (see NOTE)\n"
+		"  -n, --network    connect to network device (see NOTE)\n"
+	);
 #endif
-	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -h, --help       prints usage information\n");
-	printf("  -v, --version    prints version information\n");
+	fprintf(is_error ? stderr : stdout,
+		"  -d, --debug      enable communication debugging\n"
+		"  -h, --help       prints usage information\n"
+		"  -v, --version    prints version information\n"
+	);
 #ifdef HAVE_WIRELESS_PAIRING
-	printf("\n");
-	printf("NOTE: Pairing over network (wireless pairing) is only supported by Apple TV\n");
-	printf("devices. To perform a wireless pairing, you need to use the -w command line\n");
-	printf("switch. Make sure to put the device into pairing mode first by opening\n");
-	printf("Settings > Remotes and Devices > Remote App and Devices.\n");
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"NOTE: Pairing over network (wireless pairing) is only supported by Apple TV\n"
+		"devices. To perform a wireless pairing, you need to use the -w command line\n"
+		"switch. Make sure to put the device into pairing mode first by opening\n"
+		"Settings > Remotes and Devices > Remote App and Devices.\n"
+	);
 #endif
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char **argv)
@@ -223,12 +231,12 @@ int main(int argc, char **argv)
 	while ((c = getopt_long(argc, argv, SHORT_OPTIONS, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'h':
-			print_usage(argc, argv);
+			print_usage(argc, argv, 0);
 			exit(EXIT_SUCCESS);
 		case 'u':
 			if (!*optarg) {
 				fprintf(stderr, "ERROR: UDID must not be empty!\n");
-				print_usage(argc, argv);
+				print_usage(argc, argv, 1);
 				result = EXIT_FAILURE;
 				goto leave;
 			}
@@ -280,7 +288,7 @@ int main(int argc, char **argv)
 			result = EXIT_SUCCESS;
 			goto leave;
 		default:
-			print_usage(argc, argv);
+			print_usage(argc, argv, 1);
 			result = EXIT_FAILURE;
 			goto leave;
 		}
@@ -291,15 +299,15 @@ int main(int argc, char **argv)
 #endif
 
 	if ((argc - optind) < 1) {
-		printf("ERROR: You need to specify a COMMAND!\n");
-		print_usage(argc, argv);
+		fprintf(stderr, "ERROR: You need to specify a COMMAND!\n");
+		print_usage(argc, argv, 1);
 		result = EXIT_FAILURE;
 		goto leave;
 	}
 
 	if (wireless_pairing && use_network) {
-		printf("ERROR: You cannot use -w and -n together.\n");
-		print_usage(argc, argv);
+		fprintf(stderr, "ERROR: You cannot use -w and -n together.\n");
+		print_usage(argc, argv, 1);
 		result = EXIT_FAILURE;
 		goto leave;
 	}
@@ -319,16 +327,16 @@ int main(int argc, char **argv)
 	} else if (!strcmp(cmd, "systembuid")) {
 		op = OP_SYSTEMBUID;
 	} else {
-		printf("ERROR: Invalid command '%s' specified\n", cmd);
-		print_usage(argc, argv);
+		fprintf(stderr, "ERROR: Invalid command '%s' specified\n", cmd);
+		print_usage(argc, argv, 1);
 		result = EXIT_FAILURE;
 		goto leave;
 	}
 
 	if (wireless_pairing) {
 		if (op == OP_VALIDATE || op == OP_UNPAIR) {
-			printf("ERROR: Command '%s' is not supported with -w\n", cmd);
-			print_usage(argc, argv);
+			fprintf(stderr, "ERROR: Command '%s' is not supported with -w\n", cmd);
+			print_usage(argc, argv, 1);
 			result = EXIT_FAILURE;
 			goto leave;
 		}

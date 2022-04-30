@@ -37,21 +37,24 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 
-static void print_usage(void)
+static void print_usage(int argc, char** argv, int is_error)
 {
-	printf("Usage: idevicename [OPTIONS] [NAME]\n");
-	printf("\n");
-	printf("Display the device name or set it to NAME if specified.\n");
-	printf("\n");
-	printf("OPTIONS:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprint usage information\n");
-	printf("  -v, --version\t\tprint version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] [NAME]\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Display the device name or set it to NAME if specified.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            print usage information\n"
+		"  -v, --version         print version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 int main(int argc, char** argv)
@@ -78,7 +81,7 @@ int main(int argc, char** argv)
 		case 'u':
 			if (!*optarg) {
 				fprintf(stderr, "ERROR: UDID must not be empty!\n");
-				print_usage();
+				print_usage(argc, argv, 1);
 				exit(2);
 			}
 			udid = optarg;
@@ -87,7 +90,7 @@ int main(int argc, char** argv)
 			use_network = 1;
 			break;
 		case 'h':
-			print_usage();
+			print_usage(argc, argv, 0);
 			return 0;
 		case 'd':
 			idevice_set_debug_level(1);
@@ -96,7 +99,7 @@ int main(int argc, char** argv)
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
 		default:
-			print_usage();
+			print_usage(argc, argv, 1);
 			return 2;
 		}
 	}
@@ -105,8 +108,8 @@ int main(int argc, char** argv)
 	argv += optind;
 
 	if (argc > 1) {
-		print_usage();
-		return -1;
+		print_usage(argc, argv, 1);
+		return 2;
 	}
 
 	idevice_t device = NULL;

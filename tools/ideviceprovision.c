@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <sys/stat.h>
 #include <errno.h>
 #ifndef WIN32
@@ -46,40 +47,40 @@
 #include <libimobiledevice/misagent.h>
 #include <libimobiledevice-glue/utils.h>
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Manage provisioning profiles on a device.\n");
-	printf("\n");
-	printf("Where COMMAND is one of:\n");
-	printf("  install FILE\tInstalls the provisioning profile specified by FILE.\n");
-	printf("              \tA valid .mobileprovision file is expected.\n");
-	printf("  list\t\tGet a list of all provisioning profiles on the device.\n");
-	printf("  copy PATH\tRetrieves all provisioning profiles from the device and\n");
-	printf("           \tstores them into the existing directory specified by PATH.\n");
-	printf("           \tThe files will be stored as UUID.mobileprovision\n");
-	printf("  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n");
-	printf("           \tfrom the device and stores it into the existing directory\n");
-	printf("           \tspecified by PATH. The file will be stored as UUID.mobileprovision.\n");
-	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
-	printf("  remove-all\tRemoves all installed provisioning profiles.\n");
-	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
-	printf("           \tspecified by FILE.\n");
-	printf("\n");
-	printf("The following OPTIONS are accepted:\n");
-	printf("  -u, --udid UDID  target specific device by UDID\n");
-	printf("  -n, --network    connect to network device\n");
-	printf("  -x, --xml        print XML output when using the 'dump' command\n");
-	printf("  -d, --debug      enable communication debugging\n");
-	printf("  -h, --help       prints usage information\n");
-	printf("  -v, --version    prints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Manage provisioning profiles on a device.\n"
+		"\n"
+		"Where COMMAND is one of:\n"
+		"  install FILE  Installs the provisioning profile specified by FILE.\n"
+		"                A valid .mobileprovision file is expected.\n"
+		"  list          Get a list of all provisioning profiles on the device.\n"
+		"  copy PATH     Retrieves all provisioning profiles from the device and\n"
+		"                stores them into the existing directory specified by PATH.\n"
+		"                The files will be stored as UUID.mobileprovision\n"
+		"  copy UUID PATH  Retrieves the provisioning profile identified by UUID\n"
+		"                from the device and stores it into the existing directory\n"
+		"                specified by PATH. The file will be stored as UUID.mobileprovision.\n"
+		"  remove UUID   Removes the provisioning profile identified by UUID.\n"
+		"  remove-all    Removes all installed provisioning profiles.\n"
+		"  dump FILE     Prints detailed information about the provisioning profile\n"
+		"                specified by FILE.\n"
+		"\n"
+		"The following OPTIONS are accepted:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -x, --xml             print XML output when using the 'dump' command\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 enum {
@@ -302,102 +303,115 @@ int main(int argc, char *argv[])
 	const char* param = NULL;
 	const char* param2 = NULL;
 	int use_network = 0;
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ "xml", no_argument, NULL, 'x' },
+		{ NULL, 0, NULL, 0}
+	};
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:nvx", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = optarg;
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "install")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) < 1)) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			param = argv[i];
-			op = OP_INSTALL;
-			continue;
-		}
-		else if (!strcmp(argv[i], "list")) {
-			op = OP_LIST;
-		}
-		else if (!strcmp(argv[i], "copy")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) < 1)) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			param = argv[i];
-			op = OP_COPY;
-			i++;
-			if (argv[i] && (strlen(argv[i]) > 0)) {
-				param2 = argv[i];
-			}
-			continue;
-		}
-		else if (!strcmp(argv[i], "remove")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) < 1)) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			param = argv[i];
-			op = OP_REMOVE;
-			continue;
-		}
-		else if (!strcmp(argv[i], "remove-all")) {
-			i++;
-			op = OP_REMOVE;
-			continue;
-		}
-		else if (!strcmp(argv[i], "dump")) {
-			i++;
-			if (!argv[i] || (strlen(argv[i]) < 1)) {
-				print_usage(argc, argv);
-				return 0;
-			}
-			param = argv[i];
-			op = OP_DUMP;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--xml")) {
-			output_xml = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
 			return 0;
-		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
-		}
-		else {
-			print_usage(argc, argv);
-			return 0;
+		case 'x':
+			output_xml = 1;
+			break;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
 	}
+	argc -= optind;
+	argv += optind;
 
+	if (!argv[0]) {
+		fprintf(stderr, "ERROR: Missing command.\n");
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
+	}
+
+	i = 0;
+	if (!strcmp(argv[i], "install")) {
+		op = OP_INSTALL;
+		i++;
+		if (!argv[i] || !*argv[i]) {
+			fprintf(stderr, "Missing argument for 'install' command.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			return 2;
+		}
+		param = argv[i];
+	}
+	else if (!strcmp(argv[i], "list")) {
+		op = OP_LIST;
+	}
+	else if (!strcmp(argv[i], "copy")) {
+		op = OP_COPY;
+		i++;
+		if (!argv[i] || !*argv[i]) {
+			fprintf(stderr, "Missing argument for 'copy' command.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			return 2;
+		}
+		param = argv[i];
+		i++;
+		if (argv[i] && (strlen(argv[i]) > 0)) {
+			param2 = argv[i];
+		}
+	}
+	else if (!strcmp(argv[i], "remove")) {
+		op = OP_REMOVE;
+		i++;
+		if (!argv[i] || !*argv[i]) {
+			fprintf(stderr, "Missing argument for 'remove' command.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			return 2;
+		}
+		param = argv[i];
+	}
+	else if (!strcmp(argv[i], "remove-all")) {
+		op = OP_REMOVE;
+	}
+	else if (!strcmp(argv[i], "dump")) {
+		op = OP_DUMP;
+		i++;
+		if (!argv[i] || !*argv[i]) {
+			fprintf(stderr, "Missing argument for 'remove' command.\n");
+			print_usage(argc+optind, argv-optind, 1);
+			return 2;
+		}
+		param = argv[i];
+	}
 	if ((op == -1) || (op >= NUM_OPS)) {
-		print_usage(argc, argv);
-		return 0;
+		fprintf(stderr, "ERROR: Unsupported command '%s'\n", argv[i]);
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
 	}
 
 	if (op == OP_DUMP) {

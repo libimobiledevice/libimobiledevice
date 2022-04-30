@@ -51,15 +51,16 @@ static void print_usage(int argc, char **argv, int is_error)
 
 	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] -- <LAT> <LONG>\n", bname);
 	fprintf(is_error ? stderr : stdout, "       %s [OPTIONS] reset\n", bname);
-	fprintf(is_error ? stderr : stdout, "\n" \
-		"OPTIONS:\n" \
-		"  -u, --udid UDID    target specific device by UDID\n" \
-		"  -n, --network      connect to network device\n" \
-		"  -d, --debug        enable communication debugging\n" \
-		"  -h, --help         prints usage information\n" \
-		"  -v, --version      prints version information\n" \
-		"\n" \
-		"Homepage:    <" PACKAGE_URL ">\n" \
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
 		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
 	);
 }

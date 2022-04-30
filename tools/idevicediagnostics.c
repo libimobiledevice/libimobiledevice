@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <errno.h>
 #include <time.h>
 #ifndef WIN32
@@ -59,7 +60,34 @@ static void print_xml(plist_t node)
 	}
 }
 
-void print_usage(int argc, char **argv);
+static void print_usage(int argc, char **argv, int is_error)
+{
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Use diagnostics interface of a device running iOS 4 or later.\n"
+		"\n"
+		"Where COMMAND is one of:\n"
+		"  diagnostics [TYPE]         print diagnostics information from device by TYPE (All, WiFi, GasGauge, NAND)\n"
+		"  mobilegestalt KEY [...]    print mobilegestalt keys passed as arguments separated by a space.\n"
+		"  ioreg [PLANE]              print IORegistry of device, optionally by PLANE (IODeviceTree, IOPower, IOService) (iOS 5+ only)\n"
+		"  ioregentry [KEY]           print IORegistry entry of device (AppleARMPMUCharger, ASPStorage, ...) (iOS 5+ only)\n"
+		"  shutdown                   shutdown device\n"
+		"  restart                    restart device\n"
+		"  sleep                      put device into sleep mode (disconnects from host)\n"
+		"\n"
+		"The following OPTIONS are accepted:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
+}
 
 int main(int argc, char **argv)
 {
@@ -69,130 +97,119 @@ int main(int argc, char **argv)
 	lockdownd_error_t ret = LOCKDOWN_E_UNKNOWN_ERROR;
 	lockdownd_service_descriptor_t service = NULL;
 	int result = EXIT_FAILURE;
-	int i;
 	const char *udid = NULL;
 	int use_network = 0;
 	int cmd = CMD_NONE;
 	char* cmd_arg = NULL;
 	plist_t node = NULL;
 	plist_t keys = NULL;
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	/* parse cmdline args */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			idevice_set_debug_level(1);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				result = EXIT_SUCCESS;
-				goto cleanup;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = optarg;
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
-			result = EXIT_SUCCESS;
-			goto cleanup;
-		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
+			return 0;
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
-			result = EXIT_SUCCESS;
+			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (!argv[0]) {
+		fprintf(stderr, "ERROR: No command specified\n");
+		print_usage(argc+optind, argv-optind, 1);
+		return 2;
+	}
+
+	if (!strcmp(argv[0], "sleep")) {
+		cmd = CMD_SLEEP;
+	}
+	else if (!strcmp(argv[0], "restart")) {
+		cmd = CMD_RESTART;
+	}
+	else if (!strcmp(argv[0], "shutdown")) {
+		cmd = CMD_SHUTDOWN;
+	}
+	else if (!strcmp(argv[0], "diagnostics")) {
+		cmd = CMD_DIAGNOSTICS;
+		/*  read type */
+		if (!argv[1] || ((strcmp(argv[1], "All") != 0) && (strcmp(argv[1], "WiFi") != 0) && (strcmp(argv[1], "GasGauge") != 0) && (strcmp(argv[1], "NAND") != 0) && (strcmp(argv[1], "HDMI") != 0))) {
+			if (argv[1] == NULL) {
+				cmd_arg = strdup("All");
+			} else {
+				fprintf(stderr, "ERROR: Unknown TYPE %s\n", argv[1]);
+				print_usage(argc+optind, argv-optind, 1);
+				goto cleanup;
+			}
+		}
+		cmd_arg = strdup(argv[1]);
+	}
+	else if (!strcmp(argv[0], "mobilegestalt")) {
+		cmd = CMD_MOBILEGESTALT;
+		/*  read keys */
+		if (!argv[1] || !*argv[1]) {
+			fprintf(stderr, "ERROR: Please supply the key to query.\n");
+			print_usage(argc, argv, 1);
 			goto cleanup;
 		}
-		else if (!strcmp(argv[i], "sleep")) {
-			cmd = CMD_SLEEP;
-		}
-		else if (!strcmp(argv[i], "restart")) {
-			cmd = CMD_RESTART;
-		}
-		else if (!strcmp(argv[i], "shutdown")) {
-			cmd = CMD_SHUTDOWN;
-		}
-		else if (!strcmp(argv[i], "diagnostics")) {
-			cmd = CMD_DIAGNOSTICS;
-			/*  read type */
+		int i = 1;
+		keys = plist_new_array();
+		while (argv[i] && *argv[i]) {
+			plist_array_append_item(keys, plist_new_string(argv[i]));
 			i++;
-			if (!argv[i] || ((strcmp(argv[i], "All") != 0) && (strcmp(argv[i], "WiFi") != 0) && (strcmp(argv[i], "GasGauge") != 0) && (strcmp(argv[i], "NAND") != 0) && (strcmp(argv[i], "HDMI") != 0))) {
-				if (argv[i] == NULL) {
-					cmd_arg = strdup("All");
-					continue;
-				}
-
-				if (!strncmp(argv[i], "-", 1)) {
-					cmd_arg = strdup("All");
-					i--;
-					continue;
-				}
-
-				printf("ERROR: Unknown TYPE %s\n", argv[i]);
-				print_usage(argc, argv);
-				goto cleanup;
-			}
-
-			cmd_arg = strdup(argv[i]);
-			continue;
 		}
-		else if (!strcmp(argv[i], "mobilegestalt")) {
-			cmd = CMD_MOBILEGESTALT;
-			/*  read keys */
-			i++;
-
-			if (!argv[i] || argv[i] == NULL || (!strncmp(argv[i], "-", 1))) {
-				printf("ERROR: Please supply the key to query.\n");
-				print_usage(argc, argv);
-				goto cleanup;
-			}
-
-			keys = plist_new_array();
-			while(1) {
-				if (argv[i] && (strlen(argv[i]) >= 2) && (strncmp(argv[i], "-", 1) != 0)) {
-					plist_array_append_item(keys, plist_new_string(argv[i]));
-					i++;
-				} else {
-					i--;
-					break;
-				}
-			}
-			continue;
+	}
+	else if (!strcmp(argv[0], "ioreg")) {
+		cmd = CMD_IOREGISTRY;
+		/*  read plane */
+		if (argv[1]) {
+			cmd_arg = strdup(argv[1]);
 		}
-		else if (!strcmp(argv[i], "ioreg")) {
-			cmd = CMD_IOREGISTRY;
-			/*  read plane */
-			i++;
-			if (argv[i]) {
-				cmd_arg = strdup(argv[i]);
-			}
-			continue;
-		}
-		else if (!strcmp(argv[i], "ioregentry")) {
-			cmd = CMD_IOREGISTRY_ENTRY;
-			/* read key */
-			i++;
-			if (argv[i]) {
-				cmd_arg = strdup(argv[i]);
-			}
-			continue;
-		}
-		else {
-			print_usage(argc, argv);
-			return EXIT_SUCCESS;
+	}
+	else if (!strcmp(argv[0], "ioregentry")) {
+		cmd = CMD_IOREGISTRY_ENTRY;
+		/* read key */
+		if (argv[1]) {
+			cmd_arg = strdup(argv[1]);
 		}
 	}
 
 	/* verify options */
 	if (cmd == CMD_NONE) {
-		print_usage(argc, argv);
+		fprintf(stderr, "ERROR: Unsupported command '%s'\n", argv[0]);
+		print_usage(argc+optind, argv-optind, 1);
 		goto cleanup;
 	}
 
@@ -324,32 +341,4 @@ cleanup:
 		free(cmd_arg);
 	}
 	return result;
-}
-
-void print_usage(int argc, char **argv)
-{
-	char *name = NULL;
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Use diagnostics interface of a device running iOS 4 or later.\n");
-	printf("\n");
-	printf("Where COMMAND is one of:\n");
-	printf("  diagnostics [TYPE]\t\tprint diagnostics information from device by TYPE (All, WiFi, GasGauge, NAND)\n");
-	printf("  mobilegestalt KEY [...]\tprint mobilegestalt keys passed as arguments separated by a space.\n");
-	printf("  ioreg [PLANE]\t\t\tprint IORegistry of device, optionally by PLANE (IODeviceTree, IOPower, IOService) (iOS 5+ only)\n");
-	printf("  ioregentry [KEY]\t\tprint IORegistry entry of device (AppleARMPMUCharger, ASPStorage, ...) (iOS 5+ only)\n");
-	printf("  shutdown\t\t\tshutdown device\n");
-	printf("  restart\t\t\trestart device\n");
-	printf("  sleep\t\t\t\tput device into sleep mode (disconnects from host)\n");
-	printf("\n");
-	printf("The following OPTIONS are accepted:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
 }

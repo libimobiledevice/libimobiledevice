@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <errno.h>
 #include <signal.h>
 #ifdef WIN32
@@ -75,26 +76,26 @@ static void clean_exit(int sig)
 	quit_flag++;
 }
 
-static void print_usage(int argc, char **argv)
+static void print_usage(int argc, char **argv, int is_error)
 {
-	char *name = NULL;
-
-	name = strrchr(argv[0], '/');
-	printf("Usage: %s [OPTIONS] [PORT]\n", (name ? name + 1: argv[0]));
-	printf("\n");
-	printf("Proxy debugserver connection from device to a local socket at PORT.\n");
-	printf("If PORT is omitted, the next available port will be used and printed\n");
-	printf("to stdout.\n");
-	printf("\n");
-	printf("OPTIONS:\n");
-	printf("  -u, --udid UDID\ttarget specific device by UDID\n");
-	printf("  -n, --network\t\tconnect to network device\n");
-	printf("  -d, --debug\t\tenable communication debugging\n");
-	printf("  -h, --help\t\tprints usage information\n");
-	printf("  -v, --version\t\tprints version information\n");
-	printf("\n");
-	printf("Homepage:    <" PACKAGE_URL ">\n");
-	printf("Bug Reports: <" PACKAGE_BUGREPORT ">\n");
+	char *name = strrchr(argv[0], '/');
+	fprintf(is_error ? stderr : stdout, "Usage: %s [OPTIONS] [PORT]\n", (name ? name + 1: argv[0]));
+	fprintf(is_error ? stderr : stdout,
+		"\n"
+		"Proxy debugserver connection from device to a local socket at PORT.\n"
+		"If PORT is omitted, the next available port will be used and printed\n"
+		"to stdout.\n"
+		"\n"
+		"OPTIONS:\n"
+		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -n, --network         connect to network device\n"
+		"  -d, --debug           enable communication debugging\n"
+		"  -h, --help            prints usage information\n"
+		"  -v, --version         prints version information\n"
+		"\n"
+		"Homepage:    <" PACKAGE_URL ">\n"
+		"Bug Reports: <" PACKAGE_BUGREPORT ">\n"
+	);
 }
 
 static void* connection_handler(void* data)
@@ -182,7 +183,15 @@ int main(int argc, char *argv[])
 	uint16_t local_port = 0;
 	int server_fd;
 	int result = EXIT_SUCCESS;
-	int i;
+	int c = 0;
+	const struct option longopts[] = {
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "udid", required_argument, NULL, 'u' },
+		{ "network", no_argument, NULL, 'n' },
+		{ "version", no_argument, NULL, 'v' },
+		{ NULL, 0, NULL, 0}
+	};
 
 #ifndef WIN32
 	struct sigaction sa;
@@ -207,42 +216,40 @@ int main(int argc, char *argv[])
 #endif
 
 	/* parse cmdline arguments */
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
+		switch (c) {
+		case 'd':
 			debug_mode = 1;
 			idevice_set_debug_level(1);
 			socket_set_verbose(3);
-			continue;
-		}
-		else if (!strcmp(argv[i], "-u") || !strcmp(argv[i], "--udid")) {
-			i++;
-			if (!argv[i] || !*argv[i]) {
-				print_usage(argc, argv);
-				return 0;
+			break;
+		case 'u':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: UDID argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
 			}
-			udid = argv[i];
-			continue;
-		}
-		else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--network")) {
+			udid = optarg;
+			break;
+		case 'n':
 			use_network = 1;
-			continue;
-		}
-		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			print_usage(argc, argv);
-			return EXIT_SUCCESS;
-		}
-		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+			break;
+		case 'h':
+			print_usage(argc, argv, 0);
+			return 0;
+		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
-			return EXIT_SUCCESS;
+			return 0;
+		default:
+			print_usage(argc, argv, 1);
+			return 2;
 		}
-		else if (atoi(argv[i]) > 0) {
-			local_port = atoi(argv[i]);
-			continue;
-		}
-		else {
-			print_usage(argc, argv);
-			return EXIT_SUCCESS;
-		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argv[0] && (atoi(argv[0]) > 0)) {
+		local_port = atoi(argv[0]);
 	}
 
 	/* start services and connect to device */
