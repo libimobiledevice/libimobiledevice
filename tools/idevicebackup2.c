@@ -1610,11 +1610,9 @@ int main(int argc, char *argv[])
 
 	if (!strcmp(argv[0], "backup")) {
 		cmd = CMD_BACKUP;
-		i = 1;
 	}
 	else if (!strcmp(argv[0], "restore")) {
 		cmd = CMD_RESTORE;
-		i = 1;
 	}
 	else if (!strcmp(argv[0], "cloud")) {
 		cmd = CMD_CLOUD;
