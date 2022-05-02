@@ -212,9 +212,9 @@ int main(int argc, char *argv[])
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			printf("ERROR: Device %s not found!\n", udid);
+			fprintf(stderr, "ERROR: Device %s not found!\n", udid);
 		} else {
-			printf("ERROR: No device found!\n");
+			fprintf(stderr, "ERROR: No device found!\n");
 		}
 		return -1;
 	}
