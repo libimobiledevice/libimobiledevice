@@ -102,7 +102,7 @@ static void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t va
 }
 
 /**
- * Callback from the packet logger service to handle packets and log to PacketLoggger format
+ * Callback from the packet logger service to handle packets and log to PacketLogger format
  */
 static void bt_packet_logger_callback_packetlogger(uint8_t * data, uint16_t len, void *user_data)
 {
