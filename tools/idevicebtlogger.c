@@ -87,16 +87,18 @@ const uint8_t pcap_file_header[] = {
 	0x00, 0x00, 0x00, 201,
 };
 
-static uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
-    return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
+static uint32_t big_endian_read_32(const uint8_t * buffer, int position)
+{
+	return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
 }
 
-static void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value){
-    uint16_t pos = position;
-    buffer[pos++] = (uint8_t)(value >> 24);
-    buffer[pos++] = (uint8_t)(value >> 16);
-    buffer[pos++] = (uint8_t)(value >> 8);
-    buffer[pos++] = (uint8_t)(value);
+static void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
+{
+	uint16_t pos = position;
+	buffer[pos++] = (uint8_t)(value >> 24);
+	buffer[pos++] = (uint8_t)(value >> 16);
+	buffer[pos++] = (uint8_t)(value >> 8);
+	buffer[pos++] = (uint8_t)(value);
 }
 
 /**
@@ -118,8 +120,8 @@ static void bt_packet_logger_callback_pcap(uint8_t * data, uint16_t len, void *u
 	}
 
 	// parse packet header (ignore len field)
-	uint32_t ts_secs 	= big_endian_read_32(data, 4);
-	uint32_t ts_us   	= big_endian_read_32(data, 8);
+	uint32_t ts_secs = big_endian_read_32(data, 4);
+	uint32_t ts_us   = big_endian_read_32(data, 8);
 	uint8_t packet_type = data[12];
 	data += 13;
 	len  -= 13;
@@ -158,18 +160,18 @@ static void bt_packet_logger_callback_pcap(uint8_t * data, uint16_t len, void *u
 	}
 
 	// setup pcap record header, 4 byte direction flag, 1 byte HCI H4 packet type, data
-    uint8_t pcap_record_header[21];
-    big_endian_store_32(pcap_record_header,  0, ts_secs);		// Timestamp seconds
-    big_endian_store_32(pcap_record_header,  4, ts_us);         // Timestamp microseconds
-    big_endian_store_32(pcap_record_header,  8, 4 + 1 + len);	// Captured  Packet Length
-    big_endian_store_32(pcap_record_header, 12, 4 + 1 + len); 	// Original Packet Length
-    big_endian_store_32(pcap_record_header, 16, direction_in);	// Direction: Incoming = 1
-    pcap_record_header[20] = hci_h4_type;
+	uint8_t pcap_record_header[21];
+	big_endian_store_32(pcap_record_header,  0, ts_secs);       // Timestamp seconds
+	big_endian_store_32(pcap_record_header,  4, ts_us);         // Timestamp microseconds
+	big_endian_store_32(pcap_record_header,  8, 4 + 1 + len);   // Captured  Packet Length
+	big_endian_store_32(pcap_record_header, 12, 4 + 1 + len);   // Original Packet Length
+	big_endian_store_32(pcap_record_header, 16, direction_in);  // Direction: Incoming = 1
+	pcap_record_header[20] = hci_h4_type;
 
-    // write header
+	// write header
 	(void) fwrite(pcap_record_header, 1, sizeof(pcap_record_header), packetlogger_file);
 
-    // write packet
+	// write packet
 	(void) fwrite(data, 1, len, packetlogger_file);
 
 	// flush
@@ -420,20 +422,20 @@ int main(int argc, char *argv[])
 	}
 
 
-    if (packetlogger_file == NULL){
-        fprintf(stderr, "Failed to open file %s, errno = %d\n", out_filename, errno);
-        return -2;
-    }		
+	if (packetlogger_file == NULL){
+		fprintf(stderr, "Failed to open file %s, errno = %d\n", out_filename, errno);
+		return -2;
+	}
 
 	switch (log_format){
 		case LOG_FORMAT_PCAP:
 			// printf("Output Format: PCAP\n");
-	        // write PCAP file header
-	        (void) fwrite(&pcap_file_header, 1, sizeof(pcap_file_header), packetlogger_file);
+			// write PCAP file header
+			(void) fwrite(&pcap_file_header, 1, sizeof(pcap_file_header), packetlogger_file);
 			break;
 		case LOG_FORMAT_PACKETLOGGER:
 			printf("Output Format: PacketLogger\n");
-	    	break;
+			break;
 		default:
 			assert(0);
 			return -2;
