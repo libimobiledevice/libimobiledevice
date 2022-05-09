@@ -94,6 +94,9 @@ typedef struct {
 /** Callback to notifiy if a device was added or removed. */
 typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_data);
 
+/** Event subscription context type */
+typedef struct idevice_subscription_context* idevice_subscription_context_t;
+
 /* functions */
 
 /**
@@ -104,8 +107,35 @@ typedef void (*idevice_event_cb_t) (const idevice_event_t *event, void *user_dat
 void idevice_set_debug_level(int level);
 
 /**
- * Register a callback function that will be called when device add/remove
+ * Subscribe a callback function that will be called when device add/remove
  * events occur.
+ *
+ * @param context A pointer to a idevice_subscription_context_t that will be
+ *    set upon creation of the subscription. The returned context must be
+ *    passed to idevice_events_unsubscribe() to unsubscribe the callback.
+ * @param callback Callback function to call.
+ * @param user_data Application-specific data passed as parameter
+ *   to the registered callback function.
+ *
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
+ */
+idevice_error_t idevice_events_subscribe(idevice_subscription_context_t *context, idevice_event_cb_t callback, void *user_data);
+
+/**
+ * Unsubscribe the event callback function that has been registered with
+ * idevice_events_subscribe().
+ *
+ * @param context A valid context as returned from idevice_events_subscribe().
+ *
+ * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
+ */
+idevice_error_t idevice_events_unsubscribe(idevice_subscription_context_t context);
+
+/**
+ * (DEPRECATED) Register a callback function that will be called when device add/remove
+ * events occur.
+ *
+ * @deprecated Use idevice_events_subscribe() instead.
  *
  * @param callback Callback function to call.
  * @param user_data Application-specific data passed as parameter
@@ -116,8 +146,10 @@ void idevice_set_debug_level(int level);
 idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data);
 
 /**
- * Release the event callback function that has been registered with
+ * (DEPRECATED) Release the event callback function that has been registered with
  *  idevice_event_subscribe().
+ *
+ * @deprecated Use idevice_events_unsubscribe() instead.
  *
  * @return IDEVICE_E_SUCCESS on success or an error value when an error occurred.
  */

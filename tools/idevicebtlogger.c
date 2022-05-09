@@ -440,13 +440,14 @@ int main(int argc, char *argv[])
 			assert(0);
 			return -2;
 	}
-	idevice_event_subscribe(device_event_cb, NULL);
+	idevice_subscription_context_t context = NULL;
+	idevice_events_subscribe(&context, device_event_cb, NULL);
 
 	while (!quit_flag) {
 		sleep(1);
 	}
 
-	idevice_event_unsubscribe();
+	idevice_events_unsubscribe(context);
 	stop_logging();
 
 	fclose(packetlogger_file);

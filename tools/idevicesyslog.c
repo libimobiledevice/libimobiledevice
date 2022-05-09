@@ -709,12 +709,13 @@ int main(int argc, char *argv[])
 	line_buffer_size = 1024;
 	line = malloc(line_buffer_size);
 
-	idevice_event_subscribe(device_event_cb, NULL);
+	idevice_subscription_context_t context = NULL;
+	idevice_events_subscribe(&context, device_event_cb, NULL);
 
 	while (!quit_flag) {
 		sleep(1);
 	}
-	idevice_event_unsubscribe();
+	idevice_events_unsubscribe(context);
 	stop_logging();
 
 	if (num_proc_filters > 0) {

@@ -215,10 +215,17 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 #warning No compiler support for constructor/destructor attributes, some features might not be available.
 #endif
 
-static idevice_event_cb_t event_cb = NULL;
+struct idevice_subscription_context {
+	idevice_event_cb_t callback;
+	void *user_data;
+	usbmuxd_subscription_context_t ctx;
+};
+
+static idevice_subscription_context_t event_ctx = NULL;
 
 static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 {
+	idevice_subscription_context_t context = (idevice_subscription_context_t)user_data;
 	idevice_event_t ev;
 
 	ev.event = event->event;
@@ -232,32 +239,64 @@ static void usbmux_event_cb(const usbmuxd_event_t *event, void *user_data)
 		debug_info("Unknown connection type %d", event->device.conn_type);
 	}
 
-	if (event_cb) {
-		event_cb(&ev, user_data);
+	if (context->callback) {
+		context->callback(&ev, context->user_data);
 	}
 }
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_events_subscribe(idevice_subscription_context_t *context, idevice_event_cb_t callback, void *user_data)
 {
-	event_cb = callback;
-	int res = usbmuxd_subscribe(usbmux_event_cb, user_data);
+	if (!context || !callback) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+	*context = malloc(sizeof(struct idevice_subscription_context));
+	if (!*context) {
+		debug_info("ERROR: %s: Failed to allocate subscription context\n", __func__);
+		return IDEVICE_E_UNKNOWN_ERROR;
+	}
+	(*context)->callback = callback;
+	(*context)->user_data = user_data;
+	int res = usbmuxd_events_subscribe(&(*context)->ctx, usbmux_event_cb, *context);
 	if (res != 0) {
-		event_cb = NULL;
+		free(*context);
+		*context = NULL;
 		debug_info("ERROR: usbmuxd_subscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
 	return IDEVICE_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
+LIBIMOBILEDEVICE_API idevice_error_t idevice_events_unsubscribe(idevice_subscription_context_t context)
 {
-	event_cb = NULL;
-	int res = usbmuxd_unsubscribe();
+	if (!context) {
+		return IDEVICE_E_INVALID_ARG;
+	}
+	int res = usbmuxd_events_unsubscribe(context->ctx);
 	if (res != 0) {
 		debug_info("ERROR: usbmuxd_unsubscribe() returned %d!", res);
 		return IDEVICE_E_UNKNOWN_ERROR;
 	}
+	if (context == event_ctx) {
+		event_ctx = NULL;
+	}
+	free(context);
 	return IDEVICE_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_subscribe(idevice_event_cb_t callback, void *user_data)
+{
+	if (event_ctx) {
+		idevice_events_unsubscribe(event_ctx);
+	}
+	return idevice_events_subscribe(&event_ctx, callback, user_data);
+}
+
+LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
+{
+	if (!event_ctx) {
+		return IDEVICE_E_SUCCESS;
+	}
+	return idevice_events_unsubscribe(event_ctx);
 }
 
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_info_t **devices, int *count)
