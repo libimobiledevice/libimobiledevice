@@ -1594,6 +1594,7 @@ int main(int argc, char *argv[])
 			break;
 		case OPT_FULL:
 			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
+			break;
 		default:
 			print_usage(argc, argv, 1);
 			return 2;
