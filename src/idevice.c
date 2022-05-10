@@ -296,6 +296,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_event_unsubscribe(void)
 	if (!event_ctx) {
 		return IDEVICE_E_SUCCESS;
 	}
+	event_ctx->callback = NULL;
 	return idevice_events_unsubscribe(event_ctx);
 }
 
