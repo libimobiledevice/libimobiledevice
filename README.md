@@ -18,7 +18,7 @@ Some key features are:
 - **Implementation**: Object oriented architecture and service abstraction layer
 - **Cross-Platform:** Tested on Linux, macOS, Windows and Android platforms
 - **Utilities**: Provides various command-line utilities for device services
-- **SSL**: Allows choosing between OpenSSL or GnuTLS to handle SSL communication
+- **SSL**: Allows choosing between OpenSSL, GnuTLS, or MbedTLS to handle SSL communication
 - **Network**: Supports network connections with "WiFi sync" enabled devices
 - **Python:** Provides Cython based bindings for Python
 
