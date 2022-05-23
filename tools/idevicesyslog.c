@@ -149,7 +149,7 @@ static void syslog_callback(char c, void *user_data)
 		do {
 			if (lp < 16) {
 				shall_print = 1;
-				cprintf(COLOR_WHITE);
+				cprintf(FG_WHITE);
 				break;
 			}
 
@@ -282,35 +282,35 @@ static void syslog_callback(char c, void *user_data)
 				const char* level_color = NULL;
 				if (!strncmp(p, "<Notice>:", 9)) {
 					level_end += 9;
-					level_color = COLOR_GREEN;
+					level_color = FG_GREEN;
 				} else if (!strncmp(p, "<Error>:", 8)) {
 					level_end += 8;
-					level_color = COLOR_RED;
+					level_color = FG_RED;
 				} else if (!strncmp(p, "<Warning>:", 10)) {
 					level_end += 10;
-					level_color = COLOR_YELLOW;
+					level_color = FG_YELLOW;
 				} else if (!strncmp(p, "<Debug>:", 8)) {
 					level_end += 8;
-					level_color = COLOR_MAGENTA;
+					level_color = FG_MAGENTA;
 				} else {
-					level_color = COLOR_WHITE;
+					level_color = FG_WHITE;
 				}
 
 				/* write date and time */
-				cprintf(COLOR_LIGHT_GRAY);
+				cprintf(FG_LIGHT_GRAY);
 				fwrite(line, 1, 16, stdout);
 
 				if (show_device_name) {
 					/* write device name */
-					cprintf(COLOR_DARK_YELLOW);
+					cprintf(FG_DARK_YELLOW);
 					fwrite(device_name_start, 1, device_name_end-device_name_start+1, stdout);
 					cprintf(COLOR_RESET);
 				}
 
 				/* write process name */
-				cprintf(COLOR_BRIGHT_CYAN);
+				cprintf(FG_BRIGHT_CYAN);
 				fwrite(process_name_start, 1, process_name_end-process_name_start, stdout);
-				cprintf(COLOR_CYAN);
+				cprintf(FG_CYAN);
 				fwrite(process_name_end, 1, proc_name_end-process_name_end+1, stdout);
 
 				/* write log level */
@@ -323,11 +323,11 @@ static void syslog_callback(char c, void *user_data)
 				lp -= p - linep;
 				linep = p;
 
-				cprintf(COLOR_WHITE);
+				cprintf(FG_WHITE);
 
 			} else {
 				shall_print = 1;
-				cprintf(COLOR_WHITE);
+				cprintf(FG_WHITE);
 			}
 		} while (0);
 
