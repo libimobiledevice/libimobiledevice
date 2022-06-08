@@ -1521,7 +1521,7 @@ int main(int argc, char *argv[])
 		{ "settings", no_argument, NULL, OPT_SETTINGS },
 		{ "remove", no_argument, NULL, OPT_REMOVE },
 		{ "skip-apps", no_argument, NULL, OPT_SKIP_APPS },
-		{ "password", no_argument, NULL, OPT_PASSWORD },
+		{ "password", required_argument, NULL, OPT_PASSWORD },
 		{ "full", no_argument, NULL, OPT_FULL },
 		{ NULL, 0, NULL, 0}
 	};
