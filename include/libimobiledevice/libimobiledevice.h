@@ -100,6 +100,13 @@ typedef struct idevice_subscription_context* idevice_subscription_context_t;
 /* functions */
 
 /**
+ * Set the Lockdownd pairing directory.
+ *
+ * @param directory The specified new Lockdownd pairing directory.
+ */
+void idevice_set_pairing_directory(const char* directory);
+
+/**
  * Set the level of debugging.
  *
  * @param level Set to 0 for no debug output or 1 to enable debug output.
