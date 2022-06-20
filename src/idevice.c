@@ -406,6 +406,11 @@ LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
 	internal_set_debug_level(level);
 }
 
+LIBIMOBILEDEVICE_API void imobiledevice_mem_free(void* memory)
+{
+	free(memory);
+}
+
 static idevice_t idevice_from_mux_device(usbmuxd_device_info_t *muxdev)
 {
 	if (!muxdev)

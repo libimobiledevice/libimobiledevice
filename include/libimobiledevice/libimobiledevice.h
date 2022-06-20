@@ -107,6 +107,13 @@ typedef struct idevice_subscription_context* idevice_subscription_context_t;
 void idevice_set_debug_level(int level);
 
 /**
+ * Release the memory requested by libimobiledevice
+ *
+ * @param memory Memory requested by libimobiledevice.
+ * */
+void imobiledevice_mem_free(void* memory);
+
+/**
  * Subscribe a callback function that will be called when device add/remove
  * events occur.
  *
