@@ -30,6 +30,9 @@ extern "C" {
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 /** Service identifier passed to lockdownd_start_service() to start the mobile image mounter service */
 #define MOBILE_IMAGE_MOUNTER_SERVICE_NAME "com.apple.mobile.mobile_image_mounter"
@@ -49,7 +52,11 @@ typedef struct mobile_image_mounter_client_private mobile_image_mounter_client_p
 typedef mobile_image_mounter_client_private *mobile_image_mounter_client_t; /**< The client handle. */
 
 /** callback for image upload */
+#if defined(_WIN32)
+typedef SSIZE_T (*mobile_image_mounter_upload_cb_t) (void* buffer, size_t length, void *user_data);
+#else
 typedef ssize_t (*mobile_image_mounter_upload_cb_t) (void* buffer, size_t length, void *user_data);
+#endif
 
 /* Interface */
 
