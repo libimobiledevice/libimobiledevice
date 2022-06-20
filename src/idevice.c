@@ -401,6 +401,11 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_device_list_free(char **devices)
 	return IDEVICE_E_SUCCESS;
 }
 
+LIBIMOBILEDEVICE_API void idevice_set_pairing_directory(const char* directory)
+{
+	userpref_set_config_dir(directory);
+}
+
 LIBIMOBILEDEVICE_API void idevice_set_debug_level(int level)
 {
 	internal_set_debug_level(level);

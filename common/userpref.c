@@ -148,6 +148,18 @@ static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read,
 }
 #endif
 
+void userpref_set_config_dir(const char* directory)
+{
+	if(__config_dir) {
+		free(__config_dir);
+		__config_dir = NULL;
+	}
+	if(directory) {
+		__config_dir = strdup(directory);
+		debug_info("modify config_dir to %s", __config_dir);
+	}
+}
+
 const char *userpref_get_config_dir()
 {
 	char *base_config_dir = NULL;
