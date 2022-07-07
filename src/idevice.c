@@ -120,6 +120,18 @@ static void id_function(CRYPTO_THREADID *thread)
 #endif
 #endif /* HAVE_OPENSSL */
 
+struct st_idevice_error_str_map {
+	const char *idevice_errstr;
+	const char *errstr;
+	idevice_error_t errcode;
+};
+
+static struct st_idevice_error_str_map idevice_error_str_map[] = {
+	/* For future use */
+	{ NULL, NULL, 0 }
+};
+
+
 static void internal_idevice_init(void)
 {
 #if defined(HAVE_OPENSSL)
@@ -1460,4 +1472,36 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_disable_bypass_ssl(idevi
 	debug_info("SSL mode disabled");
 
 	return IDEVICE_E_SUCCESS;
+}
+
+LIBIMOBILEDEVICE_API const char* idevice_strerror(idevice_error_t err)
+{
+	switch (err) {
+		case IDEVICE_E_SUCCESS:
+			return "Success";
+		case IDEVICE_E_INVALID_ARG:
+			return "Invalid argument";
+		case IDEVICE_E_UNKNOWN_ERROR:
+			return "Unknown Error";
+		case IDEVICE_E_NO_DEVICE:
+			return "No device";
+		case IDEVICE_E_NOT_ENOUGH_DATA:
+			return "Not enough data";
+		case IDEVICE_E_CONNREFUSED:
+			return "Connection refused";
+		case IDEVICE_E_SSL_ERROR:
+			return "SSL error";
+		case IDEVICE_E_TIMEOUT:
+			return "Timeout";
+		default: {
+			int i = 0;
+			while (idevice_error_str_map[i].idevice_errstr) {
+				if (idevice_error_str_map[i].errcode == err) {
+					return idevice_error_str_map[i].errstr;
+				}
+				i++;
+			}
+		} break;
+	}
+	return "Unknown Error";
 }

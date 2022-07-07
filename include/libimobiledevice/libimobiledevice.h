@@ -390,6 +390,15 @@ idevice_error_t idevice_get_handle(idevice_t device, uint32_t *handle);
  */
 idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
+/**
+ * Gets a readable error string for a given idevice error code.
+ *
+ * @param err An idevice error code
+ *
+ * @returns A readable error string
+ */
+const char* idevice_strerror(idevice_error_t err);
+
 #ifdef __cplusplus
 }
 #endif
