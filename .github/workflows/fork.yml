@@ -2,12 +2,12 @@ name: Sync Fork
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # every 30 minutes
+    - cron: '0 8 * * *' # Daily
   workflow_dispatch: # on button click
 
 jobs:
   sync:
-
+    if: github.repository_owner != 'libimobiledevice' # Only on forks
     runs-on: ubuntu-latest
 
     steps:
