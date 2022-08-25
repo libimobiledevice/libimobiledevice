@@ -1,6 +1,9 @@
 name: build
 
-on: [push]
+on:
+  push:
+  schedule:
+    - cron: '0 0 1 * *'
 
 jobs:
   build-linux-ubuntu:
