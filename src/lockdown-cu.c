@@ -62,6 +62,7 @@
 #include <sys/sysctl.h>
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <TargetConditionals.h>
 #endif
 
 #include "property_list_service.h"
@@ -647,7 +648,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_cu_pairing_create(lockdownd_cli
 
 			/* HOST INFORMATION */
 			char hostname[256];
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
 			CFStringRef cname = SCDynamicStoreCopyComputerName(NULL, NULL);
 			CFStringGetCString(cname, hostname, sizeof(hostname), kCFStringEncodingUTF8);
 			CFRelease(cname);
