@@ -3,7 +3,7 @@ SRCDIR=`dirname $0`
 if test -n "$1"; then
   VER=$1
 else
-  if test -d "${SRCDIR}/.git" && test -x "`which git`" ; then
+  if test -r "${SRCDIR}/.git" && test -x "`which git`" ; then
     git update-index -q --refresh
     if ! VER=`git describe --tags --dirty 2>/dev/null`; then
       COMMIT=`git rev-parse --short HEAD`
