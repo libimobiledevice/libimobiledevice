@@ -9,7 +9,7 @@ include_HEADERS = srp.h srp_aux.h cstr.h
 
 AM_CFLAGS = -DHAVE_CONFIG_H
 if HAVE_OPENSSL
-AM_CFLAGS += -DOPENSSL=1 -DOPENSSL_ENGINE=1 $(openssl_CFLAGS)
+AM_CFLAGS += -DOPENSSL=1 $(openssl_CFLAGS)
 else
 if HAVE_GCRYPT
 AM_CFLAGS += -DGCRYPT=1 $(libgcrypt_CFLAGS)

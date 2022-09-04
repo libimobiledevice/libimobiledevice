@@ -39,7 +39,8 @@ typedef BIGNUM * BigInteger;
 typedef BN_CTX * BigIntegerCtx;
 typedef BN_MONT_CTX * BigIntegerModAccel;
 #include <limits.h>
-# ifdef OPENSSL_ENGINE
+# ifndef OPENSSL_NO_ENGINE
+#  define OPENSSL_ENGINE
 #  include "openssl/engine.h"
 static ENGINE * default_engine = NULL;
 # endif /* OPENSSL_ENGINE */
@@ -951,7 +952,7 @@ BigIntegerModAccelFree(accel)
 BigIntegerResult
 BigIntegerInitialize()
 {
-#if OPENSSL_VERSION_NUMBER >= 0x00907000
+#if OPENSSL_VERSION_NUMBER >= 0x00907000 && defined(OPENSSL_ENGINE)
   ENGINE_load_builtin_engines();
 #endif
   return BIG_INTEGER_SUCCESS;
