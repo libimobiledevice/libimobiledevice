@@ -287,7 +287,7 @@ LIBIMOBILEDEVICE_API restored_error_t restored_get_value(restored_client_t clien
 	}
 
 	*value = plist_copy(item);
-	free(item);
+
 	return RESTORE_E_SUCCESS;
 }
 
