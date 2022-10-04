@@ -279,7 +279,15 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_backup(mobileback
 		char *str = NULL;
 		plist_get_string_val(node, &str);
 		if (str) {
-			if (strcmp(str, proto_version) != 0) {
+			int maj = 0;
+			int min = 0;
+			sscanf(str, "%u.%u", &maj, &min);
+			uint32_t this_ver = ((maj & 0xFF) << 8) | (min & 0xFF);
+			maj = 0;
+			min = 0;
+			sscanf(proto_version, "%u.%u", &maj, &min);
+			uint32_t proto_ver = ((maj & 0xFF) << 8) | (min & 0xFF);
+			if (this_ver > proto_ver) {
 				err = MOBILEBACKUP_E_BAD_VERSION;
 			}
 			free(str);
@@ -346,7 +354,15 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_restore(mobilebac
 		char *str = NULL;
 		plist_get_string_val(node, &str);
 		if (str) {
-			if (strcmp(str, proto_version) != 0) {
+			int maj = 0;
+			int min = 0;
+			sscanf(str, "%u.%u", &maj, &min);
+			uint32_t this_ver = ((maj & 0xFF) << 8) | (min & 0xFF);
+			maj = 0;
+			min = 0;
+			sscanf(proto_version, "%u.%u", &maj, &min);
+			uint32_t proto_ver = ((maj & 0xFF) << 8) | (min & 0xFF);
+			if (this_ver > proto_ver) {
 				err = MOBILEBACKUP_E_BAD_VERSION;
 			}
 			free(str);
