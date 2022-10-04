@@ -165,51 +165,38 @@ lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_match)
 		return ret;
 	}
 
-	char *query_value = NULL;
-
-	plist_get_string_val(query_node, &query_value);
+	const char *query_value = plist_get_string_ptr(query_node, NULL);
 	if (!query_value) {
 		return ret;
 	}
 
 	if (query_match && (strcmp(query_value, query_match) != 0)) {
-		free(query_value);
 		return ret;
 	}
 
-	free(query_value);
+	/* Check for 'Error' in reply */
+	plist_t err_node = plist_dict_get_item(dict, "Error");
+	if (err_node) {
+		if (plist_get_node_type(err_node) == PLIST_STRING) {
+			const char *err_value = plist_get_string_ptr(err_node, NULL);
+			if (err_value) {
+				debug_info("ERROR: %s", err_value);
+				ret = lockdownd_strtoerr(err_value);
+			} else {
+				debug_info("ERROR: unknown error occurred");
+			}
+		}
+		return ret;
+	}
 
 	plist_t result_node = plist_dict_get_item(dict, "Result");
 	if (!result_node) {
-		/* iOS 5: the 'Result' key is not present anymore.
-		   But we need to check for the 'Error' key. */
-		plist_t err_node = plist_dict_get_item(dict, "Error");
-		if (err_node) {
-			if (plist_get_node_type(err_node) == PLIST_STRING) {
-				char *err_value = NULL;
-
-				plist_get_string_val(err_node, &err_value);
-				if (err_value) {
-					debug_info("ERROR: %s", err_value);
-					ret = lockdownd_strtoerr(err_value);
-					free(err_value);
-				} else {
-					debug_info("ERROR: unknown error occurred");
-				}
-			}
-			return ret;
-		}
-
-		ret = LOCKDOWN_E_SUCCESS;
-
-		return ret;
+		/* With iOS 5+ 'Result' is not present anymore.
+		   If there is no 'Error', we can just assume success. */
+		return LOCKDOWN_E_SUCCESS;
 	}
-
-	plist_type result_type = plist_get_node_type(result_node);
-	if (result_type == PLIST_STRING) {
-		char *result_value = NULL;
-
-		plist_get_string_val(result_node, &result_value);
+	if (plist_get_node_type(result_node) == PLIST_STRING) {
+		const char *result_value = plist_get_string_ptr(result_node, NULL);
 		if (result_value) {
 			if (!strcmp(result_value, "Success")) {
 				ret = LOCKDOWN_E_SUCCESS;
@@ -219,9 +206,6 @@ lockdownd_error_t lockdown_check_result(plist_t dict, const char *query_match)
 				debug_info("ERROR: unknown result value '%s'", result_value);
 			}
 		}
-
-		if (result_value)
-			free(result_value);
 	}
 
 	return ret;
