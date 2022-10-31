@@ -47,7 +47,7 @@ idevicename_LDFLAGS = $(AM_LDFLAGS)
 idevicename_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicepair_SOURCES = idevicepair.c
-idevicepair_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS)
+idevicepair_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS) $(limd_glue_CFLAGS)
 idevicepair_LDFLAGS = $(AM_LDFLAGS) $(libusbmuxd_LIBS) $(ssl_lib_LIBS)
 idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la $(limd_glue_LIBS)
 
