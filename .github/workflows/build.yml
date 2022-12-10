@@ -12,7 +12,7 @@ jobs:
     - name: install dependencies
       run: |
           sudo apt-get update
-          sudo apt-get install cython
+          sudo apt-get install cython3
     - name: prepare environment
       run: |
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
