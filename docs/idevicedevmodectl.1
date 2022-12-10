@@ -1,0 +1,58 @@
+.TH "idevicedevmodectl" 1
+.SH NAME
+idevicedevmodectl \- Enable Developer Mode on iOS 16+ devices or print the current status.
+.SH SYNOPSIS
+.B idevicedevmodectl
+COMMAND
+[OPTIONS]
+
+.SH DESCRIPTION
+
+Enable Developer Mode on iOS 16+ devices or print the current status.
+
+.SH NOTE
+Passcode-protected devices will NOT allow enabling of Developer Mode from the command line. It has to be enabled on the device itself under Settings -> Privacy & Security -> Developer Mode.
+The \f[B]enable\f[] command will try to enable it, and tell you if that's the case.
+If the menu is not shown, you may use the \f[B]reveal\f[] command to reveal it.
+
+.SH COMMANDS
+.TP
+.B list
+Prints the Developer Mode status of all connected devices, or for a specific one if \f[B]\-\-udid\f[] is given.
+.TP
+.B enable
+Enable Developer Mode (device will reboot), and confirm it after device booted up again.
+.TP
+.B arm
+Arm the Developer Mode (device will reboot)
+.TP
+.B confirm
+Confirm enabling of Developer Mode
+.TP
+.B reveal
+Reveal the Developer Mode menu on the device under Settings -> Privacy & Security
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by UDID
+.TP
+.B \-n, \-\-network
+connect to network device
+.TP
+.B \-d, \-\-debug
+enable communication debugging
+.TP
+.B \-h, \-\-help
+print usage information
+.TP
+.B \-v, \-\-version
+print version information
+
+.SH AUTHORS
+Nikias Bassen
+
+.SH ON THE WEB
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

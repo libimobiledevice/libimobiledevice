@@ -27,6 +27,7 @@ bin_PROGRAMS = \
 	idevicedebugserverproxy \
 	idevicediagnostics \
 	idevicedebug \
+	idevicedevmodectl \
 	idevicenotificationproxy \
 	idevicecrashreport \
 	idevicesetlocation
@@ -110,6 +111,11 @@ idevicedebug_SOURCES = idevicedebug.c
 idevicedebug_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
 idevicedebug_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicedebug_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la
+
+idevicedevmodectl_SOURCES = idevicedevmodectl.c
+idevicedevmodectl_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+idevicedevmodectl_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
+idevicedevmodectl_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la
 
 idevicenotificationproxy_SOURCES = idevicenotificationproxy.c
 idevicenotificationproxy_CFLAGS = $(AM_CFLAGS)
