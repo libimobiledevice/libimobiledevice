@@ -224,6 +224,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (product_version_major == 16) {
+		uint8_t dev_mode_status = 0;
+		plist_t val = NULL;
+		ldret = lockdownd_get_value(lckd, "com.apple.security.mac.amfi", "DeveloperModeStatus", &val);
+		if (ldret == LOCKDOWN_E_SUCCESS) {
+			plist_get_bool_val(val, &dev_mode_status);
+			plist_free(val);
+		}
+		if (!dev_mode_status) {
+			printf("ERROR: You have to enable Developer Mode on the given device in order to allowing mounting a developer disk image.\n");
+			goto leave;
+		}
+	}
+
 	lockdownd_start_service(lckd, "com.apple.mobile.mobile_image_mounter", &service);
 
 	if (!service || service->port == 0) {
