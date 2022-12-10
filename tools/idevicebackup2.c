@@ -1555,6 +1555,7 @@ int main(int argc, char *argv[])
 				return 2;
 			}
 			source_udid = strdup(optarg);
+			break;
 		case 'i':
 			interactive_mode = 1;
 			break;
