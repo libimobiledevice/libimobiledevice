@@ -359,11 +359,34 @@ device_link_service_error_t device_link_service_send_process_message(device_link
  */
 device_link_service_error_t device_link_service_receive_message(device_link_service_client_t client, plist_t *msg_plist, char **dlmessage)
 {
+	return device_link_service_receive_message_with_timeout(client, msg_plist, dlmessage, 30000);
+}
+
+/**
+ * Receives a DL* message plist with the specified timeout.
+ *
+ * @param client The connected device link service client used for receiving.
+ * @param msg_plist Pointer to a plist that will be set to the contents of the
+ *    message plist upon successful return.
+ * @param dlmessage A pointer that will be set to a newly allocated char*
+ *     containing the DL* string from the given plist. It is up to the caller
+ *     to free the allocated memory. If this parameter is NULL
+ *     it will be ignored.
+ * @param timeout_ms Timeout in milliseconds
+ *
+ * @return DEVICE_LINK_SERVICE_E_SUCCESS if a DL* message was received,
+ *    DEVICE_LINK_SERVICE_E_INVALID_ARG if client or message is invalid,
+ *    DEVICE_LINK_SERVICE_E_PLIST_ERROR if the received plist is invalid
+ *    or is not a DL* message plist, or DEVICE_LINK_SERVICE_E_MUX_ERROR if
+ *    receiving from the device failed.
+ */
+device_link_service_error_t device_link_service_receive_message_with_timeout(device_link_service_client_t client, plist_t *msg_plist, char **dlmessage, uint32_t timeout_ms)
+{
 	if (!client || !client->parent || !msg_plist)
 		return DEVICE_LINK_SERVICE_E_INVALID_ARG;
 
 	*msg_plist = NULL;
-	device_link_service_error_t err = device_link_error(property_list_service_receive_plist(client->parent, msg_plist));
+	device_link_service_error_t err = device_link_error(property_list_service_receive_plist_with_timeout(client->parent, msg_plist, timeout_ms));
 	if (err != DEVICE_LINK_SERVICE_E_SUCCESS) {
 		return err;
 	}

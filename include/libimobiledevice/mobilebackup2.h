@@ -128,6 +128,27 @@ mobilebackup2_error_t mobilebackup2_send_message(mobilebackup2_client_t client, 
 mobilebackup2_error_t mobilebackup2_receive_message(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage);
 
 /**
+ * Receives a DL* message plist from the device with the specified timeout.
+ * This function is a wrapper around device_link_service_receive_message_with_timeout.
+ *
+ * @param client The connected MobileBackup client to use.
+ * @param msg_plist Pointer to a plist that will be set to the contents of the
+ *    message plist upon successful return.
+ * @param dlmessage A pointer that will be set to a newly allocated char*
+ *     containing the DL* string from the given plist. It is up to the caller
+ *     to free the allocated memory. If this parameter is NULL
+ *     it will be ignored.
+ * @param timeout_ms Timeout in milliseconds
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if a DL* message was received,
+ *    MOBILEBACKUP2_E_INVALID_ARG if client or message is invalid,
+ *    MOBILEBACKUP2_E_PLIST_ERROR if the received plist is invalid
+ *    or is not a DL* message plist, or MOBILEBACKUP2_E_MUX_ERROR if
+ *    receiving from the device failed.
+ */
+mobilebackup2_error_t mobilebackup2_receive_message_with_timeout(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage, uint32_t timeout_ms);
+
+/**
  * Send binary data to the device.
  *
  * @note This function returns MOBILEBACKUP2_E_SUCCESS even if less than the
