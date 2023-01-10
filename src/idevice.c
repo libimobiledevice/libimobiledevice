@@ -1207,13 +1207,26 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
 	}
 #endif
-#if (OPENSSL_VERSION_MAJOR >= 3) && defined(SSL_OP_IGNORE_UNEXPECTED_EOF)
-	/*
-	 * For OpenSSL 3 and later, mark close_notify alerts as optional.
-	 * For prior versions of OpenSSL we check for SSL_ERROR_SYSCALL when
-	 * reading instead (this error changes to SSL_ERROR_SSL in OpenSSL 3).
-	 */
-	SSL_CTX_set_options(ssl_ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
+#if (OPENSSL_VERSION_MAJOR >= 3)
+	{
+		uint64_t opts = 0;
+#if defined(SSL_OP_IGNORE_UNEXPECTED_EOF)
+		/*
+		 * For OpenSSL 3 and later, mark close_notify alerts as optional.
+		 * For prior versions of OpenSSL we check for SSL_ERROR_SYSCALL when
+		 * reading instead (this error changes to SSL_ERROR_SSL in OpenSSL 3).
+		 */
+		opts |= SSL_OP_IGNORE_UNEXPECTED_EOF;
+#endif
+#if defined(SSL_OP_LEGACY_SERVER_CONNECT)
+		/*
+		 * Without setting SSL_OP_LEGACY_SERVER_CONNECT, OpenSSL 3 fails with:
+		 * error "unsafe legacy renegotiation disabled" when talking to iOS 5
+		 */
+		opts |= SSL_OP_LEGACY_SERVER_CONNECT;
+#endif
+		SSL_CTX_set_options(ssl_ctx, opts);
+	}
 #endif
 
 	BIO* membp;
