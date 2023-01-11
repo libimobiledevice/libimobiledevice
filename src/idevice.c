@@ -1205,7 +1205,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
 	}
 #endif
-#if (OPENSSL_VERSION_MAJOR >= 3)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 #if defined(SSL_OP_IGNORE_UNEXPECTED_EOF)
 	/*
 	 * For OpenSSL 3 and later, mark close_notify alerts as optional.
