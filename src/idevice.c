@@ -1190,15 +1190,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	/* force use of TLSv1 for older devices */
 	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
 #ifdef SSL_OP_NO_TLSv1_1
-		long opts = SSL_CTX_get_options(ssl_ctx);
-		opts |= SSL_OP_NO_TLSv1_1;
+		SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_TLSv1_1);
+#endif
 #ifdef SSL_OP_NO_TLSv1_2
-		opts |= SSL_OP_NO_TLSv1_2;
+		SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_TLSv1_2);
 #endif
 #ifdef SSL_OP_NO_TLSv1_3
-		opts |= SSL_OP_NO_TLSv1_3;
-#endif
-		SSL_CTX_set_options(ssl_ctx, opts);
+		SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_TLSv1_3);
 #endif
 	}
 #else
