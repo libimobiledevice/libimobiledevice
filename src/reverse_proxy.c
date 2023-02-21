@@ -186,10 +186,10 @@ static int _reverse_proxy_handle_proxy_cmd(reverse_proxy_client_t client)
 
 	/* else wait for messages and forward them */
 	int sockfd = socket_connect(host, port);
-	free(host);
 	if (sockfd < 0) {
 		free(buf);
 		_reverse_proxy_log(client, "ERROR: Connection to %s:%u failed: %s", host, port, strerror(errno));
+		free(host);
 		return -1;
 	}
 
@@ -259,6 +259,7 @@ static int _reverse_proxy_handle_proxy_cmd(reverse_proxy_client_t client)
 		}
 	}
 	socket_close(sockfd);
+	free(host);
 	free(buf);
 
 	_reverse_proxy_status(client, RP_STATUS_DISCONNECTED, "Disconnected (out: %u / in: %u)", sent_total, recv_total);
