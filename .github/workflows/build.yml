@@ -146,7 +146,7 @@ jobs:
         ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig --enable-debug \
             openssl_CFLAGS="-I${{ env.DEPSDIR }}/libressl-${{ env.LIBRESSL_VER }}/include" \
             openssl_LIBS="-Xlinker ${{ env.LIBSSL }} -Xlinker ${{ env.LIBCRYPTO }}"
-        sudo make -j install
+        make -j && sudo make -j install
 
     - name: prepare artifact
       run: |
@@ -227,7 +227,7 @@ jobs:
     - name: autogen and make install
       run: |
         ./autogen.sh CC=gcc CXX=g++ --enable-debug
-        make -j install
+        make -j && make -j install
 
     - name: prepare artifact
       run: |
