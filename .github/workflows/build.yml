@@ -62,7 +62,7 @@ jobs:
     - name: prepare artifact
       run: |
           mkdir -p dest
-          DESTDIR=`pwd`/dest make -j install
+          DESTDIR=`pwd`/dest sudo make -j install
           tar -C dest -cf libimobiledevice.tar usr
 
     - name: publish artifact
