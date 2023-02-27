@@ -51,7 +51,7 @@ jobs:
           sudo cp -r extract/* /
           sudo ldconfig
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: autogen
@@ -69,7 +69,7 @@ jobs:
           tar -C dest -cf libimobiledevice.tar usr
 
     - name: publish artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: libimobiledevice-latest_${{env.target_triplet}}
         path: libimobiledevice.tar
@@ -116,7 +116,7 @@ jobs:
           done
           sudo cp -r extract/* /
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: install additional requirements
       run: |
           mkdir -p lib
@@ -162,7 +162,7 @@ jobs:
           tar -C dest -cf libimobiledevice.tar usr
 
     - name: publish artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: libimobiledevice-latest_macOS
         path: libimobiledevice.tar
@@ -230,7 +230,7 @@ jobs:
           done
           cp -r extract/* /
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: autogen
       run: ./autogen.sh CC=gcc CXX=g++ --enable-debug
     - name: make
@@ -245,7 +245,7 @@ jobs:
           tar -C dest -cf libimobiledevice.tar ${{ env.dest }}
 
     - name: publish artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: libimobiledevice-latest_${{ matrix.arch }}-${{ env.dest }}
         path: libimobiledevice.tar
