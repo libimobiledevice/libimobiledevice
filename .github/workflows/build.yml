@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 1 * *'
 
+env:
+  github_token: ${{secrets.GITHUB_TOKEN}}
+
 jobs:
   build-linux-ubuntu:
     runs-on: ubuntu-latest
@@ -13,30 +16,32 @@ jobs:
       run: |
           sudo apt-get update
           sudo apt-get install cython3
+
     - name: prepare environment
       run: |
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
+
     - name: fetch libplist
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_${{env.target_triplet}}
         repo: libimobiledevice/libplist
+
     - name: fetch libusbmuxd
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_${{env.target_triplet}}
         repo: libimobiledevice/libusbmuxd
+
     - name: fetch libimobiledevice-glue
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libimobiledevice-glue-latest_${{env.target_triplet}}
         repo: libimobiledevice/libimobiledevice-glue
+
     - name: install external dependencies
       run: |
           mkdir extract
@@ -45,25 +50,30 @@ jobs:
           done
           sudo cp -r extract/* /
           sudo ldconfig
+
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: autogen
       run: ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LDFLAGS="-Wl,-rpath=/usr/local/lib" --enable-debug
+
     - name: make
       run: make
     - name: make install
       run: sudo make install
+
     - name: prepare artifact
       run: |
           mkdir -p dest
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar usr
+
     - name: publish artifact
       uses: actions/upload-artifact@v2
       with:
         name: libimobiledevice-latest_${{env.target_triplet}}
         path: libimobiledevice.tar
+
   build-macOS:
     runs-on: macOS-latest
     steps:
@@ -76,27 +86,28 @@ jobs:
           fi
           pip install cython
       shell: bash
+
     - name: fetch libplist
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_macOS
         repo: libimobiledevice/libplist
+
     - name: fetch libusbmuxd
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_macOS
         repo: libimobiledevice/libusbmuxd
+
     - name: fetch libimobiledevice-glue
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libimobiledevice-glue-latest_macOS
         repo: libimobiledevice/libimobiledevice-glue
+
     - name: install external dependencies
       run: |
           mkdir extract
@@ -104,6 +115,7 @@ jobs:
             tar -C extract -xvf $I
           done
           sudo cp -r extract/* /
+
     - uses: actions/checkout@v2
     - name: install additional requirements
       run: |
@@ -121,6 +133,7 @@ jobs:
           mkdir -p deps
           tar -C deps -xzf $FILENAME
           echo "DEPSDIR=`pwd`/deps" >> $GITHUB_ENV
+
     - name: autogen
       run: |
           SDKDIR=`xcrun --sdk macosx --show-sdk-path`
@@ -136,20 +149,24 @@ jobs:
           ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig --enable-debug \
               openssl_CFLAGS="-I${{ env.DEPSDIR }}/libressl-${{ env.LIBRESSL_VER }}/include" \
               openssl_LIBS="-Xlinker ${{ env.LIBSSL }} -Xlinker ${{ env.LIBCRYPTO }}"
+
     - name: make
       run: make
     - name: make install
       run: sudo make install
+
     - name: prepare artifact
       run: |
           mkdir -p dest
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar usr
+
     - name: publish artifact
       uses: actions/upload-artifact@v2
       with:
         name: libimobiledevice-latest_macOS
         path: libimobiledevice.tar
+
   build-windows:
     runs-on: windows-2019
     defaults:
@@ -176,33 +193,35 @@ jobs:
           libtool
           autoconf
           automake-wrapper
+
     - name: prepare environment
       run: |
           dest=`echo ${{ matrix.msystem }} |tr [:upper:] [:lower:]`
           echo "dest=$dest" >> $GITHUB_ENV
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
           git config --global core.autocrlf false
+
     - name: fetch libplist
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libplist
+
     - name: fetch libusbmuxd
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libusbmuxd
+
     - name: fetch libimobiledevice-glue
       uses: dawidd6/action-download-artifact@v2
       with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libimobiledevice-glue-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libimobiledevice-glue
+
     - name: install external dependencies
       run: |
           mkdir extract
@@ -210,6 +229,7 @@ jobs:
             tar -C extract -xvf $I
           done
           cp -r extract/* /
+
     - uses: actions/checkout@v2
     - name: autogen
       run: ./autogen.sh CC=gcc CXX=g++ --enable-debug
@@ -217,11 +237,13 @@ jobs:
       run: make
     - name: make install
       run: make install
+
     - name: prepare artifact
       run: |
           mkdir -p dest
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar ${{ env.dest }}
+
     - name: publish artifact
       uses: actions/upload-artifact@v2
       with:
