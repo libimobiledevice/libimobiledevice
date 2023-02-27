@@ -54,13 +54,10 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: autogen
-      run: ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LDFLAGS="-Wl,-rpath=/usr/local/lib" --enable-debug
-
-    - name: make
-      run: make -j
-    - name: make install
-      run: sudo make -j install
+    - name: autogen and make install
+      run: |
+        ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LDFLAGS="-Wl,-rpath=/usr/local/lib" --enable-debug
+        sudo make -j install
 
     - name: prepare artifact
       run: |
@@ -134,7 +131,7 @@ jobs:
           tar -C deps -xzf $FILENAME
           echo "DEPSDIR=`pwd`/deps" >> $GITHUB_ENV
 
-    - name: autogen
+    - name: autogen and make install
       run: |
           SDKDIR=`xcrun --sdk macosx --show-sdk-path`
           TESTARCHS="arm64 x86_64"
@@ -149,11 +146,7 @@ jobs:
           ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig --enable-debug \
               openssl_CFLAGS="-I${{ env.DEPSDIR }}/libressl-${{ env.LIBRESSL_VER }}/include" \
               openssl_LIBS="-Xlinker ${{ env.LIBSSL }} -Xlinker ${{ env.LIBCRYPTO }}"
-
-    - name: make
-      run: make -j
-    - name: make install
-      run: sudo make -j install
+          sudo make -j install
 
     - name: prepare artifact
       run: |
@@ -231,12 +224,10 @@ jobs:
           cp -r extract/* /
 
     - uses: actions/checkout@v3
-    - name: autogen
-      run: ./autogen.sh CC=gcc CXX=g++ --enable-debug
-    - name: make
-      run: make -j
-    - name: make install
-      run: make -j install
+    - name: autogen and make install
+      run: |
+        ./autogen.sh CC=gcc CXX=g++ --enable-debug
+        make -j install
 
     - name: prepare artifact
       run: |
