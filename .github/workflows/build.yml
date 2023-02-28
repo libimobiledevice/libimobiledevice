@@ -169,8 +169,8 @@ jobs:
       fail-fast: false
       matrix:
         include: [
-          { msystem: MINGW64, arch: x86_64 },
-          { msystem: MINGW32, arch: i686   }
+          { msystem: mingw64, arch: x86_64 },
+          { msystem: mingw32, arch: i686   }
         ]
     steps:
     - uses: msys2/setup-msys2@v2
@@ -189,8 +189,6 @@ jobs:
 
     - name: prepare environment
       run: |
-        dest=`echo ${{ matrix.msystem }} |tr [:upper:] [:lower:]`
-        echo "dest=$dest" >> $GITHUB_ENV
         echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
         git config --global core.autocrlf false
 
@@ -198,21 +196,21 @@ jobs:
       uses: dawidd6/action-download-artifact@v2
       with:
         workflow: build.yml
-        name: libplist-latest_${{ matrix.arch }}-${{ env.dest }}
+        name: libplist-latest_${{ matrix.arch }}-${{ matrix.msystem }}
         repo: libimobiledevice/libplist
 
     - name: fetch libusbmuxd
       uses: dawidd6/action-download-artifact@v2
       with:
         workflow: build.yml
-        name: libusbmuxd-latest_${{ matrix.arch }}-${{ env.dest }}
+        name: libusbmuxd-latest_${{ matrix.arch }}-${{ matrix.msystem }}
         repo: libimobiledevice/libusbmuxd
 
     - name: fetch libimobiledevice-glue
       uses: dawidd6/action-download-artifact@v2
       with:
         workflow: build.yml
-        name: libimobiledevice-glue-latest_${{ matrix.arch }}-${{ env.dest }}
+        name: libimobiledevice-glue-latest_${{ matrix.arch }}-${{ matrix.msystem }}
         repo: libimobiledevice/libimobiledevice-glue
 
     - name: install external dependencies
@@ -233,10 +231,10 @@ jobs:
       run: |
         mkdir -p dest
         DESTDIR=`pwd`/dest make -j install
-        tar -C dest -cf libimobiledevice.tar ${{ env.dest }}
+        tar -C dest -cf libimobiledevice.tar ${{ matrix.msystem }}
 
     - name: publish artifact
       uses: actions/upload-artifact@v3
       with:
-        name: libimobiledevice-latest_${{ matrix.arch }}-${{ env.dest }}
+        name: libimobiledevice-latest_${{ matrix.arch }}-${{ matrix.msystem }}
         path: libimobiledevice.tar
