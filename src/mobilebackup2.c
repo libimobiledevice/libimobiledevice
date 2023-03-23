@@ -219,6 +219,11 @@ LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_message(mobileb
 	return mobilebackup2_error(device_link_service_receive_message(client->parent, msg_plist, dlmessage));
 }
 
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_message_with_timeout(mobilebackup2_client_t client, plist_t *msg_plist, char **dlmessage, uint32_t timeout_ms)
+{
+	return mobilebackup2_error(device_link_service_receive_message_with_timeout(client->parent, msg_plist, dlmessage, timeout_ms));
+}
+
 LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes)
 {
 	if (!client || !client->parent || !data || (length == 0) || !bytes)

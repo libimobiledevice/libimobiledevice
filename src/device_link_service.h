@@ -47,6 +47,7 @@ device_link_service_error_t device_link_service_client_free(device_link_service_
 device_link_service_error_t device_link_service_version_exchange(device_link_service_client_t client, uint64_t version_major, uint64_t version_minor);
 device_link_service_error_t device_link_service_send_ping(device_link_service_client_t client, const char *message);
 device_link_service_error_t device_link_service_receive_message(device_link_service_client_t client, plist_t *msg_plist, char **dlmessage);
+device_link_service_error_t device_link_service_receive_message_with_timeout(device_link_service_client_t client, plist_t *msg_plist, char **dlmessage, uint32_t timeout_ms);
 device_link_service_error_t device_link_service_send_process_message(device_link_service_client_t client, plist_t message);
 device_link_service_error_t device_link_service_receive_process_message(device_link_service_client_t client, plist_t *message);
 device_link_service_error_t device_link_service_disconnect(device_link_service_client_t client, const char *message);
