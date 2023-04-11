@@ -294,7 +294,7 @@ poly1305_update_with_pad16(poly1305_state *poly1305,
 static void chacha20_poly1305_encrypt_96(unsigned char* key, unsigned char* nonce, unsigned char* ad, size_t ad_len, unsigned char* in, size_t in_len, unsigned char* out, size_t* out_len)
 {
 #if defined(HAVE_OPENSSL)
-#if defined(LIBRESSL_VERSION_NUMBER)
+#if defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x3050000fL)
 #if (LIBRESSL_VERSION_NUMBER >= 0x2040000fL)
 	const EVP_AEAD *aead = EVP_aead_chacha20_poly1305();
 	EVP_AEAD_CTX ctx;
@@ -378,7 +378,7 @@ static void chacha20_poly1305_encrypt_64(unsigned char* key, unsigned char* nonc
 static void chacha20_poly1305_decrypt_96(unsigned char* key, unsigned char* nonce, unsigned char* ad, size_t ad_len, unsigned char* in, size_t in_len, unsigned char* out, size_t* out_len)
 {
 #if defined(HAVE_OPENSSL)
-#if defined(LIBRESSL_VERSION_NUMBER)
+#if defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x3050000fL)
 #if (LIBRESSL_VERSION_NUMBER >= 0x2040000fL)
 	const EVP_AEAD *aead = EVP_aead_chacha20_poly1305();
 	EVP_AEAD_CTX ctx;
