@@ -47,6 +47,7 @@
 #include <libimobiledevice/sbservices.h>
 #include <libimobiledevice/diagnostics_relay.h>
 #include <libimobiledevice-glue/utils.h>
+#include <plist/plist.h>
 
 #include <endianness.h>
 
@@ -606,7 +607,7 @@ static int mb2_status_check_snapshot_state(const char *path, const char *udid, c
 	plist_t status_plist = NULL;
 	char *file_path = string_build_path(path, udid, "Status.plist", NULL);
 
-	plist_read_from_filename(&status_plist, file_path);
+	plist_read_from_file(file_path, &status_plist, NULL);
 	free(file_path);
 	if (!status_plist) {
 		printf("Could not read Status.plist!\n");
@@ -1780,7 +1781,7 @@ int main(int argc, char *argv[])
 				free(info_path);
 			}
 			plist_t manifest_plist = NULL;
-			plist_read_from_filename(&manifest_plist, manifest_path);
+			plist_read_from_file(manifest_path, &manifest_plist, NULL);
 			if (!manifest_plist) {
 				idevice_free(device);
 				free(info_path);
@@ -1936,7 +1937,7 @@ int main(int argc, char *argv[])
 		/* verify existing Info.plist */
 		if (info_path && (stat(info_path, &st) == 0) && cmd != CMD_CLOUD) {
 			PRINT_VERBOSE(1, "Reading Info.plist from backup.\n");
-			plist_read_from_filename(&info_plist, info_path);
+			plist_read_from_file(info_path, &info_plist, NULL);
 
 			if (!info_plist) {
 				printf("Could not read Info.plist\n");
@@ -2030,7 +2031,7 @@ checkpoint:
 				cmd = CMD_LEAVE;
 			}
 			remove_file(info_path);
-			plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+			plist_write_to_file(info_plist, info_path, PLIST_FORMAT_XML, 0);
 			free(info_path);
 
 			plist_free(info_plist);

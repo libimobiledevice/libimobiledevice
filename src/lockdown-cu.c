@@ -1032,7 +1032,7 @@ LIBIMOBILEDEVICE_API lockdownd_error_t lockdownd_cu_send_request_and_get_reply(l
 	plist_free(dict);
 	dict = NULL;
 
-	plist_from_memory((const char*)decrypted, decrypted_len, &dict);
+	plist_from_memory((const char*)decrypted, decrypted_len, &dict, NULL);
 	if (!dict) {
 		ret = LOCKDOWN_E_PLIST_ERROR;
 		debug_info("Failed to parse PLIST from decrypted payload:");

@@ -37,7 +37,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
-#include <libimobiledevice-glue/utils.h>
+#include <plist/plist.h>
 
 #define FORMAT_KEY_VALUE 1
 #define FORMAT_XML 2
@@ -241,11 +241,11 @@ int main(int argc, char *argv[])
 				free(xml_doc);
 				break;
 			case FORMAT_KEY_VALUE:
-				plist_print_to_stream(node, stdout);
+				plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 				break;
 			default:
 				if (key != NULL)
-					plist_print_to_stream(node, stdout);
+					plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 			break;
 			}
 			plist_free(node);

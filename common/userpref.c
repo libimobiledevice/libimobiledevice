@@ -338,7 +338,7 @@ userpref_error_t userpref_read_pair_record(const char *udid, plist_t *pair_recor
 	}
 
 	*pair_record = NULL;
-	plist_from_memory(record_data, record_size, pair_record);
+	plist_from_memory(record_data, record_size, pair_record, NULL);
 	free(record_data);
 
 	if (!*pair_record) {

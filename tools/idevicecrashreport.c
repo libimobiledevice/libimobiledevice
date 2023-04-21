@@ -81,7 +81,7 @@ static int extract_raw_crash_report(const char* filename)
 	strcpy(p, ".crash");
 
 	/* read plist crash report */
-	if (plist_read_from_filename(&report, filename)) {
+	if (plist_read_from_file(filename, &report, NULL)) {
 		plist_t description_node = plist_dict_get_item(report, "description");
 		if (description_node && plist_get_node_type(description_node) == PLIST_STRING) {
 			plist_get_string_val(description_node, &raw);

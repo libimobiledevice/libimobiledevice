@@ -45,7 +45,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/misagent.h>
-#include <libimobiledevice-glue/utils.h>
+#include <plist/plist.h>
 
 static void print_usage(int argc, char **argv, int is_error)
 {
@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
 				}
 			} else {
 				if (pl && (plist_get_node_type(pl) == PLIST_DICT)) {
-					plist_print_to_stream(pl, stdout);
+					plist_write_to_stream(pl, stdout, PLIST_FORMAT_LIMD, 0);
 				} else {
 					fprintf(stderr, "ERROR: unexpected node type in profile plist (not PLIST_DICT)\n");
 					res = -1;

@@ -57,6 +57,7 @@
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
 #include <libimobiledevice-glue/utils.h>
+#include <plist/plist.h>
 
 #define MOBILEBACKUP_SERVICE_NAME "com.apple.mobilebackup"
 #define NP_SERVICE_NAME "com.apple.mobile.notification_proxy"
@@ -317,7 +318,7 @@ static void mobilebackup_write_status(const char *path, int status)
 	if (stat(file_path, &st) == 0)
 		remove(file_path);
 
-	plist_write_to_filename(status_plist, file_path, PLIST_FORMAT_XML);
+	plist_write_to_file(status_plist, file_path, PLIST_FORMAT_XML, 0);
 
 	plist_free(status_plist);
 	status_plist = NULL;
@@ -331,7 +332,7 @@ static int mobilebackup_read_status(const char *path)
 	plist_t status_plist = NULL;
 	char *file_path = mobilebackup_build_path(path, "Status", ".plist");
 
-	plist_read_from_filename(&status_plist, file_path);
+	plist_read_from_file(file_path, &status_plist, NULL);
 	free(file_path);
 	if (!status_plist) {
 		printf("Could not read Status.plist!\n");
@@ -454,7 +455,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 	}
 
 	infopath = mobilebackup_build_path(backup_directory, hash, ".mdinfo");
-	plist_read_from_filename(&mdinfo, infopath);
+	plist_read_from_file(infopath, &mdinfo, NULL);
 	free(infopath);
 	if (!mdinfo) {
 		printf("\r\n");
@@ -882,7 +883,7 @@ int main(int argc, char *argv[])
 		/* verify existing Info.plist */
 		if (stat(info_path, &st) == 0) {
 			printf("Reading Info.plist from backup.\n");
-			plist_read_from_filename(&info_plist, info_path);
+			plist_read_from_file(info_path, &info_plist, NULL);
 
 			if (!info_plist) {
 				printf("Could not read Info.plist\n");
@@ -893,7 +894,7 @@ int main(int argc, char *argv[])
 					/* update the last backup time within Info.plist */
 					mobilebackup_info_update_last_backup_date(info_plist);
 					remove(info_path);
-					plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+					plist_write_to_file(info_plist, info_path, PLIST_FORMAT_XML, 0);
 				} else {
 					printf("Aborting backup. Backup is not compatible with the current device.\n");
 					cmd = CMD_LEAVE;
@@ -959,7 +960,7 @@ int main(int argc, char *argv[])
 			/* read the last Manifest.plist */
 			if (!is_full_backup) {
 				printf("Reading existing Manifest.\n");
-				plist_read_from_filename(&manifest_plist, manifest_path);
+				plist_read_from_file(manifest_path, &manifest_plist, NULL);
 				if (!manifest_plist) {
 					printf("Could not read Manifest.plist, switching to full backup mode.\n");
 					is_full_backup = 1;
@@ -977,7 +978,7 @@ int main(int argc, char *argv[])
 				remove(info_path);
 				printf("Creating Info.plist for new backup.\n");
 				info_plist = mobilebackup_factory_info_plist_new(udid);
-				plist_write_to_filename(info_plist, info_path, PLIST_FORMAT_XML);
+				plist_write_to_file(info_plist, info_path, PLIST_FORMAT_XML, 0);
 			}
 			free(info_path);
 
@@ -1116,7 +1117,7 @@ int main(int argc, char *argv[])
 							remove(filename_mdinfo);
 
 						node = plist_dict_get_item(node_tmp, "BackupFileInfo");
-						plist_write_to_filename(node, filename_mdinfo, PLIST_FORMAT_BINARY);
+						plist_write_to_file(node, filename_mdinfo, PLIST_FORMAT_BINARY, 0);
 
 						free(filename_mdinfo);
 					}
@@ -1228,7 +1229,7 @@ files_out:
 					if (manifest_plist) {
 						remove(manifest_path);
 						printf("Storing Manifest.plist...\n");
-						plist_write_to_filename(manifest_plist, manifest_path, PLIST_FORMAT_XML);
+						plist_write_to_file(manifest_plist, manifest_path, PLIST_FORMAT_XML, 0);
 					}
 
 					backup_ok = 1;
@@ -1259,7 +1260,7 @@ files_out:
 			}
 			/* now make sure backup integrity is ok! verify all files */
 			printf("Reading existing Manifest.\n");
-			plist_read_from_filename(&manifest_plist, manifest_path);
+			plist_read_from_file(manifest_path, &manifest_plist, NULL);
 			if (!manifest_plist) {
 				printf("Could not read Manifest.plist. Aborting.\n");
 				break;
@@ -1386,7 +1387,7 @@ files_out:
 					while (node) {
 						/* TODO: read mddata/mdinfo files and send to device using DLSendFile */
 						file_info_path = mobilebackup_build_path(backup_directory, hash, ".mdinfo");
-						plist_read_from_filename(&file_info, file_info_path);
+						plist_read_from_file(file_info_path, &file_info, NULL);
 
 						/* get encryption state */
 						tmp_node = plist_dict_get_item(file_info, "IsEncrypted");
