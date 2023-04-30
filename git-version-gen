@@ -16,4 +16,5 @@ else
     fi
   fi
 fi
+VER=`printf %s "$VER" | head -n1`
 printf %s "$VER"
