@@ -41,6 +41,7 @@
 #define __usleep(x) Sleep(x/1000)
 #else
 #include <arpa/inet.h>
+#include <unistd.h>
 #define __usleep(x) usleep(x)
 #endif
 
