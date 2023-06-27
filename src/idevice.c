@@ -515,27 +515,16 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connect(idevice_t device, uint16_t 
 		return IDEVICE_E_SUCCESS;
 	}
 	if (device->conn_type == CONNECTION_NETWORK) {
-		struct sockaddr_storage saddr_storage;
-		struct sockaddr* saddr = (struct sockaddr*)&saddr_storage;
-
-		/* FIXME: Improve handling of this platform/host dependent connection data */
-		if (((char*)device->conn_data)[1] == 0x02) { // AF_INET
-			saddr->sa_family = AF_INET;
-			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 14);
-		}
-		else if (((char*)device->conn_data)[1] == 0x1E) { // AF_INET6 (bsd)
+		struct sockaddr* saddr = (struct sockaddr*)(device->conn_data);
+		switch (saddr->sa_family) {
+			case AF_INET:
 #ifdef AF_INET6
-			saddr->sa_family = AF_INET6;
-			/* copy the address and the host dependent scope id */
-			memcpy(&saddr->sa_data[0], (char*)device->conn_data + 2, 26);
-#else
-			debug_info("ERROR: Got an IPv6 address but this system doesn't support IPv6");
-			return IDEVICE_E_UNKNOWN_ERROR;
+			case AF_INET6:
 #endif
-		}
-		else {
-			debug_info("Unsupported address family 0x%02x", ((char*)device->conn_data)[1]);
-			return IDEVICE_E_UNKNOWN_ERROR;
+				break;
+			default:
+				debug_info("Unsupported address family 0x%02x", saddr->sa_family);
+				return IDEVICE_E_UNKNOWN_ERROR;
 		}
 
 		char addrtxt[48];
