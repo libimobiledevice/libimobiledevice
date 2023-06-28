@@ -33,6 +33,9 @@
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
 #endif
 
 #include <usbmuxd.h>
@@ -324,7 +327,21 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_device_list_extended(idevice_in
 			newlist[newcount]->conn_data = NULL;
 		} else if (dev_list[i].conn_type == CONNECTION_TYPE_NETWORK) {
 			newlist[newcount]->conn_type = CONNECTION_NETWORK;
-			size_t addrlen = ((uint8_t*)dev_list[i].conn_data)[0];
+			struct sockaddr* saddr = (struct sockaddr*)(dev_list[i].conn_data);
+			size_t addrlen = 0;
+			switch (saddr->sa_family) {
+				case AF_INET:
+					addrlen = sizeof(struct sockaddr_in);
+					break;
+#ifdef AF_INET6
+				case AF_INET6:
+					addrlen = sizeof(struct sockaddr_in6);
+					break;
+#endif
+				default:
+					debug_info("Unsupported address family 0x%02x\n", saddr->sa_family);
+					continue;
+			}
 			newlist[newcount]->conn_data = malloc(addrlen);
 			memcpy(newlist[newcount]->conn_data, dev_list[i].conn_data, addrlen);
 		}
@@ -426,9 +443,25 @@ static idevice_t idevice_from_mux_device(usbmuxd_device_info_t *muxdev)
 		break;
 	case CONNECTION_TYPE_NETWORK:
 		device->conn_type = CONNECTION_NETWORK;
-		size_t len = ((uint8_t*)muxdev->conn_data)[0];
-		device->conn_data = malloc(len);
-		memcpy(device->conn_data, muxdev->conn_data, len);
+		struct sockaddr* saddr = (struct sockaddr*)(muxdev->conn_data);
+		size_t addrlen = 0;
+		switch (saddr->sa_family) {
+			case AF_INET:
+				addrlen = sizeof(struct sockaddr_in);
+				break;
+#ifdef AF_INET6
+			case AF_INET6:
+				addrlen = sizeof(struct sockaddr_in6);
+				break;
+#endif
+			default:
+				debug_info("Unsupported address family 0x%02x\n", saddr->sa_family);
+				free(device->udid);
+				free(device);
+				return NULL;
+		}
+		device->conn_data = malloc(addrlen);
+		memcpy(device->conn_data, muxdev->conn_data, addrlen);
 		break;
 	default:
 		device->conn_type = 0;
