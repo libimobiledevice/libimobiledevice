@@ -30,6 +30,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <errno.h>
 #ifndef WIN32
 #include <signal.h>
