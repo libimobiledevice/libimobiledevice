@@ -291,6 +291,11 @@ int main(int argc, char *argv[])
 			res = 0;
 			goto cleanup;
 			break;
+		default:
+			print_usage(argc, argv, 1);
+			res = 2;
+			goto cleanup;
+			break;
 		}
 	}
 	argc -= optind;
