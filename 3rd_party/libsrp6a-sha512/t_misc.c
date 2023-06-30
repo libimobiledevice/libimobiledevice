@@ -80,8 +80,7 @@ SHA1_CTX randctxt;
 extern char ** environ;
 
 static void
-t_envhash(out)
-     unsigned char * out;
+t_envhash(unsigned char * out)
 {
   char ** ptr;
   char ebuf[256];
@@ -115,8 +114,7 @@ t_envhash(out)
  * The entire buffer is run once through SHA to obtain the final result.
  */
 static void
-t_fshash(out)
-     unsigned char * out;
+t_fshash(unsigned char * out)
 {
   char dotpath[128];
   struct stat st;
@@ -317,9 +315,7 @@ t_stronginitrand()
  * Each cycle generates 20 bytes of new output.
  */
 _TYPE( void )
-t_random(data, size)
-     unsigned char * data;
-     unsigned size;
+t_random(unsigned char * data, unsigned size)
 {
   if(!initialized)
     t_initrand();
@@ -369,10 +365,7 @@ t_random(data, size)
  * single 320-bit value.
  */
 _TYPE( unsigned char * )
-t_sessionkey(key, sk, sklen)
-     unsigned char * key;
-     unsigned char * sk;
-     unsigned sklen;
+t_sessionkey(unsigned char * key, unsigned char * sk, unsigned sklen)
 {
   unsigned i, klen;
   unsigned char * hbuf;
@@ -411,11 +404,7 @@ t_sessionkey(key, sk, sklen)
 }
 
 _TYPE( void )
-t_mgf1(mask, masklen, seed, seedlen)
-     unsigned char * mask;
-     unsigned masklen;
-     const unsigned char * seed;
-     unsigned seedlen;
+t_mgf1(unsigned char * mask, unsigned masklen, const unsigned char * seed, unsigned seedlen)
 {
   SHA1_CTX ctxt;
   unsigned i = 0;

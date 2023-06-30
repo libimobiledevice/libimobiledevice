@@ -33,8 +33,7 @@
 #include "cstr.h"
 
 static int
-hexDigitToInt(c)
-     char c;
+hexDigitToInt(char c)
 {
   if(c >= '0' && c <= '9')
     return c - '0';
@@ -50,9 +49,7 @@ hexDigitToInt(c)
  * Convert a hex string to a string of bytes; return size of dst
  */
 _TYPE( int )
-t_fromhex(dst, src)
-     char * dst;
-     const char * src;
+t_fromhex(char *dst, const char *src)
 {
   register char *chp = dst;
   register unsigned size = strlen(src);
@@ -76,10 +73,7 @@ t_fromhex(dst, src)
  * Convert a string of bytes to their hex representation
  */
 _TYPE( char * )
-t_tohex(dst, src, size)
-     char * dst;
-     const char * src;
-     unsigned size;
+t_tohex(char *dst, const char *src, unsigned size)
 {
    int notleading = 0;
 
@@ -103,10 +97,7 @@ t_tohex(dst, src, size)
 }
 
 _TYPE( char * )
-t_tohexcstr(dst, src, size)
-     cstr * dst;
-     const char * src;
-     unsigned size;
+t_tohexcstr(cstr *dst, const char *src, unsigned size)
 {
   cstr_set_length(dst, 2 * size + 1);
   return t_tohex(dst->data, src, size);
@@ -119,9 +110,7 @@ static char b64table[] =
  * Convert a base64 string into raw byte array representation.
  */
 _TYPE( int )
-t_fromb64(dst, src)
-     char * dst;
-     const char * src;
+t_fromb64(char *dst, const char *src)
 {
   unsigned char *a;
   char *loc;
@@ -179,9 +168,7 @@ t_fromb64(dst, src)
 }
 
 _TYPE( int )
-t_cstrfromb64(dst, src)
-     cstr * dst;
-     const char * src;
+t_cstrfromb64(cstr *dst, const char *src)
 {
   int len;
   cstr_set_length(dst, (strlen(src) * 6 + 7) / 8);
@@ -194,10 +181,7 @@ t_cstrfromb64(dst, src)
  * Convert a raw byte string into a null-terminated base64 ASCII string.
  */
 _TYPE( char * )
-t_tob64(dst, src, size)
-     char * dst;
-     const char * src;
-     unsigned size;
+t_tob64(char *dst, const char *src, unsigned size)
 {
   int c, pos = size % 3;
   unsigned char b0 = 0, b1 = 0, b2 = 0, notleading = 0;
@@ -248,10 +232,7 @@ t_tob64(dst, src, size)
 }
 
 _TYPE( char * )
-t_tob64cstr(dst, src, sz)
-     cstr * dst;
-     const char * src;
-     unsigned int sz;
+t_tob64cstr(cstr *dst, const char *src, unsigned int sz)
 {
   cstr_set_length(dst, (sz * 8 + 5) / 6 + 1);
   return t_tob64(dst->data, src, sz);

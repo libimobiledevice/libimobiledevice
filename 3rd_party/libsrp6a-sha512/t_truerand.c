@@ -227,8 +227,7 @@ raw_truerand()
 }
 
 int
-raw_n_truerand(n)
-int n;
+raw_n_truerand(int n)
 {
 	int slop, v;
 
