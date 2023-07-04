@@ -107,6 +107,44 @@ SHA512Final_mbed(unsigned char digest[64], SHA512_CTX * ctx)
   mbedtls_md_free(ctx);
 }
 
+#elif defined(OPENSSL_SHA)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+void
+SHA1Init_openssl(SHA1_CTX *ctx)
+{
+  *ctx = EVP_MD_CTX_new();
+  EVP_DigestInit(*ctx, EVP_sha1());
+}
+
+void SHA1Update_openssl(SHA1_CTX *ctx, const void *data, unsigned int len)
+{
+  EVP_DigestUpdate(*ctx, data, (size_t)len);
+}
+
+void SHA1Final_openssl(unsigned char digest[20], SHA1_CTX *ctx)
+{
+  EVP_DigestFinal(*ctx, digest, NULL);
+  EVP_MD_CTX_destroy(*ctx);
+}
+
+void
+SHA512Init_openssl(SHA512_CTX *ctx)
+{
+  *ctx = EVP_MD_CTX_new();
+  EVP_DigestInit(*ctx, EVP_sha512());
+}
+
+void SHA512Update_openssl(SHA512_CTX *ctx, const void *data, unsigned int len)
+{
+  EVP_DigestUpdate(*ctx, data, (size_t)len);
+}
+
+void SHA512Final_openssl(unsigned char digest[64], SHA512_CTX *ctx)
+{
+  EVP_DigestFinal(*ctx, digest, NULL);
+  EVP_MD_CTX_destroy(*ctx);
+}
+#endif
 #elif !defined(OPENSSL_SHA) && !defined(TOMCRYPT_SHA)
 /* Use the free SHA1 if the library doesn't have it */
 
@@ -273,4 +311,4 @@ unsigned char finalcount[8];
     SHA1Transform(context->state, context->buffer);
 #endif
 }
-#endif /* OPENSSL */
+#endif

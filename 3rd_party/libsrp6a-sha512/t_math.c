@@ -39,11 +39,13 @@ typedef BIGNUM * BigInteger;
 typedef BN_CTX * BigIntegerCtx;
 typedef BN_MONT_CTX * BigIntegerModAccel;
 #include <limits.h>
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 # ifndef OPENSSL_NO_ENGINE
 #  define OPENSSL_ENGINE
 #  include "openssl/engine.h"
 static ENGINE * default_engine = NULL;
 # endif /* OPENSSL_ENGINE */
+#endif
 typedef int (*modexp_meth)(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 			   const BIGNUM *m, BN_CTX *ctx, BN_MONT_CTX *mctx);
 static modexp_meth default_modexp = NULL;
@@ -758,7 +760,11 @@ BigIntegerCheckPrime(BigInteger n, BigIntegerCtx c)
   if(c == NULL)
     c = ctx = BN_CTX_new();
 #if OPENSSL_VERSION_NUMBER >= 0x00908000
-  rv = BN_is_prime_ex(n, 25, c, NULL);
+  #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    rv = BN_check_prime(n, c, NULL);
+  #else
+    rv = BN_is_prime_ex(n, 25, c, NULL);
+  #endif
 #else
   rv = BN_is_prime(n, 25, NULL, c, NULL);
 #endif

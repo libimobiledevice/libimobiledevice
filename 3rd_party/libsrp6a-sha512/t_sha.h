@@ -38,6 +38,28 @@
 #endif
 
 #ifdef OPENSSL_SHA
+#include <openssl/err.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/evp.h>
+
+typedef EVP_MD_CTX* SHA1_CTX;
+#define SHA1Init SHA1Init_openssl
+#define SHA1Update SHA1Update_openssl
+#define SHA1Final SHA1Final_openssl
+
+typedef EVP_MD_CTX* SHA512_CTX;
+#define SHA512Init SHA512Init_openssl
+#define SHA512Update SHA512Update_openssl
+#define SHA512Final SHA512Final_openssl
+
+void SHA1Init_openssl(SHA1_CTX *ctx);
+void SHA1Update_openssl(SHA1_CTX *ctx, const void *data, unsigned int len);
+void SHA1Final_openssl(unsigned char digest[20], SHA1_CTX *ctx);
+
+void SHA512Init_openssl(SHA512_CTX *ctx);
+void SHA512Update_openssl(SHA512_CTX *ctx, const void *data, unsigned int len);
+void SHA512Final_openssl(unsigned char digest[64], SHA1_CTX *ctx);
+#else /* for OpenSSL < 3.0 */
 #include <openssl/sha.h>
 
 typedef SHA_CTX SHA1_CTX;
@@ -48,7 +70,7 @@ typedef SHA_CTX SHA1_CTX;
 #define SHA512Init SHA512_Init
 #define SHA512Update SHA512_Update
 #define SHA512Final SHA512_Final
-
+#endif /* for OpenSSL < 3.0 */
 #elif defined(TOMCRYPT_SHA)
 /* mycrypt.h already included above */
 
