@@ -163,7 +163,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		char* p = strrchr(list[k], '.');
 		if (p != NULL && !strncmp(p, ".synced", 7)) {
 			/* make sure to strip ".synced" extension as seen on iOS 5 */
-			int newlen = strlen(list[k]) - 7;
+			size_t newlen = p - list[k];
 			strncpy(((char*)target_filename) + host_directory_length, list[k], newlen);
 			target_filename[host_directory_length + newlen] = '\0';
 		} else {
