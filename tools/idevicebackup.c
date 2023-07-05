@@ -34,6 +34,9 @@
 #include <getopt.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/sha.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/evp.h>
+#endif
 #elif defined(HAVE_GNUTLS)
 #include <gcrypt.h>
 #elif defined(HAVE_MBEDTLS)
@@ -113,7 +116,11 @@ static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, 
 static void _sha1_update(void* context, const char* data, size_t len)
 {
 #if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	EVP_DigestUpdate(context, data, len);
+#else
 	SHA1_Update(context, data, len);
+#endif
 #elif defined(HAVE_GNUTLS)
 	gcry_md_write(context, data, len);
 #elif defined(HAVE_MBEDTLS)
@@ -124,9 +131,15 @@ static void _sha1_update(void* context, const char* data, size_t len)
 static void compute_datahash(const char *path, const char *destpath, uint8_t greylist, const char *domain, const char *appid, const char *version, unsigned char *hash_out)
 {
 #if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	EVP_MD_CTX* sha1 = EVP_MD_CTX_new();
+	EVP_DigestInit(sha1, EVP_sha1());
+	void* psha1 = sha1;
+#else
 	SHA_CTX sha1;
 	SHA1_Init(&sha1);
 	void* psha1 = &sha1;
+#endif
 #elif defined(HAVE_GNUTLS)
 	gcry_md_hd_t hd = NULL;
 	gcry_md_open(&hd, GCRY_MD_SHA1, 0);
@@ -180,7 +193,12 @@ static void compute_datahash(const char *path, const char *destpath, uint8_t gre
 			_sha1_update(psha1, "(null)", 6);
 		}
 #if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+		EVP_DigestFinal(sha1, hash_out, NULL);
+		EVP_MD_CTX_destroy(sha1);
+#else
 		SHA1_Final(hash_out, &sha1);
+#endif
 #elif defined(HAVE_GNUTLS)
 		unsigned char *newhash = gcry_md_read(hd, GCRY_MD_SHA1);
 		memcpy(hash_out, newhash, 20);

@@ -435,6 +435,10 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	debug_info("Generating keys and certificates...");
 
 #if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	EVP_PKEY* root_pkey = EVP_RSA_gen(2048);
+	EVP_PKEY* host_pkey = EVP_RSA_gen(2048);
+#else
 	BIGNUM *e = BN_new();
 	RSA* root_keypair = RSA_new();
 	RSA* host_keypair = RSA_new();
@@ -451,6 +455,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	EVP_PKEY* host_pkey = EVP_PKEY_new();
 	EVP_PKEY_assign_RSA(host_pkey, host_keypair);
+#endif
 
 	/* generate root certificate */
 	X509* root_cert = X509_new();
@@ -561,12 +566,22 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		}
 	}
 
-	RSA *pubkey = NULL;
+	EVP_PKEY *pubkey = NULL;
 	{
 		BIO *membp = BIO_new_mem_buf(public_key.data, public_key.size);
-		if (!PEM_read_bio_RSAPublicKey(membp, &pubkey, NULL, NULL)) {
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+		if (!PEM_read_bio_PUBKEY(membp, &pubkey, NULL, NULL)) {
 			debug_info("WARNING: Could not read public key");
 		}
+#else
+		RSA *rsa_pubkey = NULL;
+		if (!PEM_read_bio_RSAPublicKey(membp, &rsa_pubkey, NULL, NULL)) {
+			debug_info("WARNING: Could not read public key");
+		} else {
+			pubkey = EVP_PKEY_new();
+			EVP_PKEY_assign_RSA(pubkey, rsa_pubkey);
+		}
+#endif
 		BIO_free(membp);
 	}
 
@@ -588,10 +603,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		X509_set1_notAfter(dev_cert, asn1time);
 		ASN1_TIME_free(asn1time);
 
-		EVP_PKEY* pkey = EVP_PKEY_new();
-		EVP_PKEY_assign_RSA(pkey, pubkey);
-		X509_set_pubkey(dev_cert, pkey);
-		EVP_PKEY_free(pkey);
+		X509_set_pubkey(dev_cert, pubkey);
 
 		X509_add_ext_helper(dev_cert, NID_subject_key_identifier, (char*)"hash");
 		X509_add_ext_helper(dev_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
@@ -618,6 +630,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	X509V3_EXT_cleanup();
 	X509_free(dev_cert);
 
+	EVP_PKEY_free(pubkey);
 	EVP_PKEY_free(root_pkey);
 	EVP_PKEY_free(host_pkey);
 

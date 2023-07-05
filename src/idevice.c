@@ -1057,18 +1057,33 @@ static void internal_ssl_cleanup(ssl_data_t ssl_data)
 }
 
 #ifdef HAVE_OPENSSL
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+static long ssl_idevice_bio_callback(BIO *b, int oper, const char *argp, size_t len, int argi, long argl, int retvalue, size_t *processed)
+#else
 static long ssl_idevice_bio_callback(BIO *b, int oper, const char *argp, int argi, long argl, long retvalue)
+#endif
 {
+	ssize_t bytes = 0;
 	idevice_connection_t conn = (idevice_connection_t)BIO_get_callback_arg(b);
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 	size_t len = (size_t)argi;
+	size_t *processed = (size_t*)&bytes;
+#endif
 	switch (oper) {
 	case (BIO_CB_READ|BIO_CB_RETURN):
-		return argp ? (long)internal_ssl_read(conn, (char *)argp, len) : 0;
+		if (argp) {
+			bytes = internal_ssl_read(conn, (char *)argp, len);
+			*processed = bytes;
+			return (long)bytes;
+		}
+		return 0;
 	case (BIO_CB_PUTS|BIO_CB_RETURN):
 		len = strlen(argp);
 		// fallthrough
 	case (BIO_CB_WRITE|BIO_CB_RETURN):
-		return (long)internal_ssl_write(conn, argp, len);
+		bytes = internal_ssl_write(conn, argp, len);
+		*processed = bytes;
+		return (long)bytes;
 	default:
 		return retvalue;
 	}
@@ -1079,7 +1094,11 @@ static BIO *ssl_idevice_bio_new(idevice_connection_t conn)
 	BIO *b = BIO_new(BIO_s_null());
 	if (!b) return NULL;
 	BIO_set_callback_arg(b, (char *)conn);
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	BIO_set_callback_ex(b, ssl_idevice_bio_callback);
+#else
 	BIO_set_callback(b, ssl_idevice_bio_callback);
+#endif
 	return b;
 }
 
@@ -1257,6 +1276,16 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	X509_free(rootCert);
 	free(root_cert.data);
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	EVP_PKEY* rootPrivKey = NULL;
+	membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
+	PEM_read_bio_PrivateKey(membp, &rootPrivKey, NULL, NULL);
+	BIO_free(membp);
+	if (SSL_CTX_use_PrivateKey(ssl_ctx, rootPrivKey) != 1) {
+		debug_info("WARNING: Could not load RootPrivateKey");
+	}
+	EVP_PKEY_free(rootPrivKey);
+#else
 	RSA* rootPrivKey = NULL;
 	membp = BIO_new_mem_buf(root_privkey.data, root_privkey.size);
 	PEM_read_bio_RSAPrivateKey(membp, &rootPrivKey, NULL, NULL);
@@ -1265,6 +1294,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 		debug_info("WARNING: Could not load RootPrivateKey");
 	}
 	RSA_free(rootPrivKey);
+#endif
 	free(root_privkey.data);
 
 	SSL *ssl = SSL_new(ssl_ctx);
