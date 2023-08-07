@@ -53,6 +53,7 @@
 
 #define LOCK_ATTEMPTS 50
 #define LOCK_WAIT 200000
+#define MAX_LINKING_RETRIES 3
 
 #ifdef WIN32
 #include <windows.h>
@@ -2280,6 +2281,7 @@ checkpoint:
 			int errcode = 0;
 			const char *errdesc = NULL;
 			int progress_finished = 0;
+			int linking_retry_counter = 0;
 
 			/* process series of DLMessage* operations */
 			do {
@@ -2288,6 +2290,14 @@ checkpoint:
 				mberr = mobilebackup2_receive_message(mobilebackup2, &message, &dlmsg);
 				if (mberr == MOBILEBACKUP2_E_RECEIVE_TIMEOUT) {
 					PRINT_VERBOSE(2, "Device is not ready yet, retrying...\n");
+					/* Abort backup because the connection between the device and the computer is lost. */
+					if (++linking_retry_counter > MAX_LINKING_RETRIES) {
+						fprintf(stderr, "ERROR: Could not receive from mobilebackup2 (%d)\n", mberr);
+						result_code = mberr;
+						quit_flag++;
+					} else {
+						PRINT_VERBOSE(2, "Device is not ready yet, retrying...\n");
+					}
 					goto files_out;
 				} else if (mberr != MOBILEBACKUP2_E_SUCCESS) {
 					PRINT_VERBOSE(0, "ERROR: Could not receive from mobilebackup2 (%d)\n", mberr);
@@ -2630,12 +2640,14 @@ files_out:
 				break;
 			}
 		}
-		if (lockfile) {
+		if (lockfile && result_code != MOBILEBACKUP2_E_RECEIVE_TIMEOUT) {
 			afc_file_lock(afc, lockfile, AFC_LOCK_UN);
 			afc_file_close(afc, lockfile);
 			lockfile = 0;
 			if (cmd == CMD_BACKUP || cmd == CMD_RESTORE)
 				do_post_notification(device, NP_SYNC_DID_FINISH);
+		} else {
+			lockfile = 0;
 		}
 	} else {
 		printf("ERROR: Could not start service %s: %s\n", MOBILEBACKUP2_SERVICE_NAME, lockdownd_strerror(ldret));
