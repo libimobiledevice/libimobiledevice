@@ -47,6 +47,11 @@
 #include <plist/plist.h>
 
 static char *udid = NULL;
+typedef enum {
+       WIFI_SHOW,
+       WIFI_ENABLE,
+       WIFI_DISABLE
+} t_wifi;
 
 #ifdef HAVE_WIRELESS_PAIRING
 
@@ -158,6 +163,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  validate     validate if device is paired with this host\n"
 		"  unpair       unpair device with this host\n"
 		"  list         list devices paired with this host\n"
+		"  wifi <on/off>    enable/disable wifi connections\n"
 		"\n"
 		"The following OPTIONS are accepted:\n"
 		"  -u, --udid UDID  target specific device by UDID\n"
@@ -222,8 +228,9 @@ int main(int argc, char **argv)
 	plist_t host_info_plist = NULL;
 #endif
 	char *cmd;
+	t_wifi wifiopt = WIFI_SHOW;
 	typedef enum {
-		OP_NONE = 0, OP_PAIR, OP_VALIDATE, OP_UNPAIR, OP_LIST, OP_HOSTID, OP_SYSTEMBUID
+		OP_NONE = 0, OP_PAIR, OP_VALIDATE, OP_UNPAIR, OP_LIST, OP_HOSTID, OP_SYSTEMBUID, OP_WIFI
 	} op_t;
 	op_t op = OP_NONE;
 
@@ -325,6 +332,21 @@ int main(int argc, char **argv)
 		op = OP_HOSTID;
 	} else if (!strcmp(cmd, "systembuid")) {
 		op = OP_SYSTEMBUID;
+	} else if (!strcmp(cmd, "wifi")) {
+		op = OP_WIFI;
+		if ((argc - optind) < 2) {
+			wifiopt = WIFI_SHOW;
+		} else {
+			if (!strcmp((argv+optind+1)[0], "on")) {
+				wifiopt = WIFI_ENABLE;
+			} else if (!strcmp((argv+optind+1)[0], "off")){
+				wifiopt = WIFI_DISABLE;
+			} else {
+				printf("ERROR: Invalid wifi command option '%s' specified\n", (argv+optind+1)[0]);
+				print_usage(argc, argv, 1);
+				exit(EXIT_FAILURE);
+			}
+		}
 	} else {
 		fprintf(stderr, "ERROR: Invalid command '%s' specified\n", cmd);
 		print_usage(argc, argv, 1);
@@ -467,6 +489,35 @@ int main(int argc, char **argv)
 			print_error_message(lerr);
 		}
 		break;
+
+		case OP_WIFI:
+		{
+			lockdownd_client_free(client);
+			client = NULL;
+			lerr = lockdownd_client_new_with_handshake(device, &client, "idevicepair");
+			if (wifiopt == WIFI_SHOW) {
+				plist_t node;
+				if((lerr = lockdownd_get_value(client, "com.apple.mobile.wireless_lockdown", "EnableWifiConnections", &node)) == LOCKDOWN_E_SUCCESS) {
+					if (node) {
+						printf("EnableWifiConnections: %s\n",plist_bool_val_is_true(node) ? "yes" : "no");
+						plist_free(node);
+						node = NULL;
+					}
+				}else {
+					result = EXIT_FAILURE;
+					print_error_message(lerr);
+				}
+			}else{
+				lerr = lockdownd_set_value(client, "com.apple.mobile.wireless_lockdown", "EnableWifiConnections", plist_new_bool(wifiopt == WIFI_ENABLE));
+				if (lerr == LOCKDOWN_E_SUCCESS) {
+					printf("SUCCESS: setting wifi to %s\n", wifiopt == WIFI_ENABLE ? "on" : "off");
+				} else {
+					result = EXIT_FAILURE;
+					print_error_message(lerr);
+				}
+			}
+			break;
+		}
 	}
 
 leave:
