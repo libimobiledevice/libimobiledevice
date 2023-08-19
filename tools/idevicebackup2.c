@@ -510,6 +510,8 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 		"iTunesApplicationIDs",
 		"iTunesPrefs",
 		"iTunesPrefs.plist",
+		"PSAlbumAlbums",
+		"PSElementsAlbums",
 		NULL
 	};
 	int i = 0;
