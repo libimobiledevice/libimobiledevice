@@ -11,6 +11,7 @@ man_MANS = \
 	ideviceenterrecovery.1 \
 	idevicedate.1 \
 	ideviceprovision.1 \
+	ideviceconfig.1 \
 	idevicedebugserverproxy.1 \
 	idevicediagnostics.1 \
 	idevicecrashreport.1 \

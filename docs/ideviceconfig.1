@@ -1,0 +1,50 @@
+.TH "ideviceconfig" 1
+.SH NAME
+ideviceconfig \- Manage configuration profiles on a device.
+.SH SYNOPSIS
+.B ideviceconfig
+[OPTIONS] COMMAND
+
+.SH DESCRIPTION
+
+Manage configuration profiles on a device.
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by UDID.
+.TP 
+.B \-x, \-\-xml
+print XML output when using the 'dump' command.
+.TP 
+.B \-d, \-\-debug
+enable communication debugging.
+.TP 
+.B \-h, \-\-help
+prints usage information.
+
+.SH COMMANDS
+.TP
+.B install FILE
+Install the configuration profile specified by FILE. A valid ".mobileconfig"
+file is expected.
+.TP
+.B list
+Get a list of all configuration profiles on the device.
+.TP
+.B copy PATH
+Retrieves all configuration profiles from the device and stores them into the
+existing directory specified by PATH. The files will be stored 
+as "UUID.mobileconfig".
+.TP
+.B remove UUID
+Removes the configuration profile identified by UUID.
+.TP
+.B dump FILE
+Prints detailed information about the configuration profile specified by FILE.
+
+.SH AUTHORS
+Nikias Bassen
+
+.SH ON THE WEB
+http://libimobiledevice.org
