@@ -4,22 +4,16 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
+	$(ssl_lib_CFLAGS) \
+	$(LFS_CFLAGS) \
 	$(libusbmuxd_CFLAGS) \
-	$(libplist_CFLAGS) \
-	$(libgnutls_CFLAGS) \
-	$(libtasn1_CFLAGS) \
-	$(libgcrypt_CFLAGS) \
-	$(openssl_CFLAGS) \
-	$(LFS_CFLAGS)
+	$(libplist_CFLAGS)
 
 AM_LDFLAGS = \
+	$(ssl_lib_LIBS) \
+	${libpthread_LIBS} \
 	$(libusbmuxd_LIBS) \
-	$(libplist_LIBS) \
-	$(libgnutls_LIBS) \
-	$(libtasn1_LIBS) \
-	$(libgcrypt_LIBS) \
-	$(openssl_LIBS) \
-	${libpthread_LIBS}
+	$(libplist_LIBS)
 
 noinst_LTLIBRARIES = libinternalcommon.la
 libinternalcommon_la_LIBADD = 

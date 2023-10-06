@@ -6,19 +6,19 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
-	$(libusbmuxd_CFLAGS) \
-	$(libplist_CFLAGS) \
-	$(limd_glue_CFLAGS) \
 	$(ssl_lib_CFLAGS) \
 	$(LFS_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) \
+	$(libusbmuxd_CFLAGS) \
+	$(libplist_CFLAGS) \
+	$(limd_glue_CFLAGS)
 
 AM_LDFLAGS = \
+	$(ssl_lib_LIBS) \
+	$(PTHREAD_LIBS) \
 	$(libusbmuxd_LIBS) \
 	$(libplist_LIBS) \
-	$(limd_glue_LIBS) \
-	$(ssl_lib_LIBS) \
-	$(PTHREAD_LIBS)
+	$(limd_glue_LIBS)
 
 lib_LTLIBRARIES = libimobiledevice-1.0.la
 libimobiledevice_1_0_la_LIBADD = $(top_builddir)/common/libinternalcommon.la

@@ -4,6 +4,7 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
+	$(ssl_lib_CFLAGS) \
 	$(libplist_CFLAGS) \
 	$(LFS_CFLAGS)
 
@@ -48,7 +49,7 @@ idevicename_LDFLAGS = $(AM_LDFLAGS)
 idevicename_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicepair_SOURCES = idevicepair.c
-idevicepair_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS)
+idevicepair_CFLAGS = $(AM_CFLAGS)
 idevicepair_LDFLAGS = $(AM_LDFLAGS) $(libusbmuxd_LIBS) $(ssl_lib_LIBS)
 idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la $(limd_glue_LIBS)
 
@@ -63,7 +64,7 @@ idevice_id_LDFLAGS = $(AM_LDFLAGS)
 idevice_id_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicebackup_SOURCES = idevicebackup.c
-idevicebackup_CFLAGS = $(AM_CFLAGS) $(ssl_lib_CFLAGS) $(limd_glue_CFLAGS)
+idevicebackup_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
 idevicebackup_LDFLAGS = $(AM_LDFLAGS) $(ssl_lib_LIBS) $(limd_glue_LIBS)
 idevicebackup_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
