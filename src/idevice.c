@@ -1245,6 +1245,21 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
 	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
 	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
 		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
+		if (connection->device->version == 0) {
+			/*
+				iOS 1 doesn't understand TLS1_VERSION, it can only speak SSL3_VERSION
+				However, modern openssl is usually compiled without SSLv3 support.
+				So if we set min_proto_version to SSL3_VERSION on an openssl instance which doesn't support it,
+				it will just ignore min_proto_version altogether and fall back to an even higher version.
+
+				To avoid accidentally breaking iOS 2.0+, we set min version to 0 instead.
+				Here is what documentation says:
+					Setting the minimum or maximum version to 0, 
+					will enable protocol versions down to the lowest version, 
+					or up to the highest version supported by the library, respectively. 
+			*/
+			SSL_CTX_set_min_proto_version(ssl_ctx, 0);
+		}
 	}
 #endif
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
