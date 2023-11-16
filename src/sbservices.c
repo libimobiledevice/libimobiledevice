@@ -172,7 +172,10 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_set_icon_state(sbservices_cli
 	if (res != SBSERVICES_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
 	}
-	/* NO RESPONSE */
+
+	uint32_t bytes = 0;
+	service_receive_with_timeout(client->parent->parent, malloc(4), 4, &bytes, 2000);
+	debug_info("setIconState response: %u", bytes);
 
 	if (dict) {
 		plist_free(dict);
