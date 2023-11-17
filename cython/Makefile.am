@@ -3,19 +3,15 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
-	$(libgnutls_CFLAGS) \
-	$(libtasn1_CFLAGS) \
-	$(openssl_CFLAGS) \
-	$(libplist_CFLAGS) \
+	$(ssl_lib_CFLAGS) \
 	$(LFS_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) \
+	$(libplist_CFLAGS)
 
 AM_LIBS = \
-	$(libgnutls_LIBS) \
-	$(libtasn1_LIBS) \
-	$(openssl_LIBS) \
-	$(libplist_LIBS) \
-	$(PTHREAD_LIBS)
+	$(ssl_lib_LIBS) \
+	$(PTHREAD_LIBS) \
+	$(libplist_LIBS)
 
 if HAVE_CYTHON
 

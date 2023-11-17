@@ -6,7 +6,7 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
-	$(openssl_CFLAGS)
+	$(ssl_lib_CFLAGS)
 
 AM_LDFLAGS =
 
