@@ -42,7 +42,7 @@ LT_INIT
 # Checks for libraries.
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd-2.0 >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
-PKG_CHECK_MODULES(limd_glue, libimobiledevice-glue-1.0 >= $LIMD_GLUE_VERSION)
+PKG_CHECK_MODULES(limd_glue, libimobiledevice-glue-1.0.0 >= $LIMD_GLUE_VERSION)
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h])
