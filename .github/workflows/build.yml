@@ -74,7 +74,7 @@ jobs:
           else
             brew install libtool autoconf automake pkgconfig
           fi
-          pip install cython
+          pip3 install cython==0.29.24
       shell: bash
     - name: fetch libplist
       uses: dawidd6/action-download-artifact@v2
@@ -133,6 +133,16 @@ jobs:
           done
           export CFLAGS="$USEARCHS -isysroot $SDKDIR"
           echo "Using CFLAGS: $CFLAGS"
+          PYTHON3_BIN=`xcrun -f python3`
+          if test -x $PYTHON3_BIN; then
+            export PYTHON=$PYTHON3_BIN
+            PYTHON_VER=`$PYTHON3_BIN -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('VERSION'))"`
+            PYTHON_EXEC_PREFIX=`$PYTHON3_BIN -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('exec_prefix'))"`
+            PYTHON_LIBS_PATH=$PYTHON_EXEC_PREFIX/lib
+            PYTHON_FRAMEWORK_PATH=$PYTHON_EXEC_PREFIX/Python3
+            export PYTHON_LIBS="-L$PYTHON_LIBS_PATH -lpython$PYTHON_VER"
+            export PYTHON_EXTRA_LDFLAGS="-Wl,-stack_size,1000000  -framework CoreFoundation $PYTHON_FRAMEWORK_PATH"
+          fi
           ./autogen.sh PKG_CONFIG_PATH=/usr/local/lib/pkgconfig --enable-debug \
               openssl_CFLAGS="-I${{ env.DEPSDIR }}/libressl-${{ env.LIBRESSL_VER }}/include" \
               openssl_LIBS="-Xlinker ${{ env.LIBSSL }} -Xlinker ${{ env.LIBCRYPTO }}"
