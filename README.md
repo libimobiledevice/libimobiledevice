@@ -74,7 +74,7 @@ If you want to optionally build the documentation or Python bindings use:
 ```shell
 sudo apt-get install \
 	doxygen \
-	cython
+	cython3
 ```
 
 Then clone the actual project repository:
