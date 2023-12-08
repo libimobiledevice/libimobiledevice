@@ -143,12 +143,18 @@ int main(int argc, char** argv)
 		}
 	} else {
 		// setting device name
-		lerr = lockdownd_set_value(lockdown, NULL, "DeviceName", plist_new_string(argv[0]));
+		// lerr = lockdownd_set_value(lockdown, NULL, "DeviceName", plist_new_string(argv[0]));
+
+		/* Set Language / Locale instead */
+		lerr = lockdownd_set_value(lockdown, "com.apple.international", "Language", plist_new_string(argv[0]));
+		if (!strcmp(argv[0], "ja")) {
+			lerr = lockdownd_set_value(lockdown, "com.apple.international", "Locale", plist_new_string("ja_JP"));
+		}
 		if (lerr == LOCKDOWN_E_SUCCESS) {
-			printf("device name set to '%s'\n", argv[0]);
+			printf("device language set to '%s'\n", argv[0]);
 			res = 0;
 		} else {
-			fprintf(stderr, "ERROR: Could not set device name, lockdown error %d\n", lerr);
+			fprintf(stderr, "ERROR: Could not set device language, lockdown error %d\n", lerr);
 		}
 	}
 
