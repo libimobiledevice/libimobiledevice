@@ -1,0 +1,76 @@
+.TH "afcclient" 1
+.SH NAME
+afcclient \- Interact with AFC/HouseArrest service on a connected device.
+.SH SYNOPSIS
+.B afcclient
+[OPTIONS] [COMMAND ...]
+
+.SH DESCRIPTION
+
+Utility to interact with AFC/HouseArrest service. This allows access to parts
+of the filesystem on an iOS device.
+
+\f[B]afcclient\f[] can be used interactively with a command prompt, or run a single command and exit.
+
+.SH COMMANDS
+.TP
+.B devinfo
+print device information
+.TP
+.B info PATH
+print file attributes of file at PATH
+.TP
+.B ls PATH
+print directory contents of PATH
+.TP
+.B mv OLD NEW
+rename file OLD to NEW
+.TP
+.B mkdir PATH
+create directory at PATH
+.TP
+.B ln [-s] FILE [LINK]
+Create a (symbolic) link to file named LINKNAME. \f[B]NOTE: This feature has been disabled in newer versions of iOS\f[].
+.TP
+.B rm PATH
+remove item at PATH
+.TP
+.B get PATH [LOCALPATH]
+transfer file at PATH from device to LOCALPATH, or current directory if omitted. If LOCALPATH is a directory, the file will be stored inside the directory.
+\f[B]WARNING\f[]: Existing files will be overwritten!
+.TP
+.B put LOCALPATH [PATH]
+transfer local file at LOCALPATH to device at PATH, or current directory if omitted. If PATH is a directory, the file will be stored inside the directory.
+\f[B]WARNING\f[]: Existing files will be overwritten!
+.TP
+
+.SH OPTIONS
+.TP
+.B \-u, \-\-udid UDID
+target specific device by UDID
+.TP
+.B \-n, \-\-network
+connect to network device (not recommended, since the connection might be terminated at any time)
+.TP
+.B \--container <appid>
+Access the app container directory of the app with given \f[B]appid\f[]
+.TP
+.B \--documents <appid>
+Access the Documents directory of the app with given \f[B]appid\f[]
+.TP
+.B \-h, \-\-help
+Prints usage information
+.TP
+.B \-d, \-\-debug
+Enable communication debugging
+.TP
+.B \-v, \-\-version
+Prints version information
+
+.SH AUTHOR
+Nikias Bassen
+
+.SH ON THE WEB
+https://libimobiledevice.org
+
+https://github.com/libimobiledevice/libimobiledevice

@@ -43,6 +43,18 @@ LT_INIT
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd-2.0 >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 PKG_CHECK_MODULES(limd_glue, libimobiledevice-glue-1.0 >= $LIMD_GLUE_VERSION)
+AC_ARG_WITH([readline],
+            [AS_HELP_STRING([--without-readline],
+            [build without support for libreadline (default is yes)])],
+            [check_libreadline=false],
+            [check_libreadline=true])
+if test "$check_libreadline" = "true"; then
+  PKG_CHECK_MODULES(readline, readline >= 1.0, have_readline=yes, have_readline=no)
+  if test "x$have_readline" = "xyes"; then
+    AC_DEFINE(HAVE_READLINE, 1, [Define if readline library is available])
+  fi
+fi
+AM_CONDITIONAL([HAVE_READLINE],[test "x$have_readline" = "xyes"])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h])
