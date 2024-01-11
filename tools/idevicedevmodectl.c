@@ -146,7 +146,6 @@ static int amfi_service_send_msg(property_list_service_client_t amfi, plist_t ms
 		plist_t reply = NULL;
 		perr = property_list_service_receive_plist(amfi, &reply);
 		if (perr == PROPERTY_LIST_SERVICE_E_SUCCESS) {
-			uint8_t success = 0;
 			plist_t val = plist_dict_get_item(reply, "Error");
 			if (val) {
 				const char* err = plist_get_string_ptr(val, NULL);
@@ -157,15 +156,7 @@ static int amfi_service_send_msg(property_list_service_client_t amfi, plist_t ms
 					res = 1;
 				}
 			} else {
-				val = plist_dict_get_item(reply, "success");
-				if (val) {
-					plist_get_bool_val(val, &success);
-				}
-				if (success) {
-					res = 0;
-				} else {
-					res = 1;
-				}
+				res = plist_dict_get_item(reply, "success") ? 0 : 1;
 			}
 		} else {
 			fprintf(stderr, "Could not receive reply from device: %d\n", perr);
@@ -411,13 +402,30 @@ int main(int argc, char *argv[])
 				} else {
 					printf("%s: Developer Mode armed, waiting for reboot...\n", udid);
 
-					// waiting for device to disconnect...
-					WAIT_FOR(!device_connected, 20);
+					do {
+						// waiting for device to disconnect...
+						idevice_free(device);
+						device = NULL;
+						WAIT_FOR(!device_connected, 40);
+						if (device_connected) {
+							printf("%s: ERROR: Device didn't reboot?!\n", udid);
+							res = 2;
+							break;
+						}
+						printf("disconnected\n");
 
-					// waiting for device to reconnect...
-					WAIT_FOR(device_connected, 60);
+						// waiting for device to reconnect...
+						WAIT_FOR(device_connected, 60);
+						if (!device_connected) {
+							printf("%s: ERROR: Device didn't re-connect?!\n", udid);
+							res = 2;
+							break;
+						}
+						printf("connected\n");
 
-					res = amfi_send_action(device, DEV_MODE_ENABLE);
+						idevice_new(&device, udid);
+						res = amfi_send_action(device, DEV_MODE_ENABLE);
+					} while (0);
 					if (res == 0) {
 						printf("%s: Developer Mode successfully enabled.\n", udid);
 					} else {
