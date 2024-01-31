@@ -1128,3 +1128,70 @@ afc_error_t afc_dictionary_free(char **dictionary)
 
 	return AFC_E_SUCCESS;
 }
+
+const char* afc_strerror(afc_error_t err)
+{
+	switch (err) {
+		case AFC_E_SUCCESS:
+			return "Success";
+		case AFC_E_UNKNOWN_ERROR:
+			return "Unknown Error";
+		case AFC_E_OP_HEADER_INVALID:
+			return "Operation header invalid";
+		case AFC_E_NO_RESOURCES:
+			return "No resources";
+		case AFC_E_READ_ERROR:
+			return "Read error";
+		case AFC_E_WRITE_ERROR:
+			return "Write error";
+		case AFC_E_UNKNOWN_PACKET_TYPE:
+			return "Unknown packet type";
+		case AFC_E_INVALID_ARG:
+			return "Invalid argument";
+		case AFC_E_OBJECT_NOT_FOUND:
+			return "Not found";
+		case AFC_E_OBJECT_IS_DIR:
+			return "Object is a directory";
+		case AFC_E_PERM_DENIED:
+			return "Permission denied";
+		case AFC_E_SERVICE_NOT_CONNECTED:
+			return "Service not connected";
+		case AFC_E_OP_TIMEOUT:
+			return "Timeout";
+		case AFC_E_TOO_MUCH_DATA:
+			return "Too much data";
+		case AFC_E_END_OF_DATA:
+			return "End of data";
+		case AFC_E_OP_NOT_SUPPORTED:
+			return "Operation not supported";
+		case AFC_E_OBJECT_EXISTS:
+			return "Object exists";
+		case AFC_E_OBJECT_BUSY:
+			return "Object busy";
+		case AFC_E_NO_SPACE_LEFT:
+			return "No space left on device";
+		case AFC_E_OP_WOULD_BLOCK:
+			return "Operation would block";
+		case AFC_E_IO_ERROR:
+			return "I/O error";
+		case AFC_E_OP_INTERRUPTED:
+			return "Operation interrupted";
+		case AFC_E_OP_IN_PROGRESS:
+			return "Operation on progress";
+		case AFC_E_INTERNAL_ERROR:
+			return "Internal error";
+		case AFC_E_MUX_ERROR:
+			return "MUX error";
+		case AFC_E_NO_MEM:
+			return "Out of memory";
+		case AFC_E_NOT_ENOUGH_DATA:
+			return "Not enough data";
+		case AFC_E_DIR_NOT_EMPTY:
+			return "Directory not empty";
+		case AFC_E_FORCE_SIGNED_TYPE:
+			return "Force signed type";
+		default:
+			break;
+	}
+	return "Unknown Error";
+}

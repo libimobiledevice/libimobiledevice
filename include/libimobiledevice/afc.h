@@ -369,6 +369,15 @@ LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info_key(afc_client_t client, co
  */
 LIBIMOBILEDEVICE_API afc_error_t afc_dictionary_free(char **dictionary);
 
+/**
+ * Gets a readable error string for a given AFC error code.
+ *
+ * @param err An AFC error code
+ *
+ * @returns A readable error string
+ */
+LIBIMOBILEDEVICE_API const char* afc_strerror(afc_error_t err);
+
 #ifdef __cplusplus
 }
 #endif
