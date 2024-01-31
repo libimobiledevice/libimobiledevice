@@ -319,7 +319,7 @@ static void handle_devinfo(afc_client_t afc, int argc, char** argv)
 			printf("%s: %s\n", info[i], info[i+1]);
 		}
 	} else {
-		printf("Error: Failed to get device info: %d\n", err);
+		printf("Error: Failed to get device info: %s (%d)\n", afc_strerror(err), err);
 	}
 	afc_dictionary_free(info);
 }
@@ -390,7 +390,7 @@ static void handle_file_info(afc_client_t afc, int argc, char** argv)
 			printf("%s: %s\n", info[i], info[i+1]);
 		}
 	} else {
-		printf("Error: Failed to get file info for %s: %d\n", argv[0], err);
+		printf("Error: Failed to get file info for %s: %s (%d)\n", argv[0], afc_strerror(err), err);
 	}
 	afc_dictionary_free(info);
 	free(abspath);
@@ -481,7 +481,7 @@ static void handle_list(afc_client_t afc, int argc, char** argv)
 		print_file_info(afc, abspath, list_verbose);
 		return;
 	} else if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to list '%s': %d\n", path, err);
+		printf("Error: Failed to list '%s': %s (%d)\n", path, afc_strerror(err), err);
 		free(abspath);
 		return;
 	}
@@ -526,7 +526,7 @@ static void handle_rename(afc_client_t afc, int argc, char** argv)
 	}
 	afc_error_t err = afc_rename_path(afc, srcpath, dstpath);
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to rename '%s' -> '%s': %d\n", argv[0], argv[1], err);
+		printf("Error: Failed to rename '%s' -> '%s': %s (%d)\n", argv[0], argv[1], afc_strerror(err), err);
 	}
 	free(srcpath);
 	free(dstpath);
@@ -542,7 +542,7 @@ static void handle_mkdir(afc_client_t afc, int argc, char** argv)
 		}
 		afc_error_t err = afc_make_directory(afc, abspath);
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to create directory '%s': %d\n", argv[i], err);
+			printf("Error: Failed to create directory '%s': %s (%d)\n", argv[i], afc_strerror(err), err);
 		}
 		free(abspath);
 	}
@@ -572,7 +572,7 @@ static void handle_link(afc_client_t afc, int argc, char** argv)
 	}
 	afc_error_t err = afc_make_link(afc, link_type, argv[0], link_name);
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to create %s link for '%s' at '%s': %d\n", (link_type == AFC_HARDLINK) ? "hard" : "symbolic", argv[0], link_name, err);
+		printf("Error: Failed to create %s link for '%s' at '%s': %s (%d)\n", (link_type == AFC_HARDLINK) ? "hard" : "symbolic", argv[0], link_name, afc_strerror(err), err);
 	}
 }
 
@@ -586,7 +586,7 @@ static void handle_remove(afc_client_t afc, int argc, char** argv)
 		}
 		afc_error_t err = afc_remove_path(afc, abspath);
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to remove '%s': %d\n", argv[i], err);
+			printf("Error: Failed to remove '%s': %s (%d)\n", argv[i], afc_strerror(err), err);
 		}
 		free(abspath);
 	}
@@ -627,7 +627,7 @@ static void handle_get(afc_client_t afc, int argc, char** argv)
 	if (err != AFC_E_SUCCESS) {
 		free(srcpath);
 		free(dstpath);
-		printf("Error: Failed to open file '%s': %d\n", argv[0], err);
+		printf("Error: Failed to open file '%s': %s (%d)\n", argv[0], afc_strerror(err), err);
 		return;
 	}
 	FILE *f = fopen(dstpath, "wb");
@@ -687,7 +687,7 @@ static void handle_get(afc_client_t afc, int argc, char** argv)
 			printf("\n");
 		}
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to read from file '%s': %d\n", argv[0], err);
+			printf("Error: Failed to read from file '%s': %s (%d)\n", argv[0], afc_strerror(err), err);
 		}
 		free(buf);
 		fclose(f);
@@ -727,7 +727,7 @@ static void handle_put(afc_client_t afc, int argc, char** argv)
 			err = afc_file_open(afc, dstpath, AFC_FOPEN_RW, &fh);
 		}
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to open file '%s' on device: %d\n", argv[1], err);
+			printf("Error: Failed to open file '%s' on device: %s (%d)\n", argv[1], afc_strerror(err), err);
 		} else {
 			struct timeval t1;
 			struct timeval t2;
@@ -841,7 +841,7 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 		}
 		afc_dictionary_free(info);
 	} else {
-		printf("Error: Failed to get file info for %s: %d\n", path, err);
+		printf("Error: Failed to get file info for %s: %s (%d)\n", path, afc_strerror(err), err);
 		free(path);
 		return;
 	}
