@@ -22,6 +22,7 @@
 #ifndef __HEARTBEAT_H
 #define __HEARTBEAT_H
 
+#include "idevice.h"
 #include "libimobiledevice/heartbeat.h"
 #include "property_list_service.h"
 

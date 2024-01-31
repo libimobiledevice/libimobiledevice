@@ -69,7 +69,7 @@ static bt_packet_logger_error_t bt_packet_logger_error(service_error_t err)
 	return BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd_service_descriptor_t service, bt_packet_logger_client_t * client)
+bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd_service_descriptor_t service, bt_packet_logger_client_t * client)
 {
 	if (!device || !service || service->port == 0 || !client || *client) {
 		debug_info("Incorrect parameter passed to bt_packet_logger_client_new.");
@@ -95,14 +95,14 @@ LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_new(idevic
 	return 0;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_start_service(idevice_t device, bt_packet_logger_client_t * client, const char* label)
+bt_packet_logger_error_t bt_packet_logger_client_start_service(idevice_t device, bt_packet_logger_client_t * client, const char* label)
 {
 	bt_packet_logger_error_t err = BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, BT_PACKETLOGGER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(bt_packet_logger_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t client)
+bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t client)
 {
 	if (!client)
 		return BT_PACKET_LOGGER_E_INVALID_ARG;
@@ -113,7 +113,7 @@ LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_free(bt_pa
 	return err;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
+bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	bt_packet_logger_error_t res = BT_PACKET_LOGGER_E_UNKNOWN_ERROR;
 	int bytes = 0;
@@ -186,7 +186,7 @@ void *bt_packet_logger_worker(void *arg)
 	return NULL;
 }
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_t client, bt_packet_logger_receive_cb_t callback, void* user_data)
+bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_t client, bt_packet_logger_receive_cb_t callback, void* user_data)
 {
 	if (!client || !callback)
 		return BT_PACKET_LOGGER_E_INVALID_ARG;
@@ -214,7 +214,7 @@ LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_start_capture(bt_
 }
 
 
-LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t client)
+bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t client)
 {
 	if (client->worker) {
 		/* notify thread to finish */

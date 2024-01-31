@@ -22,6 +22,7 @@
 #ifndef __MOBILEBACKUP2_H
 #define __MOBILEBACKUP2_H
 
+#include "idevice.h"
 #include "libimobiledevice/mobilebackup2.h"
 #include "device_link_service.h"
 

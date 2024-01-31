@@ -22,6 +22,7 @@
 #ifndef _DEBUGSERVER_H
 #define _DEBUGSERVER_H
 
+#include "idevice.h"
 #include "libimobiledevice/debugserver.h"
 #include "service.h"
 

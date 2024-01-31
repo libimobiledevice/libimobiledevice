@@ -64,7 +64,7 @@ typedef void (*preboard_status_cb_t) (plist_t message, void *user_data);
  * @return PREBOARD_E_SUCCESS on success, PREBOARD_E_INVALID_ARG when
  *     client is NULL, or an PREBOARD_E_* error code otherwise.
  */
-preboard_error_t preboard_client_new(idevice_t device, lockdownd_service_descriptor_t service, preboard_client_t * client);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_client_new(idevice_t device, lockdownd_service_descriptor_t service, preboard_client_t * client);
 
 /**
  * Starts a new preboard service on the specified device and connects to it.
@@ -79,7 +79,7 @@ preboard_error_t preboard_client_new(idevice_t device, lockdownd_service_descrip
  * @return PREBOARD_E_SUCCESS on success, or a PREBOARD_E_* error
  *     code otherwise.
  */
-preboard_error_t preboard_client_start_service(idevice_t device, preboard_client_t * client, const char* label);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_client_start_service(idevice_t device, preboard_client_t * client, const char* label);
 
 /**
  * Disconnects a preboard client from the device and frees up the
@@ -90,7 +90,7 @@ preboard_error_t preboard_client_start_service(idevice_t device, preboard_client
  * @return PREBOARD_E_SUCCESS on success, PREBOARD_E_INVALID_ARG when
  *     client is NULL, or a PREBOARD_E_* error code otherwise.
  */
-preboard_error_t preboard_client_free(preboard_client_t client);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_client_free(preboard_client_t client);
 
 /**
  * Sends a plist to the service.
@@ -102,7 +102,7 @@ preboard_error_t preboard_client_free(preboard_client_t client);
  *  PREBOARD_E_INVALID_ARG when client or plist is NULL,
  *  or a PREBOARD_E_* error code on error
  */
-preboard_error_t preboard_send(preboard_client_t client, plist_t plist);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_send(preboard_client_t client, plist_t plist);
 
 /**
  * Receives a plist from the service.
@@ -115,7 +115,7 @@ preboard_error_t preboard_send(preboard_client_t client, plist_t plist);
  *  PREBOARD_E_TIMEOUT when no data was received after 5 seconds,
  *  or a PREBOARD_E_* error code on error
  */
-preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist);
 
 /**
  * Receives a plist from the service with the specified timeout.
@@ -129,7 +129,7 @@ preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist);
  *  PREBOARD_E_TIMEOUT when no data was received after the given timeout,
  *  or a PREBOARD_E_* error code on error.
  */
-preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t * plist, uint32_t timeout_ms);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t * plist, uint32_t timeout_ms);
 
 /**
  * Tells the preboard service to create a stashbag. This will make the device
@@ -157,7 +157,7 @@ preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t
  *  PREBOARD_E_INVALID_ARG when client is invalid,
  *  or a PREBOARD_E_* error code on error.
  */
-preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data);
 
 /**
  * Instructs the preboard service to commit a previously created stashbag.
@@ -178,7 +178,7 @@ preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t mani
  *  PREBOARD_E_INVALID_ARG when client is invalid,
  *  or a PREBOARD_E_* error code on error.
  */
-preboard_error_t preboard_commit_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data);
+LIBIMOBILEDEVICE_API preboard_error_t preboard_commit_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data);
 
 #ifdef __cplusplus
 }

@@ -22,6 +22,7 @@
 #ifndef __MISAGENT_H
 #define __MISAGENT_H
 
+#include "idevice.h"
 #include "libimobiledevice/misagent.h"
 #include "property_list_service.h"
 
