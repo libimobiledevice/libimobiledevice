@@ -114,6 +114,36 @@ static void print_usage(int argc, char **argv, int is_error)
 	);
 }
 
+#ifndef HAVE_READLINE
+#ifdef WIN32
+#define BS_CC '\b'
+#else
+#define BS_CC 0x7f
+#define getch getchar
+#endif
+static void get_input(char *buf, int maxlen)
+{
+	int len = 0;
+	int c;
+
+	while ((c = getch())) {
+		if ((c == '\r') || (c == '\n')) {
+			break;
+		}
+		if (isprint(c)) {
+			if (len < maxlen-1)
+				buf[len++] = c;
+		} else if (c == BS_CC) {
+			if (len > 0) {
+				fputs("\b \b", stdout);
+				len--;
+			}
+		}
+	}
+	buf[len] = 0;
+}
+#endif
+
 #define OPT_DOCUMENTS 1
 #define OPT_CONTAINER 2
 
@@ -576,15 +606,67 @@ static void handle_link(afc_client_t afc, int argc, char** argv)
 	}
 }
 
+static int ask_yesno(const char* prompt)
+{
+	int ret = 0;
+#ifdef HAVE_READLINE
+	char* result = readline(prompt);
+	if (result && result[0] == 'y') {
+		ret = 1;
+	}
+#else
+	char cmdbuf[2] = {0, };
+	printf("%s", prompt);
+	fflush(stdout);
+	get_input(cmdbuf, sizeof(cmdbuf));
+	if (cmdbuf[0] == 'y') {
+		ret = 1;
+	}
+#endif
+#ifdef HAVE_READLINE
+	free(result);
+#endif
+	return ret;
+}
+
 static void handle_remove(afc_client_t afc, int argc, char** argv)
 {
-	for (int i = 0; i < argc; i++) {
+	int recursive = 0;
+	int force = 0;
+	int i = 0;
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "--")) {
+			i++;
+			break;
+		} else if (!strcmp(argv[i], "-r")) {
+			recursive = 1;
+		} else if (!strcmp(argv[i], "-f")) {
+			force = 1;
+		} else if (!strcmp(argv[i], "-rf") || !strcmp(argv[i], "-fr")) {
+			recursive = 1;
+			force = 1;
+		} else {
+			break;
+		}
+	}
+	if (recursive && !force) {
+		if (!ask_yesno("WARNING: This operation will remove all contents of the given path(s). Continue? [y/N] ")) {
+			printf("Aborted.\n");
+			return;
+		}
+	}
+	for ( ; i < argc; i++) {
 		char* abspath = get_absolute_path(argv[i]);
 		if (!abspath) {
 			printf("Error: Invalid argument '%s'\n", argv[i]);
 			continue;
 		}
-		afc_error_t err = afc_remove_path(afc, abspath);
+		afc_error_t err;
+		if (recursive) {
+			err = afc_remove_path_and_contents(afc, abspath);
+		} else {
+			err = afc_remove_path(afc, abspath);
+		}
 		if (err != AFC_E_SUCCESS) {
 			printf("Error: Failed to remove '%s': %s (%d)\n", argv[i], afc_strerror(err), err);
 		}
@@ -856,36 +938,6 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 	curdir = path;
 	curdir_len = strlen(curdir);
 }
-
-#ifndef HAVE_READLINE
-#ifdef WIN32
-#define BS_CC '\b'
-#else
-#define BS_CC 0x7f
-#define getch getchar
-#endif
-static void get_input(char *buf, int maxlen)
-{
-	int len = 0;
-	int c;
-
-	while ((c = getch())) {
-		if ((c == '\r') || (c == '\n')) {
-			break;
-		}
-		if (isprint(c)) {
-			if (len < maxlen-1)
-				buf[len++] = c;
-		} else if (c == BS_CC) {
-			if (len > 0) {
-				fputs("\b \b", stdout);
-				len--;
-			}
-		}
-	}
-	buf[len] = 0;
-}
-#endif
 
 static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 {
