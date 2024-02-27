@@ -26,6 +26,7 @@
 #include <plist/plist.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "mobilebackup.h"
 #include "device_link_service.h"
@@ -68,7 +69,7 @@ static mobilebackup_error_t mobilebackup_error(device_link_service_error_t err)
 	return MOBILEBACKUP_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client)
+mobilebackup_error_t mobilebackup_client_new(idevice_t device, lockdownd_service_descriptor_t service, mobilebackup_client_t * client)
 {
 	if (!device || !service || service->port == 0 || !client || *client)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -95,14 +96,14 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_new(idevice_t devi
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t * client, const char* label)
+mobilebackup_error_t mobilebackup_client_start_service(idevice_t device, mobilebackup_client_t * client, const char* label)
 {
 	mobilebackup_error_t err = MOBILEBACKUP_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, MOBILEBACKUP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobilebackup_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
+mobilebackup_error_t mobilebackup_client_free(mobilebackup_client_t client)
 {
 	if (!client)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -115,7 +116,7 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_client_free(mobilebackup_
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t * plist)
+mobilebackup_error_t mobilebackup_receive(mobilebackup_client_t client, plist_t * plist)
 {
 	if (!client)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -123,7 +124,7 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive(mobilebackup_clie
 	return ret;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist)
+mobilebackup_error_t mobilebackup_send(mobilebackup_client_t client, plist_t plist)
 {
 	if (!client || !plist)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -240,7 +241,7 @@ leave:
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version)
+mobilebackup_error_t mobilebackup_request_backup(mobilebackup_client_t client, plist_t backup_manifest, const char *base_path, const char *proto_version)
 {
 	if (!client || !client->parent || !base_path || !proto_version)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -308,12 +309,12 @@ leave:
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client)
+mobilebackup_error_t mobilebackup_send_backup_file_received(mobilebackup_client_t client)
 {
 	return mobilebackup_send_message(client, "kBackupMessageBackupFileReceived", NULL);
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version)
+mobilebackup_error_t mobilebackup_request_restore(mobilebackup_client_t client, plist_t backup_manifest, mobilebackup_flags_t flags, const char *proto_version)
 {
 	if (!client || !client->parent || !backup_manifest || !proto_version)
 		return MOBILEBACKUP_E_INVALID_ARG;
@@ -375,17 +376,17 @@ leave:
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result)
+mobilebackup_error_t mobilebackup_receive_restore_file_received(mobilebackup_client_t client, plist_t *result)
 {
 	return mobilebackup_receive_message(client, "BackupMessageRestoreFileReceived", result);
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result)
+mobilebackup_error_t mobilebackup_receive_restore_application_received(mobilebackup_client_t client, plist_t *result)
 {
 	return mobilebackup_receive_message(client, "BackupMessageRestoreApplicationReceived", result);
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client)
+mobilebackup_error_t mobilebackup_send_restore_complete(mobilebackup_client_t client)
 {
 	mobilebackup_error_t err = mobilebackup_send_message(client, "BackupMessageRestoreComplete", NULL);
 	if (err != MOBILEBACKUP_E_SUCCESS) {
@@ -430,7 +431,7 @@ LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_restore_complete(mob
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason)
+mobilebackup_error_t mobilebackup_send_error(mobilebackup_client_t client, const char *reason)
 {
 	if (!client || !client->parent || !reason)
 		return MOBILEBACKUP_E_INVALID_ARG;

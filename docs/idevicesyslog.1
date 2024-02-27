@@ -27,10 +27,17 @@ enable communication debugging
 prints usage information
 .TP
 .B \-v, \-\-version
-prints version information.
+Prints version information.
 .TP
 .B \-\-no\-colors
 disable colored output
+.TP
+.B \-o, \-\-output FILE
+Write to FILE instead of stdout. This will disable writing colored output, but can be re-enabled with \f[B]\-\-colors\f[].
+If FILE already exists, it will be overwritten without warning.
+.TP
+.B \-\-colors
+Force writing colored output, e.g. when using \f[B]\-\-output\f[].
 
 .SH FILTER OPTIONS
 .TP

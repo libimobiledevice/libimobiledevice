@@ -22,6 +22,7 @@
 #ifndef __REVERSE_PROXY_H
 #define __REVERSE_PROXY_H
 
+#include "idevice.h"
 #include "libimobiledevice/reverse_proxy.h"
 #include "service.h"
 

@@ -79,7 +79,7 @@ static sbservices_error_t sbservices_error(property_list_service_error_t err)
 	return SBSERVICES_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client)
+sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t service, sbservices_client_t *client)
 {
 	property_list_service_client_t plistclient = NULL;
 	sbservices_error_t err = sbservices_error(property_list_service_client_new(device, service, &plistclient));
@@ -95,14 +95,14 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_new(idevice_t device, 
 	return SBSERVICES_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t * client, const char* label)
+sbservices_error_t sbservices_client_start_service(idevice_t device, sbservices_client_t * client, const char* label)
 {
 	sbservices_error_t err = SBSERVICES_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, SBSERVICES_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(sbservices_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_free(sbservices_client_t client)
+sbservices_error_t sbservices_client_free(sbservices_client_t client)
 {
 	if (!client)
 		return SBSERVICES_E_INVALID_ARG;
@@ -115,7 +115,7 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_client_free(sbservices_client
 	return err;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version)
+sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist_t *state, const char *format_version)
 {
 	if (!client || !client->parent || !state)
 		return SBSERVICES_E_INVALID_ARG;
@@ -155,7 +155,7 @@ leave_unlock:
 	return res;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate)
+sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t newstate)
 {
 	if (!client || !client->parent || !newstate)
 		return SBSERVICES_E_INVALID_ARG;
@@ -172,7 +172,10 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_set_icon_state(sbservices_cli
 	if (res != SBSERVICES_E_SUCCESS) {
 		debug_info("could not send plist, error %d", res);
 	}
-	/* NO RESPONSE */
+
+	uint32_t bytes = 0;
+	service_receive_with_timeout(client->parent->parent, malloc(4), 4, &bytes, 2000);
+	debug_info("setIconState response: %u", bytes);
 
 	if (dict) {
 		plist_free(dict);
@@ -181,7 +184,7 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_set_icon_state(sbservices_cli
 	return res;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize)
+sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, const char *bundleId, char **pngdata, uint64_t *pngsize)
 {
 	if (!client || !client->parent || !bundleId || !pngdata)
 		return SBSERVICES_E_INVALID_ARG;
@@ -218,7 +221,7 @@ leave_unlock:
 	return res;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation)
+sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t* interface_orientation)
 {
 	if (!client || !client->parent || !interface_orientation)
 		return SBSERVICES_E_INVALID_ARG;
@@ -256,7 +259,7 @@ leave_unlock:
 	return res;
 }
 
-LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize)
+sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize)
 {
 	if (!client || !client->parent || !pngdata)
 		return SBSERVICES_E_INVALID_ARG;

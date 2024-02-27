@@ -22,6 +22,7 @@
 #ifndef __SCREENSHOTR_H
 #define __SCREENSHOTR_H
 
+#include "idevice.h"
 #include "libimobiledevice/screenshotr.h"
 #include "device_link_service.h"
 

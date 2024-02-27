@@ -23,6 +23,7 @@
 #ifndef __LOCKDOWND_H
 #define __LOCKDOWND_H
 
+#include "idevice.h"
 #include "libimobiledevice/lockdown.h"
 #include "property_list_service.h"
 

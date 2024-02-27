@@ -22,6 +22,7 @@
 #ifndef __NOTIFICATION_PROXY_H
 #define __NOTIFICATION_PROXY_H
 
+#include "idevice.h"
 #include "libimobiledevice/notification_proxy.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>
