@@ -22,6 +22,7 @@
 #ifndef __PREBOARD_H
 #define __PREBOARD_H
 
+#include "idevice.h"
 #include "libimobiledevice/preboard.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>

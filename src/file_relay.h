@@ -22,6 +22,7 @@
 #ifndef __FILE_RELAY_H
 #define __FILE_RELAY_H
 
+#include "idevice.h"
 #include "libimobiledevice/file_relay.h"
 #include "property_list_service.h"
 

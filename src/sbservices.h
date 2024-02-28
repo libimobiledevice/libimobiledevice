@@ -22,6 +22,7 @@
 #ifndef __SBSERVICES_H
 #define __SBSERVICES_H
 
+#include "idevice.h"
 #include "libimobiledevice/sbservices.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>

@@ -62,7 +62,7 @@ static preboard_error_t preboard_error(property_list_service_error_t err)
 	return PREBOARD_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_client_new(idevice_t device, lockdownd_service_descriptor_t service, preboard_client_t * client)
+preboard_error_t preboard_client_new(idevice_t device, lockdownd_service_descriptor_t service, preboard_client_t * client)
 {
 	*client = NULL;
 
@@ -90,14 +90,14 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_client_new(idevice_t device, lock
 	return 0;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_client_start_service(idevice_t device, preboard_client_t * client, const char* label)
+preboard_error_t preboard_client_start_service(idevice_t device, preboard_client_t * client, const char* label)
 {
 	preboard_error_t err = PREBOARD_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, PREBOARD_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(preboard_client_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_client_free(preboard_client_t client)
+preboard_error_t preboard_client_free(preboard_client_t client)
 {
 	if (!client)
 		return PREBOARD_E_INVALID_ARG;
@@ -116,7 +116,7 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_client_free(preboard_client_t cli
 	return err;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_send(preboard_client_t client, plist_t plist)
+preboard_error_t preboard_send(preboard_client_t client, plist_t plist)
 {
 	preboard_error_t res = PREBOARD_E_UNKNOWN_ERROR;
 	res = preboard_error(property_list_service_send_binary_plist(client->parent, plist));
@@ -127,7 +127,7 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_send(preboard_client_t client, pl
 	return res;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t * plist, uint32_t timeout_ms)
+preboard_error_t preboard_receive_with_timeout(preboard_client_t client, plist_t * plist, uint32_t timeout_ms)
 {
 	preboard_error_t res = PREBOARD_E_UNKNOWN_ERROR;
 	plist_t outplist = NULL;
@@ -141,7 +141,7 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_receive_with_timeout(preboard_cli
 	return res;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist)
+preboard_error_t preboard_receive(preboard_client_t client, plist_t * plist)
 {
 	return preboard_receive_with_timeout(client, plist, 5000);
 }
@@ -209,7 +209,7 @@ static preboard_error_t preboard_receive_status_loop_with_callback(preboard_clie
 	return res;
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data)
+preboard_error_t preboard_create_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data)
 {
 	if (!client) {
 		return PREBOARD_E_INVALID_ARG;
@@ -232,7 +232,7 @@ LIBIMOBILEDEVICE_API preboard_error_t preboard_create_stashbag(preboard_client_t
 	return preboard_receive_status_loop_with_callback(client, status_cb, user_data);
 }
 
-LIBIMOBILEDEVICE_API preboard_error_t preboard_commit_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data)
+preboard_error_t preboard_commit_stashbag(preboard_client_t client, plist_t manifest, preboard_status_cb_t status_cb, void *user_data)
 {
 	if (!client) {
 		return PREBOARD_E_INVALID_ARG;

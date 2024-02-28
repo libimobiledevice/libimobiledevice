@@ -78,7 +78,7 @@ static mobile_image_mounter_error_t mobile_image_mounter_error(property_list_ser
 	return MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client)
+mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client)
 {
 	property_list_service_client_t plistclient = NULL;
 	mobile_image_mounter_error_t err = mobile_image_mounter_error(property_list_service_client_new(device, service, &plistclient));
@@ -95,14 +95,14 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_new(idevi
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t * client, const char* label)
+mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t * client, const char* label)
 {
 	mobile_image_mounter_error_t err = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, MOBILE_IMAGE_MOUNTER_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(mobile_image_mounter_new), &err);
 	return err;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client)
+mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client)
 {
 	if (!client)
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -115,7 +115,7 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_free(mobi
 	return MOBILE_IMAGE_MOUNTER_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result)
+mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result)
 {
 	if (!client || !image_type || !result) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -181,7 +181,7 @@ static mobile_image_mounter_error_t process_result(plist_t result, const char *e
 	return res;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
+mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
 {
 	if (!client || !image_type || (image_size == 0) || !upload_cb) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -260,7 +260,7 @@ leave_unlock:
 
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result)
+mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result)
 {
 	if (!client || !image_path || !image_type || !result) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -292,7 +292,7 @@ leave_unlock:
 	return res;
 }
 
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client)
+mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client)
 {
 	if (!client) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;

@@ -21,9 +21,9 @@
 #ifndef SERVICE_H
 #define SERVICE_H
 
+#include "idevice.h"
 #include "libimobiledevice/service.h"
 #include "libimobiledevice/lockdown.h"
-#include "idevice.h"
 
 struct service_client_private {
 	idevice_connection_t connection;
