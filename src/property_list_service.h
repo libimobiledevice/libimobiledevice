@@ -22,6 +22,7 @@
 #ifndef __PROPERTY_LIST_SERVICE_H
 #define __PROPERTY_LIST_SERVICE_H
 
+#include "idevice.h"
 #include "libimobiledevice/property_list_service.h"
 #include "service.h"
 

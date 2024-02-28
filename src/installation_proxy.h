@@ -23,6 +23,7 @@
 #ifndef __INSTALLATION_PROXY_H
 #define __INSTALLATION_PROXY_H
 
+#include "idevice.h"
 #include "libimobiledevice/installation_proxy.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>

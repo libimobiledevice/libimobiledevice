@@ -22,6 +22,7 @@
 #ifndef __WEBINSPECTOR_H
 #define __WEBINSPECTOR_H
 
+#include "idevice.h"
 #include "libimobiledevice/webinspector.h"
 #include "property_list_service.h"
 

@@ -22,6 +22,7 @@
 #ifndef __DEVICE_LINK_SERVICE_H
 #define __DEVICE_LINK_SERVICE_H
 
+#include "idevice.h"
 #include "property_list_service.h"
 
 /* Error Codes */

@@ -23,6 +23,7 @@
 #ifndef __MOBILESYNC_H
 #define __MOBILESYNC_H
 
+#include "idevice.h"
 #include "libimobiledevice/mobilesync.h"
 #include "device_link_service.h"
 

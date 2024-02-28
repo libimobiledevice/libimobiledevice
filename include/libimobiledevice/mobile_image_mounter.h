@@ -66,7 +66,7 @@ typedef ssize_t (*mobile_image_mounter_upload_cb_t) (void* buffer, size_t length
  *    or MOBILE_IMAGE_MOUNTER_E_CONN_FAILED if the connection to the
  *    device could not be established.
  */
-mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t service, mobile_image_mounter_client_t *client);
 
 /**
  * Starts a new mobile_image_mounter service on the specified device and connects to it.
@@ -81,7 +81,7 @@ mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdown
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success, or an MOBILE_IMAGE_MOUNTER_E_* error
  *     code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t* client, const char* label);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device, mobile_image_mounter_client_t* client, const char* label);
 
 /**
  * Disconnects a mobile_image_mounter client from the device and frees up the
@@ -92,7 +92,7 @@ mobile_image_mounter_error_t mobile_image_mounter_start_service(idevice_t device
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
  *    or MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if client is NULL.
  */
-mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client);
 
 
 /**
@@ -108,7 +108,7 @@ mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_clie
  *
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success, or an error code on error
  */
-mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, const char *image_type, plist_t *result);
 
 /**
  * Uploads an image with an optional signature to the device.
@@ -127,7 +127,7 @@ mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_moun
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on succes, or a
  *    MOBILE_IMAGE_MOUNTER_E_* error code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
 
 /**
  * Mounts an image on the device.
@@ -150,7 +150,7 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
  *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if on ore more parameters are
  *    invalid, or another error code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result);
 
 /**
  * Hangs up the connection to the mobile_image_mounter service.
@@ -163,7 +163,7 @@ mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mount
  *     MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if client is invalid,
  *     or another error code otherwise.
  */
-mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client);
 
 #ifdef __cplusplus
 }

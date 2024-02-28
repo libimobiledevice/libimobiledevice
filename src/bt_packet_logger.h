@@ -22,6 +22,7 @@
 #ifndef _BR_PACKET_LOGGER_H
 #define _BR_PACKET_LOGGER_H
 
+#include "idevice.h"
 #include "libimobiledevice/bt_packet_logger.h"
 #include "service.h"
 #include <libimobiledevice-glue/thread.h>

@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "idevice.h"
 #include "libimobiledevice/restore.h"
 #include "property_list_service.h"
 

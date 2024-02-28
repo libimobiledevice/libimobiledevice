@@ -528,7 +528,7 @@ static void* _reverse_proxy_control_thread(void *cdata)
 	return NULL;
 }
 
-LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_start_proxy(reverse_proxy_client_t client, int control_protocol_version)
+reverse_proxy_error_t reverse_proxy_client_start_proxy(reverse_proxy_client_t client, int control_protocol_version)
 {
 	char buf[16] = {0, };
 	uint32_t bytes = 0;
@@ -607,7 +607,7 @@ LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_start_proxy(reve
 	return err;
 }
 
-LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_create_with_service(idevice_t device, reverse_proxy_client_t* client, const char* label)
+reverse_proxy_error_t reverse_proxy_client_create_with_service(idevice_t device, reverse_proxy_client_t* client, const char* label)
 {
 	reverse_proxy_error_t err = REVERSE_PROXY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, "com.apple.PurpleReverseProxy.Ctrl", (void**)client, label, SERVICE_CONSTRUCTOR(reverse_proxy_client_new), &err);
@@ -620,7 +620,7 @@ LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_create_with_serv
 	return REVERSE_PROXY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_create_with_port(idevice_t device, reverse_proxy_client_t* client, uint16_t device_port)
+reverse_proxy_error_t reverse_proxy_client_create_with_port(idevice_t device, reverse_proxy_client_t* client, uint16_t device_port)
 {
 	reverse_proxy_client_t client_loc = NULL;
 	reverse_proxy_error_t err;
@@ -641,7 +641,7 @@ LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_create_with_port
 	return REVERSE_PROXY_E_SUCCESS;
 }
 
-LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_free(reverse_proxy_client_t client)
+reverse_proxy_error_t reverse_proxy_client_free(reverse_proxy_client_t client)
 {
 	if (!client)
 		return REVERSE_PROXY_E_INVALID_ARG;
@@ -660,14 +660,14 @@ LIBIMOBILEDEVICE_API reverse_proxy_error_t reverse_proxy_client_free(reverse_pro
 	return err;
 }
 
-LIBIMOBILEDEVICE_API reverse_proxy_client_type_t reverse_proxy_get_type(reverse_proxy_client_t client)
+reverse_proxy_client_type_t reverse_proxy_get_type(reverse_proxy_client_t client)
 {
 	if (!client)
 		return 0;
 	return client->type;
 }
 
-LIBIMOBILEDEVICE_API void reverse_proxy_client_set_status_callback(reverse_proxy_client_t client, reverse_proxy_status_cb_t status_callback, void* user_data)
+void reverse_proxy_client_set_status_callback(reverse_proxy_client_t client, reverse_proxy_status_cb_t status_callback, void* user_data)
 {
 	if (!client) {
 		return;
@@ -676,7 +676,7 @@ LIBIMOBILEDEVICE_API void reverse_proxy_client_set_status_callback(reverse_proxy
 	client->status_cb_user_data = user_data;
 }
 
-LIBIMOBILEDEVICE_API void reverse_proxy_client_set_log_callback(reverse_proxy_client_t client, reverse_proxy_log_cb_t log_callback, void* user_data)
+void reverse_proxy_client_set_log_callback(reverse_proxy_client_t client, reverse_proxy_log_cb_t log_callback, void* user_data)
 {
 	if (!client) {
 		return;
@@ -685,7 +685,7 @@ LIBIMOBILEDEVICE_API void reverse_proxy_client_set_log_callback(reverse_proxy_cl
 	client->log_cb_user_data = user_data;
 }
 
-LIBIMOBILEDEVICE_API void reverse_proxy_client_set_data_callback(reverse_proxy_client_t client, reverse_proxy_data_cb_t data_callback, void* user_data)
+void reverse_proxy_client_set_data_callback(reverse_proxy_client_t client, reverse_proxy_data_cb_t data_callback, void* user_data)
 {
 	if (!client) {
 		return;

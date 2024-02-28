@@ -70,7 +70,7 @@ typedef void (*bt_packet_logger_receive_cb_t)(uint8_t * data, uint16_t len, void
  * @return BT_PACKET_LOGGER_E_SUCCESS on success, BT_PACKET_LOGGER_E_INVALID_ARG when
  *     client is NULL, or an BT_PACKET_LOGGER_E_* error code otherwise.
  */
-bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd_service_descriptor_t service, bt_packet_logger_client_t * client);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd_service_descriptor_t service, bt_packet_logger_client_t * client);
 
 /**
  * Starts a new bt_packet_logger service on the specified device and connects to it.
@@ -85,7 +85,7 @@ bt_packet_logger_error_t bt_packet_logger_client_new(idevice_t device, lockdownd
  * @return BT_PACKET_LOGGER_E_SUCCESS on success, or an BT_PACKET_LOGGER_E_* error
  *     code otherwise.
  */
-bt_packet_logger_error_t bt_packet_logger_client_start_service(idevice_t device, bt_packet_logger_client_t * client, const char* label);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_start_service(idevice_t device, bt_packet_logger_client_t * client, const char* label);
 
 /**
  * Disconnects a bt_packet_logger client from the device and frees up the
@@ -96,7 +96,7 @@ bt_packet_logger_error_t bt_packet_logger_client_start_service(idevice_t device,
  * @return BT_PACKET_LOGGER_E_SUCCESS on success, BT_PACKET_LOGGER_E_INVALID_ARG when
  *     client is NULL, or an BT_PACKET_LOGGER_E_* error code otherwise.
  */
-bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t client);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t client);
 
 
 /**
@@ -113,7 +113,7 @@ bt_packet_logger_error_t bt_packet_logger_client_free(bt_packet_logger_client_t 
  *      invalid or BT_PACKET_LOGGER_E_UNKNOWN_ERROR when an unspecified
  *      error occurs or an hci capture has already been started.
  */
-bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_t client, bt_packet_logger_receive_cb_t callback, void* user_data);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_t client, bt_packet_logger_receive_cb_t callback, void* user_data);
 
 /**
  * Stops capturing the hci interface from the device.
@@ -127,7 +127,7 @@ bt_packet_logger_error_t bt_packet_logger_start_capture(bt_packet_logger_client_
  *      invalid or BT_PACKET_LOGGER_E_UNKNOWN_ERROR when an unspecified
  *      error occurs or an hci capture has already been started.
  */
-bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t client);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t client);
 
 /* Receiving */
 
@@ -146,7 +146,7 @@ bt_packet_logger_error_t bt_packet_logger_stop_capture(bt_packet_logger_client_t
  *      occurs, or BT_PACKET_LOGGER_E_UNKNOWN_ERROR when an unspecified
  *      error occurs.
  */
-bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
+LIBIMOBILEDEVICE_API bt_packet_logger_error_t bt_packet_logger_receive_with_timeout(bt_packet_logger_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout);
 
 
 #ifdef __cplusplus

@@ -480,7 +480,10 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -h, --help            prints usage information\n"
 		"  -d, --debug           enable communication debugging\n"
 		"  -v, --version         prints version information\n"
-		" --no-colors            disable colored output\n"
+		"  --no-colors           disable colored output\n"
+		"  -o, --output FILE     write to FILE instead of stdout\n"
+		"                        (existing FILE will be overwritten)\n"
+		"  --colors              force writing colored output, e.g. for --output\n"
 		"\n"
 		"FILTER OPTIONS:\n"
 		"  -m, --match STRING      only print messages that contain STRING\n"
@@ -508,6 +511,7 @@ int main(int argc, char *argv[])
 	int exclude_filter = 0;
 	int include_kernel = 0;
 	int exclude_kernel = 0;
+	int force_colors = 0;
 	int c = 0;
 	const struct option longopts[] = {
 		{ "debug", no_argument, NULL, 'd' },
@@ -525,6 +529,8 @@ int main(int argc, char *argv[])
 		{ "no-kernel", no_argument, NULL, 'K' },
 		{ "quiet-list", no_argument, NULL, 1 },
 		{ "no-colors", no_argument, NULL, 2 },
+		{ "colors", no_argument, NULL, 3 },
+		{ "output", required_argument, NULL, 'o' },
 		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
 	};
@@ -536,7 +542,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:e:p:qkKv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:e:p:qkKo:v", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -638,6 +644,22 @@ int main(int argc, char *argv[])
 		case 2:
 			term_colors_set_enabled(0);
 			break;
+		case 3:
+			force_colors = 1;
+			break;
+		case 'o':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: --output option requires an argument!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			} else {
+				if (freopen(optarg, "w", stdout) == NULL) {
+					fprintf(stderr, "ERROR: Failed to open output file '%s' for writing: %s\n", optarg, strerror(errno));
+					return 1;
+				}
+				term_colors_set_enabled(0);
+			}
+			break;
 		case 'v':
 			printf("%s %s\n", TOOL_NAME, PACKAGE_VERSION);
 			return 0;
@@ -645,6 +667,10 @@ int main(int argc, char *argv[])
 			print_usage(argc, argv, 1);
 			return 2;
 		}
+	}
+
+	if (force_colors) {
+		term_colors_set_enabled(1);
 	}
 
 	if (include_kernel > 0 && exclude_kernel > 0) {
