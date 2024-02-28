@@ -22,6 +22,7 @@
 #ifndef __COMPANION_PROXY_H
 #define __COMPANION_PROXY_H
 
+#include "idevice.h"
 #include "libimobiledevice/companion_proxy.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>

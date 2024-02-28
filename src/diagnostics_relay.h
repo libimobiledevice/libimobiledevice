@@ -22,6 +22,7 @@
 #ifndef __DIAGNOSTICS_RELAY_H
 #define __DIAGNOSTICS_RELAY_H
 
+#include "idevice.h"
 #include "libimobiledevice/diagnostics_relay.h"
 #include "property_list_service.h"
 

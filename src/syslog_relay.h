@@ -22,6 +22,7 @@
 #ifndef _SYSLOG_RELAY_H
 #define _SYSLOG_RELAY_H
 
+#include "idevice.h"
 #include "libimobiledevice/syslog_relay.h"
 #include "service.h"
 #include <libimobiledevice-glue/thread.h>

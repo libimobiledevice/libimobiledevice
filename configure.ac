@@ -43,6 +43,18 @@ LT_INIT
 PKG_CHECK_MODULES(libusbmuxd, libusbmuxd-2.0 >= $LIBUSBMUXD_VERSION)
 PKG_CHECK_MODULES(libplist, libplist-2.0 >= $LIBPLIST_VERSION)
 PKG_CHECK_MODULES(limd_glue, libimobiledevice-glue-1.0 >= $LIMD_GLUE_VERSION)
+AC_ARG_WITH([readline],
+            [AS_HELP_STRING([--without-readline],
+            [build without support for libreadline (default is yes)])],
+            [check_libreadline=false],
+            [check_libreadline=true])
+if test "$check_libreadline" = "true"; then
+  PKG_CHECK_MODULES(readline, readline >= 1.0, have_readline=yes, have_readline=no)
+  if test "x$have_readline" = "xyes"; then
+    AC_DEFINE(HAVE_READLINE, 1, [Define if readline library is available])
+  fi
+fi
+AM_CONDITIONAL([HAVE_READLINE],[test "x$have_readline" = "xyes"])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h])
@@ -165,7 +177,7 @@ AC_ARG_WITH([mbedtls],
             [Do not look for mbedtls])],
             [use_mbedtls=$withval],
             [use_mbedtls=no])
-if test "x$use_mbedtls" == "xyes"; then
+if test "x$use_mbedtls" = "xyes"; then
   default_openssl=no
 fi
 AC_ARG_WITH([gnutls],
@@ -173,7 +185,7 @@ AC_ARG_WITH([gnutls],
             [Do not look for GnuTLS])],
             [use_gnutls=$withval],
             [use_gnutls=no])
-if test "x$use_gnutls" == "xyes"; then
+if test "x$use_gnutls" = "xyes"; then
   default_openssl=no
 fi
 AC_ARG_WITH([openssl],
@@ -182,7 +194,7 @@ AC_ARG_WITH([openssl],
             [use_openssl=$withval],
             [use_openssl=$default_openssl])
 
-if test "x$use_mbedtls" == "xyes"; then
+if test "x$use_mbedtls" = "xyes"; then
   CACHED_CFLAGS="$CFLAGS"
   conf_mbedtls_CFLAGS=""
   if test -n "$mbedtls_INCLUDES"; then
@@ -209,7 +221,7 @@ if test "x$use_mbedtls" == "xyes"; then
   ssl_requires=""
   AC_SUBST(ssl_requires)
 else
-  if test "x$use_openssl" == "xyes"; then
+  if test "x$use_openssl" = "xyes"; then
     pkg_req_openssl="openssl >= 0.9.8"
     PKG_CHECK_MODULES(openssl, $pkg_req_openssl, have_openssl=yes, have_openssl=no)
     if test "x$have_openssl" != "xyes"; then
@@ -225,7 +237,7 @@ else
       AC_SUBST(ssl_requires)
     fi
   else
-    if test "x$use_gnutls" == "xyes"; then
+    if test "x$use_gnutls" = "xyes"; then
       pkg_req_gnutls="gnutls >= 2.2.0"
       pkg_req_libtasn1="libtasn1 >= 1.1"
       PKG_CHECK_MODULES(libgnutls, $pkg_req_gnutls)
@@ -246,9 +258,9 @@ else
     fi
   fi
 fi
-AM_CONDITIONAL(HAVE_MBEDTLS, test "x$use_mbedtls" == "xyes")
-AM_CONDITIONAL(HAVE_OPENSSL, test "x$use_openssl" == "xyes")
-AM_CONDITIONAL(HAVE_GCRYPT, test "x$use_gnutls" == "xyes")
+AM_CONDITIONAL(HAVE_MBEDTLS, test "x$use_mbedtls" = "xyes")
+AM_CONDITIONAL(HAVE_OPENSSL, test "x$use_openssl" = "xyes")
+AM_CONDITIONAL(HAVE_GCRYPT, test "x$use_gnutls" = "xyes")
 
 AC_ARG_ENABLE([wireless-pairing],
             [AS_HELP_STRING([--disable-wireless-pairing],
@@ -271,12 +283,12 @@ else
 fi
 
 AS_COMPILER_FLAGS(GLOBAL_CFLAGS, "-Wall -Wextra -Wmissing-declarations -Wredundant-decls -Wshadow -Wpointer-arith -Wwrite-strings -Wswitch-default -Wno-unused-parameter -fsigned-char -fvisibility=hidden")
-AC_SUBST(GLOBAL_CFLAGS)
 
-case "$GLOBAL_CFLAGS" in
-  *-fvisibility=hidden*)
-    AC_DEFINE([HAVE_FVISIBILITY], [1], [Define if compiled with -fvisibility=hidden])
-esac
+if test "x$enable_static" = "xyes" -a "x$enable_shared" = "xno"; then
+  GLOBAL_CFLAGS+=" -DLIBIMOBILEDEVICE_STATIC"
+fi
+
+AC_SUBST(GLOBAL_CFLAGS)
 
 # check for large file support
 AC_SYS_LARGEFILE

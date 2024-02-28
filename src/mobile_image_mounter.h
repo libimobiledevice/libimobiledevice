@@ -22,6 +22,7 @@
 #ifndef __MOBILE_IMAGE_MOUNTER_H
 #define __MOBILE_IMAGE_MOUNTER_H
 
+#include "idevice.h"
 #include "libimobiledevice/mobile_image_mounter.h"
 #include "property_list_service.h"
 #include <libimobiledevice-glue/thread.h>

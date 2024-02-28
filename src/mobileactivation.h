@@ -22,6 +22,7 @@
 #ifndef __MOBILEACTIVATION_H
 #define __MOBILEACTIVATION_H
 
+#include "idevice.h"
 #include "libimobiledevice/mobileactivation.h"
 #include "property_list_service.h"
 
