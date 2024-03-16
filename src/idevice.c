@@ -219,6 +219,14 @@ BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
 #warning No compiler support for constructor/destructor attributes, some features might not be available.
 #endif
 
+const char* libimobiledevice_version()
+{
+#ifndef PACKAGE_VERSION
+#error PACKAGE_VERSION is not defined!
+#endif
+	return PACKAGE_VERSION;
+}
+
 struct idevice_subscription_context {
 	idevice_event_cb_t callback;
 	void *user_data;

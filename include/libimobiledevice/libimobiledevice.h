@@ -400,6 +400,13 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32
  */
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
+/**
+ * Returns a static string of the libimobiledevice version.
+ *
+ * @return The libimobiledevice version as static ascii string
+ */
+LIBIMOBILEDEVICE_API const char* libimobiledevice_version();
+
 #ifdef __cplusplus
 }
 #endif
