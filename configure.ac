@@ -234,6 +234,36 @@ else
       AC_SUBST(ssl_lib_LIBS)
       ssl_provider="OpenSSL";
       ssl_requires="$pkg_req_openssl"
+      # test if we have LibreSSL
+      CACHED_CFLAGS="$CFLAGS"
+      CFLAGS="$openssl_CFLAGS"
+      ac_cv_is_libressl=no
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+        [[
+          #include <openssl/opensslv.h>
+        ]], [
+          #ifndef LIBRESSL_VERSION_NUMBER
+          #error No LibreSSL
+          #endif
+        ])],
+        [
+          ac_cv_is_libressl=yes
+        ],
+      )
+      CFLAGS="$CACHED_CFLAGS"
+      if test "x$ac_cv_is_libressl" = "xyes"; then
+        ssl_provider="LibreSSL"
+        case ${host_os} in
+          darwin*)
+            case ${openssl_LIBS} in
+              *.tbd*)
+                # using system LibreSSL on Darwin
+                ssl_requires=""
+                ;;
+            esac
+            ;;
+        esac
+      fi
       AC_SUBST(ssl_requires)
     fi
   else
