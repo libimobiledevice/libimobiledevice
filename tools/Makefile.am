@@ -6,10 +6,12 @@ AM_CFLAGS = \
 	$(GLOBAL_CFLAGS) \
 	$(ssl_lib_CFLAGS) \
 	$(libplist_CFLAGS) \
-	$(LFS_CFLAGS)
+	$(LFS_CFLAGS) \
+	$(limd_glue_CFLAGS)
 
 AM_LDFLAGS = \
-	$(libplist_LIBS)
+	$(libplist_LIBS) \
+	$(limd_glue_LIBS)
 
 bin_PROGRAMS = \
 	idevicebtlogger\
