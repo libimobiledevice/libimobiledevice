@@ -70,7 +70,7 @@ NP_ITDBPREP_DID_END = C_NP_ITDBPREP_DID_END
 NP_LANGUAGE_CHANGED = C_NP_LANGUAGE_CHANGED
 NP_ADDRESS_BOOK_PREF_CHANGED = C_NP_ADDRESS_BOOK_PREF_CHANGED
 
-cdef void np_notify_cb(const_char_ptr notification, void *py_callback):
+cdef void np_notify_cb(const_char_ptr notification, void *py_callback) noexcept:
     (<object>py_callback)(notification)
 
 cdef class NotificationProxyError(BaseError):

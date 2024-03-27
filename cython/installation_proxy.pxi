@@ -27,7 +27,7 @@ cdef extern from "libimobiledevice/installation_proxy.h":
     instproxy_error_t instproxy_restore(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
     instproxy_error_t instproxy_remove_archive(instproxy_client_t client, char *appid, plist.plist_t client_options, instproxy_status_cb_t status_cb, void *user_data)
 
-cdef void instproxy_notify_cb(plist.plist_t command, plist.plist_t status, void *py_callback) with gil:
+cdef void instproxy_notify_cb(plist.plist_t command, plist.plist_t status, void *py_callback) noexcept:
     (<object>py_callback)(plist.plist_t_to_node(command, False), plist.plist_t_to_node(status, False))
 
 cdef class InstallationProxyError(BaseError):
