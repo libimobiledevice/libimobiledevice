@@ -389,6 +389,7 @@ int main(int argc, char *argv[])
 
 	if ((op == OP_ENABLE || op == OP_ARM) && dev_mode_status) {
 		if (dev_mode_status) {
+			idevice_free(device);
 			printf("DeveloperMode is already enabled.\n");
 			return 0;
 		}
