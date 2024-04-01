@@ -1,3 +1,6 @@
+#!python
+#cython: language_level=3str
+
 cimport plist
 
 from libc.stdint cimport *
