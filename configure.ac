@@ -132,9 +132,9 @@ AC_ARG_WITH([cython],
             [build_cython=false],
             [build_cython=true])
 if test "$build_cython" = "true"; then
-            AC_PROG_CYTHON([0.17.0])
+            AC_PROG_CYTHON([3.0.0])
             if [test "x$CYTHON" != "xfalse"]; then
-              AM_PATH_PYTHON([2.3], [
+              AM_PATH_PYTHON([3.0], [
                 CYTHON_PYTHON
                 AS_COMPILER_FLAG([-Wno-cast-function-type -Werror], [
                   CYTHON_CFLAGS+=" -Wno-cast-function-type"
