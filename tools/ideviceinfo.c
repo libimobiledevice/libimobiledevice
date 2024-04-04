@@ -105,6 +105,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -s, --simple          use simple connection to avoid auto-pairing with device\n"
 		"  -q, --domain NAME     set domain of query to NAME. Default: None\n" \
 		"  -k, --key NAME        only query key specified by NAME. Default: All keys.\n" \
+		"  -p, --path PATH       print device info in PATH.\n" \
 		"  -x, --xml             output information in XML property list format\n" \
 		"  -h, --help            prints usage information\n" \
 		"  -d, --debug           enable communication debugging\n" \
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
 		{ "network", no_argument, NULL, 'n' },
 		{ "domain", required_argument, NULL, 'q' },
 		{ "key", required_argument, NULL, 'k' },
+		{ "path", required_argument, NULL, 'p' },
 		{ "simple", no_argument, NULL, 's' },
 		{ "xml", no_argument, NULL, 'x' },
 		{ "version", no_argument, NULL, 'v' },
@@ -156,7 +158,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nq:k:sxvp:", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -187,6 +189,40 @@ int main(int argc, char *argv[])
 				return 2;
 			}
 			key = optarg;
+			break;
+		case 'p':
+			if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
+			lockdownd_client_new(device, &client, TOOL_NAME):
+			lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
+				fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
+				idevice_free(device);
+				return -1;
+			}
+			if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
+				if (node) {
+					FILE* pathfile = fopen(argv[2],"w");
+					switch (format) {
+					case FORMAT_XML:
+						plist_to_xml(node, &xml_doc, &xml_length);
+						fprintf(pathfile, "%s", xml_doc);
+						free(xml_doc);
+						fclose(pathfile);
+						break;
+					case FORMAT_KEY_VALUE:
+						plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+						break;
+					default:
+						if (key != NULL){
+							plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+						}
+						break;
+					}
+					plist_free(node);
+					node = NULL;
+					fclose(pathfile);
+				}
+				return 0;
+			}
 			break;
 		case 'x':
 			format = FORMAT_XML;
