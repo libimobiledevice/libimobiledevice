@@ -135,6 +135,7 @@ int main(int argc, char *argv[])
 	int use_network = 0;
 	const char *domain = NULL;
 	const char *key = NULL;
+	const char *path = NULL;
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
@@ -191,39 +192,13 @@ int main(int argc, char *argv[])
 			key = optarg;
 			break;
 		case 'p':
-			// if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
-			// lockdownd_client_new(device, &client, TOOL_NAME):
-			// lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
-			// 	fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
-			// 	idevice_free(device);
-			// 	return -1;
-			// }
-			// if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
-			// 	if (node) {
-			// 		FILE* pathfile = fopen(argv[2],"w");
-			// 		switch (format) {
-			// 		case FORMAT_XML:
-			// 			plist_to_xml(node, &xml_doc, &xml_length);
-			// 			fprintf(pathfile, "%s", xml_doc);
-			// 			free(xml_doc);
-			// 			fclose(pathfile);
-			// 			break;
-			// 		case FORMAT_KEY_VALUE:
-			// 			plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
-			// 			break;
-			// 		default:
-			// 			if (key != NULL){
-			// 				plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
-			// 			}
-			// 			break;
-			// 		}
-			// 		plist_free(node);
-			// 		node = NULL;
-			// 		fclose(pathfile);
-			// 	}
-			// 	return 0;
-			// }
-			printf("Device info will be printed in %s",argv[2]);
+			if (!*optarg){
+				fprintf(stderr, "ERROR: 'path' must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			}
+			path = optarg;
+			printf("Device info will be printed in %s", path);
 			break;
 		case 'x':
 			format = FORMAT_XML;
@@ -275,7 +250,7 @@ int main(int argc, char *argv[])
 			case FORMAT_XML:
 				plist_to_xml(node, &xml_doc, &xml_length);
 				if(c = 'p'){
-					FILE* pathfile = fopen(argv[2],"w");
+					FILE* pathfile = fopen(path, "w");
 					fprintf(pathfile, "%s", xml_doc);
 					fclose(pathfile);
 				}
@@ -284,7 +259,7 @@ int main(int argc, char *argv[])
 				break;
 			case FORMAT_KEY_VALUE:
 				if(c = 'p'){
-					FILE* pathfile = fopen(argv[2],"w");
+					FILE* pathfile = fopen(path, "w");
 					plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
 					fclose(pathfile);
 				}
@@ -293,7 +268,7 @@ int main(int argc, char *argv[])
 			default:
 				if (key != NULL){
 					if(c = 'p'){
-						FILE* pathfile = fopen(argv[2],"w");
+						FILE* pathfile = fopen(path, "w");
 						plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 						fclose(pathfile);
 					}
