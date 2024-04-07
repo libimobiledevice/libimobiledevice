@@ -191,38 +191,39 @@ int main(int argc, char *argv[])
 			key = optarg;
 			break;
 		case 'p':
-			if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
-			lockdownd_client_new(device, &client, TOOL_NAME):
-			lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
-				fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
-				idevice_free(device);
-				return -1;
-			}
-			if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
-				if (node) {
-					FILE* pathfile = fopen(argv[2],"w");
-					switch (format) {
-					case FORMAT_XML:
-						plist_to_xml(node, &xml_doc, &xml_length);
-						fprintf(pathfile, "%s", xml_doc);
-						free(xml_doc);
-						fclose(pathfile);
-						break;
-					case FORMAT_KEY_VALUE:
-						plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
-						break;
-					default:
-						if (key != NULL){
-							plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
-						}
-						break;
-					}
-					plist_free(node);
-					node = NULL;
-					fclose(pathfile);
-				}
-				return 0;
-			}
+			// if (LOCKDOWN_E_SUCCESS != (ldret = simple ?
+			// lockdownd_client_new(device, &client, TOOL_NAME):
+			// lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
+			// 	fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
+			// 	idevice_free(device);
+			// 	return -1;
+			// }
+			// if(lockdownd_get_value(client, domain, key, &node) == LOCKDOWN_E_SUCCESS) {
+			// 	if (node) {
+			// 		FILE* pathfile = fopen(argv[2],"w");
+			// 		switch (format) {
+			// 		case FORMAT_XML:
+			// 			plist_to_xml(node, &xml_doc, &xml_length);
+			// 			fprintf(pathfile, "%s", xml_doc);
+			// 			free(xml_doc);
+			// 			fclose(pathfile);
+			// 			break;
+			// 		case FORMAT_KEY_VALUE:
+			// 			plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+			// 			break;
+			// 		default:
+			// 			if (key != NULL){
+			// 				plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+			// 			}
+			// 			break;
+			// 		}
+			// 		plist_free(node);
+			// 		node = NULL;
+			// 		fclose(pathfile);
+			// 	}
+			// 	return 0;
+			// }
+			printf("Device info will be printed in %s",argv[2]);
 			break;
 		case 'x':
 			format = FORMAT_XML;
@@ -273,15 +274,31 @@ int main(int argc, char *argv[])
 			switch (format) {
 			case FORMAT_XML:
 				plist_to_xml(node, &xml_doc, &xml_length);
-				printf("%s", xml_doc);
+				if(c = 'p'){
+					FILE* pathfile = fopen(argv[2],"w");
+					fprintf(pathfile, "%s", xml_doc);
+					fclose(pathfile);
+				}
+				else printf("%s", xml_doc);
 				free(xml_doc);
 				break;
 			case FORMAT_KEY_VALUE:
-				plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+				if(c = 'p'){
+					FILE* pathfile = fopen(argv[2],"w");
+					plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+					fclose(pathfile);
+				}
+				else plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 				break;
 			default:
-				if (key != NULL)
-					plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+				if (key != NULL){
+					if(c = 'p'){
+						FILE* pathfile = fopen(argv[2],"w");
+						plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+						fclose(pathfile);
+					}
+					else plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+				}
 			break;
 			}
 			plist_free(node);
