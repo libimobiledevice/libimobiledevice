@@ -113,6 +113,15 @@ MbedTLS headers and `mbedtls_LIBDIR` to set the library path. Optionally,
 ./autogen.sh --with-mbedtls mbedtls_INCLUDES=/opt/local/include mbedtls_LIBDIR=/opt/local/lib
 ```
 
+If you need the documentation and it wasn't build after installation, tap
+```
+make docs
+```
+or
+```
+doxygen doxygen.cfg
+```
+
 ## Usage
 
 Documentation about using the library in your application is not available yet.
