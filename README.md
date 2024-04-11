@@ -113,7 +113,7 @@ MbedTLS headers and `mbedtls_LIBDIR` to set the library path. Optionally,
 ./autogen.sh --with-mbedtls mbedtls_INCLUDES=/opt/local/include mbedtls_LIBDIR=/opt/local/lib
 ```
 
-If you need to use the documentation and does not compile after compilation / installation, tap
+If you need to use the documentation and doesn't build after compilation / installation, tap
 ```
 make docs
 ```
