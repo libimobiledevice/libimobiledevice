@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 				break;
 			default:
 				if (key != NULL){
-					if(c = 'p'){
+					if(c == 'p'){
 						FILE* pathfile = fopen(path, "w");
 						plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 						fclose(pathfile);
