@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 			switch (format) {
 			case FORMAT_XML:
 				plist_to_xml(node, &xml_doc, &xml_length);
-				if(c = 'p'){
+				if(c == 'p'){
 					FILE* pathfile = fopen(path, "w");
 					fprintf(pathfile, "%s", xml_doc);
 					fclose(pathfile);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 				free(xml_doc);
 				break;
 			case FORMAT_KEY_VALUE:
-				if(c = 'p'){
+				if(c == 'p'){
 					FILE* pathfile = fopen(path, "w");
 					plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
 					fclose(pathfile);
