@@ -139,6 +139,14 @@ make
 sudo make install
 ```
 
+If you require a custom prefix or other option being passed to `./configure`
+you can pass them directly to `./autogen.sh` like this:
+```bash
+./autogen.sh --prefix=/opt/local --enable-debug
+make
+sudo make install
+```
+
 ### Options
 
 By default, OpenSSL will be used as TLS/SSL library. If you prefer GnuTLS,
