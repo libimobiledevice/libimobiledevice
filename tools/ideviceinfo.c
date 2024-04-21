@@ -139,6 +139,8 @@ int main(int argc, char *argv[])
 	char *xml_doc = NULL;
 	uint32_t xml_length;
 	plist_t node = NULL;
+	FILE* pathfile = NULL;
+	int pathoption = 0;
 
 	int c = 0;
 	const struct option longopts[] = {
@@ -197,8 +199,9 @@ int main(int argc, char *argv[])
 				print_usage(argc, argv, 1);
 				return 2;
 			}
+			pathoption = 1;
 			path = optarg;
-			printf("Device info will be printed in %s", path);
+			printf("Device info will be printed in %s \n", path);
 			break;
 		case 'x':
 			format = FORMAT_XML;
@@ -249,28 +252,37 @@ int main(int argc, char *argv[])
 			switch (format) {
 			case FORMAT_XML:
 				plist_to_xml(node, &xml_doc, &xml_length);
-				if(c == 'p'){
-					FILE* pathfile = fopen(path, "w");
-					fprintf(pathfile, "%s", xml_doc);
-					fclose(pathfile);
-				}
-				else printf("%s", xml_doc);
+						if(pathoption){
+						 	pathfile = fopen(path, "w");
+							if(pathfile){
+								fprintf(pathfile, "%s", xml_doc);
+								fclose(pathfile);
+								printf("Device info is printed successfully.\n");
+							}
+						}
+						else printf("%s", xml_doc);
 				free(xml_doc);
 				break;
 			case FORMAT_KEY_VALUE:
-				if(c == 'p'){
-					FILE* pathfile = fopen(path, "w");
-					plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
-					fclose(pathfile);
-				}
-				else plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+						if(pathoption){
+							pathfile = fopen(path, "w");
+							if(pathfile){
+								plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
+								fclose(pathfile);
+								printf("Device info is printed successfully.\n");
+							}
+						}
+						else plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 				break;
 			default:
 				if (key != NULL){
-					if(c == 'p'){
-						FILE* pathfile = fopen(path, "w");
-						plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
-						fclose(pathfile);
+					if(pathoption){
+						pathfile = fopen(path, "w");
+						if(pathfile){
+							plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+							fclose(pathfile);
+							printf("Device info is printed successfully.\n");
+						}
 					}
 					else plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
 				}
