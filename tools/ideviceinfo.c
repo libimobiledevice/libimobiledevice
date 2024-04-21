@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
 					if(pathoption){
 						pathfile = fopen(path, "w");
 						if(pathfile){
-							plist_write_to_stream(node, stdout, PLIST_FORMAT_LIMD, 0);
+							plist_write_to_stream(node, pathfile, PLIST_FORMAT_LIMD, 0);
 							fclose(pathfile);
 							printf("Device info is printed successfully.\n");
 						}
