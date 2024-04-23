@@ -720,7 +720,11 @@ BigIntegerModExp(BigInteger r, BigInteger b, BigInteger e, BigInteger m, BigInte
   else if(a == NULL) {
     BN_mod_exp(r, b, e, m, c);
   }
-#if OPENSSL_VERSION_NUMBER >= 0x00906000
+/*
+ * In LibreSSL BN_mod_exp_mont_word() is not a public symbol where BN_mod_exp()
+ * and BN_mod_exp_mont() will use the word optimization when appropriate.
+ */
+#if OPENSSL_VERSION_NUMBER >= 0x00906000 && !defined(LIBRESSL_VERSION_NUMBER)
   else if(B > 0 && B < ULONG_MAX) {  /* 0.9.6 and above has mont_word optimization */
     BN_mod_exp_mont_word(r, B, e, m, c, a);
   }
