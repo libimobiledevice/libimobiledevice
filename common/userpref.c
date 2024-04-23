@@ -627,7 +627,6 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		}
 	}
 
-	X509V3_EXT_cleanup();
 	X509_free(dev_cert);
 
 	EVP_PKEY_free(pubkey);
