@@ -17,21 +17,21 @@ jobs:
       run: |
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
     - name: fetch libplist
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_${{env.target_triplet}}
         repo: libimobiledevice/libplist
     - name: fetch libusbmuxd
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_${{env.target_triplet}}
         repo: libimobiledevice/libusbmuxd
     - name: fetch libimobiledevice-glue
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
@@ -45,7 +45,7 @@ jobs:
           done
           sudo cp -r extract/* /
           sudo ldconfig
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: autogen
@@ -60,7 +60,7 @@ jobs:
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar usr
     - name: publish artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: libimobiledevice-latest_${{env.target_triplet}}
         path: libimobiledevice.tar
@@ -77,21 +77,21 @@ jobs:
           pip3 install cython
       shell: bash
     - name: fetch libplist
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_macOS
         repo: libimobiledevice/libplist
     - name: fetch libusbmuxd
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_macOS
         repo: libimobiledevice/libusbmuxd
     - name: fetch libimobiledevice-glue
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
@@ -104,7 +104,7 @@ jobs:
             tar -C extract -xvf $I
           done
           sudo cp -r extract/* /
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: install additional requirements
       run: |
           mkdir -p lib
@@ -156,7 +156,7 @@ jobs:
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar usr
     - name: publish artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: libimobiledevice-latest_macOS
         path: libimobiledevice.tar
@@ -193,21 +193,21 @@ jobs:
           echo "target_triplet=`gcc -dumpmachine`" >> $GITHUB_ENV
           git config --global core.autocrlf false
     - name: fetch libplist
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libplist-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libplist
     - name: fetch libusbmuxd
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
         name: libusbmuxd-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libusbmuxd
     - name: fetch libimobiledevice-glue
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v3
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}
         workflow: build.yml
@@ -220,7 +220,7 @@ jobs:
             tar -C extract -xvf $I
           done
           cp -r extract/* /
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: autogen
       run: ./autogen.sh CC=gcc CXX=g++ --enable-debug
     - name: make
@@ -233,7 +233,7 @@ jobs:
           DESTDIR=`pwd`/dest make install
           tar -C dest -cf libimobiledevice.tar ${{ env.dest }}
     - name: publish artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: libimobiledevice-latest_${{ matrix.arch }}-${{ env.dest }}
         path: libimobiledevice.tar
