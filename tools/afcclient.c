@@ -36,6 +36,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -70,6 +71,7 @@
 #include <plist/plist.h>
 
 #include <libimobiledevice-glue/termcolors.h>
+#include <libimobiledevice-glue/utils.h>
 
 #undef st_mtime
 #undef st_birthtime
@@ -684,7 +686,8 @@ static void handle_remove(afc_client_t afc, int argc, char** argv)
 	}
 }
 
-static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint64_t file_size) {
+static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint64_t file_size)
+{
     uint64_t fh = 0;
     afc_error_t err = afc_file_open(afc, srcpath, AFC_FOPEN_RDONLY, &fh);
     if (err != AFC_E_SUCCESS) {
@@ -754,10 +757,15 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
     return succeed;
 }
 
-static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath) {
+static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath)
+{
     char **info = NULL;
     uint64_t file_size = 0;
-    afc_get_file_info(afc, srcpath, &info);
+    afc_error_t err = afc_get_file_info(afc, srcpath, &info);
+    if (err == AFC_E_OBJECT_NOT_FOUND) {
+        printf("Error: Failed to read from file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+        return 0;
+    }
     uint8_t is_dir = 0;
     if (info) {
         char **p = info;
@@ -777,7 +785,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
     uint8_t succeed = 1;
     if (is_dir) {
         char **entries = NULL;
-        afc_error_t err = afc_read_directory(afc, srcpath, &entries);
+        err = afc_read_directory(afc, srcpath, &entries);
         if (err != AFC_E_SUCCESS) {
             printf("Error: Failed to list '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
             return 0;
@@ -820,25 +828,39 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
     return succeed;
 }
 
-static void handle_get(afc_client_t afc, int argc, char **argv) {
+static void handle_get(afc_client_t afc, int argc, char **argv)
+{
     if (argc < 1 || argc > 2) {
         printf("Error: Invalid number of arguments\n");
         return;
     }
     char *srcpath = NULL;
     char *dstpath = NULL;
-    size_t src_len = strlen(argv[0]);
-    if (strcmp(argv[0], "/") != 0 && argv[0][src_len - 1] == '/') {
-        argv[0][src_len - 1] = '\0';
-    }
     if (argc == 1) {
-        srcpath = get_absolute_path(argv[0]);
-        dstpath = strdup(path_get_basename(argv[0]));
+        char *tmp = strdup(argv[0]);
+        size_t src_len = strlen(tmp);
+        if (src_len > 1 && tmp[src_len - 1] == '/') {
+            tmp[src_len - 1] = '\0';
+        }
+        srcpath = get_absolute_path(tmp);
+        dstpath = strdup(path_get_basename(tmp));
+        free(tmp);
     } else {
-        srcpath = get_absolute_path(argv[0]);
+        char *tmp = strdup(argv[0]);
+        size_t src_len = strlen(tmp);
+        if (src_len > 1 && tmp[src_len - 1] == '/') {
+            tmp[src_len - 1] = '\0';
+        }
+        srcpath = get_absolute_path(tmp);
         dstpath = strdup(argv[1]);
+        size_t dst_len = strlen(dstpath);
+        if (dst_len > 1 && dstpath[dst_len - 1] == '/') {
+            dstpath[dst_len - 1] = '\0';
+        }
+        free(tmp);
     }
 
+    // target is a directory, put file under this target
     if (is_directory(dstpath)) {
         const char *basen = path_get_basename(argv[0]);
         size_t len = strlen(dstpath) + 1 + strlen(basen) + 1;
@@ -849,104 +871,212 @@ static void handle_get(afc_client_t afc, int argc, char **argv) {
         free(newdst);
         free(dstpath);
     } else {
+        // target is not a dir or does not exist, just try to create or rewrite it
         get_file(afc, srcpath, dstpath);
         free(srcpath);
         free(dstpath);
     }
 }
 
-static void handle_put(afc_client_t afc, int argc, char** argv)
+static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char *dstpath)
 {
-	if (argc < 1 || argc > 2) {
-		printf("Error: Invalid number of arguments\n");
-		return;
-	}
+    FILE *f = fopen(srcpath, "rb");
+    if (!f) {
+        printf("Error: Failed to open local file '%s': %s\n", srcpath, strerror(errno));
+        return 0;
+    }
+    struct timeval t1;
+    struct timeval t2;
+    struct timeval tdiff;
+    struct stat fst;
+    int progress = 0;
+    size_t bufsize = 0x100000;
+    char *buf = malloc(bufsize);
 
-	char *dstpath = NULL;
-	if (argc == 1) {
-		dstpath = get_absolute_path(path_get_basename(argv[0]));
-	} else {
-		dstpath = get_absolute_path(argv[1]);
-	}
+    fstat(fileno(f), &fst);
+    if (fst.st_size >= 0x400000) {
+        progress = 1;
+        gettimeofday(&t1, NULL);
+    }
+    size_t total = 0;
+    int lastprog = 0;
+    uint64_t fh = 0;
+    afc_error_t err = afc_file_open(afc, dstpath, AFC_FOPEN_RW, &fh);
+    uint8_t succeed = 1;
+    while (err == AFC_E_SUCCESS) {
+        uint32_t bytes_read = fread(buf, 1, bufsize, f);
+        if (bytes_read == 0) {
+            if (!feof(f)) {
+                if (progress) {
+                    printf("\n");
+                }
+                printf("Error: Failed to read from local file\n");
+                succeed = 0;
+            }
+            break;
+        }
+        uint32_t chunk = 0;
+        while (chunk < bytes_read) {
+            uint32_t bytes_written = 0;
+            err = afc_file_write(afc, fh, buf + chunk, bytes_read - chunk, &bytes_written);
+            if (err != AFC_E_SUCCESS) {
+                if (progress) {
+                    printf("\n");
+                }
+                printf("Error: Failed to write to device file\n");
+                succeed = 0;
+                break;
+            }
+            chunk += bytes_written;
+        }
+        total += chunk;
+        if (progress) {
+            int prog = (int) ((double) total / (double) fst.st_size * 100.0f);
+            if (prog > lastprog) {
+                gettimeofday(&t2, NULL);
+                timeval_subtract(&tdiff, &t2, &t1);
+                double time_in_sec = (double) tdiff.tv_sec + (double) tdiff.tv_usec / 1000000;
+                printf("\r%d%% (%0.1f MB/s)   ", prog, (double) total / 1048576.0f / time_in_sec);
+                fflush(stdout);
+                lastprog = prog;
+            }
+        }
+    }
+    printf("\n");
+    free(buf);
+    afc_file_close(afc, fh);
+    fclose(f);
+    return succeed;
+}
 
-	uint64_t fh = 0;
-	FILE *f = fopen(argv[0], "rb");
-	if (f) {
-		afc_error_t err = afc_file_open(afc, dstpath, AFC_FOPEN_RW, &fh);
-		if (err == AFC_E_OBJECT_IS_DIR) {
-			const char* basen = path_get_basename(argv[0]);
-			size_t len = strlen(dstpath) + 1 + strlen(basen) + 1;
-			char* newdst = (char*)malloc(len);
-			snprintf(newdst, len, "%s/%s", dstpath, basen);
-			free(dstpath);
-			dstpath  = get_absolute_path(newdst);
-			free(newdst);
-			err = afc_file_open(afc, dstpath, AFC_FOPEN_RW, &fh);
-		}
-		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to open file '%s' on device: %s (%d)\n", argv[1], afc_strerror(err), err);
-		} else {
-			struct timeval t1;
-			struct timeval t2;
-			struct timeval tdiff;
-			struct stat fst;
-			int progress = 0;
-			size_t bufsize = 0x100000;
-			char* buf = malloc(bufsize);
+static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpath)
+{
+    if (is_directory(srcpath)) {
+        char **info = NULL;
+        afc_error_t err = afc_get_file_info(afc, dstpath, &info);
+        //create if target directory does not exist
+        if (err == AFC_E_OBJECT_NOT_FOUND) {
+            err = afc_make_directory(afc, dstpath);
+            if (err != AFC_E_SUCCESS) {
+                printf("Error: Failed to create directory '%s': %s (%d)\n", dstpath, afc_strerror(err), err);
+                return 0;
+            }
+        }
+        afc_dictionary_free(info);
+        afc_get_file_info(afc, dstpath, &info);
+        uint8_t is_dir = 0;
+        if (info) {
+            char **p = info;
+            while (p && *p) {
+                if (!strcmp(*p, "st_ifmt")) {
+                    p++;
+                    is_dir = !strcmp(*p, "S_IFDIR");
+                    break;
+                }
+                p++;
+            }
+            afc_dictionary_free(info);
+        }
+        if (!is_dir) {
+            printf("Error: Failed to create or access directory: '%s'", dstpath);
+            return 0;
+        }
 
-			fstat(fileno(f), &fst);
-			if (fst.st_size >= 0x400000) {
-				progress = 1;
-				gettimeofday(&t1, NULL);
-			}
-			size_t total = 0;
-			int lastprog = 0;
-			while (err == AFC_E_SUCCESS) {
-				uint32_t bytes_read = fread(buf, 1, bufsize, f);
-				if (bytes_read == 0) {
-					if (!feof(f)) {
-						if (progress) {
-							printf("\n");
-						}
-						printf("Error: Failed to read from local file\n");
-					}
-					break;
-				}
-				uint32_t chunk = 0;
-				while (chunk < bytes_read) {
-					uint32_t bytes_written = 0;
-					err = afc_file_write(afc, fh, buf+chunk, bytes_read-chunk, &bytes_written);
-					if (err != AFC_E_SUCCESS) {
-						if (progress) {
-							printf("\n");
-						}
-						printf("Error: Failed to write to device file\n");
-						break;
-					}
-					chunk += bytes_written;
-				}
-				total += chunk;
-				if (progress) {
-					int prog = (int)((double)total / (double)fst.st_size * 100.0f);
-					if (prog > lastprog) {
-						gettimeofday(&t2, NULL);
-						timeval_subtract(&tdiff, &t2, &t1);
-						double time_in_sec = (double)tdiff.tv_sec + (double)tdiff.tv_usec/1000000;
-						printf("\r%d%% (%0.1f MB/s)   ", prog, (double)total/1048576.0f / time_in_sec);
-						fflush(stdout);
-						lastprog = prog;
-					}
-				}
-			}
-			printf("\n");
-			free(buf);
-			afc_file_close(afc, fh);
-		}
-		fclose(f);
-	} else {
-		printf("Error: Failed to open local file '%s': %s\n", argv[0], strerror(errno));
-	}
-	free(dstpath);
+        // walk dir recursively to put files
+        DIR *cur_dir = opendir(srcpath);
+        if (cur_dir) {
+            struct dirent *ep;
+            while ((ep = readdir(cur_dir))) {
+                if ((strcmp(ep->d_name, ".") == 0) || (strcmp(ep->d_name, "..") == 0)) {
+                    continue;
+                }
+                char *fpath = string_build_path(srcpath, ep->d_name, NULL);
+                if (fpath) {
+                    size_t len = strlen(srcpath) + 1 + strlen(ep->d_name) + 1;
+                    char *newdst = (char *) malloc(len);
+                    snprintf(newdst, len, "%s/%s", dstpath, ep->d_name);
+                    if (!put_file(afc, fpath, newdst)) {
+                        free(newdst);
+                        free(fpath);
+                        return 0;
+                    }
+                    free(newdst);
+                    free(fpath);
+                }
+            }
+            closedir(cur_dir);
+        } else {
+            printf("Error: Failed to visit directory: '%s': %s", srcpath, strerror(errno));
+            return 0;
+        }
+    } else {
+        return put_single_file(afc, srcpath, dstpath);
+    }
+    return 1;
+}
+
+static void handle_put(afc_client_t afc, int argc, char **argv)
+{
+    if (argc < 1 || argc > 2) {
+        printf("Error: Invalid number of arguments\n");
+        return;
+    }
+
+    char *srcpath = strdup(argv[0]);
+    size_t src_len = strlen(srcpath);
+    if (src_len > 1 && srcpath[src_len - 1] == '/') {
+        srcpath[src_len - 1] = '\0';
+    }
+    char *dstpath = NULL;
+    if (argc == 1) {
+        dstpath = get_absolute_path(path_get_basename(srcpath));
+    } else {
+        char *tmp = strdup(argv[1]);
+        size_t dst_len = strlen(tmp);
+        if (dst_len > 1 && tmp[dst_len - 1] == '/') {
+            tmp[dst_len - 1] = '\0';
+        }
+        dstpath = get_absolute_path(tmp);
+        free(tmp);
+    }
+    char **info = NULL;
+    afc_error_t err = afc_get_file_info(afc, dstpath, &info);
+    // target does not exist, put directly
+    if (err == AFC_E_OBJECT_NOT_FOUND) {
+        put_file(afc, srcpath, dstpath);
+        free(srcpath);
+        free(dstpath);
+    } else {
+        uint8_t is_dir = 0;
+        if (info) {
+            char **p = info;
+            while (p && *p) {
+                if (!strcmp(*p, "st_ifmt")) {
+                    p++;
+                    is_dir = !strcmp(*p, "S_IFDIR");
+                    break;
+                }
+                p++;
+            }
+            afc_dictionary_free(info);
+        }
+        // target is a dir, put under this target
+        if (is_dir) {
+            const char *basen = path_get_basename(srcpath);
+            size_t len = strlen(dstpath) + 1 + strlen(basen) + 1;
+            char *newdst = (char *) malloc(len);
+            snprintf(newdst, len, "%s/%s", dstpath, basen);
+            free(dstpath);
+            dstpath = get_absolute_path(newdst);
+            free(newdst);
+            put_file(afc, srcpath, dstpath);
+        } else {
+            //target is common file, rewrite it
+            put_file(afc, srcpath, dstpath);
+        }
+        free(srcpath);
+        free(dstpath);
+    }
 }
 
 static void handle_pwd(afc_client_t afc, int argc, char** argv)
