@@ -37,6 +37,7 @@ docs/html
 libimobiledevice-1.0.pc
 tools/.libs/*
 tools/idevice*
+tools/afcclient
 !tools/idevice*.[ch]
 cython/.libs/*
 cython/*.c
