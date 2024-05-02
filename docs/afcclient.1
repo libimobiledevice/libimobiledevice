@@ -32,16 +32,14 @@ create directory at PATH
 .B ln [-s] FILE [LINK]
 Create a (symbolic) link to file named LINKNAME. \f[B]NOTE: This feature has been disabled in newer versions of iOS\f[].
 .TP
-.B rm PATH
+.B rm [-rf] PATH
 remove item at PATH
 .TP
-.B get PATH [LOCALPATH]
+.B get [-rf] PATH [LOCALPATH]
 transfer file at PATH from device to LOCALPATH, or current directory if omitted. If LOCALPATH is a directory, the file will be stored inside the directory.
-\f[B]WARNING\f[]: Existing files will be overwritten!
 .TP
-.B put LOCALPATH [PATH]
+.B put [-rf] LOCALPATH [PATH]
 transfer local file at LOCALPATH to device at PATH, or current directory if omitted. If PATH is a directory, the file will be stored inside the directory.
-\f[B]WARNING\f[]: Existing files will be overwritten!
 .TP
 
 .SH OPTIONS
