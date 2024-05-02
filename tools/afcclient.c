@@ -91,6 +91,16 @@ static idevice_subscription_context_t context = NULL;
 static char* curdir = NULL;
 static size_t curdir_len = 0;
 
+static int file_exists(const char* path)
+{
+	struct stat tst;
+#ifdef WIN32
+	return (stat(path, &tst) == 0);
+#else
+	return (lstat(path, &tst) == 0);
+#endif
+}
+
 static int is_directory(const char* path)
 {
 	struct stat tst;
@@ -686,12 +696,16 @@ static void handle_remove(afc_client_t afc, int argc, char** argv)
 	}
 }
 
-static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint64_t file_size)
+static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint64_t file_size, uint8_t force_overwrite)
 {
 	uint64_t fh = 0;
 	afc_error_t err = afc_file_open(afc, srcpath, AFC_FOPEN_RDONLY, &fh);
 	if (err != AFC_E_SUCCESS) {
 		printf("Error: Failed to open file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+		return 0;
+	}
+	if (file_exists(dstpath) && !force_overwrite) {
+		printf("Error: Failed to overwrite existing file without '-f' option: %s\n", dstpath);
 		return 0;
 	}
 	FILE *f = fopen(dstpath, "wb");
@@ -757,7 +771,7 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 	return succeed;
 }
 
-static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath)
+static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get)
 {
 	char **info = NULL;
 	uint64_t file_size = 0;
@@ -784,6 +798,10 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 	}
 	uint8_t succeed = 1;
 	if (is_dir) {
+		if (!recursive_get) {
+			printf("Error: Failed to get a directory without '-r' option: %s\n", srcpath);
+			return 0;
+		}
 		char **entries = NULL;
 		err = afc_read_directory(afc, srcpath, &entries);
 		if (err != AFC_E_SUCCESS) {
@@ -792,9 +810,15 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		}
 		char **p = entries;
 		size_t srcpath_len = strlen(srcpath);
-		int srcpath_is_root = strcmp(srcpath, "/") == 0;
-		if (!is_directory(dstpath) && mkdir(dstpath, 0777) != 0) {
-			printf("Error: Failed to create folder '%s': %s\n", dstpath, strerror(errno));
+		uint8_t srcpath_is_root = strcmp(srcpath, "/") == 0;
+		// if directory exists, check force_overwrite flag
+		if (is_directory(dstpath)) {
+			if (!force_overwrite) {
+				printf("Error: Failed to write into existing directory without '-f': %s\n", dstpath);
+				return 0;
+			}
+		} else if (mkdir(dstpath, 0777) != 0) {
+			printf("Error: Failed to create directory '%s': %s\n", dstpath, strerror(errno));
 			afc_dictionary_free(entries);
 			return 0;
 		}
@@ -803,17 +827,22 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				p++;
 				continue;
 			}
-			size_t len = srcpath_len + 1 + strlen(*p) + 1;
+			size_t len = srcpath_is_root ? strlen(*p) + 1 : srcpath_len + 1 + strlen(*p) + 1;
 			char *testpath = (char *) malloc(len);
 			if (srcpath_is_root) {
 				snprintf(testpath, len, "/%s", *p);
 			} else {
 				snprintf(testpath, len, "%s/%s", srcpath, *p);
 			}
-			size_t dst_len = strlen(dstpath) + 1 + strlen(*p) + 1;
+			uint8_t dst_is_root = strcmp(srcpath, "/") == 0;
+			size_t dst_len = dst_is_root ? strlen(*p) + 1 : strlen(dstpath) + 1 + strlen(*p) + 1;
 			char *newdst = (char *) malloc(dst_len);
-			snprintf(newdst, dst_len, "%s/%s", dstpath, *p);
-			if (!get_file(afc, testpath, newdst)) {
+			if (dst_is_root) {
+				snprintf(newdst, dst_len, "/%s", *p);
+			} else {
+				snprintf(newdst, dst_len, "%s/%s", dstpath, *p);
+			}
+			if (!get_file(afc, testpath, newdst, force_overwrite, recursive_get)) {
 				succeed = 0;
 				break;
 			}
@@ -823,21 +852,38 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		}
 		afc_dictionary_free(entries);
 	} else {
-		succeed = get_single_file(afc, srcpath, dstpath, file_size);
+		succeed = get_single_file(afc, srcpath, dstpath, file_size, force_overwrite);
 	}
 	return succeed;
 }
 
 static void handle_get(afc_client_t afc, int argc, char **argv)
 {
-	if (argc < 1 || argc > 2) {
+	if (argc < 1) {
 		printf("Error: Invalid number of arguments\n");
 		return;
 	}
+	uint8_t force_overwrite = 0, recursive_get = 0;
 	char *srcpath = NULL;
 	char *dstpath = NULL;
-	if (argc == 1) {
-		char *tmp = strdup(argv[0]);
+	int i = 0;
+	for ( ; i < argc; i++) {
+		if (!strcmp(argv[i], "--")) {
+			i++;
+			break;
+		} else if (!strcmp(argv[i], "-r")) {
+			recursive_get = 1;
+		} else if (!strcmp(argv[i], "-f")) {
+			force_overwrite = 1;
+		} else if (!strcmp(argv[i], "-rf") || !strcmp(argv[i], "-fr")) {
+			recursive_get = 1;
+			force_overwrite = 1;
+		} else {
+			break;
+		}
+	}
+	if (argc - i == 1) {
+		char *tmp = strdup(argv[i]);
 		size_t src_len = strlen(tmp);
 		if (src_len > 1 && tmp[src_len - 1] == '/') {
 			tmp[src_len - 1] = '\0';
@@ -845,14 +891,14 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 		srcpath = get_absolute_path(tmp);
 		dstpath = strdup(path_get_basename(tmp));
 		free(tmp);
-	} else {
-		char *tmp = strdup(argv[0]);
+	} else if (argc - i == 2) {
+		char *tmp = strdup(argv[i]);
 		size_t src_len = strlen(tmp);
 		if (src_len > 1 && tmp[src_len - 1] == '/') {
 			tmp[src_len - 1] = '\0';
 		}
 		srcpath = get_absolute_path(tmp);
-		dstpath = strdup(argv[1]);
+		dstpath = strdup(argv[i + 1]);
 		size_t dst_len = strlen(dstpath);
 		if (dst_len > 1 && dstpath[dst_len - 1] == '/') {
 			dstpath[dst_len - 1] = '\0';
@@ -863,23 +909,38 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 	// target is a directory, put file under this target
 	if (is_directory(dstpath)) {
 		const char *basen = path_get_basename(argv[0]);
-		size_t len = strlen(dstpath) + 1 + strlen(basen) + 1;
+		uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
+		size_t len = dst_is_root ? (strlen(basen) + 1) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 		char *newdst = (char *) malloc(len);
-		snprintf(newdst, len, "%s/%s", dstpath, basen);
-		get_file(afc, srcpath, newdst);
+		if (dst_is_root) {
+			snprintf(newdst, len, "/%s", basen);
+		} else {
+			snprintf(newdst, len, "%s/%s", dstpath, basen);
+		}
+		get_file(afc, srcpath, newdst, force_overwrite, recursive_get);
 		free(srcpath);
 		free(newdst);
 		free(dstpath);
 	} else {
 		// target is not a dir or does not exist, just try to create or rewrite it
-		get_file(afc, srcpath, dstpath);
+		get_file(afc, srcpath, dstpath, force_overwrite, recursive_get);
 		free(srcpath);
 		free(dstpath);
 	}
 }
 
-static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char *dstpath)
+static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite)
 {
+	char **info = NULL;
+	afc_error_t ret = afc_get_file_info(afc, dstpath, &info);
+	// file exists, only overwrite with '-f' option was set
+	if (ret == AFC_E_SUCCESS && info) {
+		afc_dictionary_free(info);
+		if (!force_overwrite) {
+			printf("Error: Failed to write into existing file without '-f' option: %s\n", dstpath);
+			return 0;
+		}
+	}
 	FILE *f = fopen(srcpath, "rb");
 	if (!f) {
 		printf("Error: Failed to open local file '%s': %s\n", srcpath, strerror(errno));
@@ -949,20 +1010,27 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 	return succeed;
 }
 
-static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpath)
+static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_put)
 {
 	if (is_directory(srcpath)) {
+		if (!recursive_put) {
+			printf("Error: Failed to put directory without '-r' option: %s\n", srcpath);
+			return 0;
+		}
 		char **info = NULL;
 		afc_error_t err = afc_get_file_info(afc, dstpath, &info);
 		//create if target directory does not exist
+		afc_dictionary_free(info);
 		if (err == AFC_E_OBJECT_NOT_FOUND) {
 			err = afc_make_directory(afc, dstpath);
 			if (err != AFC_E_SUCCESS) {
 				printf("Error: Failed to create directory '%s': %s (%d)\n", dstpath, afc_strerror(err), err);
 				return 0;
 			}
+		} else if (!force_overwrite) {
+			printf("Error: Failed to put existing directory without '-f' option: %s\n", dstpath);
+			return 0;
 		}
-		afc_dictionary_free(info);
 		afc_get_file_info(afc, dstpath, &info);
 		uint8_t is_dir = 0;
 		if (info) {
@@ -978,7 +1046,7 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			afc_dictionary_free(info);
 		}
 		if (!is_dir) {
-			printf("Error: Failed to create or access directory: '%s'", dstpath);
+			printf("Error: Failed to create or access directory: '%s'\n", dstpath);
 			return 0;
 		}
 
@@ -992,10 +1060,15 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				}
 				char *fpath = string_build_path(srcpath, ep->d_name, NULL);
 				if (fpath) {
-					size_t len = strlen(srcpath) + 1 + strlen(ep->d_name) + 1;
+					uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
+					size_t len = dst_is_root ? strlen(ep->d_name) + 1 : strlen(dstpath) + 1 + strlen(ep->d_name) + 1;
 					char *newdst = (char *) malloc(len);
-					snprintf(newdst, len, "%s/%s", dstpath, ep->d_name);
-					if (!put_file(afc, fpath, newdst)) {
+					if (dst_is_root) {
+						snprintf(newdst, len, "/%s", ep->d_name);
+					} else {
+						snprintf(newdst, len, "%s/%s", dstpath, ep->d_name);
+					}
+					if (!put_file(afc, fpath, newdst, force_overwrite, recursive_put)) {
 						free(newdst);
 						free(fpath);
 						return 0;
@@ -1006,44 +1079,67 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			}
 			closedir(cur_dir);
 		} else {
-			printf("Error: Failed to visit directory: '%s': %s", srcpath, strerror(errno));
+			printf("Error: Failed to visit directory: '%s': %s\n", srcpath, strerror(errno));
 			return 0;
 		}
 	} else {
-		return put_single_file(afc, srcpath, dstpath);
+		return put_single_file(afc, srcpath, dstpath, force_overwrite);
 	}
 	return 1;
 }
 
 static void handle_put(afc_client_t afc, int argc, char **argv)
 {
-	if (argc < 1 || argc > 2) {
+	if (argc < 1) {
 		printf("Error: Invalid number of arguments\n");
 		return;
 	}
-
-	char *srcpath = strdup(argv[0]);
+	int i = 0;
+	uint8_t force_overwrite = 0, recursive_put = 0;
+	for ( ; i < argc; i++) {
+		if (!strcmp(argv[i], "--")) {
+			i++;
+			break;
+		} else if (!strcmp(argv[i], "-r")) {
+			recursive_put = 1;
+		} else if (!strcmp(argv[i], "-f")) {
+			force_overwrite = 1;
+		} else if (!strcmp(argv[i], "-rf") || !strcmp(argv[i], "-fr")) {
+			recursive_put = 1;
+			force_overwrite = 1;
+		} else {
+			break;
+		}
+	}
+	if (i >= argc) {
+		printf("Error: Invalid number of arguments\n");
+		return;
+	}
+	char *srcpath = strdup(argv[i]);
 	size_t src_len = strlen(srcpath);
 	if (src_len > 1 && srcpath[src_len - 1] == '/') {
 		srcpath[src_len - 1] = '\0';
 	}
 	char *dstpath = NULL;
-	if (argc == 1) {
+	if (argc - i == 1) {
 		dstpath = get_absolute_path(path_get_basename(srcpath));
-	} else {
-		char *tmp = strdup(argv[1]);
+	} else if (argc - i == 2) {
+		char *tmp = strdup(argv[i + 1]);
 		size_t dst_len = strlen(tmp);
 		if (dst_len > 1 && tmp[dst_len - 1] == '/') {
 			tmp[dst_len - 1] = '\0';
 		}
 		dstpath = get_absolute_path(tmp);
 		free(tmp);
+	} else {
+		printf("Error: Invalid number of arguments\n");
+		return;
 	}
 	char **info = NULL;
 	afc_error_t err = afc_get_file_info(afc, dstpath, &info);
 	// target does not exist, put directly
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
-		put_file(afc, srcpath, dstpath);
+		put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
 		free(srcpath);
 		free(dstpath);
 	} else {
@@ -1060,19 +1156,24 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 			}
 			afc_dictionary_free(info);
 		}
-		// target is a dir, put under this target
+		// target is a directory, try to put under this directory
 		if (is_dir) {
 			const char *basen = path_get_basename(srcpath);
-			size_t len = strlen(dstpath) + 1 + strlen(basen) + 1;
+			uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
+			size_t len = dst_is_root ? strlen(basen) + 1 : strlen(dstpath) + 1 + strlen(basen) + 1;
 			char *newdst = (char *) malloc(len);
-			snprintf(newdst, len, "%s/%s", dstpath, basen);
+			if (dst_is_root) {
+				snprintf(newdst, len, "/%s", basen);
+			} else {
+				snprintf(newdst, len, "%s/%s", dstpath, basen);
+			}
 			free(dstpath);
 			dstpath = get_absolute_path(newdst);
 			free(newdst);
-			put_file(afc, srcpath, dstpath);
+			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
 		} else {
 			//target is common file, rewrite it
-			put_file(afc, srcpath, dstpath);
+			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
 		}
 		free(srcpath);
 		free(dstpath);
