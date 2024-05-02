@@ -193,8 +193,8 @@ static void handle_help(afc_client_t afc, int argc, char** argv)
 	printf("ln [-s] FILE [LINK] - create a (symbolic) link to file named LINKNAME\n");
 	printf("        NOTE: This feature has been disabled in newer versions of iOS.\n");
 	printf("rm PATH - remove item at PATH\n");
-	printf("get PATH [LOCALPATH] - transfer file at PATH from device to LOCALPATH\n");
-	printf("put LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH\n");
+	printf("get [-rf] PATH [LOCALPATH] - transfer file at PATH from device to LOCALPATH\n");
+	printf("put [-rf] LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH\n");
 	printf("\n");
 }
 
