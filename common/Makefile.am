@@ -7,12 +7,14 @@ AM_CFLAGS = \
 	$(ssl_lib_CFLAGS) \
 	$(LFS_CFLAGS) \
 	$(libusbmuxd_CFLAGS) \
+	$(limd_glue_CFLAGS) \
 	$(libplist_CFLAGS)
 
 AM_LDFLAGS = \
 	$(ssl_lib_LIBS) \
 	${libpthread_LIBS} \
 	$(libusbmuxd_LIBS) \
+	$(limd_glue_LIBS) \
 	$(libplist_LIBS)
 
 noinst_LTLIBRARIES = libinternalcommon.la
