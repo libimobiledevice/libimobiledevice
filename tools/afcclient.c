@@ -771,6 +771,15 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 	return succeed;
 }
 
+static int __mkdir(const char* path)
+{
+#ifdef WIN32
+	return mkdir(path);
+#else
+	return mkdir(path, 0755);
+#endif
+}
+
 static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get)
 {
 	char **info = NULL;
@@ -817,7 +826,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				printf("Error: Failed to write into existing directory without '-f': %s\n", dstpath);
 				return 0;
 			}
-		} else if (mkdir(dstpath, 0777) != 0) {
+		} else if (__mkdir(dstpath) != 0) {
 			printf("Error: Failed to create directory '%s': %s\n", dstpath, strerror(errno));
 			afc_dictionary_free(entries);
 			return 0;
