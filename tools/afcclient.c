@@ -913,6 +913,9 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 			dstpath[dst_len - 1] = '\0';
 		}
 		free(tmp);
+	} else {
+		printf("Error: Invalid number of arguments\n");
+		return;
 	}
 
 	// target is a directory, put file under this target
