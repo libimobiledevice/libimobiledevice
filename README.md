@@ -98,6 +98,57 @@ make
 sudo make install
 ```
 
+### macOS
+
+You can build and install all components of ```libimobiledevice``` and its dependencies with the nikias's script available [here](https://gist.github.com/nikias/84c79469a1d0f16ff95250f0d51858c3).
+
+You can also build and install manually. First, install the Xcode command line tools if you haven't installed.
+```shell
+xcode-select --install
+```
+
+I will use Homebrew for this guide. If you use MacPorts, don't worry: you can install the same packages.
+
+If you don't have any of them, you can install Homebrew with this command:
+```shell
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+After installation, Homebrew will show you 2 commands to enter in the shell. Launch them!
+
+Okay, now we can install required dependencies and build tools:
+```shell
+brew install libxml2 libzip libplist openssl libusbmuxd libimobiledevice-glue autoconf automake libtool pkg-config gcc libusb glib git ack
+```
+
+If you want to optionally build the documentation or Python bindings use:
+```shell
+brew install doxygen
+brew install cython	
+```
+
+Then clone the actual project repository:
+```shell
+git clone https://github.com/libimobiledevice/libimobiledevice.git
+cd libimobiledevice
+```
+
+Now you can build and install it:
+```shell
+./autogen.sh
+make
+sudo make install
+```
+
+If you require a custom prefix or other option being passed to `./configure`
+you can pass them directly to `./autogen.sh` like this:
+```bash
+./autogen.sh --prefix=/opt/local --enable-debug
+make
+sudo make install
+```
+
+### Options
+
 By default, OpenSSL will be used as TLS/SSL library. If you prefer GnuTLS,
 configure with `--with-gnutls` like this:
 ```bash
@@ -194,4 +245,4 @@ iPadOS, tvOS, watchOS, and macOS are trademarks of Apple Inc.
 This project is an independent software and has not been authorized, sponsored,
 or otherwise approved by Apple Inc.
 
-README Updated on: 2023-12-30
+README Updated on: 2024-04-10
