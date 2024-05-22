@@ -836,7 +836,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				p++;
 				continue;
 			}
-			size_t len = srcpath_is_root ? strlen(*p) + 1 : srcpath_len + 1 + strlen(*p) + 1;
+			size_t len = srcpath_is_root ? (strlen(*p) + 2) : (srcpath_len + 1 + strlen(*p) + 1);
 			char *testpath = (char *) malloc(len);
 			if (srcpath_is_root) {
 				snprintf(testpath, len, "/%s", *p);
@@ -844,7 +844,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				snprintf(testpath, len, "%s/%s", srcpath, *p);
 			}
 			uint8_t dst_is_root = strcmp(srcpath, "/") == 0;
-			size_t dst_len = dst_is_root ? strlen(*p) + 1 : strlen(dstpath) + 1 + strlen(*p) + 1;
+			size_t dst_len = dst_is_root ? (strlen(*p) + 2) : (strlen(dstpath) + 1 + strlen(*p) + 1);
 			char *newdst = (char *) malloc(dst_len);
 			if (dst_is_root) {
 				snprintf(newdst, dst_len, "/%s", *p);
@@ -922,7 +922,7 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 	if (is_directory(dstpath)) {
 		const char *basen = path_get_basename(argv[0]);
 		uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-		size_t len = dst_is_root ? (strlen(basen) + 1) : (strlen(dstpath) + 1 + strlen(basen) + 1);
+		size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 		char *newdst = (char *) malloc(len);
 		if (dst_is_root) {
 			snprintf(newdst, len, "/%s", basen);
@@ -1072,7 +1072,7 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				char *fpath = string_build_path(srcpath, ep->d_name, NULL);
 				if (fpath) {
 					uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-					size_t len = dst_is_root ? strlen(ep->d_name) + 1 : strlen(dstpath) + 1 + strlen(ep->d_name) + 1;
+					size_t len = dst_is_root ? (strlen(ep->d_name) + 2) : (strlen(dstpath) + 1 + strlen(ep->d_name) + 1);
 					char *newdst = (char *) malloc(len);
 					if (dst_is_root) {
 						snprintf(newdst, len, "/%s", ep->d_name);
@@ -1171,7 +1171,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		if (is_dir) {
 			const char *basen = path_get_basename(srcpath);
 			uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-			size_t len = dst_is_root ? strlen(basen) + 1 : strlen(dstpath) + 1 + strlen(basen) + 1;
+			size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 			char *newdst = (char *) malloc(len);
 			if (dst_is_root) {
 				snprintf(newdst, len, "/%s", basen);
