@@ -32,24 +32,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <getopt.h>
-#if defined(HAVE_OPENSSL)
-#include <openssl/sha.h>
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-#include <openssl/evp.h>
-#endif
-#elif defined(HAVE_GNUTLS)
-#include <gcrypt.h>
-#elif defined(HAVE_MBEDTLS)
-#include <mbedtls/sha1.h>
-#if MBEDTLS_VERSION_NUMBER < 0x03000000
-#define mbedtls_sha1         mbedtls_sha1_ret
-#define mbedtls_sha1_starts  mbedtls_sha1_starts_ret
-#define mbedtls_sha1_update  mbedtls_sha1_update_ret
-#define mbedtls_sha1_finish  mbedtls_sha1_finish_ret
-#endif
-#else
-#error No supported crypto library enabled
-#endif
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
@@ -59,6 +41,7 @@
 #include <libimobiledevice/mobilebackup.h>
 #include <libimobiledevice/notification_proxy.h>
 #include <libimobiledevice/afc.h>
+#include <libimobiledevice-glue/sha.h>
 #include <libimobiledevice-glue/utils.h>
 #include <plist/plist.h>
 
@@ -91,17 +74,6 @@ enum device_link_file_status_t {
 	DEVICE_LINK_FILE_STATUS_LAST_HUNK
 };
 
-static void sha1_of_data(const char *input, uint32_t size, unsigned char *hash_out)
-{
-#if defined(HAVE_OPENSSL)
-	SHA1((const unsigned char*)input, size, hash_out);
-#elif defined(HAVE_GNUTLS)
-	gcry_md_hash_buffer(GCRY_MD_SHA1, hash_out, input, size);
-#elif defined(HAVE_MBEDTLS)
-	mbedtls_sha1((unsigned char*)input, size, hash_out);
-#endif
-}
-
 static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, int hash_len)
 {
 	int i;
@@ -113,104 +85,49 @@ static int compare_hash(const unsigned char *hash1, const unsigned char *hash2, 
 	return 1;
 }
 
-static void _sha1_update(void* context, const char* data, size_t len)
-{
-#if defined(HAVE_OPENSSL)
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-	EVP_DigestUpdate(context, data, len);
-#else
-	SHA1_Update(context, data, len);
-#endif
-#elif defined(HAVE_GNUTLS)
-	gcry_md_write(context, data, len);
-#elif defined(HAVE_MBEDTLS)
-	mbedtls_sha1_update(context, (const unsigned char*)data, len);
-#endif
-}
-
 static void compute_datahash(const char *path, const char *destpath, uint8_t greylist, const char *domain, const char *appid, const char *version, unsigned char *hash_out)
 {
-#if defined(HAVE_OPENSSL)
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-	EVP_MD_CTX* sha1 = EVP_MD_CTX_new();
-	EVP_DigestInit(sha1, EVP_sha1());
-	void* psha1 = sha1;
-#else
-	SHA_CTX sha1;
-	SHA1_Init(&sha1);
-	void* psha1 = &sha1;
-#endif
-#elif defined(HAVE_GNUTLS)
-	gcry_md_hd_t hd = NULL;
-	gcry_md_open(&hd, GCRY_MD_SHA1, 0);
-	if (!hd) {
-		printf("ERROR: Could not initialize libgcrypt/SHA1\n");
-		return;
-	}
-	gcry_md_reset(hd);
-	void* psha1 = hd;
-#elif defined(HAVE_MBEDTLS)
-	mbedtls_sha1_context sha1;
-	mbedtls_sha1_init(&sha1);
-	mbedtls_sha1_starts(&sha1);
-	void* psha1 = &sha1;
-#endif
+	sha1_context sha1;
+	sha1_init(&sha1);
 	FILE *f = fopen(path, "rb");
 	if (f) {
 		unsigned char buf[16384];
 		size_t len;
 		while ((len = fread(buf, 1, 16384, f)) > 0) {
-			_sha1_update(psha1, (const char*)buf, len);
+			sha1_update(&sha1, buf, len);
 		}
 		fclose(f);
-		_sha1_update(psha1, destpath, strlen(destpath));
-		_sha1_update(psha1, ";", 1);
+		sha1_update(&sha1, destpath, strlen(destpath));
+		sha1_update(&sha1, ";", 1);
 
 		if (greylist == 1) {
-			_sha1_update(psha1, "true", 4);
+			sha1_update(&sha1, "true", 4);
 		} else {
-			_sha1_update(psha1, "false", 5);
+			sha1_update(&sha1, "false", 5);
 		}
-		_sha1_update(psha1, ";", 1);
+		sha1_update(&sha1, ";", 1);
 
 		if (domain) {
-			_sha1_update(psha1, domain, strlen(domain));
+			sha1_update(&sha1, domain, strlen(domain));
 		} else {
-			_sha1_update(psha1, "(null)", 6);
+			sha1_update(&sha1, "(null)", 6);
 		}
-		_sha1_update(psha1, ";", 1);
+		sha1_update(&sha1, ";", 1);
 
 		if (appid) {
-			_sha1_update(psha1, appid, strlen(appid));
+			sha1_update(&sha1, appid, strlen(appid));
 		} else {
-			_sha1_update(psha1, "(null)", 6);
+			sha1_update(&sha1, "(null)", 6);
 		}
-		_sha1_update(psha1, ";", 1);
+		sha1_update(&sha1, ";", 1);
 
 		if (version) {
-			_sha1_update(psha1, version, strlen(version));
+			sha1_update(&sha1, version, strlen(version));
 		} else {
-			_sha1_update(psha1, "(null)", 6);
+			sha1_update(&sha1, "(null)", 6);
 		}
-#if defined(HAVE_OPENSSL)
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-		EVP_DigestFinal(sha1, hash_out, NULL);
-		EVP_MD_CTX_destroy(sha1);
-#else
-		SHA1_Final(hash_out, &sha1);
-#endif
-#elif defined(HAVE_GNUTLS)
-		unsigned char *newhash = gcry_md_read(hd, GCRY_MD_SHA1);
-		memcpy(hash_out, newhash, 20);
-#elif defined(HAVE_MBEDTLS)
-		mbedtls_sha1_finish(&sha1, hash_out);
-#endif
+		sha1_final(&sha1, hash_out);
 	}
-#if defined(HAVE_GNUTLS)
-	gcry_md_close(hd);
-#elif defined(HAVE_MBEDTLS)
-	mbedtls_sha1_free(&sha1);
-#endif
 }
 
 static void print_hash(const unsigned char *hash, int len)
@@ -547,7 +464,7 @@ static int mobilebackup_check_file_integrity(const char *backup_directory, const
 	unsigned char fnhash[20];
 	char fnamehash[41];
 	char *p = fnamehash;
-	sha1_of_data(fnstr, strlen(fnstr), fnhash);
+	sha1((const unsigned char*)fnstr, strlen(fnstr), fnhash);
 	free(fnstr);
 	int i;
 	for ( i = 0; i < 20; i++, p += 2 ) {
@@ -1285,14 +1202,14 @@ files_out:
 			}
 
 			printf("Verifying backup integrity, please wait.\n");
-			char *bin = NULL;
+			unsigned char *bin = NULL;
 			uint64_t binsize = 0;
 			node = plist_dict_get_item(manifest_plist, "Data");
 			if (!node || (plist_get_node_type(node) != PLIST_DATA)) {
 				printf("Could not read Data key from Manifest.plist!\n");
 				break;
 			}
-			plist_get_data_val(node, &bin, &binsize);
+			plist_get_data_val(node, (char**)&bin, &binsize);
 			plist_t backup_data = NULL;
 			if (bin) {
 				char *auth_ver = NULL;
@@ -1309,7 +1226,7 @@ files_out:
 					if (auth_sig && (auth_sig_len == 20)) {
 						/* calculate the sha1, then compare */
 						unsigned char data_sha1[20];
-						sha1_of_data(bin, binsize, data_sha1);
+						sha1(bin, binsize, data_sha1);
 						if (compare_hash(auth_sig, data_sha1, 20)) {
 							printf("AuthSignature is valid\n");
 						} else {
@@ -1322,7 +1239,7 @@ files_out:
 				} else if (auth_ver) {
 					printf("Unknown AuthVersion '%s', cannot verify AuthSignature\n", auth_ver);
 				}
-				plist_from_bin(bin, (uint32_t)binsize, &backup_data);
+				plist_from_bin((char*)bin, (uint32_t)binsize, &backup_data);
 				free(bin);
 			}
 			if (!backup_data) {
