@@ -181,7 +181,7 @@ static mobile_image_mounter_error_t process_result(plist_t result, const char *e
 	return res;
 }
 
-mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
+mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const unsigned char *signature, unsigned int signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata)
 {
 	if (!client || !image_type || (image_size == 0) || !upload_cb) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -192,7 +192,7 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
 	plist_t dict = plist_new_dict();
 	plist_dict_set_item(dict, "Command", plist_new_string("ReceiveBytes"));
 	if (signature && signature_size != 0)
-		plist_dict_set_item(dict, "ImageSignature", plist_new_data(signature, signature_size));
+		plist_dict_set_item(dict, "ImageSignature", plist_new_data((char*)signature, signature_size));
 	plist_dict_set_item(dict, "ImageSize", plist_new_uint(image_size));
 	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
 
@@ -241,6 +241,7 @@ mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_moun
 	free(buf);
 	if (tx < image_size) {
 		debug_info("Error: failed to upload image");
+		res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
 		goto leave_unlock;
 	}
 	debug_info("image uploaded");
@@ -260,7 +261,7 @@ leave_unlock:
 
 }
 
-mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result)
+mobile_image_mounter_error_t mobile_image_mounter_mount_image_with_options(mobile_image_mounter_client_t client, const char *image_path, const unsigned char *signature, unsigned int signature_size, const char *image_type, plist_t options, plist_t *result)
 {
 	if (!client || !image_path || !image_type || !result) {
 		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
@@ -271,8 +272,11 @@ mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mount
 	plist_dict_set_item(dict, "Command", plist_new_string("MountImage"));
 	plist_dict_set_item(dict, "ImagePath", plist_new_string(image_path));
 	if (signature && signature_size != 0)
-		plist_dict_set_item(dict, "ImageSignature", plist_new_data(signature, signature_size));
+		plist_dict_set_item(dict, "ImageSignature", plist_new_data((char*)signature, signature_size));
 	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
+	if (PLIST_IS_DICT(options)) {
+		plist_dict_merge(&dict, options);
+	}
 
 	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
 	plist_free(dict);
@@ -285,6 +289,56 @@ mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mount
 	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, result));
 	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
 		debug_info("%s: Error receiving response from device!", __func__);
+	}
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const unsigned char *signature, unsigned int signature_size, const char *image_type, plist_t *result)
+{
+	return mobile_image_mounter_mount_image_with_options(client, image_path, signature, signature_size, image_type, NULL, result);
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_unmount_image(mobile_image_mounter_client_t client, const char *mount_path)
+{
+	if (!client || !mount_path) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("UnmountImage"));
+	plist_dict_set_item(dict, "MountPath", plist_new_string(mount_path));
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	} else {
+		plist_t p_error = plist_dict_get_item(result, "Error");
+		if (p_error) {
+			plist_t p_detailed = plist_dict_get_item(result, "DetailedError");
+			const char* detailederr = (p_detailed) ? plist_get_string_ptr(p_detailed, NULL) : "";
+			const char* errstr = plist_get_string_ptr(p_error, NULL);
+			if (errstr && !strcmp(errstr, "UnknownCommand")) {
+				res = MOBILE_IMAGE_MOUNTER_E_NOT_SUPPORTED;
+			} else if (errstr && !strcmp(errstr, "DeviceLocked")) {
+				res = MOBILE_IMAGE_MOUNTER_E_DEVICE_LOCKED;
+			} else if (strstr(detailederr, "no matching entry")) {
+				res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
+			} else {
+				res = MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR;
+			}
+		}
 	}
 
 leave_unlock:
@@ -319,6 +373,218 @@ mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_cl
 		debug_plist(dict);
 		plist_free(dict);
 	}
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_query_developer_mode_status(mobile_image_mounter_client_t client, plist_t *result)
+{
+	if (!client || !result) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("QueryDeveloperModeStatus"));
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	}
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_query_nonce(mobile_image_mounter_client_t client, const char* image_type, unsigned char** nonce, unsigned int* nonce_size)
+{
+	if (!client || !nonce || !nonce_size) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("QueryNonce"));
+	if (image_type) {
+		plist_dict_set_item(dict, "PersonalizedImageType", plist_new_string(image_type));
+	}
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	} else {
+		plist_t p_nonce = plist_dict_get_item(result, "PersonalizationNonce");
+		if (!p_nonce) {
+			res = MOBILE_IMAGE_MOUNTER_E_NOT_SUPPORTED;
+		} else {
+			uint64_t nonce_size_ = 0;
+			plist_get_data_val(p_nonce, (char**)nonce, &nonce_size_);
+			if (*nonce) {
+				*nonce_size = (unsigned int)nonce_size_;
+			} else {
+				res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
+			}
+		}
+	}
+	plist_free(result);
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_query_personalization_identifiers(mobile_image_mounter_client_t client, const char* image_type, plist_t *result)
+{
+	if (!client || !result) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("QueryPersonalizationIdentifiers"));
+	if (image_type) {
+		plist_dict_set_item(dict, "PersonalizedImageType", plist_new_string(image_type));
+	}
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t _result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &_result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	}
+	*result = plist_copy(plist_dict_get_item(_result, "PersonalizationIdentifiers"));
+	if (!*result) {
+		debug_info("%s: Response did not contain PersonalizationIdentifiers!", __func__);
+		res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
+	}
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_query_personalization_manifest(mobile_image_mounter_client_t client, const char* image_type, const unsigned char* signature, unsigned int signature_size, unsigned char** manifest, unsigned int* manifest_size)
+{
+	if (!client || !image_type || !signature || !signature_size || !manifest || !manifest_size) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("QueryPersonalizationManifest"));
+	plist_dict_set_item(dict, "PersonalizedImageType", plist_new_string(image_type));
+	plist_dict_set_item(dict, "ImageType", plist_new_string(image_type));
+	plist_dict_set_item(dict, "ImageSignature", plist_new_data((char*)signature, signature_size));
+
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	} else {
+		plist_t p_manifest = plist_dict_get_item(result, "ImageSignature");
+		if (!p_manifest) {
+			res = MOBILE_IMAGE_MOUNTER_E_NOT_SUPPORTED;
+		} else {
+			uint64_t manifest_size_ = 0;
+			plist_get_data_val(p_manifest, (char**)manifest, &manifest_size_);
+			if (*manifest) {
+				*manifest_size = (unsigned int)manifest_size_;
+			} else {
+				res = MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED;
+			}
+		}
+	}
+	plist_free(result);
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_roll_personalization_nonce(mobile_image_mounter_client_t client)
+{
+	if (!client) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("RollPersonalizationNonce"));
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	}
+	plist_free(result);
+
+leave_unlock:
+	mobile_image_mounter_unlock(client);
+	return res;
+}
+
+mobile_image_mounter_error_t mobile_image_mounter_roll_cryptex_nonce(mobile_image_mounter_client_t client)
+{
+	if (!client) {
+		return MOBILE_IMAGE_MOUNTER_E_INVALID_ARG;
+	}
+	mobile_image_mounter_lock(client);
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "Command", plist_new_string("RollCryptexNonce"));
+	mobile_image_mounter_error_t res = mobile_image_mounter_error(property_list_service_send_xml_plist(client->parent, dict));
+	plist_free(dict);
+
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error sending XML plist to device!", __func__);
+		goto leave_unlock;
+	}
+
+	plist_t result = NULL;
+	res = mobile_image_mounter_error(property_list_service_receive_plist(client->parent, &result));
+	if (res != MOBILE_IMAGE_MOUNTER_E_SUCCESS) {
+		debug_info("%s: Error receiving response from device!", __func__);
+	}
+	plist_free(result);
 
 leave_unlock:
 	mobile_image_mounter_unlock(client);

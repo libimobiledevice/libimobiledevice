@@ -13,7 +13,9 @@ cdef extern from "libimobiledevice/mobile_image_mounter.h":
     mobile_image_mounter_error_t mobile_image_mounter_new(idevice_t device, lockdownd_service_descriptor_t descriptor, mobile_image_mounter_client_t *client)
     mobile_image_mounter_error_t mobile_image_mounter_free(mobile_image_mounter_client_t client)
     mobile_image_mounter_error_t mobile_image_mounter_lookup_image(mobile_image_mounter_client_t client, char *image_type, plist.plist_t *result)
-    mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, char *image_path, char *image_signature, uint16_t signature_length, char *image_type, plist.plist_t *result)
+    mobile_image_mounter_error_t mobile_image_mounter_mount_image_with_options(mobile_image_mounter_client_t client, char *image_path, const unsigned char *signature, unsigned int signature_length, char *image_type, plist.plist_t options, plist.plist_t *result)
+    mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, char *image_path, const unsigned char *signature, unsigned int signature_length, char *image_type, plist.plist_t *result)
+    mobile_image_mounter_error_t mobile_image_mounter_unmount_image(mobile_image_mounter_client_t client, const char *mount_path);
     mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client)
 
 cdef class MobileImageMounterError(BaseError):
@@ -57,11 +59,39 @@ cdef class MobileImageMounterClient(PropertyListService):
             if c_node != NULL:
                 plist.plist_free(c_node)
 
-    cpdef plist.Node mount_image(self, bytes image_path, bytes image_signature, bytes image_type):
+    cpdef plist.Node mount_image_with_options(self, bytes image_path, bytes signature, bytes image_type, object options):
+        cdef:
+            plist.Node n_options
+            plist.plist_t c_options
+            plist.plist_t c_result = NULL
+            bint free_options = False
+            plist.plist_t c_node = NULL
+            mobile_image_mounter_error_t err
+        if isinstance(options, plist.Dict):
+            n_options = options
+            c_options = n_options._c_node
+        elif isinstance(options, dict):
+            c_options = plist.native_to_plist_t(options)
+            free_options = True
+        else:
+            raise InstallationProxyError(INSTPROXY_E_INVALID_ARG)
+        err = mobile_image_mounter_mount_image_with_options(self._c_client, image_path, signature, len(signature),
+                                               image_type, c_options, &c_node)
+        if free_options:
+            plist.plist_free(c_options)
+        try:
+            self.handle_error(err)
+
+            return plist.plist_t_to_node(c_node)
+        except Exception, e:
+            if c_node != NULL:
+                plist.plist_free(c_node)
+
+    cpdef plist.Node mount_image(self, bytes image_path, bytes signature, bytes image_type):
         cdef:
             plist.plist_t c_node = NULL
             mobile_image_mounter_error_t err
-        err = mobile_image_mounter_mount_image(self._c_client, image_path, image_signature, len(image_signature),
+        err = mobile_image_mounter_mount_image(self._c_client, image_path, signature, len(signature),
                                                image_type, &c_node)
 
         try:
@@ -71,6 +101,13 @@ cdef class MobileImageMounterClient(PropertyListService):
         except Exception, e:
             if c_node != NULL:
                 plist.plist_free(c_node)
+
+    cpdef unmount_image(self, bytes mount_path):
+        cdef:
+            mobile_image_mounter_error_t err
+        err = mobile_image_mounter_unmount_image(self._c_client, mount_path)
+
+        self.handle_error(err)
 
     cpdef hangup(self):
         cdef mobile_image_mounter_error_t err
