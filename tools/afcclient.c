@@ -37,6 +37,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <time.h>
 
 #ifdef WIN32
 #include <windows.h>
