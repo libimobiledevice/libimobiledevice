@@ -377,8 +377,11 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error opening signature file '%s': %s\n", image_sig_path, strerror(errno));
 				goto leave;
 			}
-			fstat(fileno(f), &fst);
-			sig = malloc(sig_length);
+			if (fstat(fileno(f), &fst) != 0) {
+				fprintf(stderr, "Error: fstat: %s\n", strerror(errno));
+				goto leave;
+			}
+			sig = malloc(fst.st_size);
 			sig_length = fread(sig, 1, fst.st_size, f);
 			fclose(f);
 			if (sig_length == 0) {
