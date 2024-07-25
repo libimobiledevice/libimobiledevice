@@ -920,7 +920,7 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 
 	// target is a directory, put file under this target
 	if (is_directory(dstpath)) {
-		const char *basen = path_get_basename(argv[0]);
+		const char *basen = path_get_basename(srcpath);
 		uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
 		size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 		char *newdst = (char *) malloc(len);
