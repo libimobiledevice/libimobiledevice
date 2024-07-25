@@ -42,6 +42,7 @@ typedef enum {
 	MOBILE_IMAGE_MOUNTER_E_CONN_FAILED    = -3,
 	MOBILE_IMAGE_MOUNTER_E_COMMAND_FAILED = -4,
 	MOBILE_IMAGE_MOUNTER_E_DEVICE_LOCKED  = -5,
+	MOBILE_IMAGE_MOUNTER_E_NOT_SUPPORTED  = -6,
 	MOBILE_IMAGE_MOUNTER_E_UNKNOWN_ERROR  = -256
 } mobile_image_mounter_error_t;
 
@@ -127,7 +128,29 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_lookup_im
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on succes, or a
  *    MOBILE_IMAGE_MOUNTER_E_* error code otherwise.
  */
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const char *signature, uint16_t signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_image(mobile_image_mounter_client_t client, const char *image_type, size_t image_size, const unsigned char *signature, unsigned int signature_size, mobile_image_mounter_upload_cb_t upload_cb, void* userdata);
+
+/**
+ * Mounts an image on the device.
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param image_path The absolute path of the image to mount. The image must
+ *    be present before calling this function.
+ * @param signature Pointer to a buffer holding the images' signature
+ * @param signature_size Length of the signature image_signature points to
+ * @param image_type Type of image to mount
+ * @param options A dictionary containing additional key/value pairs to add
+ * @param result Pointer to a plist that will receive the result of the
+ *    operation.
+ *
+ * @note This function may return MOBILE_IMAGE_MOUNTER_E_SUCCESS even if the
+ *    operation has failed. Check the resulting plist for further information.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if on ore more parameters are
+ *    invalid, or another error code otherwise.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image_with_options(mobile_image_mounter_client_t client, const char *image_path, const unsigned char *signature, unsigned int signature_size, const char *image_type, plist_t options, plist_t *result);
 
 /**
  * Mounts an image on the device.
@@ -143,14 +166,23 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_upload_im
  *
  * @note This function may return MOBILE_IMAGE_MOUNTER_E_SUCCESS even if the
  *    operation has failed. Check the resulting plist for further information.
- *    Note that there is no unmounting function. The mount persists until the
- *    device is rebooted.
  *
  * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
  *    MOBILE_IMAGE_MOUNTER_E_INVALID_ARG if on ore more parameters are
  *    invalid, or another error code otherwise.
  */
-LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const char *signature, uint16_t signature_size, const char *image_type, plist_t *result);
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_image(mobile_image_mounter_client_t client, const char *image_path, const unsigned char *signature, unsigned int signature_size, const char *image_type, plist_t *result);
+
+/**
+ * Unmount a mounted image at given path on the device.
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param mount_path The mount path of the mounted image on the device.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_unmount_image(mobile_image_mounter_client_t client, const char *mount_path);
 
 /**
  * Hangs up the connection to the mobile_image_mounter service.
@@ -164,6 +196,77 @@ LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_mount_ima
  *     or another error code otherwise.
  */
 LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_hangup(mobile_image_mounter_client_t client);
+
+/**
+ * Query the developer mode status of the given device.
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param result A pointer to a plist_t that will be set to the resulting developer mode status dictionary.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_query_developer_mode_status(mobile_image_mounter_client_t client, plist_t *result);
+
+/**
+ * Query a personalization nonce for the given image type, used for personalized disk images (iOS 17+).
+ * This nonce is supposed to be added to the TSS request for the corresponding image.
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param image_type The image_type to get the personalization nonce for, usually `DeveloperDiskImage`.
+ * @param nonce Pointer that will be set to an allocated buffer with the nonce value.
+ * @param nonce_size Pointer to an unsigned int that will receive the size of the nonce value.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_query_nonce(mobile_image_mounter_client_t client, const char* image_type, unsigned char** nonce, unsigned int* nonce_size);
+
+/**
+ * Query personalization identitifers for the given image_type.
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param image_type The image_type to get the personalization identifiers for. Can be NULL.
+ * @param result A pointer to a plist_t that will be set to the resulting identifier dictionary.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_query_personalization_identifiers(mobile_image_mounter_client_t client, const char* image_type, plist_t *result);
+
+/**
+ *
+ * @param client The connected mobile_image_mounter client.
+ * @param image_type The image_type to get the personalization identifiers for. Can be NULL.
+ * @param signature The signature of the corresponding personalized image.
+ * @param signature_size The size of signature.
+ * @param manifest Pointer that will be set to an allocated buffer with the manifest data.
+ * @param manifest_size Pointer to an unsigned int that will be set to the size of the manifest data.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_query_personalization_manifest(mobile_image_mounter_client_t client, const char* image_type, const unsigned char* signature, unsigned int signature_size, unsigned char** manifest, unsigned int* manifest_size);
+
+/**
+ * Roll the personalization nonce.
+ *
+ * @param client The connected mobile_image_mounter client.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_roll_personalization_nonce(mobile_image_mounter_client_t client);
+
+/**
+ * Roll the Cryptex nonce.
+ *
+ * @param client The connected mobile_image_mounter client.
+ *
+ * @return MOBILE_IMAGE_MOUNTER_E_SUCCESS on success,
+ *    or a MOBILE_IMAGE_MOUNTER_E_* error code on error.
+ */
+LIBIMOBILEDEVICE_API mobile_image_mounter_error_t mobile_image_mounter_roll_cryptex_nonce(mobile_image_mounter_client_t client);
 
 #ifdef __cplusplus
 }

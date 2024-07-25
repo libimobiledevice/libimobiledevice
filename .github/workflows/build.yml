@@ -37,6 +37,13 @@ jobs:
         workflow: build.yml
         name: libimobiledevice-glue-latest_${{env.target_triplet}}
         repo: libimobiledevice/libimobiledevice-glue
+    - name: fetch libtatsu
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        workflow: build.yml
+        name: libtatsu-latest_${{env.target_triplet}}
+        repo: libimobiledevice/libtatsu
     - name: install external dependencies
       run: |
           mkdir extract
@@ -97,6 +104,13 @@ jobs:
         workflow: build.yml
         name: libimobiledevice-glue-latest_macOS
         repo: libimobiledevice/libimobiledevice-glue
+    - name: fetch libtatsu
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        workflow: build.yml
+        name: libtatsu-latest_macOS
+        repo: libimobiledevice/libtatsu
     - name: install external dependencies
       run: |
           mkdir extract
@@ -213,6 +227,13 @@ jobs:
         workflow: build.yml
         name: libimobiledevice-glue-latest_${{ matrix.arch }}-${{ env.dest }}
         repo: libimobiledevice/libimobiledevice-glue
+    - name: fetch libtatsu
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        workflow: build.yml
+        name: libtatsu-latest_${{ matrix.arch }}-${{ env.dest }}
+        repo: libimobiledevice/libtatsu
     - name: install external dependencies
       run: |
           mkdir extract

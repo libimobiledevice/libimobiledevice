@@ -66,7 +66,7 @@ idevice_id_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicebackup_SOURCES = idevicebackup.c
 idevicebackup_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
-idevicebackup_LDFLAGS = $(AM_LDFLAGS) $(ssl_lib_LIBS) $(limd_glue_LIBS)
+idevicebackup_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicebackup_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicebackup2_SOURCES = idevicebackup2.c
@@ -75,8 +75,8 @@ idevicebackup2_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 idevicebackup2_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
-ideviceimagemounter_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
-ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
+ideviceimagemounter_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS) $(libtatsu_CFLAGS)
+ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS) $(ssl_lib_LIBS) $(libtatsu_LIBS)
 ideviceimagemounter_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicescreenshot_SOURCES = idevicescreenshot.c

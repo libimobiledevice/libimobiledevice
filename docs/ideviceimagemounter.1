@@ -1,13 +1,32 @@
 .TH "ideviceimagemounter" 1
 .SH NAME
-ideviceimagemounter \- Mount disk images on the device.
+ideviceimagemounter \- Mount, list, or unmount a disk image on the device.
 .SH SYNOPSIS
 .B ideviceimagemounter
-[OPTIONS] IMAGE_FILE IMAGE_SIGNATURE_FILE
+[OPTIONS] COMMAND [COMMAND OPTIONS]
 
 .SH DESCRIPTION
 
-Mounts the specified disk image on the device.
+Mount, list, or unmount a disk image on the device.
+
+.SH COMMANDS
+.TP
+.B mount PATH
+Mount the developer disk image at PATH.
+For iOS 17+, PATH is a directory containing a .dmg image, a BuildManifest.plist,
+and a Firmware sub-directory.
+
+For older versions PATH is a .dmg filename with a .dmg.signature file in the same directory, or with
+another parameter pointing to a file elsewhere.
+.TP
+.B list
+List mounted disk images.
+.TP
+.B unmount PATH
+Unmount the image mounted at PATH.
+.TP
+.B devmodestatus
+Query the developer mode status (iOS 16+)
 
 .SH OPTIONS
 .TP
@@ -20,9 +39,6 @@ connect to network device.
 .B \-d, \-\-debug
 enable communication debugging.
 .TP
-.B \-l, \-\-list
-list mount information
-.TP
 .B \-t, \-\-imagetype NAME
 the image type to use, default is 'Developer'
 .TP
@@ -34,12 +50,6 @@ prints usage information
 .TP
 .B \-v, \-\-version
 prints version information.
-.TP
-.B IMAGE_FILE
-the image filename to mount
-.TP
-.B IMAGE_SIGNATURE_FILE
-corresponding signature file for image filename
 
 .SH AUTHOR
 Nikias Bassen
