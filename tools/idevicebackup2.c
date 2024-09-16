@@ -74,6 +74,7 @@
 
 static int verbose = 1;
 static int quit_flag = 0;
+static int passcode_requested = 0;
 
 #define PRINT_VERBOSE(min_level, ...) if (verbose >= min_level) { printf(__VA_ARGS__); };
 
@@ -115,6 +116,10 @@ static void notify_cb(const char *notification, void *userdata)
 		quit_flag++;
 	} else if (!strcmp(notification, NP_BACKUP_DOMAIN_CHANGED)) {
 		backup_domain_changed = 1;
+	} else if (!strcmp(notification, "com.apple.LocalAuthentication.ui.presented")) {
+		passcode_requested = 1;
+	} else if (!strcmp(notification, "com.apple.LocalAuthentication.ui.dismissed")) {
+		passcode_requested = 0;
 	} else {
 		PRINT_VERBOSE(1, "Unhandled notification '%s' (TODO: implement)\n", notification);
 	}
@@ -1867,11 +1872,13 @@ int main(int argc, char *argv[])
 	if ((ldret == LOCKDOWN_E_SUCCESS) && service && service->port) {
 		np_client_new(device, service, &np);
 		np_set_notify_callback(np, notify_cb, NULL);
-		const char *noties[5] = {
+		const char *noties[7] = {
 			NP_SYNC_CANCEL_REQUEST,
 			NP_SYNC_SUSPEND_REQUEST,
 			NP_SYNC_RESUME_REQUEST,
 			NP_BACKUP_DOMAIN_CHANGED,
+			"com.apple.LocalAuthentication.ui.presented",
+			"com.apple.LocalAuthentication.ui.dismissed",
 			NULL
 		};
 		np_observe_notifications(np, noties);
@@ -2057,6 +2064,16 @@ checkpoint:
 					PRINT_VERBOSE(1, "Full backup mode.\n");
 				}	else {
 					PRINT_VERBOSE(1, "Incremental backup mode.\n");
+				}
+				if (device_version >= DEVICE_VERSION(16,1,0)) {
+					/* let's wait 2 second to see if the device passcode is requested */
+					int retries = 20;
+					while (retries-- > 0 && !passcode_requested) {
+						usleep(100000);
+					}
+					if (passcode_requested) {
+						printf("*** Waiting for passcode to be entered on the device ***\n");
+					}
 				}
 			} else {
 				if (err == MOBILEBACKUP2_E_BAD_VERSION) {
