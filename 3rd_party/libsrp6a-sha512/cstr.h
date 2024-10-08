@@ -51,27 +51,15 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/* Arguments to allocator methods ordered this way for compatibility */
-typedef struct cstr_alloc_st {
-  void * (_CDECL * alloc)(size_t n, void * heap);
-  void (_CDECL * free)(void * p, void * heap);
-  void * heap;
-} cstr_allocator;
-
 typedef struct cstr_st {
   char * data;	/* Okay to access data and length fields directly */
   int length;
   int cap;
   int ref;	/* Simple reference counter */
-  cstr_allocator * allocator;
 } cstr;
 
-_TYPE( void ) cstr_set_allocator P((cstr_allocator * alloc));
-
 _TYPE( cstr * ) cstr_new P((void));
-_TYPE( cstr * ) cstr_new_alloc P((cstr_allocator * alloc));
 _TYPE( cstr * ) cstr_dup P((const cstr * str));
-_TYPE( cstr * ) cstr_dup_alloc P((const cstr * str, cstr_allocator * alloc));
 _TYPE( cstr * ) cstr_create P((const char * s));
 _TYPE( cstr * ) cstr_createn P((const char * s, int len));
 
