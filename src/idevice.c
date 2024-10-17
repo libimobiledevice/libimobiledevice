@@ -1076,7 +1076,7 @@ static long ssl_idevice_bio_callback(BIO *b, int oper, const char *argp, int arg
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
 	size_t len = (size_t)argi;
 	long tempbytes = 0;
-	size_t *processed = (size_t*)&tempbytes;
+	long *processed = &tempbytes;
 #endif
 	switch (oper) {
 	case (BIO_CB_READ|BIO_CB_RETURN):
