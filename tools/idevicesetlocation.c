@@ -138,11 +138,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	lockdownd_client_t lockdown;
-	lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
+	lockdownd_client_t lockdown = NULL;
+	lockdownd_error_t lerr;
+	lerr = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
+	if (lerr != LOCKDOWN_E_SUCCESS) {
+		idevice_free(device);
+		printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
+		return -1;
+	}
 
 	lockdownd_service_descriptor_t svc = NULL;
-	lockdownd_error_t lerr = lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc);
+	lerr = lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		lockdownd_client_free(lockdown);
 		idevice_free(device);
@@ -158,7 +164,6 @@ int main(int argc, char **argv)
 	lockdownd_service_descriptor_free(svc);
 
 	if (serr != SERVICE_E_SUCCESS) {
-		lockdownd_client_free(lockdown);
 		idevice_free(device);
 		printf("ERROR: Could not connect to simulatelocation service (%d)\n", serr);
 		return -1;
