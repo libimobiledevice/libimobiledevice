@@ -548,7 +548,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		}
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_USBMUXD;
-		new_connection->data = (void*)(long)sfd;
+		new_connection->data = (void*)(uintptr_t)sfd;
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
@@ -593,7 +593,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_NETWORK;
-		new_connection->data = (void*)(long)sfd;
+		new_connection->data = (void*)(uintptr_t)sfd;
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
@@ -618,11 +618,11 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	}
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
-		usbmuxd_disconnect((int)(long)connection->data);
+		usbmuxd_disconnect((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else if (connection->type == CONNECTION_NETWORK) {
-		socket_close((int)(long)connection->data);
+		socket_close((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
@@ -647,7 +647,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res;
 		do {
-			res = usbmuxd_send((int)(long)connection->data, data, len, sent_bytes);
+			res = usbmuxd_send((int)(uintptr_t)connection->data, data, len, sent_bytes);
 		} while (res == -EAGAIN);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
@@ -656,7 +656,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int s = socket_send((int)(long)connection->data, (void*)data, len);
+		int s = socket_send((int)(uintptr_t)connection->data, (void*)data, len);
 		if (s < 0) {
 			*sent_bytes = 0;
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -763,7 +763,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int conn_error = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
+		int conn_error = usbmuxd_recv_timeout((int)(uintptr_t)connection->data, data, len, recv_bytes, timeout);
 		idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, *recv_bytes);
 		if (error == IDEVICE_E_UNKNOWN_ERROR) {
 			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", conn_error, strerror(-conn_error));
@@ -771,7 +771,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 		return error;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int res = socket_receive_timeout((int)(long)connection->data, data, len, 0, timeout);
+		int res = socket_receive_timeout((int)(uintptr_t)connection->data, data, len, 0, timeout);
 		idevice_error_t error = socket_recv_to_idevice_error(res, 0, 0);
 		if (error == IDEVICE_E_SUCCESS) {
 			*recv_bytes = (uint32_t)res;
@@ -863,7 +863,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_recv((int)(long)connection->data, data, len, recv_bytes);
+		int res = usbmuxd_recv((int)(uintptr_t)connection->data, data, len, recv_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -871,7 +871,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int res = socket_receive((int)(long)connection->data, data, len);
+		int res = socket_receive((int)(uintptr_t)connection->data, data, len);
 		if (res < 0) {
 			debug_info("ERROR: socket_receive returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -924,11 +924,11 @@ idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		*fd = (int)(long)connection->data;
+		*fd = (int)(uintptr_t)connection->data;
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		*fd = (int)(long)connection->data;
+		*fd = (int)(uintptr_t)connection->data;
 		return IDEVICE_E_SUCCESS;
 	}
 
