@@ -93,6 +93,7 @@ case ${host_os} in
     AC_MSG_RESULT([${host_os}])
     win32=true
     AC_DEFINE(WINVER, 0x0501, [minimum Windows version])
+    deplibs_check_method='pass_all'
     ;;
   darwin*)
     AC_MSG_RESULT([${host_os}])
