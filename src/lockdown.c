@@ -32,7 +32,9 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include <plist/plist.h>
 #include <libimobiledevice-glue/utils.h>
 
@@ -836,7 +838,7 @@ static lockdownd_error_t pair_record_generate(lockdownd_client_t client, plist_t
 
 	/* generate keys and certificates into pair record */
 	userpref_error_t uret = USERPREF_E_SUCCESS;
-	uret = pair_record_generate_keys_and_certs(*pair_record, public_key);
+	uret = pair_record_generate_keys_and_certs(*pair_record, public_key, client->device->version);
 	switch(uret) {
 		case USERPREF_E_INVALID_ARG:
 			ret = LOCKDOWN_E_INVALID_ARG;
