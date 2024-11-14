@@ -2,7 +2,8 @@
  * idevicenotificationproxy.c
  * Simple client for the notification_proxy service
  *
- * Copyright (c) 2009-2015 Martin Szulecki All Rights Reserved.
+ * Copyright (c) 2018-2024 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2009-2015 Martin Szulecki, All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,6 +76,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"\n"
 		"The following OPTIONS are accepted:\n"
 		"  -u, --udid UDID       target specific device by UDID\n"
+		"  -i, --insecure        use insecure notification proxy (non-paired device)\n"
 		"  -n, --network         connect to network device\n"
 		"  -d, --debug           enable communication debugging\n"
 		"  -h, --help            prints usage information\n"
@@ -102,6 +104,7 @@ int main(int argc, char *argv[])
 	int i = 0;
 	const char* udid = NULL;
 	int use_network = 0;
+	int insecure = 0;
 	int cmd = CMD_NONE;
 	char* cmd_arg = NULL;
 
@@ -114,6 +117,7 @@ int main(int argc, char *argv[])
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "udid", required_argument, NULL, 'u' },
+		{ "insecure", no_argument, NULL, 'i' },
 		{ "network", no_argument, NULL, 'n' },
 		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
@@ -127,7 +131,7 @@ int main(int argc, char *argv[])
 #endif
 
 	/* parse cmdline args */
-	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:inv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -142,6 +146,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			use_network = 1;
+			break;
+		case 'i':
+			insecure = 1;
 			break;
 		case 'h':
 			print_usage(argc, argv, 0);
@@ -214,12 +221,17 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != (ret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME))) {
-		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ret);
+	if (insecure) {
+		ret = lockdownd_client_new(device, &client, TOOL_NAME);
+	} else {
+		ret = lockdownd_client_new_with_handshake(device, &client, TOOL_NAME);
+	}
+	if (LOCKDOWN_E_SUCCESS != ret) {
+		fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ret), ret);
 		goto cleanup;
 	}
 
-	ret = lockdownd_start_service(client, NP_SERVICE_NAME, &service);
+	ret = lockdownd_start_service(client, (insecure) ? "com.apple.mobile.insecure_notification_proxy" : NP_SERVICE_NAME, &service);
 
 	lockdownd_client_free(client);
 
