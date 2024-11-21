@@ -1012,7 +1012,7 @@ static int mb2_receive_filename(mobilebackup2_client_t mobilebackup2, char** fil
 	return nlen;
 }
 
-static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_t message, const char *backup_dir)
+static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_t message, const char *backup_dir, unsigned int timeout)
 {
 	uint64_t backup_real_size = 0;
 	uint64_t backup_total_size = 0;
@@ -1104,7 +1104,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 				} else {
 					rlen = sizeof(buf);
 				}
-				mobilebackup2_receive_raw(mobilebackup2, buf, rlen, &r);
+				mobilebackup2_receive_raw_with_timeout(mobilebackup2, buf, rlen, &r, timeout);
 				if ((int)r <= 0) {
 					break;
 				}
@@ -2337,7 +2337,7 @@ checkpoint:
 				} else if (!strcmp(dlmsg, "DLMessageUploadFiles")) {
 					/* device wants to send files to the computer */
 					mb2_set_overall_progress_from_message(message, dlmsg);
-					file_count += mb2_handle_receive_files(mobilebackup2, message, backup_directory);
+					file_count += mb2_handle_receive_files(mobilebackup2, message, backup_directory, timeout);
 				} else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace")) {
 					/* device wants to know how much disk space is available on the computer */
 					uint64_t freespace = 0;
