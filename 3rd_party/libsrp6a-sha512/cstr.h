@@ -38,7 +38,7 @@
 #define _MSVC15DEXPORT
 #define _MSVC20EXPORT
 #define _DLLAPI
-#if defined(WINDOWS) || defined(WIN32)
+#if defined(WINDOWS) || defined(_WIN32)
 #define _CDECL _cdecl
 #else
 #define _CDECL

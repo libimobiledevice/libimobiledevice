@@ -36,7 +36,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 	size_t image_size = 0;
 	char *image_sig_path = NULL;
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	parse_opts(argc, argv);

@@ -33,7 +33,7 @@
 #include <errno.h>
 #include <signal.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #else
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGQUIT, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
 #endif
