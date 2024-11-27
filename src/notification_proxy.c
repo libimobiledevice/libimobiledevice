@@ -24,7 +24,11 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 
 #include "notification_proxy.h"
@@ -110,7 +114,7 @@ np_error_t np_client_new(idevice_t device, lockdownd_service_descriptor_t servic
 
 np_error_t np_client_start_service(idevice_t device, np_client_t* client, const char* label)
 {
-	np_error_t err = NP_E_UNKNOWN_ERROR;
+	int32_t err = NP_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, NP_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(np_client_new), &err);
 	return err;
 }

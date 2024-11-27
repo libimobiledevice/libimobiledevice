@@ -29,7 +29,11 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 
 #include "idevice.h"

@@ -26,8 +26,11 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 #include "idevice.h"
 #include "afc.h"
@@ -115,7 +118,7 @@ afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t serv
 
 afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, const char* label)
 {
-	afc_error_t err = AFC_E_UNKNOWN_ERROR;
+	int32_t err = AFC_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, AFC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(afc_client_new), &err);
 	return err;
 }
