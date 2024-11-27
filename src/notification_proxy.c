@@ -31,7 +31,7 @@
 #include "property_list_service.h"
 #include "common/debug.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #endif

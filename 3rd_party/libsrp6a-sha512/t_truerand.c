@@ -54,7 +54,7 @@
 
 #include "t_defines.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 
 # ifdef CRYPTOLIB
 
@@ -69,7 +69,7 @@ raw_truerand()
 	return truerand();
 }
 
-# else /* !CRYPTOLIB && WIN32 */
+# else /* !CRYPTOLIB && _WIN32 */
 
 #include <windows.h>
 #include <wtypes.h>
@@ -128,7 +128,7 @@ raw_truerand() {
 
 # endif /* CRYPTOLIB */
 
-#else /* !WIN32 */
+#else /* !_WIN32 */
 
 #include <signal.h>
 #include <setjmp.h>
@@ -238,4 +238,4 @@ raw_n_truerand(int n)
 	return v % n;
 }
 
-#endif /* !CRYPTOLIB || !WIN32 */
+#endif /* !CRYPTOLIB || !_WIN32 */

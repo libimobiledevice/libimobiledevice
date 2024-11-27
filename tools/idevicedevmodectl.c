@@ -32,11 +32,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define __usleep(x) Sleep(x/1000)
 #else
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
 		{ NULL, 0, NULL, 0}
 	};
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	/* parse cmdline args */

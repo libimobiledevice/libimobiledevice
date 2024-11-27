@@ -39,7 +39,7 @@
 #include <dirent.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <sys/time.h>
 #include <conio.h>
@@ -95,7 +95,7 @@ static size_t curdir_len = 0;
 static int file_exists(const char* path)
 {
 	struct stat tst;
-#ifdef WIN32
+#ifdef _WIN32
 	return (stat(path, &tst) == 0);
 #else
 	return (lstat(path, &tst) == 0);
@@ -105,7 +105,7 @@ static int file_exists(const char* path)
 static int is_directory(const char* path)
 {
 	struct stat tst;
-#ifdef WIN32
+#ifdef _WIN32
 	return (stat(path, &tst) == 0) && S_ISDIR(tst.st_mode);
 #else
 	return (lstat(path, &tst) == 0) && S_ISDIR(tst.st_mode);
@@ -138,7 +138,7 @@ static void print_usage(int argc, char **argv, int is_error)
 }
 
 #ifndef HAVE_READLINE
-#ifdef WIN32
+#ifdef _WIN32
 #define BS_CC '\b'
 #else
 #define BS_CC 0x7f
@@ -175,7 +175,7 @@ int stop_requested = 0;
 static void handle_signal(int sig)
 {
 	stop_requested++;
-#ifdef WIN32
+#ifdef _WIN32
 	GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
 #else
 	kill(getpid(), SIGINT);
@@ -483,7 +483,7 @@ static void print_file_info(afc_client_t afc, const char* path, int list_verbose
 		printf(" ");
 		printf("%10lld", (long long)st.st_size);
 		printf(" ");
-#ifdef WIN32
+#ifdef _WIN32
 		strftime(timebuf, 64, "%d %b %Y %H:%M:%S", localtime(&t));
 #else
 		strftime(timebuf, 64, "%d %h %Y %H:%M:%S", localtime(&t));
@@ -774,7 +774,7 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 
 static int __mkdir(const char* path)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	return mkdir(path);
 #else
 	return mkdir(path, 0755);
@@ -1483,7 +1483,7 @@ int main(int argc, char** argv)
 	};
 
 	signal(SIGTERM, handle_signal);
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGQUIT, handle_signal);
 	signal(SIGPIPE, SIG_IGN);
 #endif
@@ -1561,7 +1561,7 @@ int main(int argc, char** argv)
 	idevice_events_subscribe(&context, device_event_cb, NULL);
 
 	while (!connected && !stop_requested) {
-#ifdef WIN32
+#ifdef _WIN32
 		Sleep(100);
 #else
 		usleep(100000);

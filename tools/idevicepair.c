@@ -32,7 +32,7 @@
 #include <getopt.h>
 #include <ctype.h>
 #include <unistd.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
 #else
@@ -50,7 +50,7 @@ static char *udid = NULL;
 
 #ifdef HAVE_WIRELESS_PAIRING
 
-#ifdef WIN32
+#ifdef _WIN32
 #define BS_CC '\b'
 #define my_getch getch
 #else
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 

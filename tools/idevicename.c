@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 	const char* udid = NULL;
 	int use_network = 0;
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 

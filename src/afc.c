@@ -338,7 +338,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 		free(buf);
 
 		debug_info("WARNING: Unknown operation code received 0x%llx param1=%lld", header.operation, param1);
-#ifndef WIN32
+#ifndef _WIN32
 		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld", __func__, (long long)header.operation, (long long)param1);
 #endif
 

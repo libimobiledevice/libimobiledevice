@@ -32,7 +32,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <signal.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
 #else
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 		{ NULL, 0, NULL, 0}
 	};
 
-#ifndef WIN32
+#ifndef _WIN32
 	struct sigaction sa;
 	struct sigaction si;
 	memset(&sa, '\0', sizeof(struct sigaction));

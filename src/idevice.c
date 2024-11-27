@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -1338,7 +1338,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		if (ssl_error == 0 || ssl_error != SSL_ERROR_WANT_READ) {
 			break;
 		}
-#ifdef WIN32
+#ifdef _WIN32
 		Sleep(100);
 #else
 		struct timespec ts = { 0, 100000000 };
