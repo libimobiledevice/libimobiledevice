@@ -29,13 +29,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <dirent.h>
 #ifndef _WIN32
 #include <pwd.h>
-#endif
 #include <unistd.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#endif
 #include <usbmuxd.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/bn.h>
@@ -63,11 +68,6 @@
 #else
 #error No supported TLS/SSL library enabled
 #endif
-
-#include <dirent.h>
-#include <libgen.h>
-#include <sys/stat.h>
-#include <errno.h>
 
 #ifdef _WIN32
 #include <shlobj.h>
