@@ -155,6 +155,7 @@ jobs:
             PYTHON_EXEC_PREFIX=`$PYTHON3_BIN -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('exec_prefix'))"`
             PYTHON_LIBS_PATH=$PYTHON_EXEC_PREFIX/lib
             PYTHON_FRAMEWORK_PATH=$PYTHON_EXEC_PREFIX/Python3
+            export PYTHON_CPPFLAGS="-I$PYTHON_EXEC_PREFIX/Headers"
             export PYTHON_LIBS="-L$PYTHON_LIBS_PATH -lpython$PYTHON_VER"
             export PYTHON_EXTRA_LDFLAGS="-Wl,-stack_size,1000000  -framework CoreFoundation $PYTHON_FRAMEWORK_PATH"
           fi
