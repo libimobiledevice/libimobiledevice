@@ -36,6 +36,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#include <sys/stat.h>
 #ifndef _WIN32
 #include <signal.h>
 #endif

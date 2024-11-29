@@ -31,6 +31,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/stat.h>
 #ifndef _WIN32
 #include <signal.h>
 #endif

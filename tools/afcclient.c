@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #include <windows.h>
