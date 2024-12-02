@@ -108,24 +108,6 @@ esac
 AM_CONDITIONAL(WIN32, test x$win32 = xtrue)
 AM_CONDITIONAL(DARWIN, test x$darwin = xtrue)
 
-# Check if the C compiler supports __attribute__((constructor))
-AC_CACHE_CHECK([wether the C compiler supports constructor/destructor attributes],
-  ac_cv_attribute_constructor, [
-  ac_cv_attribute_constructor=no
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-    [[
-      static void __attribute__((constructor)) test_constructor(void) {
-      }
-      static void __attribute__((destructor)) test_destructor(void) {
-      }
-    ]], [])],
-    [ac_cv_attribute_constructor=yes]
-  )]
-)
-if test "$ac_cv_attribute_constructor" = "yes"; then
-  AC_DEFINE(HAVE_ATTRIBUTE_CONSTRUCTOR, 1, [Define if the C compiler supports constructor/destructor attributes])
-fi
-
 AC_CHECK_MEMBER(struct dirent.d_type, AC_DEFINE(HAVE_DIRENT_D_TYPE, 1, [define if struct dirent has member d_type]),, [#include <dirent.h>])
 
 # Cython Python Bindings
