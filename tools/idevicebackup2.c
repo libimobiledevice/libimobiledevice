@@ -2333,7 +2333,7 @@ checkpoint:
 					memset(&fs, '\0', sizeof(fs));
 					res = statvfs(backup_directory, &fs);
 					if (res == 0) {
-						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_bsize;
+						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_frsize;
 					}
 #endif
 					plist_t freespace_item = plist_new_uint(freespace);
