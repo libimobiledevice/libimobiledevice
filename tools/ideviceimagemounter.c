@@ -88,7 +88,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  mount PATH     Mount the developer disk image at PATH.\n"
 		"                 For iOS 17+, PATH is a directory containing a .dmg image,\n"
 		"                 a BuildManifest.plist, and a Firmware sub-directory;\n"
-		"                 for older versions PATH is a .dmg filename with a"
+		"                 for older versions PATH is a .dmg filename with a\n"
 		"                 .dmg.signature in the same directory, or with another\n"
 		"                 parameter pointing to a file elsewhere.\n"
 		"  list           List mounted disk images.\n"
