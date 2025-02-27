@@ -32,7 +32,11 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 #include <libimobiledevice-glue/utils.h>
 
@@ -43,7 +47,7 @@
 #include "common/userpref.h"
 #include "asprintf.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #endif

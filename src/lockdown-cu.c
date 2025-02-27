@@ -29,7 +29,11 @@
 #define __USE_GNU 1
 #include <stdio.h>
 #include <ctype.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 
 #include "idevice.h"
@@ -653,7 +657,7 @@ lockdownd_error_t lockdownd_cu_pairing_create(lockdownd_client_t client, lockdow
 			CFStringGetCString(cname, hostname, sizeof(hostname), kCFStringEncodingUTF8);
 			CFRelease(cname);
 #else
-#ifdef WIN32
+#ifdef _WIN32
 			DWORD hostname_len = sizeof(hostname);
 			GetComputerName(hostname, &hostname_len);
 #else

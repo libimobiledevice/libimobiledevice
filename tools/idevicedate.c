@@ -33,7 +33,7 @@
 #if HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
-#ifndef WIN32
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
@@ -43,7 +43,7 @@
 #ifdef _DATE_FMT
 #define DATE_FMT_LANGINFO nl_langinfo (_DATE_FMT)
 #else
-#ifdef WIN32
+#ifdef _WIN32
 #define DATE_FMT_LANGINFO "%a %b %#d %H:%M:%S %Z %Y"
 #else
 #define DATE_FMT_LANGINFO "%a %b %e %H:%M:%S %Z %Y"
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 		{ NULL, 0, NULL, 0}
 	};
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	/* parse cmdline args */

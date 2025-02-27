@@ -26,8 +26,11 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 #include "idevice.h"
 #include "afc.h"
@@ -115,7 +118,7 @@ afc_error_t afc_client_new(idevice_t device, lockdownd_service_descriptor_t serv
 
 afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, const char* label)
 {
-	afc_error_t err = AFC_E_UNKNOWN_ERROR;
+	int32_t err = AFC_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, AFC_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(afc_client_new), &err);
 	return err;
 }
@@ -338,7 +341,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 		free(buf);
 
 		debug_info("WARNING: Unknown operation code received 0x%llx param1=%lld", header.operation, param1);
-#ifndef WIN32
+#ifndef _WIN32
 		fprintf(stderr, "%s: WARNING: Unknown operation code received 0x%llx param1=%lld", __func__, (long long)header.operation, (long long)param1);
 #endif
 

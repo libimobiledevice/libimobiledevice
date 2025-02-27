@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -124,32 +124,32 @@ static void id_function(CRYPTO_THREADID *thread)
 #endif
 #endif /* HAVE_OPENSSL */
 
-static void internal_idevice_init(void)
-{
-#if defined(HAVE_OPENSSL)
-#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-	int i;
-	SSL_library_init();
+// Reference: https://stackoverflow.com/a/2390626/1806760
+// Initializer/finalizer sample for MSVC and GCC/Clang.
+// 2010-2016 Joe Lowe. Released into the public domain.
 
-	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
-	if (!mutex_buf)
-		return;
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-		mutex_init(&mutex_buf[i]);
-
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-	CRYPTO_set_id_callback(id_function);
+#ifdef __cplusplus
+    #define INITIALIZER(f) \
+        static void f(void); \
+        struct f##_t_ { f##_t_(void) { f(); } }; static f##_t_ f##_; \
+        static void f(void)
+#elif defined(_MSC_VER)
+    #pragma section(".CRT$XCU",read)
+    #define INITIALIZER2_(f,p) \
+        static void f(void); \
+        __declspec(allocate(".CRT$XCU")) void (*f##_)(void) = f; \
+        __pragma(comment(linker,"/include:" p #f "_")) \
+        static void f(void)
+    #ifdef _WIN64
+        #define INITIALIZER(f) INITIALIZER2_(f,"")
+    #else
+        #define INITIALIZER(f) INITIALIZER2_(f,"_")
+    #endif
 #else
-	CRYPTO_THREADID_set_callback(id_function);
+    #define INITIALIZER(f) \
+        static void f(void) __attribute__((__constructor__)); \
+        static void f(void)
 #endif
-	CRYPTO_set_locking_callback(locking_function);
-#endif
-#elif defined(HAVE_GNUTLS)
-	gnutls_global_init();
-#elif defined(HAVE_MBEDTLS)
-	// NO-OP
-#endif
-}
 
 static void internal_idevice_deinit(void)
 {
@@ -181,43 +181,33 @@ static void internal_idevice_deinit(void)
 #endif
 }
 
-static thread_once_t init_once = THREAD_ONCE_INIT;
-static thread_once_t deinit_once = THREAD_ONCE_INIT;
-
-#ifndef HAVE_ATTRIBUTE_CONSTRUCTOR
-  #if defined(__llvm__) || defined(__GNUC__)
-    #define HAVE_ATTRIBUTE_CONSTRUCTOR
-  #endif
-#endif
-
-#ifdef HAVE_ATTRIBUTE_CONSTRUCTOR
-static void __attribute__((constructor)) libimobiledevice_initialize(void)
+INITIALIZER(internal_idevice_init)
 {
-	thread_once(&init_once, internal_idevice_init);
-}
+#if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+	int i;
+	SSL_library_init();
 
-static void __attribute__((destructor)) libimobiledevice_deinitialize(void)
-{
-	thread_once(&deinit_once, internal_idevice_deinit);
-}
-#elif defined(WIN32)
-BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
-{
-	switch (dwReason) {
-	case DLL_PROCESS_ATTACH:
-		thread_once(&init_once,	internal_idevice_init);
-		break;
-	case DLL_PROCESS_DETACH:
-		thread_once(&deinit_once, internal_idevice_deinit);
-		break;
-	default:
-		break;
-	}
-	return 1;
-}
+	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
+	if (!mutex_buf)
+		return;
+	for (i = 0; i < CRYPTO_num_locks(); i++)
+		mutex_init(&mutex_buf[i]);
+
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+	CRYPTO_set_id_callback(id_function);
 #else
-#warning No compiler support for constructor/destructor attributes, some features might not be available.
+	CRYPTO_THREADID_set_callback(id_function);
 #endif
+	CRYPTO_set_locking_callback(locking_function);
+#endif
+#elif defined(HAVE_GNUTLS)
+	gnutls_global_init();
+#elif defined(HAVE_MBEDTLS)
+	// NO-OP
+#endif
+	atexit(internal_idevice_deinit);
+}
 
 const char* libimobiledevice_version()
 {
@@ -548,7 +538,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		}
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_USBMUXD;
-		new_connection->data = (void*)(long)sfd;
+		new_connection->data = (void*)(uintptr_t)sfd;
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
@@ -593,7 +583,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 
 		idevice_connection_t new_connection = (idevice_connection_t)malloc(sizeof(struct idevice_connection_private));
 		new_connection->type = CONNECTION_NETWORK;
-		new_connection->data = (void*)(long)sfd;
+		new_connection->data = (void*)(uintptr_t)sfd;
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
@@ -618,11 +608,11 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	}
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
 	if (connection->type == CONNECTION_USBMUXD) {
-		usbmuxd_disconnect((int)(long)connection->data);
+		usbmuxd_disconnect((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else if (connection->type == CONNECTION_NETWORK) {
-		socket_close((int)(long)connection->data);
+		socket_close((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
@@ -647,7 +637,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 	if (connection->type == CONNECTION_USBMUXD) {
 		int res;
 		do {
-			res = usbmuxd_send((int)(long)connection->data, data, len, sent_bytes);
+			res = usbmuxd_send((int)(uintptr_t)connection->data, data, len, sent_bytes);
 		} while (res == -EAGAIN);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_send returned %d (%s)", res, strerror(-res));
@@ -656,7 +646,7 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int s = socket_send((int)(long)connection->data, (void*)data, len);
+		int s = socket_send((int)(uintptr_t)connection->data, (void*)data, len);
 		if (s < 0) {
 			*sent_bytes = 0;
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -763,7 +753,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int conn_error = usbmuxd_recv_timeout((int)(long)connection->data, data, len, recv_bytes, timeout);
+		int conn_error = usbmuxd_recv_timeout((int)(uintptr_t)connection->data, data, len, recv_bytes, timeout);
 		idevice_error_t error = socket_recv_to_idevice_error(conn_error, len, *recv_bytes);
 		if (error == IDEVICE_E_UNKNOWN_ERROR) {
 			debug_info("ERROR: usbmuxd_recv_timeout returned %d (%s)", conn_error, strerror(-conn_error));
@@ -771,7 +761,7 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 		return error;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int res = socket_receive_timeout((int)(long)connection->data, data, len, 0, timeout);
+		int res = socket_receive_timeout((int)(uintptr_t)connection->data, data, len, 0, timeout);
 		idevice_error_t error = socket_recv_to_idevice_error(res, 0, 0);
 		if (error == IDEVICE_E_SUCCESS) {
 			*recv_bytes = (uint32_t)res;
@@ -863,7 +853,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		int res = usbmuxd_recv((int)(long)connection->data, data, len, recv_bytes);
+		int res = usbmuxd_recv((int)(uintptr_t)connection->data, data, len, recv_bytes);
 		if (res < 0) {
 			debug_info("ERROR: usbmuxd_recv returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -871,7 +861,7 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		int res = socket_receive((int)(long)connection->data, data, len);
+		int res = socket_receive((int)(uintptr_t)connection->data, data, len);
 		if (res < 0) {
 			debug_info("ERROR: socket_receive returned %d (%s)", res, strerror(-res));
 			return IDEVICE_E_UNKNOWN_ERROR;
@@ -924,11 +914,11 @@ idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *
 	}
 
 	if (connection->type == CONNECTION_USBMUXD) {
-		*fd = (int)(long)connection->data;
+		*fd = (int)(uintptr_t)connection->data;
 		return IDEVICE_E_SUCCESS;
 	}
 	if (connection->type == CONNECTION_NETWORK) {
-		*fd = (int)(long)connection->data;
+		*fd = (int)(uintptr_t)connection->data;
 		return IDEVICE_E_SUCCESS;
 	}
 
@@ -1338,7 +1328,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		if (ssl_error == 0 || ssl_error != SSL_ERROR_WANT_READ) {
 			break;
 		}
-#ifdef WIN32
+#ifdef _WIN32
 		Sleep(100);
 #else
 		struct timespec ts = { 0, 100000000 };

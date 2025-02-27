@@ -35,7 +35,7 @@ bin_PROGRAMS = \
 	afcclient
 
 idevicebtlogger_SOURCES = idevicebtlogger.c
-iidevicebtlogger_CFLAGS = $(AM_CFLAGS)
+idevicebtlogger_CFLAGS = $(AM_CFLAGS)
 idevicebtlogger_LDFLAGS = $(top_builddir)/common/libinternalcommon.la $(AM_LDFLAGS)
 idevicebtlogger_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
@@ -51,8 +51,8 @@ idevicename_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicepair_SOURCES = idevicepair.c
 idevicepair_CFLAGS = $(AM_CFLAGS)
-idevicepair_LDFLAGS = $(AM_LDFLAGS) $(libusbmuxd_LIBS) $(ssl_lib_LIBS)
-idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la $(limd_glue_LIBS)
+idevicepair_LDFLAGS = $(AM_LDFLAGS) $(libusbmuxd_LIBS)
+idevicepair_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la $(top_builddir)/common/libinternalcommon.la $(limd_glue_LIBS) $(ssl_lib_LIBS)
 
 idevicesyslog_SOURCES = idevicesyslog.c
 idevicesyslog_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
@@ -76,7 +76,7 @@ idevicebackup2_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 ideviceimagemounter_SOURCES = ideviceimagemounter.c
 ideviceimagemounter_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS) $(libtatsu_CFLAGS)
-ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS) $(ssl_lib_LIBS) $(libtatsu_LIBS)
+ideviceimagemounter_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS) $(libtatsu_LIBS)
 ideviceimagemounter_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 idevicescreenshot_SOURCES = idevicescreenshot.c
@@ -135,8 +135,8 @@ idevicesetlocation_LDFLAGS = $(AM_LDFLAGS)
 idevicesetlocation_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 afcclient_SOURCES = afcclient.c
-afcclient_CFLAGS = $(AM_CFLAGS)
-afcclient_LDFLAGS = $(AM_LDFLAGS)
+afcclient_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+afcclient_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 if HAVE_READLINE
   afcclient_CFLAGS += $(readline_CFLAGS)
   afcclient_LDFLAGS += $(readline_LIBS)

@@ -29,13 +29,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifndef WIN32
+#include <dirent.h>
+#ifndef _WIN32
 #include <pwd.h>
-#endif
 #include <unistd.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#endif
 #include <usbmuxd.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/bn.h>
@@ -64,12 +69,7 @@
 #error No supported TLS/SSL library enabled
 #endif
 
-#include <dirent.h>
-#include <libgen.h>
-#include <sys/stat.h>
-#include <errno.h>
-
-#ifdef WIN32
+#ifdef _WIN32
 #include <shlobj.h>
 #endif
 
@@ -93,7 +93,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 };
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define DIR_SEP '\\'
 #define DIR_SEP_S "\\"
 #else
@@ -103,7 +103,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 
 #define USERPREF_CONFIG_EXTENSION ".plist"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define USERPREF_CONFIG_DIR "Apple"DIR_SEP_S"Lockdown"
 #else
 #define USERPREF_CONFIG_DIR "lockdown"
@@ -113,7 +113,7 @@ const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
 
 static char *__config_dir = NULL;
 
-#ifdef WIN32
+#ifdef _WIN32
 static char *userpref_utf16_to_utf8(wchar_t *unistr, long len, long *items_read, long *items_written)
 {
 	if (!unistr || (len <= 0)) return NULL;
@@ -155,7 +155,7 @@ const char *userpref_get_config_dir()
 	if (__config_dir)
 		return __config_dir;
 
-#ifdef WIN32
+#ifdef _WIN32
 	wchar_t path[MAX_PATH+1];
 	HRESULT hr;
 	LPITEMIDLIST pidl = NULL;

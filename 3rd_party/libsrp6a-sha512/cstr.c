@@ -8,69 +8,28 @@
 #define MINSIZE		4		/* Absolute minimum - one word */
 
 static char cstr_empty_string[] = { '\0' };
-static cstr_allocator * default_alloc = NULL;
-
-/*
- * It is assumed, for efficiency, that it is okay to pass more arguments
- * to a function than are called for, as long as the required arguments
- * are in proper form.  If extra arguments to malloc() and free() cause
- * problems, define PEDANTIC_ARGS below.
- */
-#ifdef PEDANTIC_ARGS
-static void * Cmalloc(int n, void * heap) { return malloc(n); }
-static void Cfree(void * p, void * heap) { free(p); }
-static cstr_allocator malloc_allocator = { Cmalloc, Cfree, NULL };
-#else
-static cstr_allocator malloc_allocator = { malloc, free, NULL };
-#endif
-
-_TYPE( void )
-cstr_set_allocator(cstr_allocator * alloc)
-{
-  default_alloc = alloc;
-}
 
 _TYPE( cstr * )
-cstr_new_alloc(cstr_allocator * alloc)
+cstr_new()
 {
   cstr * str;
 
-  if(alloc == NULL) {
-    if(default_alloc == NULL) {
-      default_alloc = &malloc_allocator;
-    }
-    alloc = default_alloc;
-  }
-
-  str = (cstr *) (*alloc->alloc)(sizeof(cstr), alloc->heap);
+  str = (cstr *) malloc(sizeof(cstr));
   if(str) {
     str->data = cstr_empty_string;
     str->length = str->cap = 0;
     str->ref = 1;
-    str->allocator = alloc;
   }
   return str;
 }
 
 _TYPE( cstr * )
-cstr_new()
+cstr_dup(const cstr * str)
 {
-  return cstr_new_alloc(NULL);
-}
-
-_TYPE( cstr * )
-cstr_dup_alloc(const cstr * str, cstr_allocator * alloc)
-{
-  cstr * nstr = cstr_new_alloc(alloc);
+  cstr * nstr = cstr_new();
   if(nstr)
     cstr_setn(nstr, str->data, str->length);
   return nstr;
-}
-
-_TYPE( cstr * )
-cstr_dup(const cstr * str)
-{
-  return cstr_dup_alloc(str, NULL);
 }
 
 _TYPE( cstr * )
@@ -101,9 +60,9 @@ cstr_clear_free(cstr * str)
   if(--str->ref == 0) {
     if(str->cap > 0) {
       memset(str->data, 0, str->cap);
-      (*str->allocator->free)(str->data, str->allocator->heap);
+      free(str->data);
     }
-    (*str->allocator->free)(str, str->allocator->heap);
+    free(str);
   }
 }
 
@@ -112,8 +71,8 @@ cstr_free(cstr * str)
 {
   if(--str->ref == 0) {
     if(str->cap > 0)
-      (*str->allocator->free)(str->data, str->allocator->heap);
-    (*str->allocator->free)(str, str->allocator->heap);
+      free(str->data);
+    free(str);
   }
 }
 
@@ -121,7 +80,7 @@ _TYPE( void )
 cstr_empty(cstr * str)
 {
   if(str->cap > 0)
-    (*str->allocator->free)(str->data, str->allocator->heap);
+    free(str->data);
   str->data = cstr_empty_string;
   str->length = str->cap = 0;
 }
@@ -137,8 +96,7 @@ cstr_alloc(cstr * str, int len)
     if(len < MINSIZE)
       len = MINSIZE;
 
-    t = (char *) (*str->allocator->alloc)(len * sizeof(char),
-					  str->allocator->heap);
+    t = (char *) malloc(len * sizeof(char));
     if(t) {
       if(str->data) {
 	t[str->length] = 0;

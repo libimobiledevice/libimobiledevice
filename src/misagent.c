@@ -24,9 +24,13 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <plist/plist.h>
 #include <stdio.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+
+#include <plist/plist.h>
 
 #include "misagent.h"
 #include "property_list_service.h"

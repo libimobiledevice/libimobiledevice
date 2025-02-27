@@ -26,7 +26,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 
 #include "installation_proxy.h"
@@ -251,7 +255,7 @@ instproxy_error_t instproxy_client_new(idevice_t device, lockdownd_service_descr
 
 instproxy_error_t instproxy_client_start_service(idevice_t device, instproxy_client_t * client, const char* label)
 {
-	instproxy_error_t err = INSTPROXY_E_UNKNOWN_ERROR;
+	int32_t err = INSTPROXY_E_UNKNOWN_ERROR;
 	service_client_factory_start_service(device, INSTPROXY_SERVICE_NAME, (void**)client, label, SERVICE_CONSTRUCTOR(instproxy_client_new), &err);
 	return err;
 }

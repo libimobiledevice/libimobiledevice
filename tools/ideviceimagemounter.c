@@ -36,7 +36,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <inttypes.h>
-#ifndef WIN32
+#include <sys/stat.h>
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
@@ -87,7 +88,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  mount PATH     Mount the developer disk image at PATH.\n"
 		"                 For iOS 17+, PATH is a directory containing a .dmg image,\n"
 		"                 a BuildManifest.plist, and a Firmware sub-directory;\n"
-		"                 for older versions PATH is a .dmg filename with a"
+		"                 for older versions PATH is a .dmg filename with a\n"
 		"                 .dmg.signature in the same directory, or with another\n"
 		"                 parameter pointing to a file elsewhere.\n"
 		"  list           List mounted disk images.\n"
@@ -183,7 +184,7 @@ int main(int argc, char **argv)
 	size_t image_size = 0;
 	char *image_sig_path = NULL;
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	parse_opts(argc, argv);

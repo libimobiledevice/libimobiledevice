@@ -16,28 +16,31 @@ the device to the target DIRECTORY.
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by UDID.
+Target specific device by UDID.
 .TP
 .B \-n, \-\-network
-connect to network device.
+Connect to network device.
 .TP
 .B \-e, \-\-extract
-extract raw crash report into separate '.crash' files.
+Extract raw crash report into separate '.crash' files.
 .TP
 .B \-k, \-\-keep
-copy but do not remove crash reports from device.
+Copy but do not remove crash reports from device.
 .TP
 .B \-d, \-\-debug
-enable communication debugging.
+Enable communication debugging.
 .TP
 .B \-f, \-\-filter NAME
-filter crash reports by NAME (case sensitive)
+Filter crash reports by NAME (case sensitive)
+.TP
+.B \-\-remove\-all
+Remove all crash log files without copying. Can be used with \f[B]-f\f[] to only remove matching files.
 .TP
 .B \-h, \-\-help
-prints usage information.
+Prints usage information.
 .TP
 .B \-v, \-\-version
-prints version information.
+Prints version information.
 
 .SH AUTHOR
 Martin Szulecki

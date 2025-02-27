@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <signal.h>
 #endif
 
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 		{ NULL, 0, NULL, 0}
 	};
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 	/* parse cmdline args */

@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -51,7 +52,7 @@
 #define LOCK_ATTEMPTS 50
 #define LOCK_WAIT 200000
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #endif
@@ -642,7 +643,7 @@ int main(int argc, char *argv[])
 	/* we need to exit cleanly on running backups and restores or we cause havok */
 	signal(SIGINT, clean_exit);
 	signal(SIGTERM, clean_exit);
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGQUIT, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
 #endif
@@ -1352,7 +1353,7 @@ files_out:
 						file_info_path = mobilebackup_build_path(backup_directory, hash, ".mddata");
 
 						/* determine file size */
-#ifdef WIN32
+#ifdef _WIN32
 						struct _stati64 fst;
 						if (_stati64(file_info_path, &fst) != 0)
 #else
