@@ -31,7 +31,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
-#ifndef WIN32
+#include <sys/stat.h>
+#ifndef _WIN32
 #include <signal.h>
 #endif
 #include <libimobiledevice-glue/utils.h>
@@ -42,7 +43,7 @@
 #include <libimobiledevice/afc.h>
 #include <plist/plist.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #define S_IFLNK S_IFREG
 #define S_IFSOCK S_IFREG
@@ -59,7 +60,7 @@ static int remove_all = 0;
 static int file_exists(const char* path)
 {
 	struct stat tst;
-#ifdef WIN32
+#ifdef _WIN32
 	return (stat(path, &tst) == 0);
 #else
 	return (lstat(path, &tst) == 0);
@@ -153,7 +154,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		strcpy(((char*)source_filename) + device_directory_length, list[k]);
 
 		/* assemble absolute target filename */
-#ifdef WIN32
+#ifdef _WIN32
 		/* replace every ':' with '-' since ':' is an illegal character for file names in windows */
 		char* current_pos = strchr(list[k], ':');
 		while (current_pos) {
@@ -212,7 +213,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 					remove(target_filename);
 				}
 
-#ifndef WIN32
+#ifndef _WIN32
 				/* use relative filename */
 				char* b = strrchr(fileinfo[i+1], '/');
 				if (b == NULL) {
@@ -240,7 +241,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		/* recurse into child directories */
 		if (S_ISDIR(stbuf.st_mode)) {
 			if (!remove_all) {
-#ifdef WIN32
+#ifdef _WIN32
 				mkdir(target_filename);
 #else
 				mkdir(target_filename, 0755);
@@ -375,7 +376,7 @@ int main(int argc, char* argv[])
 		{ NULL, 0, NULL, 0}
 	};
 
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
 

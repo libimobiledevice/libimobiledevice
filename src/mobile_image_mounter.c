@@ -24,7 +24,11 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <plist/plist.h>
 
 #include "mobile_image_mounter.h"

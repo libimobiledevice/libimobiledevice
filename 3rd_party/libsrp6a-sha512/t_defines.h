@@ -65,7 +65,7 @@
 #define _MSVC15DEXPORT
 #define _MSVC20EXPORT
 #define _DLLAPI
-#if defined(WINDOWS) || defined(WIN32)
+#if defined(WINDOWS) || defined(_WIN32)
 #define _CDECL _cdecl
 #else
 #define _CDECL
@@ -122,7 +122,7 @@ char *strchr(), *strrchr(), *strtok();
 #define USE_SGTTY
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define USE_FTIME 1
 #define USE_RENAME 1
 #define NO_FCHMOD 1

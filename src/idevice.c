@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -124,32 +124,32 @@ static void id_function(CRYPTO_THREADID *thread)
 #endif
 #endif /* HAVE_OPENSSL */
 
-static void internal_idevice_init(void)
-{
-#if defined(HAVE_OPENSSL)
-#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-	int i;
-	SSL_library_init();
+// Reference: https://stackoverflow.com/a/2390626/1806760
+// Initializer/finalizer sample for MSVC and GCC/Clang.
+// 2010-2016 Joe Lowe. Released into the public domain.
 
-	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
-	if (!mutex_buf)
-		return;
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-		mutex_init(&mutex_buf[i]);
-
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-	CRYPTO_set_id_callback(id_function);
+#ifdef __cplusplus
+    #define INITIALIZER(f) \
+        static void f(void); \
+        struct f##_t_ { f##_t_(void) { f(); } }; static f##_t_ f##_; \
+        static void f(void)
+#elif defined(_MSC_VER)
+    #pragma section(".CRT$XCU",read)
+    #define INITIALIZER2_(f,p) \
+        static void f(void); \
+        __declspec(allocate(".CRT$XCU")) void (*f##_)(void) = f; \
+        __pragma(comment(linker,"/include:" p #f "_")) \
+        static void f(void)
+    #ifdef _WIN64
+        #define INITIALIZER(f) INITIALIZER2_(f,"")
+    #else
+        #define INITIALIZER(f) INITIALIZER2_(f,"_")
+    #endif
 #else
-	CRYPTO_THREADID_set_callback(id_function);
+    #define INITIALIZER(f) \
+        static void f(void) __attribute__((__constructor__)); \
+        static void f(void)
 #endif
-	CRYPTO_set_locking_callback(locking_function);
-#endif
-#elif defined(HAVE_GNUTLS)
-	gnutls_global_init();
-#elif defined(HAVE_MBEDTLS)
-	// NO-OP
-#endif
-}
 
 static void internal_idevice_deinit(void)
 {
@@ -181,43 +181,33 @@ static void internal_idevice_deinit(void)
 #endif
 }
 
-static thread_once_t init_once = THREAD_ONCE_INIT;
-static thread_once_t deinit_once = THREAD_ONCE_INIT;
-
-#ifndef HAVE_ATTRIBUTE_CONSTRUCTOR
-  #if defined(__llvm__) || defined(__GNUC__)
-    #define HAVE_ATTRIBUTE_CONSTRUCTOR
-  #endif
-#endif
-
-#ifdef HAVE_ATTRIBUTE_CONSTRUCTOR
-static void __attribute__((constructor)) libimobiledevice_initialize(void)
+INITIALIZER(internal_idevice_init)
 {
-	thread_once(&init_once, internal_idevice_init);
-}
+#if defined(HAVE_OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+	int i;
+	SSL_library_init();
 
-static void __attribute__((destructor)) libimobiledevice_deinitialize(void)
-{
-	thread_once(&deinit_once, internal_idevice_deinit);
-}
-#elif defined(WIN32)
-BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID lpReserved)
-{
-	switch (dwReason) {
-	case DLL_PROCESS_ATTACH:
-		thread_once(&init_once,	internal_idevice_init);
-		break;
-	case DLL_PROCESS_DETACH:
-		thread_once(&deinit_once, internal_idevice_deinit);
-		break;
-	default:
-		break;
-	}
-	return 1;
-}
+	mutex_buf = malloc(CRYPTO_num_locks() * sizeof(mutex_t));
+	if (!mutex_buf)
+		return;
+	for (i = 0; i < CRYPTO_num_locks(); i++)
+		mutex_init(&mutex_buf[i]);
+
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+	CRYPTO_set_id_callback(id_function);
 #else
-#warning No compiler support for constructor/destructor attributes, some features might not be available.
+	CRYPTO_THREADID_set_callback(id_function);
 #endif
+	CRYPTO_set_locking_callback(locking_function);
+#endif
+#elif defined(HAVE_GNUTLS)
+	gnutls_global_init();
+#elif defined(HAVE_MBEDTLS)
+	// NO-OP
+#endif
+	atexit(internal_idevice_deinit);
+}
 
 const char* libimobiledevice_version()
 {
@@ -1338,7 +1328,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 		if (ssl_error == 0 || ssl_error != SSL_ERROR_WANT_READ) {
 			break;
 		}
-#ifdef WIN32
+#ifdef _WIN32
 		Sleep(100);
 #else
 		struct timespec ts = { 0, 100000000 };

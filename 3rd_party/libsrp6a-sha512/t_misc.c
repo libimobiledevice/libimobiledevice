@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <process.h>
 #include <io.h>
 #endif
@@ -207,7 +207,7 @@ t_initrand()
 #if defined(OPENSSL)	/* OpenSSL has nifty win32 entropy-gathering code */
 #if OPENSSL_VERSION_NUMBER >= 0x00905100
   r = RAND_status();
-#if defined(WINDOWS) || defined(WIN32)
+#if defined(WINDOWS) || defined(_WIN32)
   if(r)		/* Don't do the Unix-y stuff on Windows if possible */
     return;
 #else
@@ -220,7 +220,7 @@ t_initrand()
   if(r > 0) {
     yarrow_add_entropy(entropy, r, &g_rng);
     memset(entropy, 0, sizeof(entropy));
-# if defined(WINDOWS) || defined(WIN32)
+# if defined(WINDOWS) || defined(_WIN32)
     /* Don't do the Unix-y stuff on Windows if possible */
     yarrow_ready(&g_rng);
     return;
@@ -228,13 +228,13 @@ t_initrand()
   }
 #endif
 
-#if !defined(WINDOWS) && !defined(WIN32)
+#if !defined(WINDOWS) && !defined(_WIN32)
   i = open("/dev/urandom", O_RDONLY);
   if(i > 0) {
     r += read(i, preseed.devrand, sizeof(preseed.devrand));
     close(i);
   }
-#endif /* !WINDOWS && !WIN32 */
+#endif /* !WINDOWS && !_WIN32 */
 
   /* Resort to truerand only if desperate for some Real entropy */
   if(r == 0)
@@ -250,7 +250,7 @@ t_initrand()
   preseed.subsec = t.tv_usec;
 #endif
   preseed.pid = getpid();
-#ifndef WIN32
+#ifndef _WIN32
   preseed.ppid = getppid();
 #endif
   t_envhash(preseed.envh);

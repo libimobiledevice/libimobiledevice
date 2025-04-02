@@ -12,19 +12,22 @@ Post or observe notifications on an iOS device from the command line.
 .SH OPTIONS
 .TP
 .B \-u, \-\-udid UDID
-target specific device by UDID.
+Target specific device by UDID.
+.TP
+.B \-i, \-\-insecure
+Connect to insecure notification proxy (for non-paired devices).
 .TP
 .B \-n, \-\-network
-connect to network device.
+Connect to network device.
 .TP
 .B \-d, \-\-debug
-enable communication debugging.
+Enable communication debugging.
 .TP
 .B \-h, \-\-help
-prints usage information.
+Prints usage information.
 .TP
 .B \-v, \-\-version
-prints version information.
+Prints version information.
 
 .SH COMMANDS
 .TP
@@ -37,6 +40,8 @@ observe notification IDs in the foreground until CTRL+C or signal is received.
 .SH AUTHORS
 
 Martin Szulecki
+
+Nikias Bassen
 
 .SH ON THE WEB
 https://libimobiledevice.org

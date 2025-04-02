@@ -135,8 +135,8 @@ idevicesetlocation_LDFLAGS = $(AM_LDFLAGS)
 idevicesetlocation_LDADD = $(top_builddir)/src/libimobiledevice-1.0.la
 
 afcclient_SOURCES = afcclient.c
-afcclient_CFLAGS = $(AM_CFLAGS)
-afcclient_LDFLAGS = $(AM_LDFLAGS)
+afcclient_CFLAGS = $(AM_CFLAGS) $(limd_glue_CFLAGS)
+afcclient_LDFLAGS = $(AM_LDFLAGS) $(limd_glue_LIBS)
 if HAVE_READLINE
   afcclient_CFLAGS += $(readline_CFLAGS)
   afcclient_LDFLAGS += $(readline_LIBS)

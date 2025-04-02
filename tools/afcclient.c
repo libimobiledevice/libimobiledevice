@@ -38,8 +38,9 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
+#include <sys/stat.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <sys/time.h>
 #include <conio.h>
@@ -95,7 +96,7 @@ static size_t curdir_len = 0;
 static int file_exists(const char* path)
 {
 	struct stat tst;
-#ifdef WIN32
+#ifdef _WIN32
 	return (stat(path, &tst) == 0);
 #else
 	return (lstat(path, &tst) == 0);
@@ -105,7 +106,7 @@ static int file_exists(const char* path)
 static int is_directory(const char* path)
 {
 	struct stat tst;
-#ifdef WIN32
+#ifdef _WIN32
 	return (stat(path, &tst) == 0) && S_ISDIR(tst.st_mode);
 #else
 	return (lstat(path, &tst) == 0) && S_ISDIR(tst.st_mode);
@@ -138,7 +139,7 @@ static void print_usage(int argc, char **argv, int is_error)
 }
 
 #ifndef HAVE_READLINE
-#ifdef WIN32
+#ifdef _WIN32
 #define BS_CC '\b'
 #else
 #define BS_CC 0x7f
@@ -175,7 +176,7 @@ int stop_requested = 0;
 static void handle_signal(int sig)
 {
 	stop_requested++;
-#ifdef WIN32
+#ifdef _WIN32
 	GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
 #else
 	kill(getpid(), SIGINT);
@@ -483,7 +484,7 @@ static void print_file_info(afc_client_t afc, const char* path, int list_verbose
 		printf(" ");
 		printf("%10lld", (long long)st.st_size);
 		printf(" ");
-#ifdef WIN32
+#ifdef _WIN32
 		strftime(timebuf, 64, "%d %b %Y %H:%M:%S", localtime(&t));
 #else
 		strftime(timebuf, 64, "%d %h %Y %H:%M:%S", localtime(&t));
@@ -774,7 +775,7 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 
 static int __mkdir(const char* path)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	return mkdir(path);
 #else
 	return mkdir(path, 0755);
@@ -837,7 +838,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				p++;
 				continue;
 			}
-			size_t len = srcpath_is_root ? strlen(*p) + 1 : srcpath_len + 1 + strlen(*p) + 1;
+			size_t len = srcpath_is_root ? (strlen(*p) + 2) : (srcpath_len + 1 + strlen(*p) + 1);
 			char *testpath = (char *) malloc(len);
 			if (srcpath_is_root) {
 				snprintf(testpath, len, "/%s", *p);
@@ -845,7 +846,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				snprintf(testpath, len, "%s/%s", srcpath, *p);
 			}
 			uint8_t dst_is_root = strcmp(srcpath, "/") == 0;
-			size_t dst_len = dst_is_root ? strlen(*p) + 1 : strlen(dstpath) + 1 + strlen(*p) + 1;
+			size_t dst_len = dst_is_root ? (strlen(*p) + 2) : (strlen(dstpath) + 1 + strlen(*p) + 1);
 			char *newdst = (char *) malloc(dst_len);
 			if (dst_is_root) {
 				snprintf(newdst, dst_len, "/%s", *p);
@@ -921,9 +922,9 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 
 	// target is a directory, put file under this target
 	if (is_directory(dstpath)) {
-		const char *basen = path_get_basename(argv[0]);
+		const char *basen = path_get_basename(srcpath);
 		uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-		size_t len = dst_is_root ? (strlen(basen) + 1) : (strlen(dstpath) + 1 + strlen(basen) + 1);
+		size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 		char *newdst = (char *) malloc(len);
 		if (dst_is_root) {
 			snprintf(newdst, len, "/%s", basen);
@@ -1073,7 +1074,7 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				char *fpath = string_build_path(srcpath, ep->d_name, NULL);
 				if (fpath) {
 					uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-					size_t len = dst_is_root ? strlen(ep->d_name) + 1 : strlen(dstpath) + 1 + strlen(ep->d_name) + 1;
+					size_t len = dst_is_root ? (strlen(ep->d_name) + 2) : (strlen(dstpath) + 1 + strlen(ep->d_name) + 1);
 					char *newdst = (char *) malloc(len);
 					if (dst_is_root) {
 						snprintf(newdst, len, "/%s", ep->d_name);
@@ -1172,7 +1173,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		if (is_dir) {
 			const char *basen = path_get_basename(srcpath);
 			uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
-			size_t len = dst_is_root ? strlen(basen) + 1 : strlen(dstpath) + 1 + strlen(basen) + 1;
+			size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
 			char *newdst = (char *) malloc(len);
 			if (dst_is_root) {
 				snprintf(newdst, len, "/%s", basen);
@@ -1483,7 +1484,7 @@ int main(int argc, char** argv)
 	};
 
 	signal(SIGTERM, handle_signal);
-#ifndef WIN32
+#ifndef _WIN32
 	signal(SIGQUIT, handle_signal);
 	signal(SIGPIPE, SIG_IGN);
 #endif
@@ -1561,7 +1562,7 @@ int main(int argc, char** argv)
 	idevice_events_subscribe(&context, device_event_cb, NULL);
 
 	while (!connected && !stop_requested) {
-#ifdef WIN32
+#ifdef _WIN32
 		Sleep(100);
 #else
 		usleep(100000);
