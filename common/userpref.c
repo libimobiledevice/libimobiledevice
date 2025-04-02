@@ -85,6 +85,7 @@
 
 #include "userpref.h"
 #include "debug.h"
+#include "../src/idevice.h"
 
 #if defined(HAVE_GNUTLS)
 const ASN1_ARRAY_TYPE pkcs1_asn1_tab[] = {
@@ -488,7 +489,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		X509_set_pubkey(root_cert, root_pkey);
 
 		/* sign root cert with root private key */
-		X509_sign(root_cert, root_pkey, osversion < DEVICEVERSION(4,0,0) ? EVP_sha1() : EVP_sha256());
+		X509_sign(root_cert, root_pkey, osversion < DEVICE_VERSION(4,0,0) ? EVP_sha1() : EVP_sha256());
 	}
 
 	/* create host certificate */
@@ -521,7 +522,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		X509_set_pubkey(host_cert, host_pkey);
 
 		/* sign host cert with root private key */
-		X509_sign(host_cert, root_pkey, osversion < DEVICEVERSION(4, 0, 0) ? EVP_sha1() : EVP_sha256());
+		X509_sign(host_cert, root_pkey, osversion < DEVICE_VERSION(4, 0, 0) ? EVP_sha1() : EVP_sha256());
 	}
 
 	if (root_cert && root_pkey && host_cert && host_pkey) {
@@ -613,7 +614,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 		X509_add_ext_helper(dev_cert, NID_key_usage, (char*)"critical,digitalSignature,keyEncipherment");
 
 		/* sign device certificate with root private key */
-		if (X509_sign(dev_cert, root_pkey, osversion < DEVICEVERSION(4, 0, 0) ? EVP_sha1() : EVP_sha256())) {
+		if (X509_sign(dev_cert, root_pkey, osversion < DEVICE_VERSION(4, 0, 0) ? EVP_sha1() : EVP_sha256())) {
 			/* if signing succeeded, export in PEM format */
 			BIO* membp = BIO_new(BIO_s_mem());
 			if (PEM_write_bio_X509(membp, dev_cert) > 0) {
@@ -665,7 +666,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_crt_set_ca_status(root_cert, 1);
 	gnutls_x509_crt_set_activation_time(root_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(root_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign2(root_cert, root_cert, root_privkey, osversion < DEVICEVERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
+	gnutls_x509_crt_sign2(root_cert, root_cert, root_privkey, osversion < DEVICE_VERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
 
 	gnutls_x509_crt_set_key(host_cert, host_privkey);
 	gnutls_x509_crt_set_serial(host_cert, "\x01", 1);
@@ -674,7 +675,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 	gnutls_x509_crt_set_key_usage(host_cert, GNUTLS_KEY_KEY_ENCIPHERMENT | GNUTLS_KEY_DIGITAL_SIGNATURE);
 	gnutls_x509_crt_set_activation_time(host_cert, time(NULL));
 	gnutls_x509_crt_set_expiration_time(host_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
-	gnutls_x509_crt_sign2(host_cert, root_cert, root_privkey, osversion < DEVICEVERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
+	gnutls_x509_crt_sign2(host_cert, root_cert, root_privkey, osversion < DEVICE_VERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
 
 	/* export to PEM format */
 	size_t root_key_export_size = 0;
@@ -772,7 +773,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 			gnutls_x509_crt_set_expiration_time(dev_cert, time(NULL) + (60 * 60 * 24 * 365 * 10));
 
 			/* use custom hash generation for compatibility with the "Apple ecosystem" */
-			const gnutls_digest_algorithm_t dig_sha = osversion < DEVICEVERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256;
+			const gnutls_digest_algorithm_t dig_sha = osversion < DEVICE_VERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256;
 			size_t hash_size = gnutls_hash_get_len(dig_sha);
 			unsigned char hash[hash_size];
 			if (gnutls_hash_fast(dig_sha, der_pub_key.data, der_pub_key.size, (unsigned char*)&hash) < 0) {
@@ -782,7 +783,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 			}
 
 			gnutls_x509_crt_set_key_usage(dev_cert, GNUTLS_KEY_DIGITAL_SIGNATURE | GNUTLS_KEY_KEY_ENCIPHERMENT);
-			gnutls_error = gnutls_x509_crt_sign2(dev_cert, root_cert, root_privkey, osversion < DEVICEVERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
+			gnutls_error = gnutls_x509_crt_sign2(dev_cert, root_cert, root_privkey, osversion < DEVICE_VERSION(4, 0, 0) ? GNUTLS_DIG_SHA1 : GNUTLS_DIG_SHA256, 0);
 			if (GNUTLS_E_SUCCESS == gnutls_error) {
 				/* if everything went well, export in PEM format */
 				size_t export_size = 0;
@@ -876,7 +877,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	/* sign root cert with root private key */
 	mbedtls_x509write_crt_set_issuer_key(&cert, &root_pkey);
-	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICEVERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
+	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICE_VERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
 
 	unsigned char outbuf[16384];
 
@@ -935,7 +936,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	/* sign host cert with root private key */
 	mbedtls_x509write_crt_set_issuer_key(&cert, &root_pkey);
-	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICEVERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
+	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICE_VERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
 
 	/* write host private key */
 	mbedtls_pk_write_key_pem(&host_pkey, outbuf, sizeof(outbuf));
@@ -995,7 +996,7 @@ userpref_error_t pair_record_generate_keys_and_certs(plist_t pair_record, key_da
 
 	/* sign device certificate with root private key */
 	mbedtls_x509write_crt_set_issuer_key(&cert, &root_pkey);
-	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICEVERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
+	mbedtls_x509write_crt_set_md_alg(&cert, osversion < DEVICE_VERSION(4, 0, 0) ? MBEDTLS_MD_SHA1 : MBEDTLS_MD_SHA256);
 
 	/* write device certificate */
 	mbedtls_x509write_crt_pem(&cert, outbuf, sizeof(outbuf), mbedtls_ctr_drbg_random, &ctr_drbg);
