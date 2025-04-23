@@ -559,7 +559,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 				return IDEVICE_E_UNKNOWN_ERROR;
 		}
 
-		char addrtxt[48];
+		char addrtxt[56];
 		addrtxt[0] = '\0';
 
 		if (!socket_addr_to_string(saddr, addrtxt, sizeof(addrtxt))) {
