@@ -38,6 +38,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <WinSock2.h>
 #else
 #include <arpa/inet.h>
 #endif
