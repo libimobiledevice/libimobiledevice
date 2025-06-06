@@ -404,6 +404,15 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
 /**
+ * Gets a readable error string for a given idevice error code.
+ *
+ * @param err An idevice error code
+ *
+ * @return A readable error string
+ */
+LIBIMOBILEDEVICE_API const char* idevice_strerror(idevice_error_t err);
+
+/**
  * Returns a static string of the libimobiledevice version.
  *
  * @return The libimobiledevice version as static ascii string

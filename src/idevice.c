@@ -1534,3 +1534,28 @@ idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t conne
 
 	return IDEVICE_E_SUCCESS;
 }
+
+const char* idevice_strerror(idevice_error_t err)
+{
+	switch (err) {
+		case IDEVICE_E_SUCCESS:
+			return "Success";
+		case IDEVICE_E_INVALID_ARG:
+			return "Invalid argument";
+		case IDEVICE_E_UNKNOWN_ERROR:
+			return "Unknown Error";
+		case IDEVICE_E_NO_DEVICE:
+			return "No device";
+		case IDEVICE_E_NOT_ENOUGH_DATA:
+			return "Not enough data";
+		case IDEVICE_E_CONNREFUSED:
+			return "Connection refused";
+		case IDEVICE_E_SSL_ERROR:
+			return "SSL error";
+		case IDEVICE_E_TIMEOUT:
+			return "Timeout";
+		default:
+			break;
+	}
+	return "Unknown Error";
+}
