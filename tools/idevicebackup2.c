@@ -1468,8 +1468,6 @@ static void print_usage(int argc, char **argv, int is_error)
 	);
 }
 
-#define DEVICE_VERSION(maj, min, patch) ((((maj) & 0xFF) << 16) | (((min) & 0xFF) << 8) | ((patch) & 0xFF))
-
 int main(int argc, char *argv[])
 {
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
@@ -1849,23 +1847,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* get ProductVersion */
-	char *product_version = NULL;
-	int device_version = 0;
-	node_tmp = NULL;
-	lockdownd_get_value(lockdown, NULL, "ProductVersion", &node_tmp);
-	if (node_tmp) {
-		if (plist_get_node_type(node_tmp) == PLIST_STRING) {
-			plist_get_string_val(node_tmp, &product_version);
-		}
-		plist_free(node_tmp);
-		node_tmp = NULL;
-	}
-	if (product_version) {
-		int vers[3] = { 0, 0, 0 };
-		if (sscanf(product_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
-			device_version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
-		}
-	}
+	int device_version = idevice_get_device_version(device);
 
 	/* start notification_proxy */
 	ldret = lockdownd_start_service(lockdown, NP_SERVICE_NAME, &service);
@@ -2065,7 +2047,7 @@ checkpoint:
 				}	else {
 					PRINT_VERBOSE(1, "Incremental backup mode.\n");
 				}
-				if (device_version >= DEVICE_VERSION(16,1,0)) {
+				if (device_version >= IDEVICE_DEVICE_VERSION(16,1,0)) {
 					/* let's wait 2 second to see if the device passcode is requested */
 					int retries = 20;
 					while (retries-- > 0 && !passcode_requested) {
@@ -2246,7 +2228,7 @@ checkpoint:
 			if (newpw || backup_password) {
 				mobilebackup2_send_message(mobilebackup2, "ChangePassword", opts);
 				uint8_t passcode_hint = 0;
-				if (device_version >= DEVICE_VERSION(13,0,0)) {
+				if (device_version >= IDEVICE_DEVICE_VERSION(13,0,0)) {
 					diagnostics_relay_client_t diag = NULL;
 					if (diagnostics_relay_client_start_service(device, &diag, TOOL_NAME) == DIAGNOSTICS_RELAY_E_SUCCESS) {
 						plist_t dict = NULL;
