@@ -475,27 +475,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	plist_t pver = NULL;
-	char *pver_s = NULL;
-	lockdownd_get_value(client, NULL, "ProductVersion", &pver);
-	if (pver && plist_get_node_type(pver) == PLIST_STRING) {
-		plist_get_string_val(pver, &pver_s);
-	}
-	plist_free(pver);
-	int product_version_major = 0;
-	int product_version_minor = 0;
-	int product_version_patch = 0;
-	if (pver_s) {
-		sscanf(pver_s, "%d.%d.%d", &product_version_major, &product_version_minor, &product_version_patch);
-		free(pver_s);
-	}
-	if (product_version_major == 0) {
-		fprintf(stderr, "ERROR: Could not determine the device's ProductVersion\n");
-		lockdownd_client_free(client);
-		idevice_free(device);
-		return -1;
-	}
-	int product_version = ((product_version_major & 0xFF) << 16) | ((product_version_minor & 0xFF) << 8) | (product_version_patch & 0xFF);
+	unsigned int device_version = idevice_get_device_version(device);
 
 	lockdownd_error_t lerr = lockdownd_start_service(client, MISAGENT_SERVICE_NAME, &service);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
@@ -546,7 +526,7 @@ int main(int argc, char *argv[])
 		{
 			plist_t profiles = NULL;
 			misagent_error_t merr;
-			if (product_version < 0x090300) {
+			if (device_version < IDEVICE_DEVICE_VERSION(9,3,0)) {
 				merr = misagent_copy(mis, &profiles);
 			} else {
 				merr = misagent_copy_all(mis, &profiles);
@@ -631,7 +611,7 @@ int main(int argc, char *argv[])
 				/* remove all provisioning profiles */
 				plist_t profiles = NULL;
 				misagent_error_t merr;
-				if (product_version < 0x090300) {
+				if (device_version < IDEVICE_DEVICE_VERSION(9,3,0)) {
 					merr = misagent_copy(mis, &profiles);
 				} else {
 					merr = misagent_copy_all(mis, &profiles);
