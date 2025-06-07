@@ -58,6 +58,9 @@ static int num_pid_filters = 0;
 static char** msg_filters = NULL;
 static int num_msg_filters = 0;
 
+static char** msg_reverse_filters = NULL;
+static int num_msg_reverse_filters = 0;
+
 static char** trigger_filters = NULL;
 static int num_trigger_filters = 0;
 static char** untrigger_filters = NULL;
@@ -217,6 +220,21 @@ static void syslog_callback(char c, void *user_data)
 					}
 					shall_print = 1;
 				}
+				if (num_msg_reverse_filters > 0) {
+					int found = 0;
+					int i;
+					for (i = 0; i < num_msg_reverse_filters; i++) {
+						if (strstr(device_name_end+1, msg_reverse_filters[i])) {
+							found = 1;
+							break;
+						}
+					}
+					if (found) {
+						shall_print = 0;
+						break;
+					}
+					shall_print = 1;
+				}
 
 				/* process name */
 				char* proc_name_start = p;
@@ -331,7 +349,7 @@ static void syslog_callback(char c, void *user_data)
 			}
 		} while (0);
 
-		if ((num_msg_filters == 0 && num_proc_filters == 0 && num_pid_filters == 0 && num_trigger_filters == 0 && num_untrigger_filters == 0) || shall_print) {
+		if ((num_msg_filters == 0 && num_msg_reverse_filters == 0 && num_proc_filters == 0 && num_pid_filters == 0 && num_trigger_filters == 0 && num_untrigger_filters == 0) || shall_print) {
 			fwrite(linep, 1, lp, stdout);
 			cprintf(COLOR_RESET);
 			fflush(stdout);
@@ -487,6 +505,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"\n"
 		"FILTER OPTIONS:\n"
 		"  -m, --match STRING      only print messages that contain STRING\n"
+		"  -M, --unmatch STRING    print messages that not contain STRING\n"
 		"  -t, --trigger STRING    start logging when matching STRING\n"
 		"  -T, --untrigger STRING  stop logging when matching STRING\n"
 		"  -p, --process PROCESS   only print messages from matching process(es)\n"
@@ -542,7 +561,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:e:p:qkKo:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:M:e:p:qkKo:v", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -591,6 +610,22 @@ int main(int argc, char *argv[])
 				msg_filters = new_msg_filters;
 				msg_filters[num_msg_filters] = strdup(optarg);
 				num_msg_filters++;
+			}
+			break;
+		case 'M':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: reverse message filter string must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			} else {
+				char **new_msg_filters = realloc(msg_reverse_filters, sizeof(char*) * (num_msg_reverse_filters+1));
+				if (!new_msg_filters) {
+					fprintf(stderr, "ERROR: realloc() failed\n");
+					exit(EXIT_FAILURE);
+				}
+				msg_reverse_filters = new_msg_filters;
+				msg_reverse_filters[num_msg_reverse_filters] = strdup(optarg);
+				num_msg_reverse_filters++;
 			}
 			break;
 		case 't':
@@ -760,6 +795,13 @@ int main(int argc, char *argv[])
 			free(msg_filters[i]);
 		}
 		free(msg_filters);
+	}
+	if (num_msg_reverse_filters > 0) {
+		int i;
+		for (i = 0; i < num_msg_reverse_filters; i++) {
+			free(msg_reverse_filters[i]);
+		}
+		free(msg_reverse_filters);
 	}
 	if (num_trigger_filters > 0) {
 		int i;
