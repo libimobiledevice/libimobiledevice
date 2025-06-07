@@ -946,6 +946,20 @@ idevice_error_t idevice_get_udid(idevice_t device, char **udid)
 	return IDEVICE_E_SUCCESS;
 }
 
+unsigned int idevice_get_device_version(idevice_t device)
+{
+	if (!device) {
+		return 0;
+	}
+	if (!device->version) {
+		lockdownd_client_t lockdown = NULL;
+		lockdownd_client_new(device, &lockdown, NULL);
+		// we don't handle any errors here. We should have the product version cached now.
+		lockdownd_client_free(lockdown);
+	}
+	return device->version;
+}
+
 #if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
 typedef ssize_t ssl_cb_ret_type_t;
 #elif defined(HAVE_MBEDTLS)
@@ -1229,7 +1243,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 #if OPENSSL_VERSION_NUMBER < 0x10100002L || \
 	(defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER < 0x2060000fL))
 	/* force use of TLSv1 for older devices */
-	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
+	if (connection->device->version < IDEVICE_DEVICE_VERSION(10,0,0)) {
 #ifdef SSL_OP_NO_TLSv1_1
 		SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_TLSv1_1);
 #endif

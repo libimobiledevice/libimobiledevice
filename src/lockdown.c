@@ -659,7 +659,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 			char *s_version = NULL;
 			plist_get_string_val(p_version, &s_version);
 			if (s_version && sscanf(s_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
-				device->version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
+				device->version = IDEVICE_DEVICE_VERSION(vers[0], vers[1], vers[2]);
 			}
 			free(s_version);
 		}
@@ -733,7 +733,7 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 	plist_free(pair_record);
 	pair_record = NULL;
 
-	if (device->version < DEVICE_VERSION(7,0,0) && device->device_class != DEVICE_CLASS_WATCH) {
+	if (device->version < IDEVICE_DEVICE_VERSION(7,0,0) && device->device_class != DEVICE_CLASS_WATCH) {
 		/* for older devices, we need to validate pairing to receive trusted host status */
 		ret = lockdownd_validate_pair(client_loc, NULL);
 

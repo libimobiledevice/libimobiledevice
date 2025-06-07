@@ -404,6 +404,19 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_get_handle(idevice_t device, uint32
 LIBIMOBILEDEVICE_API idevice_error_t idevice_get_udid(idevice_t device, char **udid);
 
 /**
+ * Returns the device ProductVersion in numerical form, where "X.Y.Z"
+ * will be returned as (X << 16) | (Y << 8) | Z .
+ * Use IDEVICE_DEVICE_VERSION macro for easy version comparison.
+ * @see IDEVICE_DEVICE_VERSION
+ *
+ * @param client Initialized device client
+ *
+ * @return A numerical representation of the X.Y.Z ProductVersion string
+ *         or 0 if the version cannot be retrieved.
+ */
+LIBIMOBILEDEVICE_API unsigned int idevice_get_device_version(idevice_t device);
+
+/**
  * Gets a readable error string for a given idevice error code.
  *
  * @param err An idevice error code
@@ -418,6 +431,10 @@ LIBIMOBILEDEVICE_API const char* idevice_strerror(idevice_error_t err);
  * @return The libimobiledevice version as static ascii string
  */
 LIBIMOBILEDEVICE_API const char* libimobiledevice_version();
+
+/* macros */
+/** Helper macro to get a numerical representation of a product version tuple */
+#define IDEVICE_DEVICE_VERSION(maj, min, patch) ((((maj) & 0xFF) << 16) | (((min) & 0xFF) << 8) | ((patch) & 0xFF))
 
 #ifdef __cplusplus
 }

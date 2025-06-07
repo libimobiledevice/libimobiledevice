@@ -509,7 +509,7 @@ lockdownd_error_t lockdownd_cu_pairing_create(lockdownd_client_t client, lockdow
 			char *s_version = NULL;
 			plist_get_string_val(p_version, &s_version);
 			if (s_version && sscanf(s_version, "%d.%d.%d", &vers[0], &vers[1], &vers[2]) >= 2) {
-				client->device->version = DEVICE_VERSION(vers[0], vers[1], vers[2]);
+				client->device->version = IDEVICE_DEVICE_VERSION(vers[0], vers[1], vers[2]);
 			}
 			free(s_version);
 		}
@@ -962,7 +962,7 @@ lockdownd_error_t lockdownd_cu_send_request_and_get_reply(lockdownd_client_t cli
 
 	// Starting with iOS/tvOS 11.2 and WatchOS 4.2, this nonce is random and sent along with the request. Before, the request doesn't have a nonce and it uses hardcoded nonce "sendone01234".
 	unsigned char cu_nonce[12] = "sendone01234"; // guaranteed to be random by fair dice troll
-        if (client->device->version >= DEVICE_VERSION(11,2,0)) {
+        if (client->device->version >= IDEVICE_DEVICE_VERSION(11,2,0)) {
 #if defined(HAVE_OPENSSL)
 		RAND_bytes(cu_nonce, sizeof(cu_nonce));
 #elif defined(HAVE_GCRYPT)
