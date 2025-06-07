@@ -1256,7 +1256,7 @@ idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection)
 	}
 #else
 	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
-	if (connection->device->version < DEVICE_VERSION(10,0,0)) {
+	if (connection->device->version < IDEVICE_DEVICE_VERSION(10,0,0)) {
 		SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_VERSION);
 		if (connection->device->version == 0) {
 			/*
