@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
 	if ((argc > 2) || (argc < 1)) {
 		print_usage(argc+optind, argv-optind, 1);
-		return -1;
+		return 1;
 	}
 
 	if (argc == 2) {
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 			mode = RESET_LOCATION;
 		} else {
 			print_usage(argc+optind, argv-optind, 1);
-			return -1;
+			return 1;
 		}
 	}
 
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		} else {
 			printf("ERROR: No device found!\n");
 		}
-		return -1;
+		return 1;
 	}
 
 	lockdownd_client_t lockdown = NULL;
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	if (lerr != LOCKDOWN_E_SUCCESS) {
 		idevice_free(device);
 		printf("ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(lerr), lerr);
-		return -1;
+		return 1;
 	}
 
 	lockdownd_service_descriptor_t svc = NULL;
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 		lockdownd_client_free(lockdown);
 		idevice_free(device);
 		printf("ERROR: Could not start the simulatelocation service: %s\nMake sure a developer disk image is mounted!\n", lockdownd_strerror(lerr));
-		return -1;
+		return 1;
 	}
 	lockdownd_client_free(lockdown);
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	if (serr != SERVICE_E_SUCCESS) {
 		idevice_free(device);
 		printf("ERROR: Could not connect to simulatelocation service (%d)\n", serr);
-		return -1;
+		return 1;
 	}
 
 	uint32_t l;
