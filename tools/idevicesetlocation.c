@@ -149,9 +149,15 @@ int main(int argc, char **argv)
 	lockdownd_service_descriptor_t svc = NULL;
 	lerr = lockdownd_start_service(lockdown, DT_SIMULATELOCATION_SERVICE, &svc);
 	if (lerr != LOCKDOWN_E_SUCCESS) {
+		unsigned int device_version = idevice_get_device_version(device);
 		lockdownd_client_free(lockdown);
 		idevice_free(device);
-		printf("ERROR: Could not start the simulatelocation service: %s\nMake sure a developer disk image is mounted!\n", lockdownd_strerror(lerr));
+		printf("ERROR: Could not start the simulatelocation service: %s\n", lockdownd_strerror(lerr));
+		if (device_version >= IDEVICE_DEVICE_VERSION(17,0,0)) {
+			printf("Note: This tool is currently not supported on iOS 17+\n");
+		} else {
+			printf("Make sure a developer disk image is mounted!\n");
+		}
 		return 1;
 	}
 	lockdownd_client_free(lockdown);
