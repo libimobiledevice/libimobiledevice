@@ -1132,7 +1132,7 @@ lockdownd_error_t lockdownd_pair_cu(lockdownd_client_t client)
 	plist_free(pubkey);	
 
 	plist_t pair_record_plist = plist_new_dict();
-	pair_record_generate_keys_and_certs(pair_record_plist, public_key);
+	pair_record_generate_keys_and_certs(pair_record_plist, public_key, client->device->version);
 
 	char* host_id = NULL;
 	char* system_buid = NULL;
