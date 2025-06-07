@@ -621,6 +621,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 		.port = 0xf27e,
 		.ssl_enabled = 0
 	};
+	char *type = NULL;
 
 	property_list_service_client_t plistclient = NULL;
 	if (property_list_service_client_new(device, (lockdownd_service_descriptor_t)&service, &plistclient) != PROPERTY_LIST_SERVICE_E_SUCCESS) {
@@ -642,36 +643,14 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 
 	client_loc->label = label ? strdup(label) : NULL;
 
-	*client = client_loc;
-
-	return LOCKDOWN_E_SUCCESS;
-}
-
-lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label)
-{
-	if (!client)
-		return LOCKDOWN_E_INVALID_ARG;
-
-	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
-	lockdownd_client_t client_loc = NULL;
-	plist_t pair_record = NULL;
-	char *host_id = NULL;
-	char *type = NULL;
-
-	ret = lockdownd_client_new(device, &client_loc, label);
-	if (LOCKDOWN_E_SUCCESS != ret) {
-		debug_info("failed to create lockdownd client.");
-		return ret;
-	}
-
-	/* perform handshake */
-	ret = lockdownd_query_type(client_loc, &type);
-	if (LOCKDOWN_E_SUCCESS != ret) {
+	if (lockdownd_query_type(client_loc, &type) != LOCKDOWN_E_SUCCESS) {
 		debug_info("QueryType failed in the lockdownd client.");
 	} else if (strcmp("com.apple.mobile.lockdown", type) != 0) {
 		debug_info("Warning QueryType request returned \"%s\".", type);
 	}
 	free(type);
+
+	*client = client_loc;
 
 	if (device->version == 0) {
 		plist_t p_version = NULL;
@@ -711,6 +690,26 @@ lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdown
 		plist_free(p_device_class);
 	}
 
+	return LOCKDOWN_E_SUCCESS;
+}
+
+lockdownd_error_t lockdownd_client_new_with_handshake(idevice_t device, lockdownd_client_t *client, const char *label)
+{
+	if (!client)
+		return LOCKDOWN_E_INVALID_ARG;
+
+	lockdownd_error_t ret = LOCKDOWN_E_SUCCESS;
+	lockdownd_client_t client_loc = NULL;
+	plist_t pair_record = NULL;
+	char *host_id = NULL;
+
+	ret = lockdownd_client_new(device, &client_loc, label);
+	if (LOCKDOWN_E_SUCCESS != ret) {
+		debug_info("failed to create lockdownd client.");
+		return ret;
+	}
+
+	/* perform handshake */
 	userpref_error_t uerr = userpref_read_pair_record(client_loc->device->udid, &pair_record);
 	if (uerr == USERPREF_E_READ_ERROR) {
 		debug_info("ERROR: Failed to retrieve pair record for %s", client_loc->device->udid);
