@@ -460,7 +460,13 @@ static plist_t mobilebackup_factory_info_plist_new(const char* udid, idevice_t d
 	/* Installed Applications */
 	plist_dict_set_item(ret, "Installed Applications", installed_apps);
 
-	plist_dict_set_item(ret, "Last Backup Date", plist_new_date(time(NULL) - MAC_EPOCH, 0));
+	plist_dict_set_item(ret, "Last Backup Date",
+#ifdef HAVE_PLIST_UNIX_DATE
+		plist_new_unix_date(time(NULL))
+#else
+		plist_new_date(time(NULL) - MAC_EPOCH, 0)
+#endif
+	);
 
 	value_node = plist_dict_get_item(root_node, "MobileEquipmentIdentifier");
 	if (value_node)
@@ -1223,7 +1229,12 @@ static void mb2_handle_list_directory(mobilebackup2_client_t mobilebackup2, plis
 				plist_dict_set_item(fdict, "DLFileType", plist_new_string(ftype));
 				plist_dict_set_item(fdict, "DLFileSize", plist_new_uint(st.st_size));
 				plist_dict_set_item(fdict, "DLFileModificationDate",
-						    plist_new_date(st.st_mtime - MAC_EPOCH, 0));
+#ifdef HAVE_PLIST_UNIX_DATE
+						    plist_new_unix_date(st.st_mtime)
+#else
+						    plist_new_date(st.st_mtime - MAC_EPOCH, 0)
+#endif
+				);
 
 				plist_dict_set_item(dirlist, ep->d_name, fdict);
 				free(fpath);
