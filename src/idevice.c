@@ -1079,13 +1079,14 @@ static long ssl_idevice_bio_callback(BIO *b, int oper, const char *argp, int arg
 	idevice_connection_t conn = (idevice_connection_t)BIO_get_callback_arg(b);
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
 	size_t len = (size_t)argi;
-	size_t *processed = (size_t*)&bytes;
 #endif
 	switch (oper) {
 	case (BIO_CB_READ|BIO_CB_RETURN):
 		if (argp) {
 			bytes = internal_ssl_read(conn, (char *)argp, len);
-			*processed = bytes;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+			*processed = (size_t)(bytes < 0) ? 0 : bytes;
+#endif
 			return (long)bytes;
 		}
 		return 0;
@@ -1094,7 +1095,9 @@ static long ssl_idevice_bio_callback(BIO *b, int oper, const char *argp, int arg
 		// fallthrough
 	case (BIO_CB_WRITE|BIO_CB_RETURN):
 		bytes = internal_ssl_write(conn, argp, len);
-		*processed = bytes;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+		*processed = (size_t)(bytes < 0) ? 0 : bytes;
+#endif
 		return (long)bytes;
 	default:
 		return retvalue;
