@@ -961,12 +961,12 @@ lockdownd_error_t lockdownd_cu_send_request_and_get_reply(lockdownd_client_t cli
 	hkdf_md(MD_ALGO_SHA512, (unsigned char*)READ_KEY_SALT_MDLD, sizeof(READ_KEY_SALT_MDLD)-1, (unsigned char*)READ_KEY_INFO_MDLD, sizeof(READ_KEY_INFO_MDLD)-1, client->cu_key, client->cu_key_len, cu_read_key, &cu_read_key_len);
 
 	// Starting with iOS/tvOS 11.2 and WatchOS 4.2, this nonce is random and sent along with the request. Before, the request doesn't have a nonce and it uses hardcoded nonce "sendone01234".
-	unsigned char cu_nonce[12] = "sendone01234"; // guaranteed to be random by fair dice troll
+	unsigned char cu_nonce[] = "sendone01234"; // guaranteed to be random by fair dice troll
         if (client->device->version >= IDEVICE_DEVICE_VERSION(11,2,0)) {
 #if defined(HAVE_OPENSSL)
-		RAND_bytes(cu_nonce, sizeof(cu_nonce));
+		RAND_bytes(cu_nonce, sizeof(cu_nonce)-1);
 #elif defined(HAVE_GCRYPT)
-		gcry_create_nonce(cu_nonce, sizeof(cu_nonce));
+		gcry_create_nonce(cu_nonce, sizeof(cu_nonce)-1);
 #endif
 	}
 
