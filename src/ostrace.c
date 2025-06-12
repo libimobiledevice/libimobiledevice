@@ -262,7 +262,7 @@ void *ostrace_worker(void *arg)
 
 		debug_info("got length %d", rlen);
 
-		unsigned char* buf = (unsigned char*)malloc(rlen);
+		void* buf = malloc(rlen);
 		res = ostrace_error(service_receive(oswt->client->parent, (char*)buf, rlen, &received));
 		if (res != OSTRACE_E_SUCCESS) {
 			debug_info("Failed to receive %d bytes, error %d", rlen, res);

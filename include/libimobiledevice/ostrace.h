@@ -86,10 +86,10 @@ struct ostrace_packet_header_t {
 #pragma pack(pop)
 
 /** Receives unparsed ostrace data from the ostrace service */
-typedef void (*ostrace_activity_cb_t)(const unsigned char* buf, unsigned int len, void *user_data);
+typedef void (*ostrace_activity_cb_t)(const void* buf, size_t len, void *user_data);
 
 /** Receives archive data from the ostrace service */
-typedef int (*ostrace_archive_write_cb_t)(const unsigned char* buf, unsigned int len, void *user_data);
+typedef int (*ostrace_archive_write_cb_t)(const void* buf, size_t len, void *user_data);
 
 /* Interface */
 

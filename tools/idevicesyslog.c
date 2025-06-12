@@ -376,7 +376,7 @@ static void syslog_callback(char c, void *user_data)
 	}
 }
 
-static void ostrace_syslog_callback(const unsigned char* buf, unsigned int len, void* user_data)
+static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data)
 {
 	if (len < 0x81) {
 		fprintf(stderr, "Error: not enough data in callback function?!\n");
