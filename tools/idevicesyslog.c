@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,10 +43,12 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/syslog_relay.h>
 #include <libimobiledevice-glue/termcolors.h>
+#include <libimobiledevice/ostrace.h>
 
 static int quit_flag = 0;
 static int exit_on_disconnect = 0;
 static int show_device_name = 0;
+static int force_syslog_relay = 0;
 
 static char* udid = NULL;
 static char** proc_filters = NULL;
@@ -69,6 +72,7 @@ static int triggered = 0;
 
 static idevice_t device = NULL;
 static syslog_relay_client_t syslog = NULL;
+static ostrace_client_t ostrace = NULL;
 
 static const char QUIET_FILTER[] = "CircleJoinRequested|CommCenter|HeuristicInterpreter|MobileMail|PowerUIAgent|ProtectedCloudKeySyncing|SpringBoard|UserEventAgent|WirelessRadioManagerd|accessoryd|accountsd|aggregated|analyticsd|appstored|apsd|assetsd|assistant_service|backboardd|biometrickitd|bluetoothd|calaccessd|callservicesd|cloudd|com.apple.Safari.SafeBrowsing.Service|contextstored|corecaptured|coreduetd|corespeechd|cdpd|dasd|dataaccessd|distnoted|dprivacyd|duetexpertd|findmydeviced|fmfd|fmflocatord|gpsd|healthd|homed|identityservicesd|imagent|itunescloudd|itunesstored|kernel|locationd|maild|mDNSResponder|mediaremoted|mediaserverd|mobileassetd|nanoregistryd|nanotimekitcompaniond|navd|nsurlsessiond|passd|pasted|photoanalysisd|powerd|powerlogHelperd|ptpd|rapportd|remindd|routined|runningboardd|searchd|sharingd|suggestd|symptomsd|timed|thermalmonitord|useractivityd|vmd|wifid|wirelessproxd";
 
@@ -131,6 +135,70 @@ static int find_char(char c, char** p, const char* end)
 }
 
 static void stop_logging(void);
+
+static int message_filter_matching(const char* message)
+{
+	if (num_msg_filters > 0) {
+		int found = 0;
+		int i;
+		for (i = 0; i < num_msg_filters; i++) {
+			if (strstr(message, msg_filters[i])) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			return 0;
+		}
+	}
+	if (num_msg_reverse_filters > 0) {
+		int found = 0;
+		int i;
+		for (i = 0; i < num_msg_reverse_filters; i++) {
+			if (strstr(message, msg_reverse_filters[i])) {
+				found = 1;
+				break;
+			}
+		}
+		if (found) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int process_filter_matching(int pid, const char* process_name, int process_name_length)
+{
+	int proc_matched = 0;
+	if (num_pid_filters > 0) {
+		int found = proc_filter_excluding;
+		int i = 0;
+		for (i = 0; i < num_pid_filters; i++) {
+			if (pid == pid_filters[i]) {
+				found = !proc_filter_excluding;
+				break;
+			}
+		}
+		if (found) {
+			proc_matched = 1;
+		}
+	}
+	if (num_proc_filters > 0 && !proc_matched) {
+		int found = proc_filter_excluding;
+		int i = 0;
+		for (i = 0; i < num_proc_filters; i++) {
+			if (!proc_filters[i]) continue;
+			if (strncmp(proc_filters[i], process_name, process_name_length) == 0) {
+				found = !proc_filter_excluding;
+				break;
+			}
+		}
+		if (found) {
+			proc_matched = 1;
+		}
+	}
+	return proc_matched;
+}
 
 static void syslog_callback(char c, void *user_data)
 {
@@ -205,35 +273,9 @@ static void syslog_callback(char c, void *user_data)
 				}
 
 				/* check message filters */
-				if (num_msg_filters > 0) {
-					int found = 0;
-					int i;
-					for (i = 0; i < num_msg_filters; i++) {
-						if (strstr(device_name_end+1, msg_filters[i])) {
-							found = 1;
-							break;
-						}
-					}
-					if (!found) {
-						shall_print = 0;
-						break;
-					}
-					shall_print = 1;
-				}
-				if (num_msg_reverse_filters > 0) {
-					int found = 0;
-					int i;
-					for (i = 0; i < num_msg_reverse_filters; i++) {
-						if (strstr(device_name_end+1, msg_reverse_filters[i])) {
-							found = 1;
-							break;
-						}
-					}
-					if (found) {
-						shall_print = 0;
-						break;
-					}
-					shall_print = 1;
+				shall_print = message_filter_matching(device_name_end+1);
+				if (!shall_print) {
+					break;
 				}
 
 				/* process name */
@@ -253,39 +295,10 @@ static void syslog_callback(char c, void *user_data)
 				proc_name_end = p;
 				p++;
 
-				int proc_matched = 0;
-				if (num_pid_filters > 0) {
-					char* endp = NULL;
-					int pid_value = (int)strtol(pid_start, &endp, 10);
-					if (endp && (*endp == ']')) {
-						int found = proc_filter_excluding;
-						int i = 0;
-						for (i = 0; i < num_pid_filters; i++) {
-							if (pid_value == pid_filters[i]) {
-								found = !proc_filter_excluding;
-								break;
-							}
-						}
-						if (found) {
-							proc_matched = 1;
-						}
-					}
-				}
-				if (num_proc_filters > 0 && !proc_matched) {
-					int found = proc_filter_excluding;
-					int i = 0;
-					for (i = 0; i < num_proc_filters; i++) {
-						if (!proc_filters[i]) continue;
-						if (strncmp(proc_filters[i], process_name_start, process_name_end-process_name_start) == 0) {
-							found = !proc_filter_excluding;
-							break;
-						}
-					}
-					if (found) {
-						proc_matched = 1;
-					}
-				}
-				if (proc_matched) {
+				/* match pid / process name */
+				char* endp = NULL;
+				int pid_value = (int)strtol(pid_start, &endp, 10);
+				if (process_filter_matching(pid_value, process_name_start, process_name_end-process_name_start)) {
 					shall_print = 1;
 				} else {
 					if (num_pid_filters > 0 || num_proc_filters > 0) {
@@ -363,6 +376,168 @@ static void syslog_callback(char c, void *user_data)
 	}
 }
 
+static void ostrace_syslog_callback(const unsigned char* buf, unsigned int len, void* user_data)
+{
+	if (len < 0x81) {
+		fprintf(stderr, "Error: not enough data in callback function?!\n");
+		return;
+	}
+
+	struct ostrace_packet_header_t *trace_hdr = (struct ostrace_packet_header_t*)buf;
+
+	if (trace_hdr->marker != 2 || (trace_hdr->type != 8 && trace_hdr->type != 2)) {
+		fprintf(stderr, "unexpected packet data %02x %08x\n", trace_hdr->marker, trace_hdr->type);
+	}
+
+	const char* dataptr = (const char*)buf + trace_hdr->header_size;
+	const char* process_name = dataptr;
+	const char* image_name = (trace_hdr->imagepath_len > 0) ? dataptr + trace_hdr->procpath_len : NULL;
+	const char* message = (trace_hdr->message_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len : NULL;
+	//const char* subsystem = (trace_hdr->subsystem_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len + trace_hdr->message_len : NULL;
+	//const char* category = (trace_hdr->category_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len + trace_hdr->message_len + trace_hdr->subsystem_len : NULL;
+
+	int shall_print = 1;
+	int trigger_off = 0;
+	const char* process_name_short = (process_name) ? strrchr(process_name, '/') : "";
+	process_name_short = (process_name_short) ? process_name_short+1 : process_name;
+	const char* image_name_short = (image_name) ? strrchr(image_name, '/') : NULL;
+	image_name_short = (image_name_short) ? image_name_short+1 : process_name;
+	if (image_name_short && !strcmp(image_name_short, process_name_short)) {
+		image_name_short = NULL;
+	}
+
+	do {
+		/* check if we have any triggers/untriggers */
+		if (num_untrigger_filters > 0 && triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_untrigger_filters; i++) {
+				if (strstr(message, untrigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				shall_print = 1;
+			} else {
+				shall_print = 1;
+				trigger_off = 1;
+			}
+		} else if (num_trigger_filters > 0 && !triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_trigger_filters; i++) {
+				if (strstr(message, trigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				shall_print = 0;
+				break;
+			}
+			triggered = 1;
+			shall_print = 1;
+		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
+			shall_print = 0;
+			quit_flag++;
+			break;
+		}
+	
+		/* check message filters */
+		shall_print = message_filter_matching(message);
+		if (!shall_print) {
+			break;
+		}
+
+		/* check process filters */
+		if (process_filter_matching(trace_hdr->pid, process_name_short, strlen(process_name_short))) {
+			shall_print = 1;
+		} else {
+			if (num_pid_filters > 0 || num_proc_filters > 0) {
+				shall_print = 0;
+			}
+		}
+		if (!shall_print) {
+			break;
+		}
+	} while (0);
+
+	if (!shall_print) {
+		return;
+	}
+
+	const char* level_str = "Unknown";
+	const char* level_color = FG_YELLOW;
+	switch (trace_hdr->level) {
+		case 0:
+			level_str = "Notice";
+			level_color = FG_GREEN;
+			break;
+		case 0x01:
+			level_str = "Info";
+			level_color = FG_WHITE;
+			break;
+		case 0x02:
+			level_str = "Debug";
+			level_color = FG_MAGENTA;
+			break;
+		case 0x10:
+			level_str = "Error";
+			level_color = FG_RED;
+			break;
+		case 0x11:
+			level_str = "Fault";
+			level_color = FG_RED;
+		default:
+			break;
+	}
+
+	char datebuf[24];
+	struct tm *tp;
+	time_t time_sec = (time_t)trace_hdr->time_sec;
+#ifdef HAVE_LOCALTIME_R
+	struct tm tp_ = {0, };
+	tp = localtime_r(&time_sec, &tp_);
+#else
+	tp = localtime(&time_sec);
+#endif
+#ifdef _WIN32
+	strftime(datebuf, 16, "%b %#d %H:%M:%S", tp);
+#else
+	strftime(datebuf, 16, "%b %e %H:%M:%S", tp);
+#endif
+	snprintf(datebuf+15, 9, ".%06u", trace_hdr->time_usec);
+
+	/* write date and time */
+	cprintf(FG_LIGHT_GRAY "%s ", datebuf);
+
+	if (show_device_name) {
+		/* write device name TODO do we need this? */
+		//cprintf(FG_DARK_YELLOW "%s ", device_name);
+	}
+
+	/* write process name */
+	cprintf(FG_BRIGHT_CYAN "%s" FG_CYAN, process_name_short);
+	if (image_name_short) {
+		cprintf("(%s)", image_name_short);
+	}
+	cprintf("[%d]" COLOR_RESET " ", trace_hdr->pid);
+
+	/* write log level */
+	cprintf(level_color);
+	cprintf("<%s>:" COLOR_RESET " ", level_str);
+
+	/* write message */
+	cprintf(FG_WHITE);
+	cprintf("%s" COLOR_RESET "\n", message);
+	fflush(stdout);	
+
+	if (trigger_off) {
+		triggered = 0;
+	}
+}
+
 static int start_logging(void)
 {
 	idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
@@ -379,14 +554,21 @@ static int start_logging(void)
 		device = NULL;
 		return -1;
 	}
-
-	/* start syslog_relay service */
 	lockdownd_service_descriptor_t svc = NULL;
-	lerr = lockdownd_start_service(lockdown, SYSLOG_RELAY_SERVICE_NAME, &svc);
+
+	const char* service_name = OSTRACE_SERVICE_NAME;
+	int use_ostrace = 1;
+	if (idevice_get_device_version(device) < IDEVICE_DEVICE_VERSION(9,0,0) || force_syslog_relay) {
+		service_name = SYSLOG_RELAY_SERVICE_NAME;
+		use_ostrace = 0;
+	}
+
+	/* start syslog_relay/os_trace_relay service */
+	lerr = lockdownd_start_service(lockdown, service_name, &svc);
 	if (lerr == LOCKDOWN_E_PASSWORD_PROTECTED) {
 		fprintf(stderr, "*** Device is passcode protected, enter passcode on the device to continue ***\n");
 		while (!quit_flag) {
-			lerr = lockdownd_start_service(lockdown, SYSLOG_RELAY_SERVICE_NAME, &svc);
+			lerr = lockdownd_start_service(lockdown, service_name, &svc);
 			if (lerr != LOCKDOWN_E_PASSWORD_PROTECTED) {
 				break;
 			}
@@ -394,33 +576,56 @@ static int start_logging(void)
 		}
 	}
 	if (lerr != LOCKDOWN_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Could not connect to lockdownd: %d\n", lerr);
+		fprintf(stderr, "ERROR: Could not start %s service: %s (%d)\n", service_name, lockdownd_strerror(lerr), lerr);
 		idevice_free(device);
 		device = NULL;
 		return -1;
 	}
 	lockdownd_client_free(lockdown);
 
-	/* connect to syslog_relay service */
-	syslog_relay_error_t serr = SYSLOG_RELAY_E_UNKNOWN_ERROR;
-	serr = syslog_relay_client_new(device, svc, &syslog);
-	lockdownd_service_descriptor_free(svc);
-	if (serr != SYSLOG_RELAY_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Could not start service com.apple.syslog_relay.\n");
-		idevice_free(device);
-		device = NULL;
-		return -1;
-	}
+	if (use_ostrace) {
+		/* connect to os_trace_relay service */
+		ostrace_error_t serr = OSTRACE_E_UNKNOWN_ERROR;
+		serr = ostrace_client_new(device, svc, &ostrace);
+		lockdownd_service_descriptor_free(svc);
+		if (serr != OSTRACE_E_SUCCESS) {
+			fprintf(stderr, "ERROR: Could not connect to %s service (%d)\n", service_name, serr);
+			idevice_free(device);
+			device = NULL;
+			return -1;
+		}
 
-	/* start capturing syslog */
-	serr = syslog_relay_start_capture_raw(syslog, syslog_callback, NULL);
-	if (serr != SYSLOG_RELAY_E_SUCCESS) {
-		fprintf(stderr, "ERROR: Unable tot start capturing syslog.\n");
-		syslog_relay_client_free(syslog);
-		syslog = NULL;
-		idevice_free(device);
-		device = NULL;
-		return -1;
+		serr = ostrace_start_activity(ostrace, NULL, ostrace_syslog_callback, NULL);
+		if (serr != OSTRACE_E_SUCCESS) {
+			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
+			ostrace_client_free(ostrace);
+			ostrace = NULL;
+			idevice_free(device);
+			device = NULL;
+			return -1;
+		}
+	} else {
+		/* connect to syslog_relay service */
+		syslog_relay_error_t serr = SYSLOG_RELAY_E_UNKNOWN_ERROR;
+		serr = syslog_relay_client_new(device, svc, &syslog);
+		lockdownd_service_descriptor_free(svc);
+		if (serr != SYSLOG_RELAY_E_SUCCESS) {
+			fprintf(stderr, "ERROR: Could not connect to %s service (%d)\n", service_name, serr);
+			idevice_free(device);
+			device = NULL;
+			return -1;
+		}
+
+		/* start capturing syslog */
+		serr = syslog_relay_start_capture_raw(syslog, syslog_callback, NULL);
+		if (serr != SYSLOG_RELAY_E_SUCCESS) {
+			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
+			syslog_relay_client_free(syslog);
+			syslog = NULL;
+			idevice_free(device);
+			device = NULL;
+			return -1;
+		}
 	}
 
 	fprintf(stdout, "[connected:%s]\n", udid);
@@ -436,6 +641,11 @@ static void stop_logging(void)
 	if (syslog) {
 		syslog_relay_client_free(syslog);
 		syslog = NULL;
+	}
+	if (ostrace) {
+		ostrace_stop_activity(ostrace);
+		ostrace_client_free(ostrace);
+		ostrace = NULL;
 	}
 
 	if (device) {
@@ -502,6 +712,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -o, --output FILE     write to FILE instead of stdout\n"
 		"                        (existing FILE will be overwritten)\n"
 		"  --colors              force writing colored output, e.g. for --output\n"
+		"  --syslog_relay        force use of syslog_relay service\n"
 		"\n"
 		"FILTER OPTIONS:\n"
 		"  -m, --match STRING      only print messages that contain STRING\n"
@@ -549,6 +760,7 @@ int main(int argc, char *argv[])
 		{ "quiet-list", no_argument, NULL, 1 },
 		{ "no-colors", no_argument, NULL, 2 },
 		{ "colors", no_argument, NULL, 3 },
+		{ "syslog_relay", no_argument, NULL, 4 },
 		{ "output", required_argument, NULL, 'o' },
 		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
@@ -681,6 +893,9 @@ int main(int argc, char *argv[])
 			break;
 		case 3:
 			force_colors = 1;
+			break;
+		case 4:
+			force_syslog_relay = 1;
 			break;
 		case 'o':
 			if (!*optarg) {
