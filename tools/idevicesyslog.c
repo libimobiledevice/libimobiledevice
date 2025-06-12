@@ -663,7 +663,7 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 		return;
 	}
 	if (event->event == IDEVICE_DEVICE_ADD) {
-		if (!syslog) {
+		if (!syslog && !ostrace) {
 			if (!udid) {
 				udid = strdup(event->udid);
 			}
