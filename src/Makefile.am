@@ -58,6 +58,7 @@ libimobiledevice_1_0_la_SOURCES = \
 	companion_proxy.c companion_proxy.h \
 	reverse_proxy.c reverse_proxy.h \
 	syslog_relay.c syslog_relay.h \
+	ostrace.c ostrace.h \
 	bt_packet_logger.c bt_packet_logger.h
 
 if WIN32
