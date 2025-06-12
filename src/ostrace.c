@@ -114,27 +114,6 @@ ostrace_error_t ostrace_client_free(ostrace_client_t client)
 	return err;
 }
 
-/*
-ostrace_error_t ostrace_receive_with_timeout(ostrace_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
-{
-	ostrace_error_t res = OSTRACE_E_UNKNOWN_ERROR;
-	int bytes = 0;
-
-	if (!client || !data || (size == 0)) {
-		return OSTRACE_E_INVALID_ARG;
-	}
-
-	res = ostrace_error(service_receive_with_timeout(client->parent, data, size, (uint32_t*)&bytes, timeout));
-	if (res != OSTRACE_E_SUCCESS && res != OSTRACE_E_TIMEOUT && res != OSTRACE_E_NOT_ENOUGH_DATA) {
-		debug_info("Could not read data, error %d", res);
-	}
-	if (received) {
-		*received = (uint32_t)bytes;
-	}
-
-	return res;
-}*/
-
 static ostrace_error_t ostrace_send_plist(ostrace_client_t client, plist_t plist)
 {
 	ostrace_error_t res = OSTRACE_E_UNKNOWN_ERROR;
