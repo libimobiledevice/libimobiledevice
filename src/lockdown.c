@@ -643,16 +643,19 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 
 	client_loc->label = label ? strdup(label) : NULL;
 
+	int is_lockdownd = 0;
 	if (lockdownd_query_type(client_loc, &type) != LOCKDOWN_E_SUCCESS) {
 		debug_info("QueryType failed in the lockdownd client.");
-	} else if (strcmp("com.apple.mobile.lockdown", type) != 0) {
-		debug_info("Warning QueryType request returned \"%s\".", type);
+	} else if (!strcmp("com.apple.mobile.lockdown", type)) {
+		is_lockdownd = 1;
+	} else {
+		debug_info("QueryType request returned \"%s\"", type);
 	}
 	free(type);
 
 	*client = client_loc;
 
-	if (device->version == 0) {
+	if (is_lockdownd && device->version == 0) {
 		plist_t p_version = NULL;
 		if (lockdownd_get_value(client_loc, NULL, "ProductVersion", &p_version) == LOCKDOWN_E_SUCCESS) {
 			int vers[3] = {0, 0, 0};
@@ -665,7 +668,7 @@ lockdownd_error_t lockdownd_client_new(idevice_t device, lockdownd_client_t *cli
 		}
 		plist_free(p_version);
 	}
-	if (device->device_class == 0) {
+	if (is_lockdownd && device->device_class == 0) {
 		plist_t p_device_class = NULL;
 		if (lockdownd_get_value(client_loc, NULL, "DeviceClass", &p_device_class) == LOCKDOWN_E_SUCCESS) {
 			char* s_device_class = NULL;
