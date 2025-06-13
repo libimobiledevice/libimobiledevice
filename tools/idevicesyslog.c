@@ -78,6 +78,10 @@ static const char QUIET_FILTER[] = "CircleJoinRequested|CommCenter|HeuristicInte
 
 static int use_network = 0;
 
+static long long start_time = -1;
+static long long size_limit = -1;
+static long long age_limit = -1;
+
 static char *line = NULL;
 static int line_buffer_size = 0;
 static int lp = 0;
@@ -538,7 +542,7 @@ static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data
 	}
 }
 
-static int start_logging(void)
+static int connect_service(int ostrace_required)
 {
 	idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
@@ -561,6 +565,13 @@ static int start_logging(void)
 	if (idevice_get_device_version(device) < IDEVICE_DEVICE_VERSION(9,0,0) || force_syslog_relay) {
 		service_name = SYSLOG_RELAY_SERVICE_NAME;
 		use_ostrace = 0;
+	}
+	if (ostrace_required && !use_ostrace) {
+		fprintf(stderr, "ERROR: This operation requires iOS 9 or later.\n");
+		lockdownd_client_free(lockdown);
+		idevice_free(device);
+		device = NULL;
+		return -1;
 	}
 
 	/* start syslog_relay/os_trace_relay service */
@@ -594,16 +605,6 @@ static int start_logging(void)
 			device = NULL;
 			return -1;
 		}
-
-		serr = ostrace_start_activity(ostrace, NULL, ostrace_syslog_callback, NULL);
-		if (serr != OSTRACE_E_SUCCESS) {
-			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
-			ostrace_client_free(ostrace);
-			ostrace = NULL;
-			idevice_free(device);
-			device = NULL;
-			return -1;
-		}
 	} else {
 		/* connect to syslog_relay service */
 		syslog_relay_error_t serr = SYSLOG_RELAY_E_UNKNOWN_ERROR;
@@ -615,9 +616,29 @@ static int start_logging(void)
 			device = NULL;
 			return -1;
 		}
+	}
+	return 0;
+}
 
-		/* start capturing syslog */
-		serr = syslog_relay_start_capture_raw(syslog, syslog_callback, NULL);
+static int start_logging(void)
+{
+	if (connect_service(0) < 0) {
+		return -1;
+	}
+
+	/* start capturing syslog */
+	if (ostrace) {
+		ostrace_error_t serr = ostrace_start_activity(ostrace, NULL, ostrace_syslog_callback, NULL);
+		if (serr != OSTRACE_E_SUCCESS) {
+			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
+			ostrace_client_free(ostrace);
+			ostrace = NULL;
+			idevice_free(device);
+			device = NULL;
+			return -1;
+		}
+	} else if (syslog) {
+		syslog_relay_error_t serr = syslog_relay_start_capture_raw(syslog, syslog_callback, NULL);
 		if (serr != SYSLOG_RELAY_E_SUCCESS) {
 			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
 			syslog_relay_client_free(syslog);
@@ -626,6 +647,8 @@ static int start_logging(void)
 			device = NULL;
 			return -1;
 		}
+	} else {
+		return -1;
 	}
 
 	fprintf(stdout, "[connected:%s]\n", udid);
@@ -652,6 +675,19 @@ static void stop_logging(void)
 		idevice_free(device);
 		device = NULL;
 	}
+}
+
+static int write_callback(const void* buf, size_t len, void *user_data)
+{
+	FILE* f = (FILE*)user_data;
+	ssize_t res = fwrite(buf, 1, len, f);
+	if (res < 0) {
+		return -1;
+	}
+	if (quit_flag > 0) {
+		return -1;
+	}
+	return 0;
 }
 
 static void device_event_cb(const idevice_event_t* event, void* userdata)
@@ -714,6 +750,15 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  --colors              force writing colored output, e.g. for --output\n"
 		"  --syslog_relay        force use of syslog_relay service\n"
 		"\n"
+		"COMMANDS:\n"
+		"  pidlist               Print pid and name of all running processes.\n"
+		"  archive PATH          Request a logarchive and write it to PATH.\n"
+		"                        Output can be piped to another process using - as PATH.\n"
+		"                        The file data will be in .tar format.\n"
+		"    --start-time VALUE  start time of the log data as UNIX timestamp\n"
+		"    --age-limit VALUE   maximum age of the log data\n"
+		"    --size-limit VALUE  limit the size of the archive\n"
+		"\n"
 		"FILTER OPTIONS:\n"
 		"  -m, --match STRING      only print messages that contain STRING\n"
 		"  -M, --unmatch STRING    print messages that not contain STRING\n"
@@ -761,6 +806,9 @@ int main(int argc, char *argv[])
 		{ "no-colors", no_argument, NULL, 2 },
 		{ "colors", no_argument, NULL, 3 },
 		{ "syslog_relay", no_argument, NULL, 4 },
+		{ "start-time", required_argument, NULL, 5 },
+		{ "size-limit", required_argument, NULL, 6 },
+		{ "age-limit", required_argument, NULL, 7 },
 		{ "output", required_argument, NULL, 'o' },
 		{ "version", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0}
@@ -897,6 +945,15 @@ int main(int argc, char *argv[])
 		case 4:
 			force_syslog_relay = 1;
 			break;
+		case 5:
+			start_time = strtoll(optarg, NULL, 10);
+			break;
+		case 6:
+			size_limit = strtoll(optarg, NULL, 10);
+			break;
+		case 7:
+			age_limit = strtoll(optarg, NULL, 10);
+			break;
 		case 'o':
 			if (!*optarg) {
 				fprintf(stderr, "ERROR: --output option requires an argument!\n");
@@ -969,6 +1026,95 @@ int main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
+	if (argc > 0) {
+		if (!strcmp(argv[0], "pidlist")) {
+			if (connect_service(1) < 0) {
+				return 1;
+			}
+			plist_t list = NULL;
+			ostrace_get_pid_list(ostrace, &list);
+			ostrace_client_free(ostrace);
+			ostrace = NULL;
+			idevice_free(device);
+			device = NULL;
+			if (!list) {
+				return 1;
+			}
+			plist_sort(list);
+			plist_dict_iter iter = NULL;
+			plist_dict_new_iter(list, &iter);
+			if (iter) {
+				plist_t node = NULL;
+				do {
+					char* key = NULL;
+					node = NULL;
+					plist_dict_next_item(list, iter, &key, &node);
+					if (key) {
+						printf("%s", key);
+						free(key);
+						if (PLIST_IS_DICT(node)) {
+							plist_t pname = plist_dict_get_item(node, "ProcessName");
+							if (PLIST_IS_STRING(pname)) {
+								printf(" %s", plist_get_string_ptr(pname, NULL));
+							}
+						}
+						printf("\n");
+					}
+				} while (node);
+				plist_mem_free(iter);
+			}
+			plist_free(list);
+			return 0;
+		} else if (!strcmp(argv[0], "archive")) {
+			if (force_syslog_relay) {
+				force_syslog_relay = 0;
+			}
+			if (argc < 2) {
+				fprintf(stderr, "Please specify an output filename.\n");
+				return 1;
+			}
+			FILE* outf = NULL;
+			if (!strcmp(argv[1], "-")) {
+				if (isatty(1)) {
+					fprintf(stderr, "Refusing to directly write to stdout. Pipe the output to another process.\n");
+					return 1;
+				}
+				outf = stdout;
+			} else {
+				outf = fopen(argv[1], "w");
+			}
+			if (!outf) {
+				fprintf(stderr, "Failed to open %s: %s\n", argv[1], strerror(errno));
+				return 1;
+			}
+			if (connect_service(1) < 0) {
+				if (outf != stdout) {
+					fclose(outf);
+				}
+				return 1;
+			}
+			plist_t options = plist_new_dict();
+			if (start_time > 0) {
+				plist_dict_set_item(options, "StartTime", plist_new_int(start_time));
+			}
+			if (size_limit > 0) {
+				plist_dict_set_item(options, "SizeLimit", plist_new_int(size_limit));
+			}
+			if (age_limit > 0) {
+				plist_dict_set_item(options, "AgeLimit", plist_new_int(age_limit));
+			}
+			ostrace_create_archive(ostrace, options, write_callback, outf);
+			ostrace_client_free(ostrace);
+			ostrace = NULL;
+			idevice_free(device);
+			device = NULL;
+			if (outf != stdout) {
+				fclose(outf);
+			}
+			return 0;
+		}
+	}
+
 	int num = 0;
 	idevice_info_t *devices = NULL;
 	idevice_get_device_list_extended(&devices, &num);
@@ -976,7 +1122,7 @@ int main(int argc, char *argv[])
 	if (num == 0) {
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
-			return -1;
+			return 1;
 		}
 
 		fprintf(stderr, "Waiting for device with UDID %s to become available...\n", udid);

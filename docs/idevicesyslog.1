@@ -42,17 +42,41 @@ Force writing colored output, e.g. when using \f[B]\-\-output\f[].
 .B \-\-syslog_relay
 Use old syslog_relay service instead of os_trace_relay (iOS 9+).
 
+.SH COMMANDS
+.TP
+.B pidlist
+Print a list with PID and name of all processes currently running on the device.
+.TP
+.B archive PATH
+Request a logarchive from the device. It will be written in tar format to PATH. To pipe to another process use \- as PATH.
+Below are some options to restrict the log message data.
+
+In order to view the logarchive in a compatible log viewer, you can pipe the output data to \f[B]tar\f[] and have it extract into a new directory:
+
+\f[B]mkdir test.logarchive && tools/idevicesyslog archive - |tar -C test.logarchive -xv\f[]
+
+This will also print the filenames while they are extracted.
+.TP
+Further options for \f[B]archive\f[]:
+.TP
+.B \-\-start\-time VALUE
+Start time of the log data as UNIX timestamp. Earlier messages will be dropped.
+.TP
+.B \-\-age\-limit VALUE
+Maximum age of the log data, supposedly number of days.
+.TP
+.B \-\-size\-limit VALUE
+Limit the size of the archive. The unit is currently unknown, so feel free to experiment.
+.TP
+Keep in mind that the device usually only has a backlog of a few minutes so the options might not have the desired effect. This is not a bug.
+
 .SH FILTER OPTIONS
 .TP
 .B \-m, \-\-match STRING
 only print messages that contain STRING
-
-.SH FILTER OPTIONS
 .TP
 .B \-M, \-\-unmatch STRING
-print messages that not contain STRING
-
-This option will set a filter to only printed log messages that contain the given string.
+print messages that do not contain STRING
 .TP
 .B \-t, \-\-trigger STRING
 start logging when matching STRING
