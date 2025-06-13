@@ -806,6 +806,8 @@ int main(int argc, char *argv[])
 		{ "no-colors", no_argument, NULL, 2 },
 		{ "colors", no_argument, NULL, 3 },
 		{ "syslog_relay", no_argument, NULL, 4 },
+		{ "syslog-relay", no_argument, NULL, 4 },
+		{ "legacy", no_argument, NULL, 4 },
 		{ "start-time", required_argument, NULL, 5 },
 		{ "size-limit", required_argument, NULL, 6 },
 		{ "age-limit", required_argument, NULL, 7 },
