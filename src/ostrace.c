@@ -214,9 +214,8 @@ void *ostrace_worker(void *arg)
 	debug_info("Running");
 
 	while (oswt->client->parent) {
-		res = ostrace_error(service_receive(oswt->client->parent, (char*)&msgtype, 1, &received));
+		res = ostrace_error(service_receive_with_timeout(oswt->client->parent, (char*)&msgtype, 1, &received, 100));
 		if (res == OSTRACE_E_TIMEOUT) {
-			debug_info("Nothing received, retrying\n");
 			continue;
 		}
 		if (res != OSTRACE_E_SUCCESS) {
