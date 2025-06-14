@@ -690,6 +690,64 @@ static int write_callback(const void* buf, size_t len, void *user_data)
 	return 0;
 }
 
+static void print_sorted_pidlist(plist_t list)
+{
+	struct listelem;
+	struct listelem {
+		int val;
+		struct listelem *next;
+	};
+	struct listelem* sortedlist = NULL;
+
+	plist_dict_iter iter = NULL;
+	plist_dict_new_iter(list, &iter);
+	if (iter) {
+		plist_t node = NULL;
+		do {
+			char* key = NULL;
+			node = NULL;
+			plist_dict_next_item(list, iter, &key, &node);
+			if (key) {
+				int pidval = (int)strtol(key, NULL, 10);
+				struct listelem* elem = (struct listelem*)malloc(sizeof(struct listelem));
+				elem->val = pidval;
+				elem->next = NULL;
+				struct listelem* prev = NULL;
+				struct listelem* curr = sortedlist;
+
+				while (curr && pidval > curr->val) {
+					prev = curr;
+					curr = curr->next;
+				}
+
+				elem->next = curr;
+				if (prev == NULL) {
+					sortedlist = elem;
+				} else {
+					prev->next = elem;
+				}
+				free(key);
+			}
+		} while (node);
+		plist_mem_free(iter);
+	}
+	struct listelem *listp = sortedlist;
+	char pidstr[16];
+	while (listp) {
+		snprintf(pidstr, 16, "%d", listp->val);
+		plist_t node = plist_dict_get_item(list, pidstr);
+		if (PLIST_IS_DICT(node)) {
+			plist_t pname = plist_dict_get_item(node, "ProcessName");
+			if (PLIST_IS_STRING(pname)) {
+				printf("%d %s\n", listp->val, plist_get_string_ptr(pname, NULL));
+			}
+		}
+		struct listelem *curr = listp;
+		listp = listp->next;
+		free(curr);
+	}
+}
+
 static void device_event_cb(const idevice_event_t* event, void* userdata)
 {
 	if (use_network && event->conn_type != CONNECTION_NETWORK) {
@@ -1042,29 +1100,7 @@ int main(int argc, char *argv[])
 			if (!list) {
 				return 1;
 			}
-			plist_sort(list);
-			plist_dict_iter iter = NULL;
-			plist_dict_new_iter(list, &iter);
-			if (iter) {
-				plist_t node = NULL;
-				do {
-					char* key = NULL;
-					node = NULL;
-					plist_dict_next_item(list, iter, &key, &node);
-					if (key) {
-						printf("%s", key);
-						free(key);
-						if (PLIST_IS_DICT(node)) {
-							plist_t pname = plist_dict_get_item(node, "ProcessName");
-							if (PLIST_IS_STRING(pname)) {
-								printf(" %s", plist_get_string_ptr(pname, NULL));
-							}
-						}
-						printf("\n");
-					}
-				} while (node);
-				plist_mem_free(iter);
-			}
+			print_sorted_pidlist(list);
 			plist_free(list);
 			return 0;
 		} else if (!strcmp(argv[0], "archive")) {
