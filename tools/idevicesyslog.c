@@ -542,12 +542,69 @@ static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data
 	}
 }
 
+static plist_t get_pid_list()
+{
+	plist_t list = NULL;
+	ostrace_client_t ostrace_tmp = NULL;
+	ostrace_client_start_service(device, &ostrace_tmp, TOOL_NAME);
+	if (ostrace_tmp) {
+		ostrace_get_pid_list(ostrace_tmp, &list);
+		ostrace_client_free(ostrace_tmp);
+	}
+	return list;
+}
+
+static int pid_valid(int pid)
+{
+	plist_t list = get_pid_list();
+	if (!list) return 0;
+	char valbuf[16];
+	snprintf(valbuf, 16, "%d", pid);
+	return (plist_dict_get_item(list, valbuf)) ? 1 : 0;
+}
+
+static int pid_for_proc(const char* procname)
+{
+	int result = -1;
+	plist_t list = get_pid_list();
+	if (!list) {
+		return result;
+	}
+	plist_dict_iter iter = NULL;
+	plist_dict_new_iter(list, &iter);
+	if (iter) {
+		plist_t node = NULL;
+		do {
+			char* key = NULL;
+			node = NULL;
+			plist_dict_next_item(list, iter, &key, &node);
+			if (!key) {
+				break;
+			}
+			if (PLIST_IS_DICT(node)) {
+				plist_t pname = plist_dict_get_item(node, "ProcessName");
+				if (PLIST_IS_STRING(pname)) {
+					if (!strcmp(plist_get_string_ptr(pname, NULL), procname)) {
+						result = (int)strtol(key, NULL, 10);
+					}
+				}
+			}
+			free(key);
+		} while (node);
+		plist_mem_free(iter);
+	}
+	plist_free(list);
+	return result;
+}
+
 static int connect_service(int ostrace_required)
 {
-	idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
-	if (ret != IDEVICE_E_SUCCESS) {
-		fprintf(stderr, "Device with udid %s not found!?\n", udid);
-		return -1;
+	if (!device) {
+		idevice_error_t ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
+		if (ret != IDEVICE_E_SUCCESS) {
+			fprintf(stderr, "Device with udid %s not found!?\n", udid);
+			return -1;
+		}
 	}
 
 	lockdownd_client_t lockdown = NULL;
@@ -628,7 +685,24 @@ static int start_logging(void)
 
 	/* start capturing syslog */
 	if (ostrace) {
-		ostrace_error_t serr = ostrace_start_activity(ostrace, NULL, ostrace_syslog_callback, NULL);
+		plist_t options = plist_new_dict();
+		if (num_proc_filters == 0 && num_pid_filters == 1 && !proc_filter_excluding) {
+			if (pid_filters[0] > 0) {
+				if (!pid_valid(pid_filters[0])) {
+					fprintf(stderr, "NOTE: A process with pid doesn't exists!\n");
+				}
+			}
+			plist_dict_set_item(options, "Pid", plist_new_int(pid_filters[0]));
+		} else if (num_proc_filters == 1 && num_pid_filters == 0 && !proc_filter_excluding) {
+			int pid = pid_for_proc(proc_filters[0]);
+			if (!strcmp(proc_filters[0], "kernel")) {
+				pid = 0;
+			}
+			if (pid >= 0) {
+				plist_dict_set_item(options, "Pid", plist_new_int(pid));
+			}
+		}
+		ostrace_error_t serr = ostrace_start_activity(ostrace, options, ostrace_syslog_callback, NULL);
 		if (serr != OSTRACE_E_SUCCESS) {
 			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
 			ostrace_client_free(ostrace);
