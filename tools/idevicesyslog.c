@@ -880,7 +880,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -o, --output FILE     write to FILE instead of stdout\n"
 		"                        (existing FILE will be overwritten)\n"
 		"  --colors              force writing colored output, e.g. for --output\n"
-		"  --syslog_relay        force use of syslog_relay service\n"
+		"  --syslog-relay        force use of syslog_relay service\n"
 		"\n"
 		"COMMANDS:\n"
 		"  pidlist               Print pid and name of all running processes.\n"
