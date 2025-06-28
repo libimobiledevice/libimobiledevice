@@ -402,6 +402,50 @@ static char **make_strings_list(char *tokens, uint32_t length)
 	return list;
 }
 
+static plist_t *make_dictionary(char *tokens, size_t length)
+{
+	size_t j = 0;
+	plist_t dict = NULL;
+
+	if (!tokens || !length)
+		return NULL;
+
+	dict = plist_new_dict();
+
+	while (j < length) {
+		size_t key_len = strnlen(tokens + j, length - j);
+		if (j + key_len >= length) {
+			plist_free(dict);
+			return NULL;
+		}
+		char* key = tokens + j;
+		j += key_len + 1;
+
+		if (j >= length) {
+			plist_free(dict);
+			return NULL;
+		}
+
+		size_t val_len = strnlen(tokens + j, length - j);
+		if (j + val_len >= length) {
+			plist_free(dict);
+			return NULL;
+		}
+		char* val = tokens + j;
+		j += val_len + 1;
+
+		char* endp = NULL;
+		unsigned long long u64val = strtoull(val, &endp, 10);
+		if (endp && *endp == '\0') {
+			plist_dict_set_item(dict, key, plist_new_uint(u64val));
+		} else {
+			plist_dict_set_item(dict, key, plist_new_string(val));
+		}
+	}
+
+	return dict;
+}
+
 static int _afc_check_packet_buffer(afc_client_t client, uint32_t data_len)
 {
 	if (data_len > client->packet_extra) {
@@ -494,6 +538,40 @@ afc_error_t afc_get_device_info(afc_client_t client, char ***device_information)
 	afc_unlock(client);
 
 	*device_information = list;
+
+	return ret;
+}
+
+afc_error_t afc_get_device_info_plist(afc_client_t client, plist_t *device_information)
+{
+	uint32_t bytes = 0;
+	char *data = NULL;
+	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
+
+	if (!client || !device_information)
+		return AFC_E_INVALID_ARG;
+
+	afc_lock(client);
+
+	/* Send the command */
+	ret = afc_dispatch_packet(client, AFC_OP_GET_DEVINFO, 0, NULL, 0, &bytes);
+	if (ret != AFC_E_SUCCESS) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+	/* Receive the data */
+	ret = afc_receive_data(client, &data, &bytes);
+	if (ret != AFC_E_SUCCESS) {
+		if (data)
+			free(data);
+		afc_unlock(client);
+		return ret;
+	}
+	/* Parse the data */
+	*device_information = make_dictionary(data, bytes);
+	free(data);
+
+	afc_unlock(client);
 
 	return ret;
 }
@@ -647,8 +725,6 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***fil
 		return AFC_E_NO_MEM;
 	}
 
-	debug_info("We got %p and %p", client->afc_packet, AFC_PACKET_DATA_PTR);
-
 	/* Send command */
 	memcpy(AFC_PACKET_DATA_PTR, path, data_len);
 	ret = afc_dispatch_packet(client, AFC_OP_GET_FILE_INFO, data_len, NULL, 0, &bytes);
@@ -661,6 +737,44 @@ afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***fil
 	ret = afc_receive_data(client, &received, &bytes);
 	if (received) {
 		*file_information = make_strings_list(received, bytes);
+		free(received);
+	}
+
+	afc_unlock(client);
+
+	return ret;
+}
+
+afc_error_t afc_get_file_info_plist(afc_client_t client, const char *path, plist_t *file_information)
+{
+	char *received = NULL;
+	uint32_t bytes = 0;
+	afc_error_t ret = AFC_E_UNKNOWN_ERROR;
+
+	if (!client || !path || !file_information)
+		return AFC_E_INVALID_ARG;
+
+	afc_lock(client);
+
+	uint32_t data_len = (uint32_t)strlen(path)+1;
+	if (_afc_check_packet_buffer(client, data_len) < 0) {
+		afc_unlock(client);
+		debug_info("Failed to realloc packet buffer");
+		return AFC_E_NO_MEM;
+	}
+
+	/* Send command */
+	memcpy(AFC_PACKET_DATA_PTR, path, data_len);
+	ret = afc_dispatch_packet(client, AFC_OP_GET_FILE_INFO, data_len, NULL, 0, &bytes);
+	if (ret != AFC_E_SUCCESS) {
+		afc_unlock(client);
+		return AFC_E_NOT_ENOUGH_DATA;
+	}
+
+	/* Receive data */
+	ret = afc_receive_data(client, &received, &bytes);
+	if (received) {
+		*file_information = make_dictionary(received, bytes);
 		free(received);
 	}
 

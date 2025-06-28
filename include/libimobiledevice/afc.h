@@ -145,6 +145,20 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_free(afc_client_t client);
 LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info(afc_client_t client, char ***device_information);
 
 /**
+ * Get device information for a connected client. The device information
+ * returned is the device model as well as the free space, the total capacity
+ * and blocksize on the accessed disk partition.
+ *
+ * @param client The client to get device info for.
+ * @param device_information A pointer to a plist_t that will be populated
+ *        with key-value pairs (dictionary) representing the device’s
+ *        storage and model information. Free with plist_free().
+ *
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
+ */
+LIBIMOBILEDEVICE_API afc_error_t afc_get_device_info_plist(afc_client_t client, plist_t *device_information);
+
+/**
  * Gets a directory listing of the directory requested.
  *
  * @param client The client to get a directory listing from.
@@ -163,12 +177,25 @@ LIBIMOBILEDEVICE_API afc_error_t afc_read_directory(afc_client_t client, const c
  * @param client The client to use to get the information of the file.
  * @param path The fully-qualified path to the file.
  * @param file_information Pointer to a buffer that will be filled with a
- *        NULL-terminated list of strings with the file information. Set to NULL
+ *        NULL-terminated list of strings with the file attributes. Set to NULL
  *        before calling this function. Free with afc_dictionary_free().
  *
  * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
  */
 LIBIMOBILEDEVICE_API afc_error_t afc_get_file_info(afc_client_t client, const char *path, char ***file_information);
+
+/**
+ * Gets information about a specific file.
+ *
+ * @param client The client to use to get the information of the file.
+ * @param path The fully-qualified path to the file.
+ * @param file_information A pointer to a plist_t that will be populated
+ *        with key-value pairs (dictionary) representing the file attributes.
+ *        Free with plist_free().
+ *
+ * @return AFC_E_SUCCESS on success or an AFC_E_* error value.
+ */
+LIBIMOBILEDEVICE_API afc_error_t afc_get_file_info_plist(afc_client_t client, const char *path, plist_t *file_information);
 
 /**
  * Opens a file on the device.
