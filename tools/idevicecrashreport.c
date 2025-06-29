@@ -146,7 +146,7 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 			continue;
 		}
 
-		char **fileinfo = NULL;
+		plist_t fileinfo = NULL;
 		struct stat stbuf;
 		memset(&stbuf, '\0', sizeof(struct stat));
 
@@ -173,70 +173,67 @@ static int afc_client_copy_and_remove_crash_reports(afc_client_t afc, const char
 		}
 
 		/* get file information */
-		afc_get_file_info(afc, source_filename, &fileinfo);
+		afc_get_file_info_plist(afc, source_filename, &fileinfo);
 		if (!fileinfo) {
 			printf("Failed to read information for '%s'. Skipping...\n", source_filename);
 			continue;
 		}
 
 		/* parse file information */
-		int i;
-		for (i = 0; fileinfo[i]; i+=2) {
-			if (!strcmp(fileinfo[i], "st_size")) {
-				stbuf.st_size = atoll(fileinfo[i+1]);
-			} else if (!strcmp(fileinfo[i], "st_ifmt")) {
-				if (!strcmp(fileinfo[i+1], "S_IFREG")) {
-					stbuf.st_mode = S_IFREG;
-				} else if (!strcmp(fileinfo[i+1], "S_IFDIR")) {
-					stbuf.st_mode = S_IFDIR;
-				} else if (!strcmp(fileinfo[i+1], "S_IFLNK")) {
-					stbuf.st_mode = S_IFLNK;
-				} else if (!strcmp(fileinfo[i+1], "S_IFBLK")) {
-					stbuf.st_mode = S_IFBLK;
-				} else if (!strcmp(fileinfo[i+1], "S_IFCHR")) {
-					stbuf.st_mode = S_IFCHR;
-				} else if (!strcmp(fileinfo[i+1], "S_IFIFO")) {
-					stbuf.st_mode = S_IFIFO;
-				} else if (!strcmp(fileinfo[i+1], "S_IFSOCK")) {
-					stbuf.st_mode = S_IFSOCK;
-				}
-			} else if (!strcmp(fileinfo[i], "st_nlink")) {
-				stbuf.st_nlink = atoi(fileinfo[i+1]);
-			} else if (!strcmp(fileinfo[i], "st_mtime")) {
-				stbuf.st_mtime = (time_t)(atoll(fileinfo[i+1]) / 1000000000);
-			} else if (!strcmp(fileinfo[i], "LinkTarget") && !remove_all) {
-				/* report latest crash report filename */
-				printf("Link: %s\n", (char*)target_filename + strlen(target_directory));
+		stbuf.st_size = plist_dict_get_uint(fileinfo, "st_size");
+		const char* s_ifmt = plist_get_string_ptr(plist_dict_get_item(fileinfo, "st_ifmt"), NULL);
+		if (s_ifmt) {
+			if (!strcmp(s_ifmt, "S_IFREG")) {
+				stbuf.st_mode = S_IFREG;
+			} else if (!strcmp(s_ifmt, "S_IFDIR")) {
+				stbuf.st_mode = S_IFDIR;
+			} else if (!strcmp(s_ifmt, "S_IFLNK")) {
+				stbuf.st_mode = S_IFLNK;
+			} else if (!strcmp(s_ifmt, "S_IFBLK")) {
+				stbuf.st_mode = S_IFBLK;
+			} else if (!strcmp(s_ifmt, "S_IFCHR")) {
+				stbuf.st_mode = S_IFCHR;
+			} else if (!strcmp(s_ifmt, "S_IFIFO")) {
+				stbuf.st_mode = S_IFIFO;
+			} else if (!strcmp(s_ifmt, "S_IFSOCK")) {
+				stbuf.st_mode = S_IFSOCK;
+			}
+		}
+		stbuf.st_nlink = plist_dict_get_uint(fileinfo, "st_nlink");
+		stbuf.st_mtime = (time_t)(plist_dict_get_uint(fileinfo, "st_mtime") / 1000000000);
+		const char* linktarget = plist_get_string_ptr(plist_dict_get_item(fileinfo, "LinkTarget"), NULL);
+		if (linktarget && !remove_all) {
+			/* report latest crash report filename */
+			printf("Link: %s\n", (char*)target_filename + strlen(target_directory));
 
-				/* remove any previous symlink */
-				if (file_exists(target_filename)) {
-					remove(target_filename);
-				}
+			/* remove any previous symlink */
+			if (file_exists(target_filename)) {
+				remove(target_filename);
+			}
 
 #ifndef _WIN32
-				/* use relative filename */
-				char* b = strrchr(fileinfo[i+1], '/');
-				if (b == NULL) {
-					b = fileinfo[i+1];
+			/* use relative filename */
+			const char* b = strrchr(linktarget, '/');
+			if (b == NULL) {
+				b = linktarget;
 				} else {
-					b++;
-				}
+				b++;
+			}
 
-				/* create a symlink pointing to latest log */
-				if (symlink(b, target_filename) < 0) {
-					fprintf(stderr, "Can't create symlink to %s\n", b);
-				}
+			/* create a symlink pointing to latest log */
+			if (symlink(b, target_filename) < 0) {
+				fprintf(stderr, "Can't create symlink to %s\n", b);
+			}
 #endif
 
-				if (!keep_crash_reports)
-					afc_remove_path(afc, source_filename);
+			if (!keep_crash_reports)
+				afc_remove_path(afc, source_filename);
 
-				res = 0;
-			}
+			res = 0;
 		}
 
 		/* free file information */
-		afc_dictionary_free(fileinfo);
+		plist_free(fileinfo);
 
 		/* recurse into child directories */
 		if (S_ISDIR(stbuf.st_mode)) {

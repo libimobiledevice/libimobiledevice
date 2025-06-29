@@ -365,62 +365,55 @@ static char* get_realpath(const char* path)
 
 static void handle_devinfo(afc_client_t afc, int argc, char** argv)
 {
-	char **info = NULL;
-	afc_error_t err = afc_get_device_info(afc, &info);
+	plist_t info = NULL;
+	afc_error_t err = afc_get_device_info_plist(afc, &info);
 	if (err == AFC_E_SUCCESS && info) {
-		int i;
-		for (i = 0; info[i]; i += 2) {
-			printf("%s: %s\n", info[i], info[i+1]);
+		if (argc > 0 && !strcmp(argv[0], "--plain")) {
+			plist_write_to_stream(info, stdout, PLIST_FORMAT_LIMD, PLIST_OPT_NONE);
+		} else {
+			plist_write_to_stream(info, stdout, PLIST_FORMAT_JSON, PLIST_OPT_NONE);
 		}
 	} else {
 		printf("Error: Failed to get device info: %s (%d)\n", afc_strerror(err), err);
 	}
-	afc_dictionary_free(info);
+	plist_free(info);
 }
 
 static int get_file_info_stat(afc_client_t afc, const char* path, struct afc_file_stat *stbuf)
 {
-	char **info = NULL;
-	afc_error_t ret = afc_get_file_info(afc, path, &info);
+	plist_t info = NULL;
+	afc_error_t ret = afc_get_file_info_plist(afc, path, &info);
 	memset(stbuf, 0, sizeof(struct afc_file_stat));
 	if (ret != AFC_E_SUCCESS) {
 		return -1;
 	} else if (!info) {
 		return -1;
-	} else {
-		// get file attributes from info list
-		int i;
-		for (i = 0; info[i]; i += 2) {
-			if (!strcmp(info[i], "st_size")) {
-				stbuf->st_size = atoll(info[i+1]);
-			} else if (!strcmp(info[i], "st_blocks")) {
-				stbuf->st_blocks = atoi(info[i+1]);
-			} else if (!strcmp(info[i], "st_ifmt")) {
-				if (!strcmp(info[i+1], "S_IFREG")) {
-					stbuf->st_mode = S_IFREG;
-				} else if (!strcmp(info[i+1], "S_IFDIR")) {
-					stbuf->st_mode = S_IFDIR;
-				} else if (!strcmp(info[i+1], "S_IFLNK")) {
-					stbuf->st_mode = S_IFLNK;
-				} else if (!strcmp(info[i+1], "S_IFBLK")) {
-					stbuf->st_mode = S_IFBLK;
-				} else if (!strcmp(info[i+1], "S_IFCHR")) {
-					stbuf->st_mode = S_IFCHR;
-				} else if (!strcmp(info[i+1], "S_IFIFO")) {
-					stbuf->st_mode = S_IFIFO;
-				} else if (!strcmp(info[i+1], "S_IFSOCK")) {
-					stbuf->st_mode = S_IFSOCK;
-				}
-			} else if (!strcmp(info[i], "st_nlink")) {
-				stbuf->st_nlink = atoi(info[i+1]);
-			} else if (!strcmp(info[i], "st_mtime")) {
-				stbuf->st_mtime = (time_t)(atoll(info[i+1]) / 1000000000);
-			} else if (!strcmp(info[i], "st_birthtime")) { /* available on iOS 7+ */
-				stbuf->st_birthtime = (time_t)(atoll(info[i+1]) / 1000000000);
-			}
-		}
-		afc_dictionary_free(info);
 	}
+	stbuf->st_size = plist_dict_get_uint(info, "st_size");
+	stbuf->st_blocks = plist_dict_get_uint(info, "st_blocks");
+	const char* s_ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
+	if (s_ifmt) {
+		if (!strcmp(s_ifmt, "S_IFREG")) {
+			stbuf->st_mode = S_IFREG;
+		} else if (!strcmp(s_ifmt, "S_IFDIR")) {
+			stbuf->st_mode = S_IFDIR;
+		} else if (!strcmp(s_ifmt, "S_IFLNK")) {
+			stbuf->st_mode = S_IFLNK;
+		} else if (!strcmp(s_ifmt, "S_IFBLK")) {
+			stbuf->st_mode = S_IFBLK;
+		} else if (!strcmp(s_ifmt, "S_IFCHR")) {
+			stbuf->st_mode = S_IFCHR;
+		} else if (!strcmp(s_ifmt, "S_IFIFO")) {
+			stbuf->st_mode = S_IFIFO;
+		} else if (!strcmp(s_ifmt, "S_IFSOCK")) {
+			stbuf->st_mode = S_IFSOCK;
+		}
+	}
+	stbuf->st_nlink = plist_dict_get_uint(info, "st_nlink");
+	stbuf->st_mtime = (time_t)(plist_dict_get_uint(info, "st_mtime") / 1000000000);
+	/* available on iOS 7+ */
+	stbuf->st_birthtime = (time_t)(plist_dict_get_uint(info, "st_birthtime") / 1000000000);
+	plist_free(info);
 	return 0;
 }
 
@@ -431,22 +424,23 @@ static void handle_file_info(afc_client_t afc, int argc, char** argv)
 		return;
 	}
 
-	char **info = NULL;
+	plist_t info = NULL;
 	char* abspath = get_absolute_path(argv[0]);
 	if (!abspath) {
 		printf("Error: Invalid argument\n");
 		return;
 	}
-	afc_error_t err = afc_get_file_info(afc, abspath, &info);
+	afc_error_t err = afc_get_file_info_plist(afc, abspath, &info);
 	if (err == AFC_E_SUCCESS && info) {
-		int i;
-		for (i = 0; info[i]; i += 2) {
-			printf("%s: %s\n", info[i], info[i+1]);
+		if (argc > 1 && !strcmp(argv[1], "--plain")) {
+			plist_write_to_stream(info, stdout, PLIST_FORMAT_LIMD, PLIST_OPT_NONE);
+		} else {
+			plist_write_to_stream(info, stdout, PLIST_FORMAT_JSON, PLIST_OPT_NONE);
 		}
 	} else {
 		printf("Error: Failed to get file info for %s: %s (%d)\n", argv[0], afc_strerror(err), err);
 	}
-	afc_dictionary_free(info);
+	plist_free(info);
 	free(abspath);
 }
 
@@ -784,28 +778,19 @@ static int __mkdir(const char* path)
 
 static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get)
 {
-	char **info = NULL;
+	plist_t info = NULL;
 	uint64_t file_size = 0;
-	afc_error_t err = afc_get_file_info(afc, srcpath, &info);
+	afc_error_t err = afc_get_file_info_plist(afc, srcpath, &info);
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
 		printf("Error: Failed to read from file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
 		return 0;
 	}
 	uint8_t is_dir = 0;
 	if (info) {
-		char **p = info;
-		while (p && *p) {
-			if (!strcmp(*p, "st_size")) {
-				p++;
-				file_size = (uint64_t) strtoull(*p, NULL, 10);
-			}
-			if (!strcmp(*p, "st_ifmt")) {
-				p++;
-				is_dir = !strcmp(*p, "S_IFDIR");
-			}
-			p++;
-		}
-		afc_dictionary_free(info);
+		file_size = plist_dict_get_uint(info, "st_size");
+		const char* ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
+		is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
+		plist_free(info);
 	}
 	uint8_t succeed = 1;
 	if (is_dir) {
@@ -945,11 +930,11 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 
 static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite)
 {
-	char **info = NULL;
-	afc_error_t ret = afc_get_file_info(afc, dstpath, &info);
+	plist_t info = NULL;
+	afc_error_t ret = afc_get_file_info_plist(afc, dstpath, &info);
 	// file exists, only overwrite with '-f' option was set
 	if (ret == AFC_E_SUCCESS && info) {
-		afc_dictionary_free(info);
+		plist_free(info);
 		if (!force_overwrite) {
 			printf("Error: Failed to write into existing file without '-f' option: %s\n", dstpath);
 			return 0;
@@ -1030,10 +1015,11 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			printf("Error: Failed to put directory without '-r' option: %s\n", srcpath);
 			return 0;
 		}
-		char **info = NULL;
-		afc_error_t err = afc_get_file_info(afc, dstpath, &info);
+		plist_t info = NULL;
+		afc_error_t err = afc_get_file_info_plist(afc, dstpath, &info);
 		//create if target directory does not exist
-		afc_dictionary_free(info);
+		plist_free(info);
+		info = NULL;
 		if (err == AFC_E_OBJECT_NOT_FOUND) {
 			err = afc_make_directory(afc, dstpath);
 			if (err != AFC_E_SUCCESS) {
@@ -1044,19 +1030,12 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			printf("Error: Failed to put existing directory without '-f' option: %s\n", dstpath);
 			return 0;
 		}
-		afc_get_file_info(afc, dstpath, &info);
+		afc_get_file_info_plist(afc, dstpath, &info);
 		uint8_t is_dir = 0;
 		if (info) {
-			char **p = info;
-			while (p && *p) {
-				if (!strcmp(*p, "st_ifmt")) {
-					p++;
-					is_dir = !strcmp(*p, "S_IFDIR");
-					break;
-				}
-				p++;
-			}
-			afc_dictionary_free(info);
+			const char* ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
+			is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
+			plist_free(info);
 		}
 		if (!is_dir) {
 			printf("Error: Failed to create or access directory: '%s'\n", dstpath);
@@ -1148,8 +1127,8 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		printf("Error: Invalid number of arguments\n");
 		return;
 	}
-	char **info = NULL;
-	afc_error_t err = afc_get_file_info(afc, dstpath, &info);
+	plist_t info = NULL;
+	afc_error_t err = afc_get_file_info_plist(afc, dstpath, &info);
 	// target does not exist, put directly
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
 		put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
@@ -1158,16 +1137,9 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 	} else {
 		uint8_t is_dir = 0;
 		if (info) {
-			char **p = info;
-			while (p && *p) {
-				if (!strcmp(*p, "st_ifmt")) {
-					p++;
-					is_dir = !strcmp(*p, "S_IFDIR");
-					break;
-				}
-				p++;
-			}
-			afc_dictionary_free(info);
+			const char* ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
+			is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
+			plist_free(info);
 		}
 		// target is a directory, try to put under this directory
 		if (is_dir) {
@@ -1228,19 +1200,12 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 
 	char* path = get_realpath(argv[0]);
 	int is_dir = 0;
-	char **info = NULL;
-	afc_error_t err = afc_get_file_info(afc, path, &info);
+	plist_t info = NULL;
+	afc_error_t err = afc_get_file_info_plist(afc, path, &info);
 	if (err == AFC_E_SUCCESS && info) {
-		int i;
-		for (i = 0; info[i]; i += 2) {
-			if (!strcmp(info[i], "st_ifmt")) {
-				if (!strcmp(info[i+1], "S_IFDIR")) {
-					is_dir = 1;
-				}
-				break;
-			}
-		}
-		afc_dictionary_free(info);
+		const char* ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
+		is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
+		plist_free(info);
 	} else {
 		printf("Error: Failed to get file info for %s: %s (%d)\n", path, afc_strerror(err), err);
 		free(path);

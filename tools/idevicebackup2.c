@@ -131,21 +131,15 @@ static void mobilebackup_afc_get_file_contents(afc_client_t afc, const char *fil
 		return;
 	}
 
-	char **fileinfo = NULL;
+	plist_t fileinfo = NULL;
 	uint32_t fsize = 0;
 
-	afc_get_file_info(afc, filename, &fileinfo);
+	afc_get_file_info_plist(afc, filename, &fileinfo);
 	if (!fileinfo) {
 		return;
 	}
-	int i;
-	for (i = 0; fileinfo[i]; i+=2) {
-		if (!strcmp(fileinfo[i], "st_size")) {
-			fsize = atol(fileinfo[i+1]);
-			break;
-		}
-	}
-	afc_dictionary_free(fileinfo);
+	fsize = plist_dict_get_uint(fileinfo, "st_size");
+	plist_free(fileinfo);
 
 	if (fsize == 0) {
 		return;

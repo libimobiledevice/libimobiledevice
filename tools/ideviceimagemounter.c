@@ -598,20 +598,13 @@ int main(int argc, char **argv)
 			case DISK_IMAGE_UPLOAD_TYPE_AFC:
 			default:
 				printf("Uploading %s --> afc:///%s\n", image_path, targetname);
-				char **strs = NULL;
-				if (afc_get_file_info(afc, PKG_PATH, &strs) != AFC_E_SUCCESS) {
+				plist_t fileinfo = NULL;
+				if (afc_get_file_info_plist(afc, PKG_PATH, &fileinfo) != AFC_E_SUCCESS) {
 					if (afc_make_directory(afc, PKG_PATH) != AFC_E_SUCCESS) {
 						fprintf(stderr, "WARNING: Could not create directory '%s' on device!\n", PKG_PATH);
 					}
 				}
-				if (strs) {
-					int i = 0;
-					while (strs[i]) {
-						free(strs[i]);
-						i++;
-					}
-					free(strs);
-				}
+				plist_free(fileinfo);
 
 				uint64_t af = 0;
 				if ((afc_file_open(afc, targetname, AFC_FOPEN_WRONLY, &af) !=
