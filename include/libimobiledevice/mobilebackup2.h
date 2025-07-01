@@ -146,6 +146,27 @@ LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_message(mobileb
 LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, const char *data, uint32_t length, uint32_t *bytes);
 
 /**
+ * Receive binary from the device with specified timeout.
+ *
+ * @note This function returns MOBILEBACKUP2_E_SUCCESS even if no data
+ *     has been received (unless a communication error occurred).
+ *     The fourth parameter is required and must be checked to know how
+ *     many bytes were actually received.
+ *
+ * @param client The MobileBackup client to receive from.
+ * @param data Pointer to a buffer that will be filled with the received data.
+ * @param length Number of bytes to receive. The data buffer needs to be large
+ *     enough to store this amount of data.
+ * @param bytes Number of bytes actually received.
+ * @param timeout Maximum time in milliseconds to wait for data.
+ *
+ * @return MOBILEBACKUP2_E_SUCCESS if any or no data was received,
+ *     MOBILEBACKUP2_E_INVALID_ARG if one of the parameters is invalid,
+ *     or MOBILEBACKUP2_E_MUX_ERROR if receiving the data failed.
+ */
+LIBIMOBILEDEVICE_API mobilebackup2_error_t mobilebackup2_receive_raw_with_timeout(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes, unsigned int timeout);
+
+/**
  * Receive binary from the device.
  *
  * @note This function returns MOBILEBACKUP2_E_SUCCESS even if no data
