@@ -1224,6 +1224,9 @@ int main(int argc, char *argv[])
 				fclose(outf);
 			}
 			return 0;
+		} else {
+			fprintf(stderr, "Unknown command '%s'. See --help for valid commands.\n", argv[0]);
+			return 1;
 		}
 	}
 
