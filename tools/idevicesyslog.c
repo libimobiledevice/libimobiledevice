@@ -1233,8 +1233,16 @@ int main(int argc, char *argv[])
 	int num = 0;
 	idevice_info_t *devices = NULL;
 	idevice_get_device_list_extended(&devices, &num);
+	int count = 0;
+	for (int i = 0; i < num; i++) {
+		if (devices[i]->conn_type == CONNECTION_NETWORK && use_network) {
+			count++;
+		} else if (devices[i]->conn_type == CONNECTION_USBMUXD) {
+			count++;
+		}
+	}
 	idevice_device_list_extended_free(devices);
-	if (num == 0) {
+	if (count == 0) {
 		if (!udid) {
 			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
 			return 1;
