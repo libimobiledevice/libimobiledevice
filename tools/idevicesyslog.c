@@ -1244,7 +1244,7 @@ int main(int argc, char *argv[])
 	idevice_device_list_extended_free(devices);
 	if (count == 0) {
 		if (!udid) {
-			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
+			fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to become available.\n");
 			return 1;
 		}
 
