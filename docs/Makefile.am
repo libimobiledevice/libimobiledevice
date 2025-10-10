@@ -21,6 +21,7 @@ man_MANS = \
 	idevicesetlocation.1 \
 	afcclient.1
 
-EXTRA_DIST = $(man_MANS)
+EXTRA_DIST = $(man_MANS) \
+	doxygen
 
 DISTCLEANFILES = html/* html

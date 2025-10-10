@@ -3,7 +3,6 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = 3rd_party common src include $(CYTHON_SUB) tools docs
 
 EXTRA_DIST = \
-	docs \
 	README.md \
 	git-version-gen
 

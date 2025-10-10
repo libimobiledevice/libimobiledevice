@@ -25,7 +25,8 @@ libsrp6a_sha512_la_SOURCES = \
   t_truerand.c cstr.c \
   srp.c srp6a_sha512_client.c \
   srp.h srp_aux.h cstr.h \
-  t_sha.c
+  t_defines.h t_pwd.h \
+  t_sha.c t_sha.h
 #if !HAVE_OPENSSL
 #libsrp6a_sha512_la_SOURCES += t_sha.c
 #endif
