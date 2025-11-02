@@ -77,7 +77,12 @@ SHA1_CTX randctxt;
  * tricks with variable ordering and sometimes define quirky
  * environment variables like $WINDOWID or $_.
  */
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
 extern char ** environ;
+#endif
 
 static void
 t_envhash(unsigned char * out)
