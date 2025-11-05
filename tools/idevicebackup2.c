@@ -1012,7 +1012,7 @@ static int mb2_receive_filename(mobilebackup2_client_t mobilebackup2, char** fil
 	return nlen;
 }
 
-static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_t message, const char *backup_dir)
+static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_t message, const char *backup_dir, unsigned int timeout)
 {
 	uint64_t backup_real_size = 0;
 	uint64_t backup_total_size = 0;
@@ -1104,7 +1104,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 				} else {
 					rlen = sizeof(buf);
 				}
-				mobilebackup2_receive_raw(mobilebackup2, buf, rlen, &r);
+				mobilebackup2_receive_raw_with_timeout(mobilebackup2, buf, rlen, &r, timeout);
 				if ((int)r <= 0) {
 					break;
 				}
@@ -1448,6 +1448,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"    --remove            remove items which are not being restored\n"
 		"    --skip-apps         do not trigger re-installation of apps after restore\n"
 		"    --password PWD      supply the password for the encrypted source backup\n"
+		"    --timeout ms        timeout for the receive\n"
 		"  info          show details about last completed backup of device\n"
 		"  list          list files of last completed backup in CSV format\n"
 		"  unback        unpack a completed backup in DIRECTORY/_unback_/\n"
@@ -1502,6 +1503,7 @@ int main(int argc, char *argv[])
 	mobilebackup2_client_t mobilebackup2 = NULL;
 	mobilebackup2_error_t err;
 	uint64_t lockfile = 0;
+	unsigned int timeout = 30000;
 
 #define OPT_SYSTEM 1
 #define OPT_REBOOT 2
@@ -1512,6 +1514,7 @@ int main(int argc, char *argv[])
 #define OPT_SKIP_APPS 7
 #define OPT_PASSWORD 8
 #define OPT_FULL 9
+#define OPT_TIMEOUT 10
 
 	int c = 0;
 	const struct option longopts[] = {
@@ -1532,6 +1535,7 @@ int main(int argc, char *argv[])
 		{ "skip-apps", no_argument, NULL, OPT_SKIP_APPS },
 		{ "password", required_argument, NULL, OPT_PASSWORD },
 		{ "full", no_argument, NULL, OPT_FULL },
+		{ "timeout", required_argument, NULL, OPT_TIMEOUT },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -1604,6 +1608,20 @@ int main(int argc, char *argv[])
 			break;
 		case OPT_FULL:
 			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
+			break;
+		case OPT_TIMEOUT:
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: TIMEOUT argument must not be empty!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			}
+			timeout = atoi(optarg);
+			/* or Just wait forever? */
+			if (timeout == 0) {
+				fprintf(stderr, "ERROR: Invalid timestamp value.\n");
+				print_usage(argc, argv, 1);
+				return 0;
+			}
 			break;
 		default:
 			print_usage(argc, argv, 1);
@@ -2306,7 +2324,7 @@ checkpoint:
 				} else if (!strcmp(dlmsg, "DLMessageUploadFiles")) {
 					/* device wants to send files to the computer */
 					mb2_set_overall_progress_from_message(message, dlmsg);
-					file_count += mb2_handle_receive_files(mobilebackup2, message, backup_directory);
+					file_count += mb2_handle_receive_files(mobilebackup2, message, backup_directory, timeout);
 				} else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace")) {
 					/* device wants to know how much disk space is available on the computer */
 					uint64_t freespace = 0;

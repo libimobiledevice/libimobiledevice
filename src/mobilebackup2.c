@@ -35,6 +35,8 @@
 
 #define IS_FLAG_SET(x, y) (((x) & (y)) == (y))
 
+#define MBACKUP2_DEFAULT_TIMEOUT 30000
+
 /**
  * Convert an device_link_service_error_t value to an mobilebackup2_error_t value.
  * Used internally to get correct error codes from the underlying
@@ -244,7 +246,7 @@ mobilebackup2_error_t mobilebackup2_send_raw(mobilebackup2_client_t client, cons
 	return MOBILEBACKUP2_E_MUX_ERROR;
 }
 
-mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
+mobilebackup2_error_t mobilebackup2_receive_raw_with_timeout(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes, unsigned int timeout)
 {
 	if (!client || !client->parent || !data || (length == 0) || !bytes)
 		return MOBILEBACKUP2_E_INVALID_ARG;
@@ -257,7 +259,7 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 	uint32_t received = 0;
 	do {
 		bytes_loc = 0;
-		service_receive(raw, data+received, length-received, (uint32_t*)&bytes_loc);
+		service_receive_with_timeout(raw, data+received, length-received, (uint32_t*)&bytes_loc, timeout);
 		if (bytes_loc <= 0) break;
 		received += bytes_loc;
 	} while (received < length);
@@ -269,6 +271,11 @@ mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, c
 		return MOBILEBACKUP2_E_SUCCESS;
 	}
 	return MOBILEBACKUP2_E_MUX_ERROR;
+}
+
+mobilebackup2_error_t mobilebackup2_receive_raw(mobilebackup2_client_t client, char *data, uint32_t length, uint32_t *bytes)
+{
+	return mobilebackup2_receive_raw_with_timeout(client, data, length, bytes, MBACKUP2_DEFAULT_TIMEOUT);
 }
 
 mobilebackup2_error_t mobilebackup2_version_exchange(mobilebackup2_client_t client, double local_versions[], char count, double *remote_version)
