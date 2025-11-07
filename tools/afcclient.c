@@ -1235,7 +1235,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 	int is_error = 0;
 
 	/* skip initial whitespace */
-	while (isspace(*pos)) pos++;
+	while (isspace((unsigned char)*pos)) pos++;
 	maxlen -= (pos - cmdline);
 
 	tmpbuf = (char*)malloc(maxlen+1);
@@ -1263,7 +1263,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 				qpos = NULL;
 			}
 			pos++;
-		} else if (*pos == '\0' || (!qpos && isspace(*pos))) {
+		} else if (*pos == '\0' || (!qpos && isspace((unsigned char)*pos))) {
 			tmpbuf[tmplen] = '\0';
 			if (*pos == '\0' && qpos) {
 				printf("Error: Unmatched `%c`\n", *qpos);
@@ -1292,7 +1292,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 			maxlen -= tmplen;
 			tmpbuf = (char*)malloc(maxlen+1);
 			tmplen = 0;
-			while (isspace(*pos)) pos++;
+			while (isspace((unsigned char)*pos)) pos++;
 		} else {
 			tmpbuf[tmplen++] = *pos;
 			pos++;
