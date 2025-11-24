@@ -19,6 +19,13 @@
 #endif
 #endif
 
+#ifndef __BYTE_ORDER
+#ifndef _WIN32
+#warning __BYTE_ORDER is not defined, assuming little endian
+#endif
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#endif
+
 #ifndef be16toh
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define be16toh(x) (x)
