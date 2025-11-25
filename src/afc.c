@@ -59,6 +59,27 @@ static void afc_unlock(afc_client_t client)
 	mutex_unlock(&client->mutex);
 }
 
+static afc_error_t service_to_afc_error(service_error_t err)
+{
+	switch (err) {
+		case SERVICE_E_SUCCESS:
+			return AFC_E_SUCCESS;
+		case SERVICE_E_INVALID_ARG:
+			return AFC_E_INVALID_ARG;
+		case SERVICE_E_MUX_ERROR:
+			return AFC_E_MUX_ERROR;
+		case SERVICE_E_SSL_ERROR:
+			return AFC_E_SSL_ERROR;
+		case SERVICE_E_NOT_ENOUGH_DATA:
+			return AFC_E_NOT_ENOUGH_DATA;
+		case SERVICE_E_TIMEOUT:
+			return AFC_E_OP_TIMEOUT;
+		default:
+			break;
+	}
+	return AFC_E_UNKNOWN_ERROR;
+}
+
 /**
  * Makes a connection to the AFC service on the device using the given
  * connection.
@@ -174,11 +195,16 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 	AFCPacket_to_LE(client->afc_packet);
 	debug_buffer((char*)client->afc_packet, sizeof(AFCPacket) + data_length);
 	sent = 0;
-	service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket) + data_length, &sent);
+	afc_error_t err = service_to_afc_error(service_send(client->parent, (void*)client->afc_packet, sizeof(AFCPacket) + data_length, &sent));
 	AFCPacket_from_LE(client->afc_packet);
+	if (err != AFC_E_SUCCESS) {
+		debug_info("Failed to send packet (sent %i/%i): %s (%d)", sent, sizeof(AFCPacket) + data_length, afc_strerror(err), err);
+		return err;
+	}
 	*bytes_sent += sent;
 	if (sent < sizeof(AFCPacket) + data_length) {
-		return AFC_E_SUCCESS;
+		debug_info("Failed to send entire packet (sent %i/%i)", sent, sizeof(AFCPacket) + data_length);
+		return AFC_E_NOT_ENOUGH_DATA;
 	}
 
 	sent = 0;
@@ -190,11 +216,16 @@ static afc_error_t afc_dispatch_packet(afc_client_t client, uint64_t operation, 
 			debug_info("packet payload follows");
 			debug_buffer(payload, payload_length);
 		}
-		service_send(client->parent, payload, payload_length, &sent);
+		err = service_to_afc_error(service_send(client->parent, payload, payload_length, &sent));
+		if (err != AFC_E_SUCCESS) {
+			debug_info("Failed to send payload (sent: %i/%i): %s (%d)", sent, payload_length, afc_strerror(err), err);
+			return err;
+		}
 	}
 	*bytes_sent += sent;
 	if (sent < payload_length) {
-		return AFC_E_SUCCESS;
+		debug_info("Failed to send entire payload (sent: %i/%i): %s (%d)", sent, payload_length, afc_strerror(err), err);
+		return AFC_E_NOT_ENOUGH_DATA;
 	}
 
 	return AFC_E_SUCCESS;
@@ -227,21 +258,28 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	}
 
 	/* first, read the AFC header */
-	service_receive(client->parent, (char*)&header, sizeof(AFCPacket), &recv_len);
-	AFCPacket_from_LE(&header);
+	afc_error_t err = service_to_afc_error(service_receive(client->parent, (char*)&header, sizeof(AFCPacket), &recv_len));
+	if (err != AFC_E_SUCCESS) {
+		debug_info("Failed to receive AFC header: %s (%d)", afc_strerror(err), err);
+		return err;
+	}
 	if (recv_len == 0) {
 		debug_info("Just didn't get enough.");
-		return AFC_E_MUX_ERROR;
+		return AFC_E_NOT_ENOUGH_DATA;
 	}
 
 	if (recv_len < sizeof(AFCPacket)) {
 		debug_info("Did not even get the AFCPacket header");
-		return AFC_E_MUX_ERROR;
+		return AFC_E_NOT_ENOUGH_DATA;
 	}
+
+	/* make sure endianness is correct */
+	AFCPacket_from_LE(&header);
 
 	/* check if it's a valid AFC header */
 	if (strncmp(header.magic, AFC_MAGIC, AFC_MAGIC_LEN) != 0) {
 		debug_info("Invalid AFC packet received (magic != " AFC_MAGIC ")!");
+		return AFC_E_UNKNOWN_PACKET_TYPE;
 	}
 
 	/* check if it has the correct packet number */
@@ -273,16 +311,20 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	buf = (char*)malloc(entire_len);
 	if (this_len > 0) {
 		recv_len = 0;
-		service_receive(client->parent, buf, this_len, &recv_len);
+		err = service_to_afc_error(service_receive(client->parent, buf, this_len, &recv_len));
+		if (err != AFC_E_SUCCESS) {
+			free(buf);
+			debug_info("Failed to receive data: %s (%d)", afc_strerror(err), err);
+		}
 		if (recv_len <= 0) {
 			free(buf);
 			debug_info("Did not get packet contents!");
-			return AFC_E_NOT_ENOUGH_DATA;
+			return (err == AFC_E_SUCCESS) ? AFC_E_NOT_ENOUGH_DATA : err;
 		}
 		if (recv_len < this_len) {
 			free(buf);
 			debug_info("Could not receive this_len=%d bytes", this_len);
-			return AFC_E_NOT_ENOUGH_DATA;
+			return (err == AFC_E_SUCCESS) ? AFC_E_END_OF_DATA : err;
 		}
 	}
 
@@ -291,7 +333,11 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	if (entire_len > this_len) {
 		while (current_count < entire_len) {
 			recv_len = 0;
-			service_receive(client->parent, buf+current_count, entire_len - current_count, &recv_len);
+			err = service_to_afc_error(service_receive(client->parent, buf+current_count, entire_len - current_count, &recv_len));
+			if (err != AFC_E_SUCCESS) {
+				debug_info("Error receiving data: %s (%d)", afc_strerror(err), err);
+				break;
+			}
 			if (recv_len <= 0) {
 				debug_info("Error receiving data (recv returned %d)", recv_len);
 				break;
@@ -299,7 +345,9 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 			current_count += recv_len;
 		}
 		if (current_count < entire_len) {
-			debug_info("WARNING: could not receive full packet (read %s, size %d)", current_count, entire_len);
+			free(buf);
+			debug_info("ERROR: Could not receive entire packet (read %i/%i)", current_count, entire_len);
+			return (err == AFC_E_SUCCESS) ? AFC_E_END_OF_DATA : err;
 		}
 	}
 
@@ -1299,14 +1347,14 @@ const char* afc_strerror(afc_error_t err)
 			return "Internal error";
 		case AFC_E_MUX_ERROR:
 			return "MUX error";
+		case AFC_E_SSL_ERROR:
+			return "SSL error";
 		case AFC_E_NO_MEM:
 			return "Out of memory";
 		case AFC_E_NOT_ENOUGH_DATA:
 			return "Not enough data";
 		case AFC_E_DIR_NOT_EMPTY:
 			return "Directory not empty";
-		case AFC_E_FORCE_SIGNED_TYPE:
-			return "Force signed type";
 		default:
 			break;
 	}
