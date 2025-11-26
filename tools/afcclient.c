@@ -1002,6 +1002,9 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 			}
 		}
 	}
+	if (progress) {
+		printf("\n");
+	}
 	free(buf);
 	afc_file_close(afc, fh);
 	fclose(f);
