@@ -141,6 +141,7 @@ static void print_usage(int argc, char **argv, int is_error)
 #ifndef HAVE_READLINE
 #ifdef _WIN32
 #define BS_CC '\b'
+#define getch _getch
 #else
 #define BS_CC 0x7f
 #define getch getchar
@@ -155,12 +156,18 @@ static void get_input(char *buf, int maxlen)
 			break;
 		}
 		if (isprint(c)) {
-			if (len < maxlen-1)
+			if (len < maxlen-1) {
 				buf[len++] = c;
+#ifdef _WIN32
+				fputc(c, stdout);
+#endif
+			}
 		} else if (c == BS_CC) {
 			if (len > 0) {
 				fputs("\b \b", stdout);
 				len--;
+			} else {
+				fputc(0x07, stdout);
 			}
 		}
 	}
