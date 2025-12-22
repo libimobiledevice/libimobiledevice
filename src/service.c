@@ -176,7 +176,7 @@ service_error_t service_receive_with_timeout(service_client_t client, char* data
 
 service_error_t service_receive(service_client_t client, char* data, uint32_t size, uint32_t *received)
 {
-	return service_receive_with_timeout(client, data, size, received, 30000);
+	return service_receive_with_timeout(client, data, size, received, 90000);
 }
 
 service_error_t service_enable_ssl(service_client_t client)

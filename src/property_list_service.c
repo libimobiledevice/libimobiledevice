@@ -269,7 +269,7 @@ property_list_service_error_t property_list_service_receive_plist_with_timeout(p
 
 property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
-	return internal_plist_receive_timeout(client, plist, 30000);
+	return internal_plist_receive_timeout(client, plist, 90000);
 }
 
 property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
