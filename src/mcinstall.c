@@ -213,7 +213,7 @@ LIBIMOBILEDEVICE_API mcinstall_error_t mcinstall_install_cloud_config(mcinstall_
     plist_t dict = plist_new_dict();
     plist_dict_set_item(dict, "RequestType", plist_new_string("SetCloudConfiguration"));
     plist_dict_set_item(dict, "CloudConfiguration", plist_copy(profile));
-    plist_print_to_stream(dict, stdout);
+    plist_write_to_stream(dict, stdout, PLIST_FORMAT_LIMD, 0);
 
     mcinstall_error_t res = mcinstall_error(property_list_service_send_xml_plist(client->parent, dict));
     plist_free(dict);

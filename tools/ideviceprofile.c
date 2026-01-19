@@ -116,22 +116,14 @@ static int profile_read_from_file(const char* path, unsigned char **profile_data
 		return -1;
 	}
 
-	long int cur = 0;
-	while (cur < size) {
-		ssize_t r = fread(buf+cur, 1, 512, f);
-		if (r <= 0) {
-			break;
-		}
-		cur += r;
-	}
-	fclose(f);
-
-	if (cur != size) {
-		free(buf);
-		fprintf(stderr, "Could not read in file '%s' (size %ld read %ld)\n", path, size, cur);
+	ssize_t r = fread(buf, 1, size, f);
+	if (r <= 0) {
+		fprintf(stderr, "Could not read file '%s' (size %ld)\n", path, size);
+		fclose(f);
 		return -1;
 	}
 
+	fclose(f);
 	*profile_data = buf;
 	*profile_size = (unsigned int)size;
 
@@ -315,7 +307,7 @@ int main(int argc, char *argv[])
 				uint64_t psize = profile_size;
                 plist_t pdata;
 				
-                plist_from_memory((const char*)profile_data, psize, &pdata);
+                plist_from_memory((const char*)profile_data, psize, &pdata, NULL);
 				free(profile_data);
                 if (pdata && (plist_get_node_type(pdata) == PLIST_DICT)) {
                     if (mcinstall_install_cloud_config(mis, pdata) == MCINSTALL_E_SUCCESS) {
@@ -412,7 +404,7 @@ int main(int argc, char *argv[])
                         }
                     } else {
                         if (profiles) {
-                            plist_print_to_stream(profiles, stdout);
+                            plist_write_to_stream(profiles, stdout, PLIST_FORMAT_LIMD, 0);
                         } else {
                             fprintf(stderr, "ERROR: DEP Cloud Config was empty.\n");
                             res = -1;
@@ -443,7 +435,7 @@ int main(int argc, char *argv[])
                         }
                     } else {
                         if (profiles) {
-                            plist_print_to_stream(profiles, stdout);
+                            plist_write_to_stream(profiles, stdout, PLIST_FORMAT_LIMD, 0);
                         } else {
                             fprintf(stderr, "ERROR: DEP Cloud Config was empty.\n");
                             res = -1;
