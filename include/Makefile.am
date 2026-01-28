@@ -30,4 +30,5 @@ nobase_include_HEADERS = \
 	libimobiledevice/reverse_proxy.h \
 	libimobiledevice/bt_packet_logger.h \
 	libimobiledevice/property_list_service.h \
-	libimobiledevice/service.h
+	libimobiledevice/service.h \
+	libimobiledevice/mcinstall.h
