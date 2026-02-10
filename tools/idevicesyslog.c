@@ -381,6 +381,65 @@ static void syslog_callback(char c, void *user_data)
 	}
 }
 
+static void check_filtering(int pid, const char *process_name_short, const char *message, int *shall_print, int *trigger_off) {
+	do {
+		/* check if we have any triggers/untriggers */
+		if (num_untrigger_filters > 0 && triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_untrigger_filters; i++) {
+				if (strstr(message, untrigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				*shall_print = 1;
+			} else {
+				*shall_print = 1;
+				*trigger_off = 1;
+			}
+		} else if (num_trigger_filters > 0 && !triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_trigger_filters; i++) {
+				if (strstr(message, trigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				*shall_print = 0;
+				break;
+			}
+			triggered = 1;
+			*shall_print = 1;
+		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
+			*shall_print = 0;
+			quit_flag++;
+			break;
+		}
+	
+		/* check message filters */
+		*shall_print = message_filter_matching(message);
+		if (!*shall_print) {
+			break;
+		}
+
+		/* check process filters */
+		if (process_filter_matching(pid, process_name_short, strlen(process_name_short))) {
+			*shall_print = 1;
+		} else {
+			if (num_pid_filters > 0 || num_proc_filters > 0) {
+				*shall_print = 0;
+			}
+		}
+		if (!*shall_print) {
+			break;
+		}
+	} while (0);
+}
+
 static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data)
 {
 	if (len < 0x81) {
@@ -411,62 +470,7 @@ static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data
 		image_name_short = NULL;
 	}
 
-	do {
-		/* check if we have any triggers/untriggers */
-		if (num_untrigger_filters > 0 && triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_untrigger_filters; i++) {
-				if (strstr(message, untrigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 1;
-			} else {
-				shall_print = 1;
-				trigger_off = 1;
-			}
-		} else if (num_trigger_filters > 0 && !triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_trigger_filters; i++) {
-				if (strstr(message, trigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 0;
-				break;
-			}
-			triggered = 1;
-			shall_print = 1;
-		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
-			shall_print = 0;
-			quit_flag++;
-			break;
-		}
-	
-		/* check message filters */
-		shall_print = message_filter_matching(message);
-		if (!shall_print) {
-			break;
-		}
-
-		/* check process filters */
-		if (process_filter_matching(trace_hdr->pid, process_name_short, strlen(process_name_short))) {
-			shall_print = 1;
-		} else {
-			if (num_pid_filters > 0 || num_proc_filters > 0) {
-				shall_print = 0;
-			}
-		}
-		if (!shall_print) {
-			break;
-		}
-	} while (0);
+	check_filtering(trace_hdr->pid, process_name_short, message, &shall_print, &trigger_off);
 
 	if (!shall_print) {
 		return;
@@ -640,68 +644,8 @@ static void ostrace_ndjson_callback(const void* buf, size_t len, void* user_data
 	int trigger_off = 0;
 	const char* process_name_short = (process_name) ? strrchr(process_name, '/') : "";
 	process_name_short = (process_name_short) ? process_name_short+1 : process_name;
-	const char* image_name_short = (image_name) ? strrchr(image_name, '/') : NULL;
-	image_name_short = (image_name_short) ? image_name_short+1 : process_name;
-	if (image_name_short && !strcmp(image_name_short, process_name_short)) {
-		image_name_short = NULL;
-	}
 
-	do {
-		/* check if we have any triggers/untriggers */
-		if (num_untrigger_filters > 0 && triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_untrigger_filters; i++) {
-				if (strstr(message, untrigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 1;
-			} else {
-				shall_print = 1;
-				trigger_off = 1;
-			}
-		} else if (num_trigger_filters > 0 && !triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_trigger_filters; i++) {
-				if (strstr(message, trigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 0;
-				break;
-			}
-			triggered = 1;
-			shall_print = 1;
-		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
-			shall_print = 0;
-			quit_flag++;
-			break;
-		}
-	
-		/* check message filters */
-		shall_print = message_filter_matching(message);
-		if (!shall_print) {
-			break;
-		}
-
-		/* check process filters */
-		if (process_filter_matching(trace_hdr->pid, process_name_short, strlen(process_name_short))) {
-			shall_print = 1;
-		} else {
-			if (num_pid_filters > 0 || num_proc_filters > 0) {
-				shall_print = 0;
-			}
-		}
-		if (!shall_print) {
-			break;
-		}
-	} while (0);
+	check_filtering(trace_hdr->pid, process_name_short, message, &shall_print, &trigger_off);
 
 	if (!shall_print) {
 		return;
@@ -710,6 +654,8 @@ static void ostrace_ndjson_callback(const void* buf, size_t len, void* user_data
 	const char* level_str = "Unknown";
 	switch (trace_hdr->level) {
 		case 0:
+			// in ostrace_syslog_callback this is Notice, but officially
+			// it should be Default in ndjson log output
 			level_str = "Default";
 			break;
 		case 0x01:
@@ -963,8 +909,10 @@ static int start_logging(void)
 		return -1;
 	}
 
-	fprintf(stdout, "[connected:%s]\n", udid);
-	fflush(stdout);
+	if (!style_ndjson) {
+		fprintf(stdout, "[connected:%s]\n", udid);
+		fflush(stdout);
+	}
 
 	return 0;
 }
@@ -1082,7 +1030,9 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 	} else if (event->event == IDEVICE_DEVICE_REMOVE) {
 		if ((syslog || ostrace) && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
-			fprintf(stdout, "[disconnected:%s]\n", udid);
+			if (!style_ndjson) {
+				fprintf(stdout, "[disconnected:%s]\n", udid);
+			}
 			if (exit_on_disconnect) {
 				quit_flag++;
 			}
