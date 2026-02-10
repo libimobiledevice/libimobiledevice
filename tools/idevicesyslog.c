@@ -49,6 +49,7 @@ static int quit_flag = 0;
 static int exit_on_disconnect = 0;
 static int show_device_name = 0;
 static int force_syslog_relay = 0;
+static int style_ndjson = 0;
 
 static char* udid = NULL;
 static char** proc_filters = NULL;
@@ -878,7 +879,8 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -v, --version         prints version information\n"
 		"  --no-colors           disable colored output\n"
 		"  -o, --output FILE     write to FILE instead of stdout\n"
-		"                        (existing FILE will be overwritten)\n"
+		"  -s, --style STYLE     change the output style when using ostrace\n"
+		"                        (where STYLE is either default or ndjson)\n"
 		"  --colors              force writing colored output, e.g. for --output\n"
 		"  --syslog-relay        force use of syslog_relay service\n"
 		"\n"
@@ -945,6 +947,7 @@ int main(int argc, char *argv[])
 		{ "age-limit", required_argument, NULL, 7 },
 		{ "output", required_argument, NULL, 'o' },
 		{ "version", no_argument, NULL, 'v' },
+		{ "style", required_argument, NULL, 's' },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -955,7 +958,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:M:e:p:qkKo:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:M:e:p:qkKo:s:v", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -1099,6 +1102,19 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				term_colors_set_enabled(0);
+			}
+			break;
+		case 's':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: --style option requires an argument - either default or ndjson!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			} else {
+				if (strcmp(optarg, "ndjson") == 0) {
+				  style_ndjson = 1;
+				} else {
+					style_ndjson = 0;
+				}
 			}
 			break;
 		case 'v':
