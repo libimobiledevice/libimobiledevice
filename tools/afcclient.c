@@ -839,20 +839,25 @@ static int __mkdir(const char* path)
 
 static void set_mtime(const char *path, uint64_t mtime)
 {
+	int status;
 #ifdef _WIN32
 	time_t now;
 	time(&now);
 	struct _utimbuf times;
 	times.actime = now;
 	times.modtime = mtime / NANO;
-	_utime(dstpath, &times);
+	status = _utime(dstpath, &times);
 #else
 	struct timespec times[2];
 	times[0].tv_nsec = UTIME_OMIT;
 	times[1].tv_sec = mtime / NANO;
 	times[1].tv_nsec = mtime % NANO;
-	utimensat(AT_FDCWD, path, times, 0);
+	status = utimensat(AT_FDCWD, path, times, 0);
 #endif
+	if (status) {
+		fprintf(stderr, "%s: Unable to set time stamp on '%s', %s\n", myname, path, strerror(errno));
+		errors++;
+	}
 }
 
 static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get, uint8_t preserve)
