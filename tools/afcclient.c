@@ -731,7 +731,8 @@ static void handle_remove(afc_client_t afc, int argc, char** argv)
 	for ( ; i < argc; i++) {
 		char* abspath = get_absolute_path(argv[i]);
 		if (!abspath) {
-			printf("Error: Invalid argument '%s'\n", argv[i]);
+			fprintf(stderr, "%s: Invalid argument '%s'\n", myname, argv[i]);
+			errors++;
 			continue;
 		}
 		afc_error_t err;
@@ -741,7 +742,8 @@ static void handle_remove(afc_client_t afc, int argc, char** argv)
 			err = afc_remove_path(afc, abspath);
 		}
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to remove '%s': %s (%d)\n", argv[i], afc_strerror(err), err);
+			fprintf(stderr, "%s: Failed to remove '%s': %s (%d)\n", myname, argv[i], afc_strerror(err), err);
+			errors++;
 		}
 		free(abspath);
 	}
@@ -752,16 +754,19 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 	uint64_t fh = 0;
 	afc_error_t err = afc_file_open(afc, srcpath, AFC_FOPEN_RDONLY, &fh);
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to open file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to open file '%s': %s (%d)\n", myname, srcpath, afc_strerror(err), err);
+		errors++;
 		return 0;
 	}
 	if (file_exists(dstpath) && !force_overwrite) {
-		printf("Error: Failed to overwrite existing file without '-f' option: %s\n", dstpath);
+		fprintf(stderr, "%s: Failed to overwrite existing file without '-f' option: %s\n", myname, dstpath);
+		errors++;
 		return 0;
 	}
 	FILE *f = fopen(dstpath, "wb");
 	if (!f) {
-		printf("Error: Failed to open local file '%s': %s\n", dstpath, strerror(errno));
+		fprintf(stderr, "%s: Failed to open local file '%s': %s\n", myname, dstpath, strerror(errno));
+		errors++;
 		return 0;
 	}
 	struct timeval t1;
@@ -790,7 +795,7 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 				if (progress) {
 					printf("\n");
 				}
-				printf("Error: Failed to write to local file\n");
+				fprintf(stderr, "%s: Failed to write to local file\n", myname);
 				succeed = 0;
 				break;
 			}
@@ -813,7 +818,8 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 		printf("\n");
 	}
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to read from file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to read from file '%s': %s (%d)\n", myname, srcpath, afc_strerror(err), err);
+		errors++;
 		succeed = 0;
 	}
 	free(buf);
@@ -855,7 +861,8 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 	uint64_t file_size = 0, file_mtime = 0;
 	afc_error_t err = afc_get_file_info_plist(afc, srcpath, &info);
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
-		printf("Error: Failed to read from file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to read from file '%s': %s (%d)\n", myname, srcpath, afc_strerror(err), err);
+		errors++;
 		return 0;
 	}
 	uint8_t is_dir = 0;
@@ -869,13 +876,15 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 	uint8_t succeed = 1;
 	if (is_dir) {
 		if (!recursive_get) {
-			printf("Error: Failed to get a directory without '-r' option: %s\n", srcpath);
+			fprintf(stderr, "%s: Failed to get a directory without '-r' option: %s\n", myname, srcpath);
+			errors++;
 			return 0;
 		}
 		char **entries = NULL;
 		err = afc_read_directory(afc, srcpath, &entries);
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to list '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
+			fprintf(stderr, "%s: Failed to list '%s': %s (%d)\n", myname, srcpath, afc_strerror(err), err);
+			errors++;
 			return 0;
 		}
 		char **p = entries;
@@ -884,11 +893,13 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		// if directory exists, check force_overwrite flag
 		if (is_directory(dstpath)) {
 			if (!force_overwrite) {
-				printf("Error: Failed to write into existing directory without '-f': %s\n", dstpath);
+				fprintf(stderr, "%s: Failed to write into existing directory without '-f': %s\n", myname, dstpath);
+				errors++;
 				return 0;
 			}
 		} else if (__mkdir(dstpath) != 0) {
-			printf("Error: Failed to create directory '%s': %s\n", dstpath, strerror(errno));
+			fprintf(stderr, "%s: Failed to create directory '%s': %s\n", myname, dstpath, strerror(errno));
+			errors++;
 			afc_dictionary_free(entries);
 			return 0;
 		}
@@ -933,7 +944,8 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 static void handle_get(afc_client_t afc, int argc, char **argv)
 {
 	if (argc < 1) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	uint8_t force_overwrite = 0, recursive_get = 0, preserve = 0;
@@ -980,7 +992,8 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 		}
 		free(tmp);
 	} else {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 
@@ -1015,13 +1028,15 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 	if (ret == AFC_E_SUCCESS && info) {
 		plist_free(info);
 		if (!force_overwrite) {
-			printf("Error: Failed to write into existing file without '-f' option: %s\n", dstpath);
+			fprintf(stderr, "%s: Failed to write into existing file without '-f' option: %s\n", myname, dstpath);
+			errors++;
 			return 0;
 		}
 	}
 	FILE *f = fopen(srcpath, "rb");
 	if (!f) {
-		printf("Error: Failed to open local file '%s': %s\n", srcpath, strerror(errno));
+		fprintf(stderr, "%s: Failed to open local file '%s': %s\n", myname, srcpath, strerror(errno));
+		errors++;
 		return 0;
 	}
 	struct timeval t1;
@@ -1049,7 +1064,8 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 				if (progress) {
 					printf("\n");
 				}
-				printf("Error: Failed to read from local file\n");
+				fprintf(stderr, "%s: Failed to read from local file\n", myname);
+				errors++;
 				succeed = 0;
 			}
 			break;
@@ -1062,7 +1078,8 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 				if (progress) {
 					printf("\n");
 				}
-				printf("Error: Failed to write to device file\n");
+				fprintf(stderr, "%s: Failed to write to device file\n", myname);
+				errors++;
 				succeed = 0;
 				break;
 			}
@@ -1094,7 +1111,8 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 {
 	if (is_directory(srcpath)) {
 		if (!recursive_put) {
-			printf("Error: Failed to put directory without '-r' option: %s\n", srcpath);
+			fprintf(stderr, "%s: Failed to put directory without '-r' option: %s\n", myname, srcpath);
+			errors++;
 			return 0;
 		}
 		plist_t info = NULL;
@@ -1105,11 +1123,13 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		if (err == AFC_E_OBJECT_NOT_FOUND) {
 			err = afc_make_directory(afc, dstpath);
 			if (err != AFC_E_SUCCESS) {
-				printf("Error: Failed to create directory '%s': %s (%d)\n", dstpath, afc_strerror(err), err);
+				fprintf(stderr, "%s: Failed to create directory '%s': %s (%d)\n", myname, dstpath, afc_strerror(err), err);
+				errors++;
 				return 0;
 			}
 		} else if (!force_overwrite) {
-			printf("Error: Failed to put existing directory without '-f' option: %s\n", dstpath);
+			fprintf(stderr, "%s: Failed to put existing directory without '-f' option: %s\n", myname, dstpath);
+			errors++;
 			return 0;
 		}
 		afc_get_file_info_plist(afc, dstpath, &info);
@@ -1120,7 +1140,8 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			plist_free(info);
 		}
 		if (!is_dir) {
-			printf("Error: Failed to create or access directory: '%s'\n", dstpath);
+			fprintf(stderr, "%s: Failed to create or access directory: '%s'\n", myname, dstpath);
+			errors++;
 			return 0;
 		}
 
@@ -1153,7 +1174,8 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			}
 			closedir(cur_dir);
 		} else {
-			printf("Error: Failed to visit directory: '%s': %s\n", srcpath, strerror(errno));
+			fprintf(stderr, "%s: Failed to visit directory: '%s': %s\n", myname, srcpath, strerror(errno));
+			errors++;
 			return 0;
 		}
 	} else {
@@ -1165,7 +1187,8 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 static void handle_put(afc_client_t afc, int argc, char **argv)
 {
 	if (argc < 1) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	int i = 0;
@@ -1186,7 +1209,8 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		}
 	}
 	if (i >= argc) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	char *srcpath = mstrdup(argv[i]);
@@ -1206,7 +1230,8 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		dstpath = get_absolute_path(tmp);
 		free(tmp);
 	} else {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	plist_t info = NULL;
@@ -1255,7 +1280,8 @@ static void handle_pwd(afc_client_t afc, int argc, char** argv)
 static void handle_cd(afc_client_t afc, int argc, char** argv)
 {
 	if (argc != 1) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 
@@ -1289,13 +1315,15 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 		is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
 		plist_free(info);
 	} else {
-		printf("Error: Failed to get file info for %s: %s (%d)\n", path, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to get file info for %s: %s (%d)\n", myname, path, afc_strerror(err), err);
+		errors++;
 		free(path);
 		return;
 	}
 
 	if (!is_dir) {
-		printf("Error: '%s' is not a valid directory\n", path);
+		fprintf(stderr, "%s: '%s' is not a valid directory\n", myname, path);
+		errors++;
 		free(path);
 		return;
 	}
@@ -1334,7 +1362,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 					pos++;
 					break;
 				default:
-					printf("Error: Invalid escape sequence\n");
+					fprintf(stderr, "%s: Invalid escape sequence\n", myname);
 					is_error++;
 					break;
 			}
@@ -1348,13 +1376,13 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 		} else if (*pos == '\0' || (!qpos && isspace(*pos))) {
 			tmpbuf[tmplen] = '\0';
 			if (*pos == '\0' && qpos) {
-				printf("Error: Unmatched `%c`\n", *qpos);
+				fprintf(stderr, "%s: Unmatched `%c`\n", myname, *qpos);
 				is_error++;
 				break;
 			}
 			char** new_argv = (char**)realloc(argv, (argc+1)*sizeof(char*));
 			if (new_argv == NULL) {
-				printf("Error: Out of memory?!\n");
+				fprintf(stderr, "%s: Out of memory?!\n", myname);
 				is_error++;
 				break;
 			}
@@ -1362,7 +1390,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 			/* shrink buffer to actual argument size */
 			argv[argc] = (char*)realloc(tmpbuf, tmplen+1);
 			if (!argv[argc]) {
-				printf("Error: Out of memory?!\n");
+				fprintf(stderr, "%s: Out of memory?!\n", myname);
 				is_error++;
 				break;
 			}
@@ -1436,7 +1464,7 @@ static int process_args(afc_client_t afc, int argc, char** argv)
 		handle_cd(afc, argc-1, argv+1);
 	}
 	else {
-		printf("Unknown command '%s'. Type 'help' to get a list of available commands.\n", argv[0]);
+		fprintf(stderr, "%s: Unknown command '%s'. Type 'help' to get a list of available commands.\n", myname, argv[0]);
 	}
 	return 0;
 }
@@ -1536,9 +1564,13 @@ int main(int argc, char** argv)
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
+#ifdef _WIN32
+	myname = "afcclient";
+#else
 	char *scratch1 = mstrdup(argv[0]);
 	myname = mstrdup(basename(scratch1));
 	free(scratch1);
+#endif
 
 	while ((c = getopt_long(argc, argv, "du:nhv", longopts, NULL)) != -1) {
 		switch (c) {
