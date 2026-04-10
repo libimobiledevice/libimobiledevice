@@ -27,6 +27,7 @@
 #endif
 
 #define TOOL_NAME "afcclient"
+#define NANO 1000000000
 
 #include <stdio.h>
 #include <string.h>
@@ -38,11 +39,14 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
+#include <libgen.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/utime.h>
 #include <conio.h>
 #define sleep(x) Sleep(x*1000)
 #define S_IFMT          0170000         /* [XSI] type of file mask */
@@ -57,6 +61,7 @@
 #define S_ISLNK(m)      (((m) & S_IFMT) == S_IFLNK)     /* symbolic link */
 #define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)    /* socket */
 #else
+#include <fcntl.h>
 #include <sys/time.h>
 #include <termios.h>
 #endif
@@ -92,6 +97,33 @@ static int use_network = 0;
 static idevice_subscription_context_t context = NULL;
 static char* curdir = NULL;
 static size_t curdir_len = 0;
+static char* myname = NULL;
+static int errors = 0;
+
+static void mabort()
+{
+	const char *message = "out of memory!\n";
+	write(2, message, strlen(message));
+	abort();
+}
+
+static void *mmalloc(size_t size)
+{
+	void *ret = malloc(size);
+	if (ret == NULL) {
+		mabort();
+	}
+	return ret;
+}
+
+static char *mstrdup(const char *s)
+{
+	char *ret = strdup(s);
+	if (ret == NULL) {
+		mabort();
+	}
+	return ret;
+}
 
 static int file_exists(const char* path)
 {
@@ -242,10 +274,10 @@ struct str_item {
 static char* get_absolute_path(const char *path)
 {
 	if (*path == '/') {
-		return strdup(path);
+		return mstrdup(path);
 	} else {
 		size_t len = curdir_len + 1 + strlen(path) + 1;
-		char* result = (char*)malloc(len);
+		char* result = (char*)mmalloc(len);
 		if (!strcmp(curdir, "/")) {
 			snprintf(result, len, "/%s", path);
 		} else {
@@ -269,7 +301,7 @@ static char* get_realpath(const char* path)
 		while (*p == '/') p++;
 	}
 	if (*p == '\0') {
-		return strdup("/");
+		return mstrdup("/");
 	}
 
 	int c_count = 1;
@@ -290,7 +322,7 @@ static char* get_realpath(const char* path)
 				return NULL;
 			}
 			comps = newcomps;
-			char *comp = (char*)malloc(end-start+1);
+			char *comp = (char*)mmalloc(end-start+1);
 			strncpy(comp, start, end-start);
 			comp[end-start] = '\0';
 			comps[c_count-1].len = end-start;
@@ -312,14 +344,14 @@ static char* get_realpath(const char* path)
 			return NULL;
 		}
 		comps = newcomps;
-		char *comp = (char*)malloc(end-start+1);
+		char *comp = (char*)mmalloc(end-start+1);
 		strncpy(comp, start, end-start);
 		comp[end-start] = '\0';
 		comps[c_count-1].len = end-start;
 		comps[c_count-1].str = comp;
 	}
 
-	struct str_item* comps_final = (struct str_item*)malloc(sizeof(struct str_item)*(c_count+1));
+	struct str_item* comps_final = (struct str_item*)mmalloc(sizeof(struct str_item)*(c_count+1));
 	int o = 1;
 	if (is_absolute) {
 		comps_final[0].len = 1;
@@ -344,7 +376,7 @@ static char* get_realpath(const char* path)
 	}
 
 	o_len += o;
-	char* result = (char*)malloc(o_len);
+	char* result = (char*)mmalloc(o_len);
 	char* presult = result;
 	for (int i = 0; i < o; i++) {
 		if (i > 0 && strcmp(comps_final[i-1].str, "/") != 0) {
@@ -381,7 +413,8 @@ static void handle_devinfo(afc_client_t afc, int argc, char** argv)
 			plist_write_to_stream(info, stdout, PLIST_FORMAT_JSON, PLIST_OPT_NONE);
 		}
 	} else {
-		printf("Error: Failed to get device info: %s (%d)\n", afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to get device info: %s (%d)\n", myname, afc_strerror(err), err);
+		errors++;
 	}
 	plist_free(info);
 }
@@ -417,9 +450,9 @@ static int get_file_info_stat(afc_client_t afc, const char* path, struct afc_fil
 		}
 	}
 	stbuf->st_nlink = plist_dict_get_uint(info, "st_nlink");
-	stbuf->st_mtime = (time_t)(plist_dict_get_uint(info, "st_mtime") / 1000000000);
+	stbuf->st_mtime = (time_t)(plist_dict_get_uint(info, "st_mtime") / NANO);
 	/* available on iOS 7+ */
-	stbuf->st_birthtime = (time_t)(plist_dict_get_uint(info, "st_birthtime") / 1000000000);
+	stbuf->st_birthtime = (time_t)(plist_dict_get_uint(info, "st_birthtime") / NANO);
 	plist_free(info);
 	return 0;
 }
@@ -427,14 +460,16 @@ static int get_file_info_stat(afc_client_t afc, const char* path, struct afc_fil
 static void handle_file_info(afc_client_t afc, int argc, char** argv)
 {
 	if (argc < 1) {
-		printf("Error: Missing PATH.\n");
+		fprintf(stderr, "%s: Missing PATH.\n", myname);
+		errors++;
 		return;
 	}
 
 	plist_t info = NULL;
 	char* abspath = get_absolute_path(argv[0]);
 	if (!abspath) {
-		printf("Error: Invalid argument\n");
+		fprintf(stderr, "%s: Invalid argument\n", myname);
+		errors++;
 		return;
 	}
 	afc_error_t err = afc_get_file_info_plist(afc, abspath, &info);
@@ -445,7 +480,8 @@ static void handle_file_info(afc_client_t afc, int argc, char** argv)
 			plist_write_to_stream(info, stdout, PLIST_FORMAT_JSON, PLIST_OPT_NONE);
 		}
 	} else {
-		printf("Error: Failed to get file info for %s: %s (%d)\n", argv[0], afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to get file info for %s: %s (%d)\n", myname, argv[0], afc_strerror(err), err);
+		errors++;
 	}
 	plist_free(info);
 	free(abspath);
@@ -525,7 +561,8 @@ static void handle_list(afc_client_t afc, int argc, char** argv)
 	}
 	char* abspath = get_absolute_path(path);
 	if (!abspath) {
-		printf("Error: Invalid argument\n");
+		fprintf(stderr, "%s: Invalid argument\n", myname);
+		errors++;
 		return;
 	}
 	int abspath_is_root = strcmp(abspath, "/") == 0;
@@ -536,7 +573,8 @@ static void handle_list(afc_client_t afc, int argc, char** argv)
 		print_file_info(afc, abspath, list_verbose);
 		return;
 	} else if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to list '%s': %s (%d)\n", path, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to list '%s': %s (%d)\n", myname, path, afc_strerror(err), err);
+		errors++;
 		free(abspath);
 		return;
 	}
@@ -548,7 +586,7 @@ static void handle_list(afc_client_t afc, int argc, char** argv)
 			continue;
 		}
 		size_t len = abspath_len + 1 + strlen(*p) + 1;
-		char* testpath = (char*)malloc(len);
+		char* testpath = (char*)mmalloc(len);
 		if (abspath_is_root) {
 			snprintf(testpath, len, "/%s", *p);
 		} else {
@@ -565,23 +603,27 @@ static void handle_list(afc_client_t afc, int argc, char** argv)
 static void handle_rename(afc_client_t afc, int argc, char** argv)
 {
 	if (argc != 2) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	char* srcpath = get_absolute_path(argv[0]);
 	if (!srcpath) {
-		printf("Error: Invalid argument\n");
+		fprintf(stderr, "%s: Invalid argument\n", myname);
+		errors++;
 		return;
 	}
 	char* dstpath = get_absolute_path(argv[1]);
 	if (!dstpath) {
 		free(srcpath);
-		printf("Error: Invalid argument\n");
+		fprintf(stderr, "%s: Invalid argument\n", myname);
+		errors++;
 		return;
 	}
 	afc_error_t err = afc_rename_path(afc, srcpath, dstpath);
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to rename '%s' -> '%s': %s (%d)\n", argv[0], argv[1], afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to rename '%s' -> '%s': %s (%d)\n", myname, argv[0], argv[1], afc_strerror(err), err);
+		errors++;
 	}
 	free(srcpath);
 	free(dstpath);
@@ -592,12 +634,14 @@ static void handle_mkdir(afc_client_t afc, int argc, char** argv)
 	for (int i = 0; i < argc; i++) {
 		char* abspath = get_absolute_path(argv[i]);
 		if (!abspath) {
-			printf("Error: Invalid argument '%s'\n", argv[i]);
+			fprintf(stderr, "%s: Invalid argument '%s'\n", myname, argv[i]);
+			errors++;
 			continue;
 		}
 		afc_error_t err = afc_make_directory(afc, abspath);
 		if (err != AFC_E_SUCCESS) {
-			printf("Error: Failed to create directory '%s': %s (%d)\n", argv[i], afc_strerror(err), err);
+			fprintf(stderr, "%s: Failed to create directory '%s': %s (%d)\n", myname, argv[i], afc_strerror(err), err);
+			errors++;
 		}
 		free(abspath);
 	}
@@ -606,7 +650,8 @@ static void handle_mkdir(afc_client_t afc, int argc, char** argv)
 static void handle_link(afc_client_t afc, int argc, char** argv)
 {
 	if (argc < 2) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	afc_link_type_t link_type = AFC_HARDLINK;
@@ -616,18 +661,21 @@ static void handle_link(afc_client_t afc, int argc, char** argv)
 		link_type = AFC_SYMLINK;
 	}
 	if (argc < 1 || argc > 2) {
-		printf("Error: Invalid number of arguments\n");
+		fprintf(stderr, "%s: Invalid number of arguments\n", myname);
+		errors++;
 		return;
 	}
 	const char *link_name = (argc == 1) ? path_get_basename(argv[0]) : argv[1];
 	char* abs_link_name = get_absolute_path(link_name);
 	if (!abs_link_name) {
-		printf("Error: Invalid argument\n");
+		fprintf(stderr, "%s: Invalid argument\n", myname);
+		errors++;
 		return;
 	}
 	afc_error_t err = afc_make_link(afc, link_type, argv[0], link_name);
 	if (err != AFC_E_SUCCESS) {
-		printf("Error: Failed to create %s link for '%s' at '%s': %s (%d)\n", (link_type == AFC_HARDLINK) ? "hard" : "symbolic", argv[0], link_name, afc_strerror(err), err);
+		fprintf(stderr, "%s: Failed to create %s link for '%s' at '%s': %s (%d)\n", myname, (link_type == AFC_HARDLINK) ? "hard" : "symbolic", argv[0], link_name, afc_strerror(err), err);
+		errors++;
 	}
 }
 
@@ -720,7 +768,7 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 	struct timeval t2;
 	struct timeval tdiff;
 	size_t bufsize = 0x100000;
-	char *buf = malloc(bufsize);
+	char *buf = mmalloc(bufsize);
 	size_t total = 0;
 	int progress = 0;
 	int lastprog = 0;
@@ -783,10 +831,28 @@ static int __mkdir(const char* path)
 #endif
 }
 
-static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get)
+static void set_mtime(const char *path, uint64_t mtime)
+{
+#ifdef _WIN32
+	time_t now;
+	time(&now);
+	struct _utimbuf times;
+	times.actime = now;
+	times.modtime = mtime / NANO;
+	_utime(dstpath, &times);
+#else
+	struct timespec times[2];
+	times[0].tv_nsec = UTIME_OMIT;
+	times[1].tv_sec = mtime / NANO;
+	times[1].tv_nsec = mtime % NANO;
+	utimensat(AT_FDCWD, path, times, 0);
+#endif
+}
+
+static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_get, uint8_t preserve)
 {
 	plist_t info = NULL;
-	uint64_t file_size = 0;
+	uint64_t file_size = 0, file_mtime = 0;
 	afc_error_t err = afc_get_file_info_plist(afc, srcpath, &info);
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
 		printf("Error: Failed to read from file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
@@ -795,6 +861,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 	uint8_t is_dir = 0;
 	if (info) {
 		file_size = plist_dict_get_uint(info, "st_size");
+		file_mtime = plist_dict_get_uint(info, "st_mtime");
 		const char* ifmt = plist_get_string_ptr(plist_dict_get_item(info, "st_ifmt"), NULL);
 		is_dir = (ifmt && !strcmp(ifmt, "S_IFDIR"));
 		plist_free(info);
@@ -831,7 +898,7 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				continue;
 			}
 			size_t len = srcpath_is_root ? (strlen(*p) + 2) : (srcpath_len + 1 + strlen(*p) + 1);
-			char *testpath = (char *) malloc(len);
+			char *testpath = (char *) mmalloc(len);
 			if (srcpath_is_root) {
 				snprintf(testpath, len, "/%s", *p);
 			} else {
@@ -839,13 +906,13 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			}
 			uint8_t dst_is_root = strcmp(srcpath, "/") == 0;
 			size_t dst_len = dst_is_root ? (strlen(*p) + 2) : (strlen(dstpath) + 1 + strlen(*p) + 1);
-			char *newdst = (char *) malloc(dst_len);
+			char *newdst = (char *) mmalloc(dst_len);
 			if (dst_is_root) {
 				snprintf(newdst, dst_len, "/%s", *p);
 			} else {
 				snprintf(newdst, dst_len, "%s/%s", dstpath, *p);
 			}
-			if (!get_file(afc, testpath, newdst, force_overwrite, recursive_get)) {
+			if (!get_file(afc, testpath, newdst, force_overwrite, recursive_get, preserve)) {
 				succeed = 0;
 				break;
 			}
@@ -856,6 +923,9 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		afc_dictionary_free(entries);
 	} else {
 		succeed = get_single_file(afc, srcpath, dstpath, file_size, force_overwrite);
+		if (preserve && file_mtime) {
+			set_mtime(dstpath, file_mtime);
+		}
 	}
 	return succeed;
 }
@@ -866,7 +936,7 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 		printf("Error: Invalid number of arguments\n");
 		return;
 	}
-	uint8_t force_overwrite = 0, recursive_get = 0;
+	uint8_t force_overwrite = 0, recursive_get = 0, preserve = 0;
 	char *srcpath = NULL;
 	char *dstpath = NULL;
 	int i = 0;
@@ -881,27 +951,29 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 		} else if (!strcmp(argv[i], "-rf") || !strcmp(argv[i], "-fr")) {
 			recursive_get = 1;
 			force_overwrite = 1;
+		} else if (!strcmp(argv[i], "-p")) {
+			preserve = 1;
 		} else {
 			break;
 		}
 	}
 	if (argc - i == 1) {
-		char *tmp = strdup(argv[i]);
+		char *tmp = mstrdup(argv[i]);
 		size_t src_len = strlen(tmp);
 		if (src_len > 1 && tmp[src_len - 1] == '/') {
 			tmp[src_len - 1] = '\0';
 		}
 		srcpath = get_absolute_path(tmp);
-		dstpath = strdup(path_get_basename(tmp));
+		dstpath = mstrdup(path_get_basename(tmp));
 		free(tmp);
 	} else if (argc - i == 2) {
-		char *tmp = strdup(argv[i]);
+		char *tmp = mstrdup(argv[i]);
 		size_t src_len = strlen(tmp);
 		if (src_len > 1 && tmp[src_len - 1] == '/') {
 			tmp[src_len - 1] = '\0';
 		}
 		srcpath = get_absolute_path(tmp);
-		dstpath = strdup(argv[i + 1]);
+		dstpath = mstrdup(argv[i + 1]);
 		size_t dst_len = strlen(dstpath);
 		if (dst_len > 1 && dstpath[dst_len - 1] == '/') {
 			dstpath[dst_len - 1] = '\0';
@@ -917,19 +989,19 @@ static void handle_get(afc_client_t afc, int argc, char **argv)
 		const char *basen = path_get_basename(srcpath);
 		uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
 		size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
-		char *newdst = (char *) malloc(len);
+		char *newdst = (char *) mmalloc(len);
 		if (dst_is_root) {
 			snprintf(newdst, len, "/%s", basen);
 		} else {
 			snprintf(newdst, len, "%s/%s", dstpath, basen);
 		}
-		get_file(afc, srcpath, newdst, force_overwrite, recursive_get);
+		get_file(afc, srcpath, newdst, force_overwrite, recursive_get, preserve);
 		free(srcpath);
 		free(newdst);
 		free(dstpath);
 	} else {
 		// target is not a dir or does not exist, just try to create or rewrite it
-		get_file(afc, srcpath, dstpath, force_overwrite, recursive_get);
+		get_file(afc, srcpath, dstpath, force_overwrite, recursive_get, preserve);
 		free(srcpath);
 		free(dstpath);
 	}
@@ -958,7 +1030,7 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 	struct stat fst;
 	int progress = 0;
 	size_t bufsize = 0x100000;
-	char *buf = malloc(bufsize);
+	char *buf = mmalloc(bufsize);
 
 	fstat(fileno(f), &fst);
 	if (fst.st_size >= 0x400000) {
@@ -1064,7 +1136,7 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 				if (fpath) {
 					uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
 					size_t len = dst_is_root ? (strlen(ep->d_name) + 2) : (strlen(dstpath) + 1 + strlen(ep->d_name) + 1);
-					char *newdst = (char *) malloc(len);
+					char *newdst = (char *) mmalloc(len);
 					if (dst_is_root) {
 						snprintf(newdst, len, "/%s", ep->d_name);
 					} else {
@@ -1117,7 +1189,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		printf("Error: Invalid number of arguments\n");
 		return;
 	}
-	char *srcpath = strdup(argv[i]);
+	char *srcpath = mstrdup(argv[i]);
 	size_t src_len = strlen(srcpath);
 	if (src_len > 1 && srcpath[src_len - 1] == '/') {
 		srcpath[src_len - 1] = '\0';
@@ -1126,7 +1198,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 	if (argc - i == 1) {
 		dstpath = get_absolute_path(path_get_basename(srcpath));
 	} else if (argc - i == 2) {
-		char *tmp = strdup(argv[i + 1]);
+		char *tmp = mstrdup(argv[i + 1]);
 		size_t dst_len = strlen(tmp);
 		if (dst_len > 1 && tmp[dst_len - 1] == '/') {
 			tmp[dst_len - 1] = '\0';
@@ -1156,7 +1228,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 			const char *basen = path_get_basename(srcpath);
 			uint8_t dst_is_root = strcmp(dstpath, "/") == 0;
 			size_t len = dst_is_root ? (strlen(basen) + 2) : (strlen(dstpath) + 1 + strlen(basen) + 1);
-			char *newdst = (char *) malloc(len);
+			char *newdst = (char *) mmalloc(len);
 			if (dst_is_root) {
 				snprintf(newdst, len, "/%s", basen);
 			} else {
@@ -1248,7 +1320,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 	while (isspace(*pos)) pos++;
 	maxlen -= (pos - cmdline);
 
-	tmpbuf = (char*)malloc(maxlen+1);
+	tmpbuf = (char*)mmalloc(maxlen+1);
 
 	while (!is_error) {
 		if (*pos == '\\') {
@@ -1300,7 +1372,7 @@ static void parse_cmdline(int* p_argc, char*** p_argv, const char* cmdline)
 				break;
 			}
 			maxlen -= tmplen;
-			tmpbuf = (char*)malloc(maxlen+1);
+			tmpbuf = (char*)mmalloc(maxlen+1);
 			tmplen = 0;
 			while (isspace(*pos)) pos++;
 		} else {
@@ -1419,7 +1491,7 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 	}
 	if (event->event == IDEVICE_DEVICE_ADD) {
 		if (!udid) {
-			udid = strdup(event->udid);
+			udid = mstrdup(event->udid);
 		}
 		if (strcmp(udid, event->udid) == 0) {
 			connected = 1;
@@ -1464,6 +1536,10 @@ int main(int argc, char** argv)
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
+	char *scratch1 = mstrdup(argv[0]);
+	myname = mstrdup(basename(scratch1));
+	free(scratch1);
+
 	while ((c = getopt_long(argc, argv, "du:nhv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
@@ -1471,11 +1547,11 @@ int main(int argc, char** argv)
 			break;
 		case 'u':
 			if (!*optarg) {
-				fprintf(stderr, "ERROR: UDID must not be empty!\n");
+				fprintf(stderr, "%s: UDID must not be empty!\n", myname);
 				print_usage(argc, argv, 1);
 				return 2;
 			}
-			udid = strdup(optarg);
+			udid = mstrdup(optarg);
 			break;
 		case 'n':
 			use_network = 1;
@@ -1492,7 +1568,7 @@ int main(int argc, char** argv)
 			return 0;
 		case OPT_DOCUMENTS:
 			if (!*optarg) {
-				fprintf(stderr, "ERROR: '--documents' requires a non-empty app ID!\n");
+				fprintf(stderr, "%s: '--documents' requires a non-empty app ID!\n", myname);
 				print_usage(argc, argv, 1);
 				return 2;
 			}
@@ -1501,7 +1577,7 @@ int main(int argc, char** argv)
 			break;
 		case OPT_CONTAINER:
 			if (!*optarg) {
-				fprintf(stderr, "ERROR: '--container' requires a not-empty app ID!\n");
+				fprintf(stderr, "%s: '--container' requires a not-empty app ID!\n", myname);
 				print_usage(argc, argv, 1);
 				return 2;
 			}
@@ -1530,7 +1606,7 @@ int main(int argc, char** argv)
 	}
 	idevice_device_list_extended_free(devices);
 	if (count == 0) {
-		fprintf(stderr, "No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n");
+		fprintf(stderr, "%s: No device found. Plug in a device or pass UDID with -u to wait for device to be available.\n", myname);
 		return 1;
 	}
 
@@ -1544,23 +1620,23 @@ int main(int argc, char** argv)
 #endif
 	}
 	if (stop_requested) {
-		return 0;
+		return errors ? 1 : 0;
 	}
 
 	ret = idevice_new_with_options(&device, udid, (use_network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
-			fprintf(stderr, "ERROR: Device %s not found!\n", udid);
+			fprintf(stderr, "%s: Device %s not found!\n", myname, udid);
 		} else {
-			fprintf(stderr, "ERROR: No device found!\n");
+			fprintf(stderr, "%s: No device found!\n", myname);
 		}
 		return 1;
 	}
 
 	do {
 		if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME))) {
-			fprintf(stderr, "ERROR: Could not connect to lockdownd: %s (%d)\n", lockdownd_strerror(ldret), ldret);
-			ret = 1;
+			fprintf(stderr, "%s: Could not connect to lockdownd: %s (%d)\n", myname, lockdownd_strerror(ldret), ldret);
+			errors++;
 			break;
 		}
 
@@ -1570,37 +1646,39 @@ int main(int argc, char** argv)
 
 		ldret = lockdownd_start_service(lockdown, service_name, &service);
 		if (ldret != LOCKDOWN_E_SUCCESS) {
-			fprintf(stderr, "ERROR: Failed to start service %s: %s (%d)\n", service_name, lockdownd_strerror(ldret), ldret);
-			ret = 1;
+			fprintf(stderr, "%s: Failed to start service %s: %s (%d)\n", myname, service_name, lockdownd_strerror(ldret), ldret);
+			errors++;
 			break;
 		}
 
 		if (appid) {
 			house_arrest_client_new(device, service, &house_arrest);
 			if (!house_arrest) {
-				fprintf(stderr, "Could not start document sharing service!\n");
-				ret = 1;
+				fprintf(stderr, "%s: Could not start document sharing service!\n", myname);
+				errors++;
 				break;
 			}
 
 			if (house_arrest_send_command(house_arrest, use_container ? "VendContainer": "VendDocuments", appid) != HOUSE_ARREST_E_SUCCESS) {
-				fprintf(stderr, "Could not send house_arrest command!\n");
-				ret = 1;
+				fprintf(stderr, "%s: Could not send house_arrest command!\n", myname);
+				errors++;
 				break;
 			}
 
 			plist_t dict = NULL;
 			if (house_arrest_get_result(house_arrest, &dict) != HOUSE_ARREST_E_SUCCESS) {
-				fprintf(stderr, "Could not get result from document sharing service!\n");
+				fprintf(stderr, "%s: Could not get result from document sharing service!\n", myname);
+				errors++;
 				break;
 			}
 			plist_t node = plist_dict_get_item(dict, "Error");
 			if (node) {
 				char *str = NULL;
 				plist_get_string_val(node, &str);
-				fprintf(stderr, "ERROR: %s\n", str);
+				fprintf(stderr, "%s: %s\n", myname, str);
+				errors++;
 				if (str && !strcmp(str, "InstallationLookupFailed")) {
-					fprintf(stderr, "The App '%s' is either not present on the device, or the 'UIFileSharingEnabled' key is not set in its Info.plist. Starting with iOS 8.3 this key is mandatory to allow access to an app's Documents folder.\n", appid);
+					fprintf(stderr, "%s: The App '%s' is either not present on the device, or the 'UIFileSharingEnabled' key is not set in its Info.plist. Starting with iOS 8.3 this key is mandatory to allow access to an app's Documents folder.\n", myname, appid);
 				}
 				free(str);
 				plist_free(dict);
@@ -1615,7 +1693,7 @@ int main(int argc, char** argv)
 		lockdownd_client_free(lockdown);
 		lockdown = NULL;
 
-		curdir = strdup("/");
+		curdir = mstrdup("/");
 		curdir_len = 1;
 
 		if (argc > 0) {
@@ -1636,5 +1714,5 @@ int main(int argc, char** argv)
 	}
 	idevice_free(device);
 
-	return ret;
+	return errors ? 1 : 0;
 }
