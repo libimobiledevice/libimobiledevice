@@ -97,7 +97,7 @@ static int use_network = 0;
 static idevice_subscription_context_t context = NULL;
 static char* curdir = NULL;
 static size_t curdir_len = 0;
-static char* myname = NULL;
+static const char* myname = NULL;
 static int errors = 0;
 
 static void mabort()
@@ -235,7 +235,7 @@ static void handle_help(afc_client_t afc, int argc, char** argv)
 	printf("        NOTE: This feature has been disabled in newer versions of iOS.\n");
 	printf("rm PATH - remove item at PATH\n");
 	printf("get [-rf] [-p] PATH [LOCALPATH] - transfer file at PATH from device to LOCALPATH\n");
-	printf("put [-rf] LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH\n");
+	printf("put [-rf] [-p] LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH\n");
 	printf("\n");
 }
 
@@ -857,6 +857,8 @@ static void set_mtime(const char *path, uint64_t mtime)
 	if (status) {
 		fprintf(stderr, "%s: Unable to set time stamp on '%s', %s\n", myname, path, strerror(errno));
 		errors++;
+	} else {
+		errno = 0;
 	}
 }
 
@@ -939,8 +941,11 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 		afc_dictionary_free(entries);
 	} else {
 		succeed = get_single_file(afc, srcpath, dstpath, file_size, force_overwrite);
-		if (preserve && file_mtime) {
+		if (succeed && preserve && file_mtime) {
 			set_mtime(dstpath, file_mtime);
+			if (errno) {
+				return 0;
+			}
 		}
 	}
 	return succeed;
@@ -1112,7 +1117,29 @@ static uint8_t put_single_file(afc_client_t afc, const char *srcpath, const char
 	return succeed;
 }
 
-static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_put)
+static uint64_t get_mtime(const char *path)
+{
+	int status;
+	uint64_t ret;
+#ifdef _WIN32
+	struct _stat stb;
+	status = _stat(path, &stb);
+	ret = (uint64_t) stb.st_mtime * NANO;
+#else
+	struct stat stb;
+	status = stat(path, &stb);
+	ret = (uint64_t) stb.st_mtimespec.tv_sec * NANO + stb.st_mtimespec.tv_nsec;
+#endif
+	if (status) {
+		fprintf(stderr, "%s: Unable to get time stamp on '%s', %s\n", myname, path, strerror(errno));
+		errors++;
+	} else {
+		errno = 0;
+	}
+	return ret;
+}
+
+static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpath, uint8_t force_overwrite, uint8_t recursive_put, uint8_t preserve)
 {
 	if (is_directory(srcpath)) {
 		if (!recursive_put) {
@@ -1168,7 +1195,7 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 					} else {
 						snprintf(newdst, len, "%s/%s", dstpath, ep->d_name);
 					}
-					if (!put_file(afc, fpath, newdst, force_overwrite, recursive_put)) {
+					if (!put_file(afc, fpath, newdst, force_overwrite, recursive_put, preserve)) {
 						free(newdst);
 						free(fpath);
 						return 0;
@@ -1184,7 +1211,22 @@ static uint8_t put_file(afc_client_t afc, const char *srcpath, const char *dstpa
 			return 0;
 		}
 	} else {
-		return put_single_file(afc, srcpath, dstpath, force_overwrite);
+		int ret = put_single_file(afc, srcpath, dstpath, force_overwrite);
+		if (ret && preserve)
+		{
+			uint64_t mtime = get_mtime(srcpath);
+			if (errno) {
+				return 0;
+			} else {
+				afc_error_t status = afc_set_file_time(afc, dstpath, mtime);
+				if (status != AFC_E_SUCCESS) {
+					fprintf(stderr, "%s: Unable to set time stamp on '%s', %s\n", myname, dstpath, afc_strerror(status));
+					errors++;
+					return 0;
+				}
+			}
+		}
+		return ret;
 	}
 	return 1;
 }
@@ -1197,7 +1239,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		return;
 	}
 	int i = 0;
-	uint8_t force_overwrite = 0, recursive_put = 0;
+	uint8_t force_overwrite = 0, recursive_put = 0, preserve = 0;
 	for ( ; i < argc; i++) {
 		if (!strcmp(argv[i], "--")) {
 			i++;
@@ -1209,6 +1251,8 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 		} else if (!strcmp(argv[i], "-rf") || !strcmp(argv[i], "-fr")) {
 			recursive_put = 1;
 			force_overwrite = 1;
+		} else if (!strcmp(argv[i], "-p")) {
+			preserve = 1;
 		} else {
 			break;
 		}
@@ -1243,7 +1287,7 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 	afc_error_t err = afc_get_file_info_plist(afc, dstpath, &info);
 	// target does not exist, put directly
 	if (err == AFC_E_OBJECT_NOT_FOUND) {
-		put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
+		put_file(afc, srcpath, dstpath, force_overwrite, recursive_put, preserve);
 		free(srcpath);
 		free(dstpath);
 	} else {
@@ -1267,10 +1311,10 @@ static void handle_put(afc_client_t afc, int argc, char **argv)
 			free(dstpath);
 			dstpath = get_absolute_path(newdst);
 			free(newdst);
-			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
+			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put, preserve);
 		} else {
 			//target is common file, rewrite it
-			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put);
+			put_file(afc, srcpath, dstpath, force_overwrite, recursive_put, preserve);
 		}
 		free(srcpath);
 		free(dstpath);
@@ -1572,9 +1616,7 @@ int main(int argc, char** argv)
 #ifdef _WIN32
 	myname = "afcclient";
 #else
-	char *scratch1 = mstrdup(argv[0]);
-	myname = mstrdup(basename(scratch1));
-	free(scratch1);
+	myname = path_get_basename(argv[0]);
 #endif
 
 	while ((c = getopt_long(argc, argv, "du:nhv", longopts, NULL)) != -1) {
