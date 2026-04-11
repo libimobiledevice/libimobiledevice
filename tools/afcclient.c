@@ -1493,7 +1493,7 @@ static int process_args(afc_client_t afc, int argc, char** argv)
 	return 0;
 }
 
-char *_get_input(const char *prompt)
+static char *_get_input(const char *prompt)
 {
 #ifdef HAVE_READLINE
 	if (interactive) {
