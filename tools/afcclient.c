@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/utime.h>
 #include <conio.h>
+#include <io.h>
 #define sleep(x) Sleep(x*1000)
 #define S_IFMT          0170000         /* [XSI] type of file mask */
 #define S_IFIFO         0010000         /* [XSI] named pipe (fifo) */
@@ -99,6 +100,7 @@ static char* curdir = NULL;
 static size_t curdir_len = 0;
 static const char* myname = NULL;
 static int errors = 0;
+static uint8_t interactive = 0;
 
 static void mabort()
 {
@@ -170,47 +172,30 @@ static void print_usage(int argc, char **argv, int is_error)
 	);
 }
 
-#ifndef HAVE_READLINE
-#ifdef _WIN32
-#define BS_CC '\b'
-#define getch _getch
-#else
-#define BS_CC 0x7f
-#define getch getchar
-#endif
+int stop_requested = 0;
+
 static void get_input(char *buf, int maxlen)
 {
 	int len = 0;
 	int c;
 
-	while ((c = getch())) {
+	while ((c = getchar()) != EOF) {
 		if ((c == '\r') || (c == '\n')) {
 			break;
 		}
-		if (isprint(c)) {
-			if (len < maxlen-1) {
-				buf[len++] = c;
-#ifdef _WIN32
-				fputc(c, stdout);
-#endif
-			}
-		} else if (c == BS_CC) {
-			if (len > 0) {
-				fputs("\b \b", stdout);
-				len--;
-			} else {
-				fputc(0x07, stdout);
-			}
+		if (len < maxlen - 1) {
+			buf[len++] = c;
 		}
 	}
 	buf[len] = 0;
+	if (!len && c == EOF) {
+		/* exit on EOF */
+		stop_requested++;
+	}
 }
-#endif
 
 #define OPT_DOCUMENTS 1
 #define OPT_CONTAINER 2
-
-int stop_requested = 0;
 
 static void handle_signal(int sig)
 {
@@ -681,25 +666,19 @@ static void handle_link(afc_client_t afc, int argc, char** argv)
 
 static int ask_yesno(const char* prompt)
 {
-	int ret = 0;
 #ifdef HAVE_READLINE
-	char* result = readline(prompt);
-	if (result && result[0] == 'y') {
-		ret = 1;
+	if (interactive) {
+		char* result = readline(prompt);
+		int ret = result && result[0] == 'y';
+		free(result);
+		return ret;
 	}
-#else
+#endif
 	char cmdbuf[2] = {0, };
 	printf("%s", prompt);
 	fflush(stdout);
 	get_input(cmdbuf, sizeof(cmdbuf));
-	if (cmdbuf[0] == 'y') {
-		ret = 1;
-	}
-#endif
-#ifdef HAVE_READLINE
-	free(result);
-#endif
-	return ret;
+	return cmdbuf[0] == 'y';
 }
 
 static void handle_remove(afc_client_t afc, int argc, char** argv)
@@ -1518,6 +1497,21 @@ static int process_args(afc_client_t afc, int argc, char** argv)
 	return 0;
 }
 
+char *_get_input(const char *prompt)
+{
+#ifdef HAVE_READLINE
+	if (interactive) {
+		return readline(prompt);
+	}
+#endif
+	const size_t bufsize = 4096;
+	char *buf = mmalloc(bufsize);
+	printf("%s", prompt);
+	fflush(stdout);
+	get_input(buf, bufsize);
+	return buf;
+}
+
 static void start_cmdline(afc_client_t afc)
 {
 	while (!stop_requested) {
@@ -1532,24 +1526,19 @@ static void start_cmdline(afc_client_t afc)
 			plen = plim;
 		}
 		snprintf(prompt, 128, FG_BLACK BG_LIGHT_GRAY "afc:" COLOR_RESET FG_BRIGHT_YELLOW BG_BLUE "%.*s" COLOR_RESET " > ", plen, ppath);
-#ifdef HAVE_READLINE
-		char* cmd = readline(prompt);
+		char *cmd = _get_input(prompt);
 		if (!cmd || !*cmd) {
 			free(cmd);
 			continue;
 		}
-		add_history(cmd);
-		parse_cmdline(&argc, &argv, cmd);
-#else
-		char cmdbuf[4096];
-		printf("%s", prompt);
-		fflush(stdout);
-		get_input(cmdbuf, sizeof(cmdbuf));
-		parse_cmdline(&argc, &argv, cmdbuf);
-#endif
 #ifdef HAVE_READLINE
-		free(cmd);
+		if (interactive) {
+			add_history(cmd);
+		}
 #endif
+		parse_cmdline(&argc, &argv, cmd);
+		free(cmd);
+
 		/* process arguments */
 		if (argv && argv[0]) {
 			if (process_args(afc, argc, argv) < 0) {
@@ -1615,8 +1604,10 @@ int main(int argc, char** argv)
 
 #ifdef _WIN32
 	myname = "afcclient";
+	interactive = _isatty(0) && _isatty(1) && _isatty(2);
 #else
 	myname = path_get_basename(argv[0]);
+	interactive = isatty(0) && isatty(1) && isatty(2);
 #endif
 
 	while ((c = getopt_long(argc, argv, "du:nhv", longopts, NULL)) != -1) {
