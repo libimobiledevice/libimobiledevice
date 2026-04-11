@@ -64,7 +64,6 @@
 #else
 #include <fcntl.h>
 #include <sys/time.h>
-#include <termios.h>
 #endif
 
 #ifdef HAVE_READLINE
