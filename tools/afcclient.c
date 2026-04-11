@@ -194,7 +194,7 @@ static void get_input(char *buf, int maxlen)
 		}
 	}
 	buf[len] = 0;
-	if (!len && c == EOF) {
+	if (c == EOF) {
 		/* exit on EOF */
 		stop_requested++;
 	}
