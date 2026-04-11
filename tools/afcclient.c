@@ -62,7 +62,7 @@
 #define S_ISLNK(m)      (((m) & S_IFMT) == S_IFLNK)     /* symbolic link */
 #define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)    /* socket */
 #else
-#include <fcntl.h>
+#include <utime.h>
 #include <sys/time.h>
 #endif
 
@@ -80,14 +80,12 @@
 #include <libimobiledevice-glue/termcolors.h>
 #include <libimobiledevice-glue/utils.h>
 
-#undef st_mtime
-#undef st_birthtime
 struct afc_file_stat {
 	uint16_t st_mode;
 	uint16_t st_nlink;
 	uint64_t st_size;
-	uint64_t st_mtime;
-	uint64_t st_birthtime;
+	uint64_t st__mtime;
+	uint64_t st__birthtime;
 	uint32_t st_blocks;
 };
 
@@ -434,9 +432,9 @@ static int get_file_info_stat(afc_client_t afc, const char* path, struct afc_fil
 		}
 	}
 	stbuf->st_nlink = plist_dict_get_uint(info, "st_nlink");
-	stbuf->st_mtime = (time_t)(plist_dict_get_uint(info, "st_mtime") / NANO);
+	stbuf->st__mtime = (time_t)(plist_dict_get_uint(info, "st_mtime") / NANO);
 	/* available on iOS 7+ */
-	stbuf->st_birthtime = (time_t)(plist_dict_get_uint(info, "st_birthtime") / NANO);
+	stbuf->st__birthtime = (time_t)(plist_dict_get_uint(info, "st_birthtime") / NANO);
 	plist_free(info);
 	return 0;
 }
@@ -477,7 +475,7 @@ static void print_file_info(afc_client_t afc, const char* path, int list_verbose
 	get_file_info_stat(afc, path, &st);
 	if (list_verbose) {
 		char timebuf[64];
-		time_t t = st.st_mtime;
+		time_t t = st.st__mtime;
 		if (S_ISDIR(st.st_mode)) {
 			printf("drwxr-xr-x");
 		} else if (S_ISLNK(st.st_mode)) {
@@ -818,19 +816,18 @@ static int __mkdir(const char* path)
 static void set_mtime(const char *path, uint64_t mtime)
 {
 	int status;
-#ifdef _WIN32
 	time_t now;
 	time(&now);
+#ifdef _WIN32
 	struct _utimbuf times;
 	times.actime = now;
 	times.modtime = mtime / NANO;
-	status = _utime(dstpath, &times);
+	status = _utime(path, &times);
 #else
-	struct timespec times[2];
-	times[0].tv_nsec = UTIME_OMIT;
-	times[1].tv_sec = mtime / NANO;
-	times[1].tv_nsec = mtime % NANO;
-	status = utimensat(AT_FDCWD, path, times, 0);
+	struct utimbuf times;
+	times.actime = now;
+	times.modtime = mtime / NANO;
+	status = utime(path, &times);
 #endif
 	if (status) {
 		fprintf(stderr, "%s: Unable to set time stamp on '%s', %s\n", myname, path, strerror(errno));
@@ -1106,7 +1103,7 @@ static uint64_t get_mtime(const char *path)
 #else
 	struct stat stb;
 	status = stat(path, &stb);
-	ret = (uint64_t) stb.st_mtimespec.tv_sec * NANO + stb.st_mtimespec.tv_nsec;
+	ret = (uint64_t) stb.st_mtime * NANO;
 #endif
 	if (status) {
 		fprintf(stderr, "%s: Unable to get time stamp on '%s', %s\n", myname, path, strerror(errno));
