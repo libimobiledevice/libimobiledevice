@@ -251,6 +251,7 @@ void *ostrace_worker(void *arg)
 			break;
 		}
 		oswt->cbfunc(buf, received, oswt->user_data);
+		free(buf);
 	}
 
 	if (oswt) {
