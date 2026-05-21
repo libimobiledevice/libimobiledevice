@@ -35,11 +35,11 @@ Create a (symbolic) link to file named LINKNAME. \f[B]NOTE: This feature has bee
 .B rm [-rf] PATH
 remove item at PATH
 .TP
-.B get [-rf] PATH [LOCALPATH]
-transfer file at PATH from device to LOCALPATH, or current directory if omitted. If LOCALPATH is a directory, the file will be stored inside the directory.
+.B get [-rf] [-p] PATH [LOCALPATH]
+transfer file at PATH from device to LOCALPATH, or current directory if omitted. If LOCALPATH is a directory, the file will be stored inside the directory. If \fB\-p\fP is specified, preserve modification times.
 .TP
-.B put [-rf] LOCALPATH [PATH]
-transfer local file at LOCALPATH to device at PATH, or current directory if omitted. If PATH is a directory, the file will be stored inside the directory.
+.B put [-rf] [-p] LOCALPATH [PATH]
+transfer local file at LOCALPATH to device at PATH, or current directory if omitted. If PATH is a directory, the file will be stored inside the directory. If \fB\-p\fP is specified, preserve modification times.
 .TP
 
 .SH OPTIONS
