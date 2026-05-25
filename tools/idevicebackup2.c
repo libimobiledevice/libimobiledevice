@@ -75,6 +75,7 @@
 static int verbose = 1;
 static int quit_flag = 0;
 static int passcode_requested = 0;
+static int skip_disk_check = 0;
 
 #define PRINT_VERBOSE(min_level, ...) \
 	if (verbose >= min_level)           \
@@ -1712,6 +1713,7 @@ int main(int argc, char *argv[])
 #define OPT_SKIP_APPS 7
 #define OPT_PASSWORD 8
 #define OPT_FULL 9
+#define OPT_SKIP_DISK_CHECK 10
 
 	int c = 0;
 	const struct option longopts[] = {
@@ -1732,6 +1734,7 @@ int main(int argc, char *argv[])
 			{"skip-apps", no_argument, NULL, OPT_SKIP_APPS},
 			{"password", required_argument, NULL, OPT_PASSWORD},
 			{"full", no_argument, NULL, OPT_FULL},
+			{"skip-disk-check", no_argument, NULL, OPT_SKIP_DISK_CHECK},
 			{NULL, 0, NULL, 0}};
 
 	/* we need to exit cleanly on running backups and restores or we cause havok */
@@ -1807,6 +1810,9 @@ int main(int argc, char *argv[])
 			break;
 		case OPT_FULL:
 			cmd_flags |= CMD_FLAG_FORCE_FULL_BACKUP;
+			break;
+		case OPT_SKIP_DISK_CHECK:
+			skip_disk_check = 1;
 			break;
 		default:
 			print_usage(argc, argv, 1);
@@ -2734,6 +2740,10 @@ int main(int argc, char *argv[])
 						freespace = (uint64_t)fs.f_bavail * (uint64_t)fs.f_frsize;
 					}
 #endif
+					if (skip_disk_check && res == 0)
+					{
+						freespace = UINT64_MAX;
+					}
 					plist_t freespace_item = plist_new_uint(freespace);
 					mobilebackup2_send_status_response(mobilebackup2, res, NULL, freespace_item);
 					plist_free(freespace_item);
