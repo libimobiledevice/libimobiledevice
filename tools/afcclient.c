@@ -1618,8 +1618,13 @@ int main(int argc, char** argv)
 		lockdownd_client_free(lockdown);
 		lockdown = NULL;
 
-		curdir = strdup("/");
-		curdir_len = 1;
+		if (appid && !use_container) {
+			curdir = strdup("/Documents");
+			curdir_len = 10;
+		} else {
+			curdir = strdup("/");
+			curdir_len = 1;
+		}
 
 		if (argc > 0) {
 			// command line mode
