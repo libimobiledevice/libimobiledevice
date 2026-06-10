@@ -332,7 +332,9 @@ static char* get_realpath(const char* path)
 
 	for (int i = 0; i < c_count; i++) {
 		if (!strcmp(comps[i].str, "..")) {
-			o--;
+			if (o > 1) {
+				o--;
+			}
 			continue;
 		} else if (!strcmp(comps[i].str, ".")) {
 			continue;
@@ -1202,8 +1204,10 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 		}
 		if (p == curdir) {
 			*(p+1) = '\0';
+			curdir_len = 1;
 		} else {
 			*p = '\0';
+			curdir_len = strlen(curdir);
 		}
 		return;
 	}
@@ -1227,7 +1231,6 @@ static void handle_cd(afc_client_t afc, int argc, char** argv)
 		free(path);
 		return;
 	}
-
 	free(curdir);
 	curdir = path;
 	curdir_len = strlen(curdir);
