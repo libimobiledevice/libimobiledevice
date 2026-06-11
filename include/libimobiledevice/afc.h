@@ -33,6 +33,7 @@ extern "C" {
 
 /** Service identifier passed to lockdownd_start_service() to start the AFC service */
 #define AFC_SERVICE_NAME "com.apple.afc"
+#define AFC_SERVICE_NAME_ALTERNATE "com.apple.afc2"
 
 /** Error Codes */
 typedef enum {
@@ -122,6 +123,22 @@ LIBIMOBILEDEVICE_API afc_error_t afc_client_new(idevice_t device, lockdownd_serv
  * @return AFC_E_SUCCESS on success, or an AFC_E_* error code otherwise.
  */
 LIBIMOBILEDEVICE_API afc_error_t afc_client_start_service(idevice_t device, afc_client_t* client, const char* label);
+
+
+/**
+ * Starts a new AFC service on the specified device and connects to it where the service name is
+ * non-standard.  (There are instances of com.apple.afc2 for root access)
+ *
+ * @param device The device to connect to.
+ * @param client Pointer that will point to a newly allocated afc_client_t upon
+ *        successful return. Must be freed using afc_client_free() after use.
+ * @param label The label to use for communication. Usually the program name.
+ *        Pass NULL to disable sending the label in requests to lockdownd.
+ * @param service_name The service name for the other end of the AFC connection.
+ *
+ * @return AFC_E_SUCCESS on success, or an AFC_E_* error code otherwise.
+ */
+LIBIMOBILEDEVICE_API afc_error_t afc_client_start_service_with_name(idevice_t device, afc_client_t* client, const char* label, const char* service_name);
 
 /**
  * Frees up an AFC client. If the connection was created by the client itself,
