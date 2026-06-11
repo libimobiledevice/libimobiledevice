@@ -49,6 +49,7 @@ static int quit_flag = 0;
 static int exit_on_disconnect = 0;
 static int show_device_name = 0;
 static int force_syslog_relay = 0;
+static int style_ndjson = 0;
 
 static char* udid = NULL;
 static char** proc_filters = NULL;
@@ -380,6 +381,65 @@ static void syslog_callback(char c, void *user_data)
 	}
 }
 
+static void check_filtering(int pid, const char *process_name_short, const char *message, int *shall_print, int *trigger_off) {
+	do {
+		/* check if we have any triggers/untriggers */
+		if (num_untrigger_filters > 0 && triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_untrigger_filters; i++) {
+				if (strstr(message, untrigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				*shall_print = 1;
+			} else {
+				*shall_print = 1;
+				*trigger_off = 1;
+			}
+		} else if (num_trigger_filters > 0 && !triggered) {
+			int found = 0;
+			int i;
+			for (i = 0; i < num_trigger_filters; i++) {
+				if (strstr(message, trigger_filters[i])) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				*shall_print = 0;
+				break;
+			}
+			triggered = 1;
+			*shall_print = 1;
+		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
+			*shall_print = 0;
+			quit_flag++;
+			break;
+		}
+	
+		/* check message filters */
+		*shall_print = message_filter_matching(message);
+		if (!*shall_print) {
+			break;
+		}
+
+		/* check process filters */
+		if (process_filter_matching(pid, process_name_short, strlen(process_name_short))) {
+			*shall_print = 1;
+		} else {
+			if (num_pid_filters > 0 || num_proc_filters > 0) {
+				*shall_print = 0;
+			}
+		}
+		if (!*shall_print) {
+			break;
+		}
+	} while (0);
+}
+
 static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data)
 {
 	if (len < 0x81) {
@@ -410,62 +470,7 @@ static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data
 		image_name_short = NULL;
 	}
 
-	do {
-		/* check if we have any triggers/untriggers */
-		if (num_untrigger_filters > 0 && triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_untrigger_filters; i++) {
-				if (strstr(message, untrigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 1;
-			} else {
-				shall_print = 1;
-				trigger_off = 1;
-			}
-		} else if (num_trigger_filters > 0 && !triggered) {
-			int found = 0;
-			int i;
-			for (i = 0; i < num_trigger_filters; i++) {
-				if (strstr(message, trigger_filters[i])) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				shall_print = 0;
-				break;
-			}
-			triggered = 1;
-			shall_print = 1;
-		} else if (num_trigger_filters == 0 && num_untrigger_filters > 0 && !triggered) {
-			shall_print = 0;
-			quit_flag++;
-			break;
-		}
-	
-		/* check message filters */
-		shall_print = message_filter_matching(message);
-		if (!shall_print) {
-			break;
-		}
-
-		/* check process filters */
-		if (process_filter_matching(trace_hdr->pid, process_name_short, strlen(process_name_short))) {
-			shall_print = 1;
-		} else {
-			if (num_pid_filters > 0 || num_proc_filters > 0) {
-				shall_print = 0;
-			}
-		}
-		if (!shall_print) {
-			break;
-		}
-	} while (0);
+	check_filtering(trace_hdr->pid, process_name_short, message, &shall_print, &trigger_off);
 
 	if (!shall_print) {
 		return;
@@ -536,6 +541,179 @@ static void ostrace_syslog_callback(const void* buf, size_t len, void* user_data
 	cprintf(FG_WHITE);
 	cprintf("%s" COLOR_RESET "\n", message);
 	fflush(stdout);	
+
+	if (trigger_off) {
+		triggered = 0;
+	}
+}
+
+#define ESCAPE_JSON_BUFFER_INITIAL 256
+#define ESCAPE_JSON_BUFFER_INCREMENT 64
+
+static char *escape_json_buffer = NULL;
+static size_t escape_json_buffer_size = 0;
+
+// Taken from json_object.c of the json-c project - https://github.com/json-c/json-c/
+const char *json_hex_chars = "0123456789ABCDEF";
+
+static char *escape_json(const char *input_buffer) {
+	size_t input_length = strlen(input_buffer);
+
+	size_t output_buffer_offset = 0;
+
+	for (size_t input_offset = 0; input_offset < input_length; input_offset++) {
+		if (escape_json_buffer == NULL) {
+			// If we don't have a buffer, create one
+			escape_json_buffer_size = ESCAPE_JSON_BUFFER_INITIAL;
+			escape_json_buffer = (char *)malloc(ESCAPE_JSON_BUFFER_INITIAL);
+		} else if ((escape_json_buffer_size - output_buffer_offset) < 7) {
+			// We have a buffer, but we have less than 7 characters left, bump the buffer size, as the next one could be a unicode escape
+			escape_json_buffer_size += ESCAPE_JSON_BUFFER_INCREMENT;
+			escape_json_buffer = (char *)realloc(escape_json_buffer, escape_json_buffer_size);
+		}
+
+		char current = input_buffer[input_offset];
+		switch (current) {
+      case '"':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = '"';
+				break;
+      case '\\':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				break;
+      case '\b':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = 'b';
+				break;
+      case '\f':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = 'f';
+				break;
+      case '\n':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = 'n';
+				break;
+      case '\r':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = 'r';
+				break;
+			case '\t':
+				escape_json_buffer[output_buffer_offset++] = '\\';
+				escape_json_buffer[output_buffer_offset++] = 't';
+				break;
+			default:
+				if ('\x00' <= current && current <= '\x1f') {
+					escape_json_buffer[output_buffer_offset++] = '\\';
+					escape_json_buffer[output_buffer_offset++] = 'u';
+					escape_json_buffer[output_buffer_offset++] = '0';
+					escape_json_buffer[output_buffer_offset++] = '0';
+					escape_json_buffer[output_buffer_offset++] = json_hex_chars[current >> 4];
+					escape_json_buffer[output_buffer_offset++] = json_hex_chars[current & 0xf];
+				} else {
+					escape_json_buffer[output_buffer_offset++] = current;
+				}
+		}
+	}
+
+	escape_json_buffer[output_buffer_offset] = 0;
+	return escape_json_buffer;
+}
+
+static void ostrace_ndjson_callback(const void* buf, size_t len, void* user_data)
+{
+	if (len < 0x81) {
+		fprintf(stderr, "Error: not enough data in callback function?!\n");
+		return;
+	}
+
+	struct ostrace_packet_header_t *trace_hdr = (struct ostrace_packet_header_t*)buf;
+
+	if (trace_hdr->marker != 2 || (trace_hdr->type != 8 && trace_hdr->type != 2)) {
+		fprintf(stderr, "unexpected packet data %02x %08x\n", trace_hdr->marker, trace_hdr->type);
+	}
+
+	const char* dataptr = (const char*)buf + trace_hdr->header_size;
+	const char* process_name = dataptr;
+	const char* image_name = (trace_hdr->imagepath_len > 0) ? dataptr + trace_hdr->procpath_len : NULL;
+	const char* message = (trace_hdr->message_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len : NULL;
+	const char* subsystem = (trace_hdr->subsystem_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len + trace_hdr->message_len : NULL;
+	const char* category = (trace_hdr->category_len > 0) ? dataptr + trace_hdr->procpath_len + trace_hdr->imagepath_len + trace_hdr->message_len + trace_hdr->subsystem_len : NULL;
+
+	int shall_print = 1;
+	int trigger_off = 0;
+	const char* process_name_short = (process_name) ? strrchr(process_name, '/') : "";
+	process_name_short = (process_name_short) ? process_name_short+1 : process_name;
+
+	check_filtering(trace_hdr->pid, process_name_short, message, &shall_print, &trigger_off);
+
+	if (!shall_print) {
+		return;
+	}
+
+	const char* level_str = "Unknown";
+	switch (trace_hdr->level) {
+		case 0:
+			// in ostrace_syslog_callback this is Notice, but officially
+			// it should be Default in ndjson log output
+			level_str = "Default";
+			break;
+		case 0x01:
+			level_str = "Info";
+			break;
+		case 0x02:
+			level_str = "Debug";
+			break;
+		case 0x10:
+			level_str = "Error";
+			break;
+		case 0x11:
+			level_str = "Fault";
+		default:
+			break;
+	}
+
+	char prefixdatebuf[20];
+	char suffixdatebuf[6];
+	char datebuf[32];
+	struct tm *tp;
+	time_t time_sec = (time_t)trace_hdr->time_sec;
+#ifdef HAVE_LOCALTIME_R
+	struct tm tp_ = {0, };
+	tp = localtime_r(&time_sec, &tp_);
+#else
+	tp = localtime(&time_sec);
+#endif
+
+	// This builds a timestamp that is equivalent to what the ndjson log stream code generates
+	strftime(prefixdatebuf, 19, "%Y-%m-%d %H:%M:%S", tp);
+	strftime(suffixdatebuf, 5, "%z", tp);
+	snprintf(datebuf, 32, "%s.%06u%s", prefixdatebuf, trace_hdr->time_usec, suffixdatebuf);
+
+	cprintf("{");
+	cprintf("\"timestamp\":\"%s\"", datebuf);
+	cprintf(",\"machTimestamp\":%ld", trace_hdr->timestamp);
+	cprintf(",\"processImageUUID\":\"");
+	for (int i = 0; i < 16; i++) {
+		unsigned char current = trace_hdr->imageuuid[i];
+		cprintf("%c%c", json_hex_chars[current >> 4], json_hex_chars[current & 0xf]);
+		if (i == 3 || i == 5 || i == 7 || i == 9) {
+			cprintf("-");
+		}
+	}
+	cprintf("\"");
+
+	cprintf(",\"processImagePath\":\"%s\"", escape_json(process_name));
+	cprintf(",\"senderImagePath\":\"%s\"", escape_json(image_name));
+	cprintf(",\"processID\":%d", trace_hdr->pid);
+	cprintf(",\"creatorActivityID\":%d", trace_hdr->aid);
+	cprintf(",\"threadID\":%d", trace_hdr->thread_id);
+	cprintf(",\"messageType\":\"%s\"", level_str);
+	cprintf(",\"subsystem\":\"%s\"", subsystem == NULL ? "" : escape_json(subsystem));
+	cprintf(",\"category\":\"%s\"", category == NULL ? "" : escape_json(category));
+	cprintf(",\"eventMessage\":\"%s\"", escape_json(message));
+	cprintf("}\n");
+	fflush(stdout);
 
 	if (trigger_off) {
 		triggered = 0;
@@ -702,7 +880,13 @@ static int start_logging(void)
 				plist_dict_set_item(options, "Pid", plist_new_int(pid));
 			}
 		}
-		ostrace_error_t serr = ostrace_start_activity(ostrace, options, ostrace_syslog_callback, NULL);
+		ostrace_error_t serr;
+
+		if (style_ndjson) {
+			serr = ostrace_start_activity(ostrace, options, ostrace_ndjson_callback, NULL);
+		} else {
+			serr = ostrace_start_activity(ostrace, options, ostrace_syslog_callback, NULL);
+		}
 		if (serr != OSTRACE_E_SUCCESS) {
 			fprintf(stderr, "ERROR: Unable to start capturing syslog.\n");
 			ostrace_client_free(ostrace);
@@ -725,8 +909,10 @@ static int start_logging(void)
 		return -1;
 	}
 
-	fprintf(stdout, "[connected:%s]\n", udid);
-	fflush(stdout);
+	if (!style_ndjson) {
+		fprintf(stdout, "[connected:%s]\n", udid);
+		fflush(stdout);
+	}
 
 	return 0;
 }
@@ -844,7 +1030,9 @@ static void device_event_cb(const idevice_event_t* event, void* userdata)
 	} else if (event->event == IDEVICE_DEVICE_REMOVE) {
 		if ((syslog || ostrace) && (strcmp(udid, event->udid) == 0)) {
 			stop_logging();
-			fprintf(stdout, "[disconnected:%s]\n", udid);
+			if (!style_ndjson) {
+				fprintf(stdout, "[disconnected:%s]\n", udid);
+			}
 			if (exit_on_disconnect) {
 				quit_flag++;
 			}
@@ -878,7 +1066,8 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  -v, --version         prints version information\n"
 		"  --no-colors           disable colored output\n"
 		"  -o, --output FILE     write to FILE instead of stdout\n"
-		"                        (existing FILE will be overwritten)\n"
+		"  -s, --style STYLE     change the output style when using ostrace\n"
+		"                        (where STYLE is either default or ndjson)\n"
 		"  --colors              force writing colored output, e.g. for --output\n"
 		"  --syslog-relay        force use of syslog_relay service\n"
 		"\n"
@@ -945,6 +1134,7 @@ int main(int argc, char *argv[])
 		{ "age-limit", required_argument, NULL, 7 },
 		{ "output", required_argument, NULL, 'o' },
 		{ "version", no_argument, NULL, 'v' },
+		{ "style", required_argument, NULL, 's' },
 		{ NULL, 0, NULL, 0}
 	};
 
@@ -955,7 +1145,7 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:M:e:p:qkKo:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhu:nxt:T:m:M:e:p:qkKo:s:v", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
@@ -1099,6 +1289,20 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				term_colors_set_enabled(0);
+			}
+			break;
+		case 's':
+			if (!*optarg) {
+				fprintf(stderr, "ERROR: --style option requires an argument - either default or ndjson!\n");
+				print_usage(argc, argv, 1);
+				return 2;
+			} else {
+				if (strcmp(optarg, "ndjson") == 0) {
+				  style_ndjson = 1;
+				  term_colors_set_enabled(0);
+				} else {
+					style_ndjson = 0;
+				}
 			}
 			break;
 		case 'v':
