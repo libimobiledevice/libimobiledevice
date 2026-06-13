@@ -87,6 +87,7 @@ enum cmd_mode {
 	CMD_UNBACK,
 	CMD_CHANGEPW,
 	CMD_LEAVE,
+	CMD_ERASE,
 	CMD_CLOUD
 };
 
@@ -1669,6 +1670,7 @@ static void print_usage(int argc, char **argv, int is_error)
 		"  encryption on|off [PWD]       enable or disable backup encryption\n"
 		"  changepw [OLD NEW]    change backup password on target device\n"
 		"  cloud on|off          enable or disable cloud use (requires iCloud account)\n"
+		"  erase          Erase device using mobile obliteration. (This is the same process used by erase all content and settings)\n"
 		"\n"
 		"NOTE: Passwords will be requested in interactive mode (-i) if omitted, or can\n"
 		"be passed via environment variable BACKUP_PASSWORD/BACKUP_PASSWORD_NEW.\n"
@@ -1840,6 +1842,9 @@ int main(int argc, char *argv[])
 	else if (!strcmp(argv[0], "restore")) {
 		cmd = CMD_RESTORE;
 	}
+	else if (!strcmp(argv[i], "erase")) {
+		cmd = CMD_ERASE;
+	}
 	else if (!strcmp(argv[0], "cloud")) {
 		cmd = CMD_CLOUD;
 		i = 1;
@@ -1933,7 +1938,7 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
-	if (cmd == CMD_CHANGEPW || cmd == CMD_CLOUD) {
+	if (cmd == CMD_CHANGEPW || cmd == CMD_CLOUD || cmd == CMD_ERASE) {
 		backup_directory = (char*)".this_folder_is_not_present_on_purpose";
 	} else {
 		if (backup_directory == NULL) {
@@ -2195,6 +2200,12 @@ int main(int argc, char *argv[])
 checkpoint:
 
 		switch(cmd) {
+			case CMD_ERASE:
+			PRINT_VERBOSE(1, "Starting Erase device...\n");
+			err = mobilebackup2_send_message(mobilebackup2, "EraseDevice", NULL);
+			result_code = err;
+			cmd = CMD_LEAVE;
+			break;
 			case CMD_CLOUD:
 			opts = plist_new_dict();
 			plist_dict_set_item(opts, "CloudBackupState", plist_new_bool(cmd_flags & CMD_FLAG_CLOUD_ENABLE ? 1: 0));
