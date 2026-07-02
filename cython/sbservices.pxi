@@ -8,11 +8,18 @@ cdef extern from "libimobiledevice/sbservices.h":
         SBSERVICES_E_PLIST_ERROR = -2
         SBSERVICES_E_CONN_FAILED = -3
         SBSERVICES_E_UNKNOWN_ERROR = -256
+    ctypedef enum sbservices_interface_orientation_t:
+        SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN = 0
+        SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT = 1
+        SBSERVICES_INTERFACE_ORIENTATION_PORTRAIT_UPSIDE_DOWN = 2
+        SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_RIGHT = 3
+        SBSERVICES_INTERFACE_ORIENTATION_LANDSCAPE_LEFT = 4
     sbservices_error_t sbservices_client_new(idevice_t device, lockdownd_service_descriptor_t descriptor, sbservices_client_t *client)
     sbservices_error_t sbservices_client_free(sbservices_client_t client)
     sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist.plist_t *state, char *format_version)
     sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist.plist_t newstate)
     sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, char *bundleId, char **pngdata, uint64_t *pngsize)
+    sbservices_error_t sbservices_get_interface_orientation(sbservices_client_t client, sbservices_interface_orientation_t *interface_orientation)
 
 cdef class SpringboardServicesError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -78,3 +85,10 @@ cdef class SpringboardServicesClient(PropertyListService):
         except BaseError, e:
             free(pngdata)
             raise
+
+    property interface_orientation:
+        def __get__(self):
+            cdef:
+                sbservices_interface_orientation_t interface_orientation = SBSERVICES_INTERFACE_ORIENTATION_UNKNOWN
+            self.handle_error(sbservices_get_interface_orientation(self._c_client, &interface_orientation))
+            return <int>interface_orientation
