@@ -13,6 +13,7 @@ cdef extern from "libimobiledevice/sbservices.h":
     sbservices_error_t sbservices_get_icon_state(sbservices_client_t client, plist.plist_t *state, char *format_version)
     sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist.plist_t newstate)
     sbservices_error_t sbservices_get_icon_pngdata(sbservices_client_t client, char *bundleId, char **pngdata, uint64_t *pngsize)
+    sbservices_error_t sbservices_get_home_screen_icon_metrics(sbservices_client_t client, plist.plist_t *metrics)
 
 cdef class SpringboardServicesError(BaseError):
     def __init__(self, *args, **kwargs):
@@ -78,3 +79,18 @@ cdef class SpringboardServicesClient(PropertyListService):
         except BaseError, e:
             free(pngdata)
             raise
+
+    property home_screen_icon_metrics:
+        def __get__(self):
+            cdef:
+                plist.plist_t c_node = NULL
+                sbservices_error_t err
+            err = sbservices_get_home_screen_icon_metrics(self._c_client, &c_node)
+            try:
+                self.handle_error(err)
+
+                return plist.plist_t_to_node(c_node)
+            except BaseError, e:
+                if c_node != NULL:
+                    plist.plist_free(c_node)
+                raise
