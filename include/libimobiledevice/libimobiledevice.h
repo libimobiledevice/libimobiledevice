@@ -430,7 +430,7 @@ LIBIMOBILEDEVICE_API const char* idevice_strerror(idevice_error_t err);
  *
  * @return The libimobiledevice version as static ascii string
  */
-LIBIMOBILEDEVICE_API const char* libimobiledevice_version();
+LIBIMOBILEDEVICE_API const char* libimobiledevice_version(void);
 
 /* macros */
 /** Helper macro to get a numerical representation of a product version tuple */
