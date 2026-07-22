@@ -73,6 +73,11 @@
 #define CODE_ERROR_REMOTE 0x0b
 #define CODE_FILE_DATA 0x0c
 
+/* Buffer size for file transfers to/from the device and for local file
+ * copies. Larger chunks greatly reduce the per-chunk protocol and syscall
+ * overhead; devices accept much larger CODE_FILE_DATA chunks than this. */
+#define FILE_TRANSFER_BUFFER_SIZE (1024 * 1024)
+
 static int verbose = 1;
 static int quit_flag = 0;
 static int passcode_requested = 0;
@@ -974,7 +979,12 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 	uint32_t pathlen = strlen(path);
 	uint32_t bytes = 0;
 	char *localfile = string_build_path(backup_dir, path, NULL);
-	char buf[32768];
+	char *buf = malloc(FILE_TRANSFER_BUFFER_SIZE);
+	if (!buf) {
+		progress_printf("%s: Out of memory\n", __func__);
+		free(localfile);
+		return -1;
+	}
 #ifdef _WIN32
 	struct _stati64 fst;
 #else
@@ -1050,7 +1060,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 
 	sent = 0;
 	do {
-		length = ((total-sent) < (long long)sizeof(buf)) ? (uint32_t)total-sent : (uint32_t)sizeof(buf);
+		length = ((total-sent) < (long long)FILE_TRANSFER_BUFFER_SIZE) ? (uint32_t)(total-sent) : (uint32_t)FILE_TRANSFER_BUFFER_SIZE;
 		/* send data size (file size + 1) */
 		nlen = htobe32(length+1);
 		memcpy(buf, &nlen, sizeof(nlen));
@@ -1064,7 +1074,7 @@ static int mb2_handle_send_file(mobilebackup2_client_t mobilebackup2, const char
 		}
 
 		/* send file contents */
-		size_t r = fread(buf, 1, sizeof(buf), f);
+		size_t r = fread(buf, 1, length, f);
 		if (r <= 0) {
 			progress_printf("%s: read error\n", __func__);
 			errcode = errno;
@@ -1120,6 +1130,7 @@ leave_proto_err:
 	if (f)
 		fclose(f);
 	free(localfile);
+	free(buf);
 	return result;
 }
 
@@ -1227,7 +1238,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 	uint32_t rlen;
 	uint32_t nlen = 0;
 	uint32_t r;
-	char buf[32768];
+	char *buf = NULL;
 	char *fname = NULL;
 	char *dname = NULL;
 	char *bname = NULL;
@@ -1240,6 +1251,12 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 	char *errdesc = NULL;
 
 	if (!message || (plist_get_node_type(message) != PLIST_ARRAY) || plist_array_get_size(message) < 4 || !backup_dir) return 0;
+
+	buf = malloc(FILE_TRANSFER_BUFFER_SIZE);
+	if (!buf) {
+		progress_printf("%s: Out of memory\n", __func__);
+		return 0;
+	}
 
 	node = plist_array_get_item(message, 3);
 	if (plist_get_node_type(node) == PLIST_UINT) {
@@ -1312,10 +1329,10 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 			bdone = 0;
 			rlen = 0;
 			while (bdone < blocksize) {
-				if ((blocksize - bdone) < sizeof(buf)) {
+				if ((blocksize - bdone) < FILE_TRANSFER_BUFFER_SIZE) {
 					rlen = blocksize - bdone;
 				} else {
-					rlen = sizeof(buf);
+					rlen = FILE_TRANSFER_BUFFER_SIZE;
 				}
 				mobilebackup2_receive_raw(mobilebackup2, buf, rlen, &r);
 				if ((int)r <= 0) {
@@ -1387,6 +1404,8 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 
 	if (dname != NULL)
 		free(dname);
+
+	free(buf);
 
 	plist_t empty_plist = plist_new_dict();
 	mobilebackup2_send_status_response(mobilebackup2, errcode, errdesc, empty_plist);
@@ -1489,12 +1508,19 @@ static void mb2_handle_make_directory(mobilebackup2_client_t mobilebackup2, plis
 static void mb2_copy_file_by_path(const char *src, const char *dst)
 {
 	FILE *from, *to;
-	char buf[BUFSIZ];
+	char *buf;
 	size_t length;
+
+	buf = malloc(FILE_TRANSFER_BUFFER_SIZE);
+	if (!buf) {
+		printf("%s: Out of memory\n", __func__);
+		return;
+	}
 
 	/* open source file */
 	if ((from = fopen(src, "rb")) == NULL) {
 		printf("Cannot open source path '%s'.\n", src);
+		free(buf);
 		return;
 	}
 
@@ -1502,13 +1528,16 @@ static void mb2_copy_file_by_path(const char *src, const char *dst)
 	if ((to = fopen(dst, "wb")) == NULL) {
 		printf("Cannot open destination file '%s'.\n", dst);
 		fclose(from);
+		free(buf);
 		return;
 	}
 
 	/* copy the file */
-	while ((length = fread(buf, 1, BUFSIZ, from)) != 0) {
+	while ((length = fread(buf, 1, FILE_TRANSFER_BUFFER_SIZE, from)) != 0) {
 		fwrite(buf, 1, length, to);
 	}
+
+	free(buf);
 
 	if(fclose(from) == EOF) {
 		printf("Error closing source file.\n");
