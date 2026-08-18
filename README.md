@@ -70,9 +70,6 @@ sudo apt-get install \
 	libssl-dev \
 	usbmuxd
 ```
-NOTE: [libtatsu](https://github.com/libimobiledevice/libtatsu) (and thus `libtatsu-dev`)
-is a new library that was just published recently, you have to
-[build it from source](https://github.com/libimobiledevice/libtatsu?tab=readme-ov-file#building).
 
 If you want to optionally build the documentation or Python bindings use:
 ```shell
