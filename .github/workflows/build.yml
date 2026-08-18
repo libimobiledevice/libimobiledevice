@@ -151,8 +151,8 @@ jobs:
           PYTHON3_BIN=`xcrun -f python3`
           if test -x $PYTHON3_BIN; then
             export PYTHON=$PYTHON3_BIN
-            PYTHON_VER=`$PYTHON3_BIN -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('VERSION'))"`
-            PYTHON_EXEC_PREFIX=`$PYTHON3_BIN -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('exec_prefix'))"`
+            PYTHON_VER=`$PYTHON3_BIN -c "import sysconfig; print(sysconfig.get_config_var('VERSION'))"`
+            PYTHON_EXEC_PREFIX=`$PYTHON3_BIN -c "import sysconfig; print(sysconfig.get_config_var('exec_prefix'))"`
             PYTHON_LIBS_PATH=$PYTHON_EXEC_PREFIX/lib
             PYTHON_FRAMEWORK_PATH=$PYTHON_EXEC_PREFIX/Python3
             export PYTHON_CPPFLAGS="-I$PYTHON_EXEC_PREFIX/Headers"
