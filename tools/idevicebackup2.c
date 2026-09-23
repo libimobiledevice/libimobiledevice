@@ -58,6 +58,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
+#include <io.h>
 #define sleep(x) Sleep(x*1000)
 #ifndef ELOOP
 #define ELOOP 114
@@ -685,7 +686,29 @@ static uint64_t file_total = 0;
 static int transfer_status = 0;
 static int progress_mode_active = 0;
 static char progress_status[256] = "";
-static char transfer_info[256] = "";
+static char transfer_info[1024] = "";
+
+/* Whether stdout is a real terminal. The 4-line progress display's
+ * fixed-width, cursor-redraw rendering only makes sense against an
+ * interactive terminal; when stdout is piped (as it always is when this
+ * tool is run as a subprocess, e.g. by iSeReCoSy), there is no column
+ * width to respect and no redraw to protect, so the on-device filename
+ * should be kept in full rather than elided to fit a terminal that isn't
+ * there. Computed once and cached, since it can't change mid-run. */
+static int stdout_is_tty(void)
+{
+	static int checked = 0;
+	static int result = 0;
+	if (!checked) {
+#ifdef _WIN32
+		result = _isatty(_fileno(stdout));
+#else
+		result = isatty(fileno(stdout));
+#endif
+		checked = 1;
+	}
+	return result;
+}
 
 static void draw_progress_bar(double percent, int width)
 {
@@ -1259,7 +1282,7 @@ static int mb2_handle_receive_files(mobilebackup2_client_t mobilebackup2, plist_
 		if (nlen == 0) {
 			break;
 		}
-		if (nlen > 68) {
+		if (stdout_is_tty() && nlen > 68) {
 			snprintf(transfer_info, sizeof(transfer_info), "...%s", dname + (nlen - 65));
 		} else {
 			snprintf(transfer_info, sizeof(transfer_info), "%s", dname);
