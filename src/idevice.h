@@ -51,6 +51,7 @@
 
 #include "common/userpref.h"
 #include "libimobiledevice/libimobiledevice.h"
+#include <libimobiledevice-glue/thread.h>
 
 #define DEVICE_CLASS_IPHONE  1
 #define DEVICE_CLASS_IPAD    2
@@ -88,6 +89,7 @@ struct idevice_connection_private {
 	ssl_data_t ssl_data;
 	unsigned int ssl_recv_timeout;
 	idevice_error_t status;
+	mutex_t mutex;
 };
 
 struct idevice_private {
