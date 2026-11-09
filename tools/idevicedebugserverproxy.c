@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 #endif
 
 	/* parse cmdline arguments */
-	while ((c = getopt_long(argc, argv, "dhu:nv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhlu:nv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			debug_mode = 1;
