@@ -188,7 +188,7 @@ We are still working on the guidelines so bear with us!
 ## License
 
 This library and utilities are licensed under the [GNU Lesser General Public License v2.1](https://www.gnu.org/licenses/lgpl-2.1.en.html),
-also included in the repository in the `COPYING` file.
+also included in the repository in the `COPYING.LESSER` file.
 
 ## Credits
 
