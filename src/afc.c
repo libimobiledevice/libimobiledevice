@@ -290,7 +290,7 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	}
 
 	/* then, read the attached packet */
-	if (header.this_length < sizeof(AFCPacket)) {
+	if (header.this_length < sizeof(AFCPacket) || header.entire_length < sizeof(AFCPacket) || header.entire_length > UINT32_MAX || header.this_length > header.entire_length) {
 		debug_info("Invalid AFCPacket header received!");
 		return AFC_E_OP_HEADER_INVALID;
 	}
@@ -309,6 +309,10 @@ static afc_error_t afc_receive_data(afc_client_t client, char **bytes, uint32_t 
 	this_len = (uint32_t)header.this_length - sizeof(AFCPacket);
 
 	buf = (char*)malloc(entire_len);
+	if (!buf) {
+		debug_info("Failed to allocate %u bytes for packet buffer", entire_len);
+		return AFC_E_NO_MEM;
+	}
 	if (this_len > 0) {
 		recv_len = 0;
 		err = service_to_afc_error(service_receive(client->parent, buf, this_len, &recv_len));
