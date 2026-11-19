@@ -6,6 +6,7 @@
  * But entirely rewritten from scratch.
  *
  * Copyright (c) 2023 Nikias Bassen, All Rights Reserved.
+ * Copyright (c) 2026 Tom Allebrandi II (wyrles@ytram.com), All Rights Reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,6 +21,22 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/*
+ * Tom Allebrandi II, July 2026
+ *
+ * My changes are bracketed in comments of the form "// +++ [TA2/July 2026]" to
+ * "// --- [TA2/July 2026]"
+ *
+ * 1) Add support in the mini-shell get command for a destination path of "-"
+ *    to send the file to stdout
+ *
+ * 2) Avoid a few compiler warnings for redefined <stat.h> macros
+ *
+ *    (I checked the values in my MSYS64 UCRT64 environment on Windows
+ *    (C:/msys64/ucrt64/include/sys/stat.h) and they are same as the
+ *    redefinition values)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -45,10 +62,25 @@
 #include <sys/time.h>
 #include <conio.h>
 #define sleep(x) Sleep(x*1000)
-#define S_IFMT          0170000         /* [XSI] type of file mask */
-#define S_IFIFO         0010000         /* [XSI] named pipe (fifo) */
-#define S_IFCHR         0020000         /* [XSI] character special */
-#define S_IFBLK         0060000         /* [XSI] block special */
+
+// +++ [TA2/July 2026]
+#ifndef S_IFMT
+	#define S_IFMT          0170000         /* [XSI] type of file mask */
+#endif
+
+#ifndef S_IFIFO
+	#define S_IFIFO         0010000         /* [XSI] named pipe (fifo) */
+#endif
+
+#ifndef S_IFCHR
+	#define S_IFCHR         0020000         /* [XSI] character special */
+#endif
+
+#ifndef S_IFBLK
+	#define S_IFBLK         0060000         /* [XSI] block special */
+#endif
+// --- [TA2/July 2026]
+
 #define S_IFLNK         0120000         /* [XSI] symbolic link */
 #define S_IFSOCK        0140000         /* [XSI] socket */
 #define S_ISBLK(m)      (((m) & S_IFMT) == S_IFBLK)     /* block special */
@@ -204,6 +236,9 @@ static void handle_help(afc_client_t afc, int argc, char** argv)
 	printf("rm PATH - remove item at PATH\n");
 	printf("get [-rf] PATH [LOCALPATH] - transfer file at PATH from device to LOCALPATH\n");
 	printf("put [-rf] LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH\n");
+	// +++ [TA2/July 2026]
+	printf("          \"-\" may be used as [PATH] to send the file to stdout\n");
+	// --- [TA2/July 2026]
 	printf("\n");
 }
 
@@ -709,27 +744,53 @@ static uint8_t get_single_file(afc_client_t afc, const char *srcpath, const char
 		printf("Error: Failed to open file '%s': %s (%d)\n", srcpath, afc_strerror(err), err);
 		return 0;
 	}
-	if (file_exists(dstpath) && !force_overwrite) {
-		printf("Error: Failed to overwrite existing file without '-f' option: %s\n", dstpath);
-		return 0;
-	}
-	FILE *f = fopen(dstpath, "wb");
-	if (!f) {
-		printf("Error: Failed to open local file '%s': %s\n", dstpath, strerror(errno));
-		return 0;
-	}
+
+// +++ [TA2/July 2026]
+	FILE *f;
+	int progress = 0;
 	struct timeval t1;
+
+	if (strcmp(dstpath, "-") == 0) {
+		int fd = dup(fileno(stdout));
+		if (fd==-1) {
+			printf("Error: Failed to duplicate stdout: %s\n", strerror(errno));
+			return 0;
+		}
+
+		f = fdopen(fd, "wb");
+		if (!f) {
+			printf("Error: Failed to open stdout in binary mode: %s\n", strerror(errno));
+			close(fd);
+			return 0;
+		}
+	}
+	else
+	{
+		if (file_exists(dstpath) && !force_overwrite) {
+			printf("Error: Failed to overwrite existing file without '-f' option: %s\n", dstpath);
+			return 0;
+		}
+
+		f = fopen(dstpath, "wb");
+		if (!f) {
+			printf("Error: Failed to open local file '%s': %s\n", dstpath, strerror(errno));
+			return 0;
+		}
+
+		if (file_size > 0x400000) {
+			progress = 1;
+			gettimeofday(&t1, NULL);
+		}
+	}
+// --- [TA2/July 2026]
+
 	struct timeval t2;
 	struct timeval tdiff;
 	size_t bufsize = 0x100000;
 	char *buf = malloc(bufsize);
 	size_t total = 0;
-	int progress = 0;
 	int lastprog = 0;
-	if (file_size > 0x400000) {
-		progress = 1;
-		gettimeofday(&t1, NULL);
-	}
+
 	uint8_t succeed = 1;
 	while (err == AFC_E_SUCCESS) {
 		uint32_t bytes_read = 0;
@@ -803,6 +864,13 @@ static uint8_t get_file(afc_client_t afc, const char *srcpath, const char *dstpa
 	}
 	uint8_t succeed = 1;
 	if (is_dir) {
+// +++ [TA2/July 2026]
+		if (strcmp(dstpath, "-") == 0) {
+			printf("Error: Output to stdout (\"-\") is not supported for getting a directory: %s\n", srcpath);
+			return 0;
+		}
+// --- [TA2/July 2026]
+
 		if (!recursive_get) {
 			printf("Error: Failed to get a directory without '-r' option: %s\n", srcpath);
 			return 0;
