@@ -244,10 +244,12 @@ void *ostrace_worker(void *arg)
 		res = ostrace_error(service_receive(oswt->client->parent, (char*)buf, rlen, &received));
 		if (res != OSTRACE_E_SUCCESS) {
 			debug_info("Failed to receive %d bytes, error %d", rlen, res);
+			free(buf);
 			break;
 		}
 		if (received < rlen) {
 			debug_info("Failed to receive all data, got %d/%d", received, rlen);
+			free(buf);
 			break;
 		}
 		oswt->cbfunc(buf, received, oswt->user_data);
@@ -423,9 +425,12 @@ ostrace_error_t ostrace_create_archive(ostrace_client_t client, plist_t options,
 		res = ostrace_error(service_receive(client->parent, (char*)buf, rlen, &received));
 		if (res != OSTRACE_E_SUCCESS) {
 			debug_info("Could not read data from service: %d", res);
+			free(buf);
 			break;
 		}
-		if (callback(buf, received, user_data) < 0) {
+		int callback_result = callback(buf, received, user_data);
+		free(buf);
+		if (callback_result < 0) {
 			debug_info("Aborted through callback");
 			return OSTRACE_E_REQUEST_FAILED;
 		}
