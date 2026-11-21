@@ -209,7 +209,7 @@ INITIALIZER(internal_idevice_init)
 	atexit(internal_idevice_deinit);
 }
 
-const char* libimobiledevice_version()
+const char* libimobiledevice_version(void)
 {
 #ifndef PACKAGE_VERSION
 #error PACKAGE_VERSION is not defined!
