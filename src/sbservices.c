@@ -298,3 +298,40 @@ leave_unlock:
 	sbservices_unlock(client);
 	return res;
 }
+
+sbservices_error_t sbservices_get_home_screen_icon_metrics(sbservices_client_t client, plist_t *metrics)
+{
+	if (!client || !client->parent || !metrics)
+		return SBSERVICES_E_INVALID_ARG;
+
+	sbservices_error_t res = SBSERVICES_E_UNKNOWN_ERROR;
+
+	plist_t dict = plist_new_dict();
+	plist_dict_set_item(dict, "command", plist_new_string("getHomeScreenIconMetrics"));
+
+	sbservices_lock(client);
+
+	res = sbservices_error(property_list_service_send_binary_plist(client->parent, dict));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not send plist, error %d", res);
+		goto leave_unlock;
+	}
+	plist_free(dict);
+	dict = NULL;
+
+	res = sbservices_error(property_list_service_receive_plist(client->parent, metrics));
+	if (res != SBSERVICES_E_SUCCESS) {
+		debug_info("could not get home screen icon metrics, error %d", res);
+		if (*metrics) {
+			plist_free(*metrics);
+			*metrics = NULL;
+		}
+	}
+
+leave_unlock:
+	if (dict) {
+		plist_free(dict);
+	}
+	sbservices_unlock(client);
+	return res;
+}

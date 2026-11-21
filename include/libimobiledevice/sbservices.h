@@ -168,6 +168,19 @@ LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_interface_orientation(sbs
  */
 LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_home_screen_wallpaper_pngdata(sbservices_client_t client, char **pngdata, uint64_t *pngsize);
 
+/**
+ * Get home screen icon metrics.
+ *
+ * @param client The connected sbservices client to use.
+ * @param metrics Pointer that will point to a newly allocated plist containing
+ *     the home screen icon metrics. It is up to the caller to free the memory.
+ *
+ * @return SBSERVICES_E_SUCCESS on success, SBSERVICES_E_INVALID_ARG when
+ *     client or metrics are invalid, or an SBSERVICES_E_* error code
+ *     otherwise.
+ */
+LIBIMOBILEDEVICE_API sbservices_error_t sbservices_get_home_screen_icon_metrics(sbservices_client_t client, plist_t *metrics);
+
 #ifdef __cplusplus
 }
 #endif
