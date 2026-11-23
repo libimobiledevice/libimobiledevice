@@ -250,7 +250,8 @@ void *ostrace_worker(void *arg)
 			debug_info("Failed to receive all data, got %d/%d", received, rlen);
 			break;
 		}
-		oswt->cbfunc(buf, received, oswt->user_data);
+		if(oswt->cbfunc)
+			oswt->cbfunc(buf, received, oswt->user_data);
 		free(buf);
 	}
 
