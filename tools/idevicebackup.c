@@ -974,6 +974,7 @@ int main(int argc, char *argv[])
 			char *file_ext = NULL;
 			char *filename_mdinfo = NULL;
 			char *filename_mddata = NULL;
+			FILE *mddata_file = NULL;
 			char *filename_source = NULL;
 			char *format_size = NULL;
 			int is_manifest = 0;
@@ -1074,32 +1075,63 @@ int main(int argc, char *argv[])
 				/* save <hash>.mddata */
 				node = plist_dict_get_item(node_tmp, "BackupFileInfo");
 				if (node_tmp) {
-					node = plist_dict_get_item(node_tmp, "DLFileDest");
-					plist_get_string_val(node, &file_path);
+					/* the destination filename only comes with the first hunk,
+					 * so open the file there and keep it open until the device
+					 * tells us the last hunk has been sent */
+					if (hunk_index == 0) {
+						free(file_path);
+						file_path = NULL;
+						node = plist_dict_get_item(node_tmp, "DLFileDest");
+						plist_get_string_val(node, &file_path);
 
-					filename_mddata = mobilebackup_build_path(backup_directory, file_path, is_manifest ? NULL: ".mddata");
+						free(filename_mddata);
+						filename_mddata = NULL;
 
-					/* if this is the first hunk, remove any existing file */
-					if ((hunk_index == 0) && (stat(filename_mddata, &st) == 0))
-						remove(filename_mddata);
+						if (!file_path) {
+							printf("ERROR: Received a file hunk without a destination filename.\n");
+							quit_flag++;
+						} else {
+							filename_mddata = mobilebackup_build_path(backup_directory, file_path, is_manifest ? NULL: ".mddata");
+
+							/* remove any existing file */
+							if (stat(filename_mddata, &st) == 0)
+								remove(filename_mddata);
+
+							mddata_file = fopen(filename_mddata, "wb");
+							if (!mddata_file) {
+								printf("ERROR: Could not open '%s' for writing: %s\n", filename_mddata, strerror(errno));
+								quit_flag++;
+							}
+						}
+					}
 
 					/* get file data hunk */
 					node_tmp = plist_array_get_item(message, 1);
 					plist_get_data_val(node_tmp, &buffer, &length);
 
-					buffer_write_to_filename(filename_mddata, buffer, length);
+					if (mddata_file && length > 0) {
+						if (fwrite(buffer, 1, length, mddata_file) != length) {
+							printf("ERROR: Failed to write to '%s': %s\n", filename_mddata, strerror(errno));
+							quit_flag++;
+						}
+					}
 					if (!is_manifest)
 						file_size_current += length;
-
-					/* activate currently sent manifest */
-					if ((file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) && (is_manifest)) {
-						rename(filename_mddata, manifest_path);
-					}
 
 					free(buffer);
 					buffer = NULL;
 
-					free(filename_mddata);
+					/* file complete: close it before touching it any further */
+					if (file_status == DEVICE_LINK_FILE_STATUS_LAST_HUNK) {
+						if (mddata_file) {
+							fclose(mddata_file);
+							mddata_file = NULL;
+						}
+
+						/* activate currently sent manifest */
+						if (is_manifest && filename_mddata)
+							rename(filename_mddata, manifest_path);
+					}
 				}
 
 				if ((!is_manifest)) {
@@ -1144,6 +1176,15 @@ files_out:
 					break;
 				}
 			} while (1);
+
+			/* the loop can be left mid-file (cancelled, or the device stopped
+			 * sending hunks), so make sure nothing stays open */
+			if (mddata_file) {
+				fclose(mddata_file);
+				mddata_file = NULL;
+			}
+			free(filename_mddata);
+			filename_mddata = NULL;
 
 			printf("Received %d files from device.\n", file_index);
 
