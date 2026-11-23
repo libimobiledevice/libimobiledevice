@@ -1487,7 +1487,7 @@ static void str_remove_spaces(char *source)
 {
 	char *dest = source;
 	while (*source != 0) {
-		if (!isspace(*source)) {
+		if (!isspace((unsigned char)*source)) {
 			*dest++ = *source; /* copy */
 		}
 		source++;
