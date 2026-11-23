@@ -178,7 +178,8 @@ sbservices_error_t sbservices_set_icon_state(sbservices_client_t client, plist_t
 	}
 
 	uint32_t bytes = 0;
-	service_receive_with_timeout(client->parent->parent, malloc(4), 4, &bytes, 2000);
+	char resp_hdr[4];
+	service_receive_with_timeout(client->parent->parent, resp_hdr, 4, &bytes, 2000);
 	debug_info("setIconState response: %u", bytes);
 
 	if (dict) {
