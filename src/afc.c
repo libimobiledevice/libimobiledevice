@@ -144,6 +144,13 @@ afc_error_t afc_client_start_service(idevice_t device, afc_client_t * client, co
 	return err;
 }
 
+afc_error_t afc_client_start_service_with_name(idevice_t device, afc_client_t * client, const char* label, const char* name)
+{
+	int32_t err = AFC_E_UNKNOWN_ERROR;
+	service_client_factory_start_service(device, name, (void**)client, label, SERVICE_CONSTRUCTOR(afc_client_new), &err);
+	return err;
+}
+
 afc_error_t afc_client_free(afc_client_t client)
 {
 	if (!client || !client->afc_packet)
