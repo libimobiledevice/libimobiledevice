@@ -1467,7 +1467,7 @@ int main(int argc, char** argv)
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	while ((c = getopt_long(argc, argv, "du:nhv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "+du:nhv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'd':
 			idevice_set_debug_level(1);
