@@ -40,7 +40,11 @@
 #ifdef LIBIMOBILEDEVICE_STATIC
   #define LIBIMOBILEDEVICE_API
 #elif defined(_WIN32)
-  #define LIBIMOBILEDEVICE_API __declspec( dllexport )
+  #ifdef DLL_EXPORT
+    #define LIBIMOBILEDEVICE_API __declspec( dllexport )
+  #else
+    #define LIBIMOBILEDEVICE_API
+  #endif
 #else
   #if __GNUC__ >= 4
     #define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))

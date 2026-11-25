@@ -39,13 +39,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #ifndef LIBIMOBILEDEVICE_API
-  #ifdef LIBIMOBILEDEVICE_STATIC
-    #define LIBIMOBILEDEVICE_API
-  #elif defined(_WIN32)
-    #define LIBIMOBILEDEVICE_API __declspec(dllimport)
-  #else
-    #define LIBIMOBILEDEVICE_API
-  #endif
+  #define LIBIMOBILEDEVICE_API
 #endif
 
 /** Error Codes */
