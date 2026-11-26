@@ -72,6 +72,8 @@
 #define ETIMEDOUT 138
 #endif
 
+static idevice_error_t idevice_connection_disable_bypass_ssl_locked(idevice_connection_t connection, uint8_t sslBypass);
+
 
 #ifdef HAVE_OPENSSL
 
@@ -543,6 +545,7 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
 		new_connection->status = IDEVICE_E_SUCCESS;
+		mutex_init(&new_connection->mutex);
 		*connection = new_connection;
 		return IDEVICE_E_SUCCESS;
 	}
@@ -587,6 +590,8 @@ idevice_error_t idevice_connect(idevice_t device, uint16_t port, idevice_connect
 		new_connection->ssl_data = NULL;
 		new_connection->device = device;
 		new_connection->ssl_recv_timeout = (unsigned int)-1;
+		new_connection->status = IDEVICE_E_SUCCESS;
+		mutex_init(&new_connection->mutex);
 
 		*connection = new_connection;
 
@@ -602,22 +607,26 @@ idevice_error_t idevice_disconnect(idevice_connection_t connection)
 	if (!connection) {
 		return IDEVICE_E_INVALID_ARG;
 	}
+	mutex_lock(&connection->mutex);
 	/* shut down ssl if enabled */
 	if (connection->ssl_data) {
-		idevice_connection_disable_ssl(connection);
+		idevice_connection_disable_bypass_ssl_locked(connection, 0);
 	}
 	idevice_error_t result = IDEVICE_E_UNKNOWN_ERROR;
-	if (connection->type == CONNECTION_USBMUXD) {
+	if (connection->type == CONNECTION_USBMUXD && connection->data) {
 		usbmuxd_disconnect((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
-	} else if (connection->type == CONNECTION_NETWORK) {
+	} else if (connection->type == CONNECTION_NETWORK && connection->data) {
 		socket_close((int)(uintptr_t)connection->data);
 		connection->data = NULL;
 		result = IDEVICE_E_SUCCESS;
 	} else {
 		debug_info("Unknown connection type %d", connection->type);
 	}
+	connection->type = 0;
+	mutex_unlock(&connection->mutex);
+	mutex_destroy(&connection->mutex);
 
 	free(connection);
 	connection = NULL;
@@ -662,13 +671,20 @@ static idevice_error_t internal_connection_send(idevice_connection_t connection,
 
 idevice_error_t idevice_connection_send(idevice_connection_t connection, const char *data, uint32_t len, uint32_t *sent_bytes)
 {
-	if (!connection || !data
-#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
-		|| (connection->ssl_data && !connection->ssl_data->session)
-#endif
-	) {
+	if (!connection || !data) {
 		return IDEVICE_E_INVALID_ARG;
 	}
+	mutex_lock(&connection->mutex);
+	if (!connection->data) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+	if (connection->ssl_data && !connection->ssl_data->session) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#endif
 
 	if (connection->ssl_data) {
 		connection->status = IDEVICE_E_SUCCESS;
@@ -696,9 +712,12 @@ idevice_error_t idevice_connection_send(idevice_connection_t connection, const c
 		debug_info("SSL_write %d, sent %d", len, sent);
 		if (sent < len) {
 			*sent_bytes = 0;
-			return connection->status == IDEVICE_E_SUCCESS ? IDEVICE_E_SSL_ERROR : connection->status;
+			idevice_error_t err = connection->status == IDEVICE_E_SUCCESS ? IDEVICE_E_SSL_ERROR : connection->status;
+			mutex_unlock(&connection->mutex);
+			return err;
 		}
 		*sent_bytes = sent;
+		mutex_unlock(&connection->mutex);
 		return IDEVICE_E_SUCCESS;
 	}
 	uint32_t sent = 0;
@@ -714,11 +733,14 @@ idevice_error_t idevice_connection_send(idevice_connection_t connection, const c
 	if (sent < len) {
 		*sent_bytes = sent;
 		if (sent == 0) {
+			mutex_unlock(&connection->mutex);
 			return IDEVICE_E_UNKNOWN_ERROR;
 		}
+		mutex_unlock(&connection->mutex);
 		return IDEVICE_E_NOT_ENOUGH_DATA;
 	}
 	*sent_bytes = sent;
+	mutex_unlock(&connection->mutex);
 	return IDEVICE_E_SUCCESS;
 }
 
@@ -777,14 +799,20 @@ static idevice_error_t internal_connection_receive_timeout(idevice_connection_t 
 
 idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes, unsigned int timeout)
 {
-	if (!connection
-#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
-		|| (connection->ssl_data && !connection->ssl_data->session)
-#endif
-		|| len == 0
-	) {
+	if (!connection || len == 0) {
 		return IDEVICE_E_INVALID_ARG;
 	}
+	mutex_lock(&connection->mutex);
+	if (!connection->data) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+	if (connection->ssl_data && !connection->ssl_data->session) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#endif
 
 	if (connection->ssl_data) {
 		uint32_t received = 0;
@@ -834,13 +862,18 @@ idevice_error_t idevice_connection_receive_timeout(idevice_connection_t connecti
 		debug_info("SSL_read %d, received %d", len, received);
 		if (received < len) {
 			*recv_bytes = received;
-			return connection->status == IDEVICE_E_SUCCESS ? IDEVICE_E_SSL_ERROR : connection->status;
+			idevice_error_t err = connection->status == IDEVICE_E_SUCCESS ? IDEVICE_E_SSL_ERROR : connection->status;
+			mutex_unlock(&connection->mutex);
+			return err;
 		}
 
 		*recv_bytes = received;
+		mutex_unlock(&connection->mutex);
 		return IDEVICE_E_SUCCESS;
 	}
-	return internal_connection_receive_timeout(connection, data, len, recv_bytes, timeout);
+	idevice_error_t err = internal_connection_receive_timeout(connection, data, len, recv_bytes, timeout);
+	mutex_unlock(&connection->mutex);
+	return err;
 }
 
 /**
@@ -876,13 +909,20 @@ static idevice_error_t internal_connection_receive(idevice_connection_t connecti
 
 idevice_error_t idevice_connection_receive(idevice_connection_t connection, char *data, uint32_t len, uint32_t *recv_bytes)
 {
-	if (!connection
-#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
-		|| (connection->ssl_data && !connection->ssl_data->session)
-#endif
-	) {
+	if (!connection) {
 		return IDEVICE_E_INVALID_ARG;
 	}
+	mutex_lock(&connection->mutex);
+	if (!connection->data) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#if defined(HAVE_OPENSSL) || defined(HAVE_GNUTLS)
+	if (connection->ssl_data && !connection->ssl_data->session) {
+		mutex_unlock(&connection->mutex);
+		return IDEVICE_E_INVALID_ARG;
+	}
+#endif
 
 	if (connection->ssl_data) {
 		if (connection->ssl_recv_timeout != (unsigned int)-1) {
@@ -899,12 +939,16 @@ idevice_error_t idevice_connection_receive(idevice_connection_t connection, char
 #endif
 		if (received > 0) {
 			*recv_bytes = received;
+			mutex_unlock(&connection->mutex);
 			return IDEVICE_E_SUCCESS;
 		}
 		*recv_bytes = 0;
+		mutex_unlock(&connection->mutex);
 		return IDEVICE_E_SSL_ERROR;
 	}
-	return internal_connection_receive(connection, data, len, recv_bytes);
+	idevice_error_t err = internal_connection_receive(connection, data, len, recv_bytes);
+	mutex_unlock(&connection->mutex);
+	return err;
 }
 
 idevice_error_t idevice_connection_get_fd(idevice_connection_t connection, int *fd)
@@ -1509,7 +1553,7 @@ idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection)
 	return idevice_connection_disable_bypass_ssl(connection, 0);
 }
 
-idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass)
+static idevice_error_t idevice_connection_disable_bypass_ssl_locked(idevice_connection_t connection, uint8_t sslBypass)
 {
 	if (!connection)
 		return IDEVICE_E_INVALID_ARG;
@@ -1518,8 +1562,8 @@ idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t conne
 		return IDEVICE_E_SUCCESS;
 	}
 
-	// some services require plain text communication after SSL handshake
-	// sending out SSL_shutdown will cause bytes
+	/* some services require plain text communication after SSL handshake */
+	/* sending out SSL_shutdown will cause bytes */
 	if (!sslBypass) {
 #if defined(HAVE_OPENSSL)
 		if (connection->ssl_data->session) {
@@ -1550,6 +1594,18 @@ idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t conne
 	debug_info("SSL mode disabled");
 
 	return IDEVICE_E_SUCCESS;
+}
+
+idevice_error_t idevice_connection_disable_bypass_ssl(idevice_connection_t connection, uint8_t sslBypass)
+{
+	if (!connection)
+		return IDEVICE_E_INVALID_ARG;
+
+	mutex_lock(&connection->mutex);
+	idevice_error_t ret = idevice_connection_disable_bypass_ssl_locked(connection, sslBypass);
+	mutex_unlock(&connection->mutex);
+
+	return ret;
 }
 
 const char* idevice_strerror(idevice_error_t err)
