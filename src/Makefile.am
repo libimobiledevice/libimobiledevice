@@ -47,6 +47,7 @@ libimobiledevice_1_0_la_SOURCES = \
 	mobilebackup.c mobilebackup.h \
 	house_arrest.c house_arrest.h \
 	mobilebackup2.c mobilebackup2.h \
+	mcinstall.c mcinstall.h \
 	misagent.c misagent.h \
 	restore.c restore.h \
 	diagnostics_relay.c diagnostics_relay.h \
